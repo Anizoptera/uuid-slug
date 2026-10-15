@@ -1,1397 +1,683 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<svg xmlns="http://www.w3.org/2000/svg" width="2180" height="1056" viewBox="0 0 2180 1056" role="img" aria-labelledby="title" data-variant="split" data-edition="fan-out" lang="en" xml:lang="en" aria-describedby="description">
-  <title id="title">One UUIDv7, six representations — with a masking avalanche example</title>
-  <desc id="description">The same UUIDv7 shown as standard text, 16 bytes, plain base64url, plain base32hex, masked base64url and masked base32hex. Colours connect timestamp, version, variant and payload fields across plain encodings. A table compares use, time ordering and case when decoding. The masking inset flips the last UUID bit with the same demo key and settings: all 16 bytes of the masked block and all 22 base64url characters change in this example. This does not mean all bits flip or establish cryptographic strength.</desc>
-  <metadata id="provenance">{
-  "package": "@anizoptera/uuid-slug",
-  "basis": "Supplied README; latest six-row infographic and selected fan-out inset",
-  "sources": {
-    "README": "https://github.com/Anizoptera/uuid-slug/blob/main/README.md",
-    "UUIDv7 fields": "RFC 9562 section 5.7",
-    "encodings": "RFC 4648 sections 5 and 7",
-    "mask": "https://github.com/Anizoptera/uuid-slug/blob/main/docs/design.md"
-  },
-  "example": {
-    "uuid_before": "0198abcd-1234-7abc-9def-0123456789ab",
-    "uuid_after": "0198abcd-1234-7abc-9def-0123456789aa",
-    "public_test_seed": "anizoptera.uuid-slug.default-mask.v1",
-    "key_derivation_iterations": 1,
-    "timestamp_range_start_unix_ms": 0,
-    "masked_base64url_before": "ap225Qa_y6wN5LQCJgwH0z",
-    "masked_base64url_after": "hAHeRPmJFqjOuXUQnhljgb",
-    "masked_block_before_hex": "6a9db6e506bfcbac0de4b402260c07d3",
-    "masked_block_after_hex": "8401de44f98916a8ceb975109e196381",
-    "input_bits_changed": 1,
-    "masked_block_bytes_changed": 16,
-    "masked_block_bits_changed": 62,
-    "outer_check_bits_changed": 1,
-    "masked_base64url_characters_changed": 22
-  },
-  "scope": "Fan-out shows changed output-byte positions, not internal cipher wiring. Counts describe this pair only."
-}</metadata>
-  <!--EDIT THIS SVG DIRECTLY. The six row-* groups own labels and values; field-traces owns only connections; mask-process is the replaceable 300 x 224 inset. Colours live in defs/style. Keep data-start-bit/data-bit-count/data-fields with each character: one encoded character may span fields. Do not repaint a whole character as one field. No external assets are needed.-->
-  <defs>
-    <style>
-.bg{color:#0B1423;fill:currentColor}
-.ink{color:#F5F7FC;fill:currentColor}
-.muted{color:#C6D0E1;fill:currentColor}
-.subtle{color:#9EAEC5;fill:currentColor}
-.rule{color:#34465F;fill:currentColor}
-.surface{color:#15243A;fill:currentColor}
-.time{color:#00C8FF;fill:currentColor}
-.version{color:#FF49CD;fill:currentColor}
-.variant{color:#4D50FF;fill:currentColor}
-.payload{color:#FFE83F;fill:currentColor}
-.masked{color:#FF921C;fill:currentColor}
-.pad{color:#8C9DB6;fill:currentColor}
-.fg{color:#08111F;fill:currentColor}
-.sans{font-family:Inter,Arial,Helvetica,sans-serif}
-.mono{font-family:"DejaVu Sans Mono",Consolas,monospace;font-variant-ligatures:none}
-text{font-kerning:none}
-.trace{pointer-events:none}
-
-.on-variant{fill:#FFFFFF}
-
-.variant-edge{stroke:#8492FF;stroke-width:2.1;stroke-opacity:1}
-
-.check{color:#F5F7FC;fill:currentColor}
-
-/* Fan-out: orange output cells are changed BYTES, not bits set to one. */
-.avalanche .av-title{font:600 19px Inter,Arial,Helvetica,sans-serif;fill:#F5F7FC}
-.avalanche .av-note{font:400 13.5px Inter,Arial,Helvetica,sans-serif;fill:#C6D0E1}
-.avalanche .av-label{font:500 13px Inter,Arial,Helvetica,sans-serif;fill:#C6D0E1}
-.avalanche .av-bit{font:500 14px "DejaVu Sans Mono",Consolas,monospace;fill:#C6D0E1}
-.avalanche .av-unchanged{fill:#35455D;stroke:#667D99;stroke-width:.7}
-.avalanche .av-changed{fill:#FF921C;stroke:#FF921C;stroke-width:.7}
-.avalanche .av-dark-bit{fill:#08111F}
-.avalanche .av-edge{fill:none;stroke:#FF921C;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round}
-.avalanche .av-result{font:600 16px Inter,Arial,Helvetica,sans-serif;fill:#F5F7FC}
-.avalanche .av-scope{font:400 12.8px Inter,Arial,Helvetica,sans-serif;fill:#C6D0E1}
-/* A single useful link; its focus ring is invisible until keyboard focus. */
-#package-link .link-focus{fill:none;stroke:#F5F7FC;stroke-width:2;visibility:hidden}
-#package-link:focus .link-focus{visibility:visible}
-</style>
-    <pattern id="zero-hatch" width="6" height="6" patternUnits="userSpaceOnUse">
-      <path d="M-1 1L1 -1M0 6L6 0M5 7L7 5" stroke="#08111F" stroke-width="1" opacity=".55"/>
-    </pattern>
-    <clipPath id="cell-uuid-19-variant-clip" clipPathUnits="userSpaceOnUse">
-      <rect x="716.4" y="190" width="10.83" height="46"/>
-    </clipPath>
-    <clipPath id="cell-bytes-24-variant-clip" clipPathUnits="userSpaceOnUse">
-      <rect x="738.0" y="310" width="10.83" height="46"/>
-    </clipPath>
-    <clipPath id="cell-p64-10-variant-clip" clipPathUnits="userSpaceOnUse">
-      <rect x="536.4" y="430" width="7.23" height="46"/>
-    </clipPath>
-    <clipPath id="cell-p32-12-variant-clip" clipPathUnits="userSpaceOnUse">
-      <rect x="582.48" y="550" width="4.35" height="46"/>
-    </clipPath>
-    <clipPath id="cell-p32-13-variant-clip" clipPathUnits="userSpaceOnUse">
-      <rect x="586.8" y="550" width="4.35" height="46"/>
-    </clipPath>
-    <marker id="avalanche-arrow" viewBox="0 0 6 6" refX="5.5" refY="3" markerWidth="3.5" markerHeight="3.5" orient="auto" markerUnits="strokeWidth">
-      <path d="M0 0L6 3L0 6Z" fill="#FF921C"/>
-    </marker>
-  </defs>
-  <rect x="0" y="0" width="2180" height="1056" class="bg" id="background" aria-hidden="true"/>
-  <g id="heading-and-legend">
-    <text x="38" y="49" class="ink sans" font-size="34" font-weight="600" id="heading">One UUIDv7, six representations</text>
-    <a href="https://github.com/Anizoptera/uuid-slug" id="package-link" tabindex="0" aria-label="Source: Anizoptera uuid-slug on GitHub">
-      <rect x="1860" y="21" width="286" height="36" rx="2" class="link-focus" aria-hidden="true"/>
-      <text x="2142" y="46" class="ink sans" font-size="23" font-weight="500" text-anchor="end">@anizoptera/uuid-slug</text>
-    </a>
-    <text x="38" y="85" class="muted sans" font-size="22" font-weight="400" id="scope">Text, bytes &amp; plain slugs: any UUID, no key. Masked slugs: UUIDv7, matching key.</text>
-    <text x="2142" y="85" class="muted sans" font-size="20" font-weight="400" text-anchor="end">All text forms are URL-safe.</text>
-    <line x1="38" y1="108" x2="2142" y2="108" class="rule" fill="none" stroke="currentColor" stroke-width="1.2"/>
-    <rect x="306" y="133" width="16" height="16" class="time" rx="2"/>
-    <text x="331" y="148" class="ink sans" font-size="20" font-weight="500">Timestamp</text>
-    <rect x="465.781" y="133" width="16" height="16" class="version" rx="2"/>
-    <text x="490.78125" y="148" class="ink sans" font-size="20" font-weight="500">Version</text>
-    <rect x="591.289" y="133" width="16" height="16" class="variant" rx="2"/>
-    <text x="616.2890625" y="148" class="ink sans" font-size="20" font-weight="500">Variant</text>
-    <rect x="711.883" y="133" width="16" height="16" class="payload" rx="2"/>
-    <text x="736.8828125" y="148" class="ink sans" font-size="20" font-weight="500">Payload</text>
-    <rect x="841.297" y="133" width="16" height="16" class="masked" rx="2"/>
-    <text x="866.296875" y="148" class="ink sans" font-size="20" font-weight="500">Masked</text>
-    <rect x="969.531" y="133" width="16" height="16" class="pad" rx="2"/>
-    <rect x="969.531" y="133" width="16" height="16" fill="url(#zero-hatch)"/>
-    <text x="994.53125" y="148" class="ink sans" font-size="20" font-weight="500">Padding (0)</text>
-    <text x="38" y="148" class="muted sans" font-size="20" font-weight="600">Representation</text>
-    <text x="1230" y="148" class="muted sans" font-size="20" font-weight="600" id="use-header">Use / trade-off</text>
-    <text x="1740.0" y="148" class="muted sans" font-size="20" font-weight="600">Time order</text>
-    <text x="1938" y="148" class="muted sans" font-size="20" font-weight="600" id="case-header">Case when decoding</text>
-    <line x1="1205" y1="129" x2="1205" y2="948" class="rule" fill="none" stroke="currentColor" stroke-width="1.1"/>
-    <text id="trace-reading" x="306" y="176" class="muted sans" font-size="18">Same bits, different encoding. Unmasked UUIDv7 time stays readable.</text>
-  </g>
-  <g id="field-traces" class="trace" aria-hidden="true">
-    <!--Only unchanged source bits are connected. There is no original-field ribbon into the mask: original field positions do not survive the keyed transform.-->
-    <g id="trace-uuid-to-bytes">
-      <path d="M 306.0 253 C 306.0 282.0 306.0 282.0 306.0 311 L 619.2 311 C 619.2 282.0 586.8 282.0 586.8 253 Z" class="time" opacity=".13"/>
-      <path d="M 306.7 253 C 306.7 282.0 306.7 282.0 306.7 311" class="time" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 586.1 253 C 586.1 282.0 618.5 282.0 618.5 311" class="time" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 608.4 253 C 608.4 282.0 630.0 282.0 630.0 311 L 651.6 311 C 651.6 282.0 630.0 282.0 630.0 253 Z" class="version" opacity=".30"/>
-      <path d="M 609.1 253 C 609.1 282.0 630.7 282.0 630.7 311" class="version" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 629.3 253 C 629.3 282.0 650.9 282.0 650.9 311" class="version" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 630.0 253 C 630.0 282.0 651.6 282.0 651.6 311 L 727.2 311 C 727.2 282.0 694.8 282.0 694.8 253 Z" class="payload" opacity=".13"/>
-      <path d="M 630.7 253 C 630.7 282.0 652.3 282.0 652.3 311" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 694.1 253 C 694.1 282.0 726.5 282.0 726.5 311" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 716.4 253 C 716.4 282.0 738.0 282.0 738.0 311 L 748.8 311 C 748.8 282.0 727.2 282.0 727.2 253 Z" class="variant" opacity=".42"/>
-      <path d="M 717.1 253 C 717.1 282.0 738.7 282.0 738.7 311" class="variant variant-edge" fill="none" style="fill:none"/>
-      <path d="M 726.5 253 C 726.5 282.0 748.1 282.0 748.1 311" class="variant variant-edge" fill="none" style="fill:none"/>
-      <path d="M 727.2 253 C 727.2 282.0 748.8 282.0 748.8 311 L 1159.2 311 C 1159.2 282.0 1083.6 282.0 1083.6 253 Z" class="payload" opacity=".13"/>
-      <path d="M 727.9 253 C 727.9 282.0 749.5 282.0 749.5 311" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 1082.9 253 C 1082.9 282.0 1158.5 282.0 1158.5 311" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-    </g>
-    <g id="trace-bytes-to-p64">
-      <path d="M 306.0 377 C 306.0 406.0 306.0 406.0 306.0 435 L 478.8 435 C 478.8 406.0 619.2 406.0 619.2 377 Z" class="time" opacity=".13"/>
-      <path d="M 306.7 377 C 306.7 406.0 306.7 406.0 306.7 435" class="time" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 618.5 377 C 618.5 406.0 478.1 406.0 478.1 435" class="time" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 630.0 377 C 630.0 406.0 478.8 406.0 478.8 435 L 493.2 435 C 493.2 406.0 651.6 406.0 651.6 377 Z" class="version" opacity=".30"/>
-      <path d="M 630.7 377 C 630.7 406.0 479.5 406.0 479.5 435" class="version" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 650.9 377 C 650.9 406.0 492.5 406.0 492.5 435" class="version" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 651.6 377 C 651.6 406.0 493.2 406.0 493.2 435 L 536.4 435 C 536.4 406.0 727.2 406.0 727.2 377 Z" class="payload" opacity=".13"/>
-      <path d="M 652.3 377 C 652.3 406.0 493.9 406.0 493.9 435" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 726.5 377 C 726.5 406.0 535.7 406.0 535.7 435" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 738.0 377 C 738.0 406.0 536.4 406.0 536.4 435 L 543.6 435 C 543.6 406.0 748.8 406.0 748.8 377 Z" class="variant" opacity=".42"/>
-      <path d="M 738.7 377 C 738.7 406.0 537.1 406.0 537.1 435" class="variant variant-edge" fill="none" style="fill:none"/>
-      <path d="M 748.1 377 C 748.1 406.0 542.9 406.0 542.9 435" class="variant variant-edge" fill="none" style="fill:none"/>
-      <path d="M 748.8 377 C 748.8 406.0 543.6 406.0 543.6 435 L 766.8 435 C 766.8 406.0 1159.2 406.0 1159.2 377 Z" class="payload" opacity=".13"/>
-      <path d="M 749.5 377 C 749.5 406.0 544.3 406.0 544.3 435" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 1158.5 377 C 1158.5 406.0 766.1 406.0 766.1 435" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-    </g>
-    <g id="trace-p64-to-p32">
-      <path d="M 306.0 501 C 306.0 530.0 306.0 530.0 306.0 559 L 513.36 559 C 513.36 530.0 478.8 530.0 478.8 501 Z" class="time" opacity=".13"/>
-      <path d="M 306.7 501 C 306.7 530.0 306.7 530.0 306.7 559" class="time" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 478.1 501 C 478.1 530.0 512.66 530.0 512.66 559" class="time" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 478.8 501 C 478.8 530.0 513.36 530.0 513.36 559 L 530.64 559 C 530.64 530.0 493.2 530.0 493.2 501 Z" class="version" opacity=".30"/>
-      <path d="M 479.5 501 C 479.5 530.0 514.06 530.0 514.06 559" class="version" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 492.5 501 C 492.5 530.0 529.94 530.0 529.94 559" class="version" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 493.2 501 C 493.2 530.0 530.64 530.0 530.64 559 L 582.48 559 C 582.48 530.0 536.4 530.0 536.4 501 Z" class="payload" opacity=".13"/>
-      <path d="M 493.9 501 C 493.9 530.0 531.34 530.0 531.34 559" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 535.7 501 C 535.7 530.0 581.78 530.0 581.78 559" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 536.4 501 C 536.4 530.0 582.48 530.0 582.48 559 L 591.12 559 C 591.12 530.0 543.6 530.0 543.6 501 Z" class="variant" opacity=".42"/>
-      <path d="M 537.1 501 C 537.1 530.0 583.18 530.0 583.18 559" class="variant variant-edge" fill="none" style="fill:none"/>
-      <path d="M 542.9 501 C 542.9 530.0 590.42 530.0 590.42 559" class="variant variant-edge" fill="none" style="fill:none"/>
-      <path d="M 543.6 501 C 543.6 530.0 591.12 530.0 591.12 559 L 858.96 559 C 858.96 530.0 766.8 530.0 766.8 501 Z" class="payload" opacity=".13"/>
-      <path d="M 544.3 501 C 544.3 530.0 591.82 530.0 591.82 559" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 766.1 501 C 766.1 530.0 858.26 530.0 858.26 559" class="payload" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-    </g>
-    <g id="trace-m64-to-m32">
-      <path d="M 306.0 783 C 306.0 812.0 306.0 812.0 306.0 841 L 876.24 841 C 876.24 812.0 781.2 812.0 781.2 783 Z" class="masked" opacity=".13"/>
-      <path d="M 306.7 783 C 306.7 812.0 306.7 812.0 306.7 841" class="masked" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-      <path d="M 780.5 783 C 780.5 812.0 875.54 812.0 875.54 841" class="masked" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity=".92" style="fill:none"/>
-    </g>
-  </g>
-  <g id="representation-rows">
-    <!--Rows use one primary baseline plus 32/56-unit supporting lines. The 36-unit monospace specimens sit four units lower to align their optical centres with 25-unit names and the order chips.-->
-    <!--Each named row owns one representation. Character cells use exact source-bit intervals; spaces and hyphens have no bit interval. Grey marks zero fill bits, not printed equals-sign padding.-->
-    <g id="row-uuid" data-representation="uuid" transform="translate(0 0)" data-primary-baseline="225" data-row-pitch="124" role="group" aria-labelledby="uuid-row-title" aria-describedby="uuid-row-description">
-      <title id="uuid-row-title">UUID text</title>
-      <desc id="uuid-row-description">0198abcd-1234-7abc-9def-0123456789ab. 36 chars · lowercase. UUID columns &amp; UUID-only APIs. Same-case ASCII. Case-insensitive. Time-range queries on UUIDv7 keys. 0–9 a–f · hyphens.</desc>
-      <text x="38" y="225" class="ink sans" font-size="25" font-weight="600" id="uuid-label">UUID text</text>
-      <text x="38" y="257" class="muted sans" font-size="20" font-weight="400" id="uuid-label-note" data-line="size">36 chars · lowercase</text>
-      <g id="specimen-uuid" aria-label="0198abcd-1234-7abc-9def-0123456789ab" transform="translate(0 4)" aria-hidden="true">
-        <g id="cell-uuid-0" data-start-bit="0" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="306.0" y="190" width="21.63" height="46" class="time"/>
-          <text x="316.8" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-0">0</text>
-          <rect x="306.0" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-uuid-1" data-start-bit="4" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="327.6" y="190" width="21.63" height="46" class="time"/>
-          <text x="338.40000000000003" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-1">1</text>
-          <rect x="327.6" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-uuid-2" data-start-bit="8" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="349.2" y="190" width="21.63" height="46" class="time"/>
-          <text x="360.00000000000006" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-2">9</text>
-          <rect x="349.2" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-uuid-3" data-start-bit="12" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="370.8" y="190" width="21.63" height="46" class="time"/>
-          <text x="381.6000000000001" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-3">8</text>
-          <rect x="370.8" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-uuid-4" data-start-bit="16" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="392.4" y="190" width="21.63" height="46" class="time"/>
-          <text x="403.2000000000001" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-4">a</text>
-          <rect x="392.4" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-uuid-5" data-start-bit="20" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="414.0" y="190" width="21.63" height="46" class="time"/>
-          <text x="424.8000000000001" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-5">b</text>
-          <rect x="414.0" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-uuid-6" data-start-bit="24" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="435.6" y="190" width="21.63" height="46" class="time"/>
-          <text x="446.40000000000015" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-6">c</text>
-          <rect x="435.6" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-uuid-7" data-start-bit="28" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="457.2" y="190" width="21.63" height="46" class="time"/>
-          <text x="468.00000000000017" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-7">d</text>
-          <rect x="457.2" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <text x="489.6000000000002" y="225" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-8">-</text>
-        <g id="cell-uuid-9" data-start-bit="32" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="500.4" y="190" width="21.63" height="46" class="time"/>
-          <text x="511.2000000000002" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-9">1</text>
-          <rect x="500.4" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-uuid-10" data-start-bit="36" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="522.0" y="190" width="21.63" height="46" class="time"/>
-          <text x="532.8000000000002" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-10">2</text>
-          <rect x="522.0" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-uuid-11" data-start-bit="40" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="543.6" y="190" width="21.63" height="46" class="time"/>
-          <text x="554.4000000000002" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-11">3</text>
-          <rect x="543.6" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-uuid-12" data-start-bit="44" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="565.2" y="190" width="21.63" height="46" class="time"/>
-          <text x="576.0000000000002" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-12">4</text>
-          <rect x="565.2" y="239" width="21.6" height="7" class="time"/>
-        </g>
-        <text x="597.6000000000003" y="225" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-13">-</text>
-        <g id="cell-uuid-14" data-start-bit="48" data-bit-count="4" data-fields="version,version,version,version">
-          <rect x="608.4" y="190" width="21.63" height="46" class="version"/>
-          <text x="619.2000000000003" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-14">7</text>
-          <rect x="608.4" y="239" width="21.6" height="7" class="version"/>
-        </g>
-        <g id="cell-uuid-15" data-start-bit="52" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="630.0" y="190" width="21.63" height="46" class="payload"/>
-          <text x="640.8000000000003" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-15">a</text>
-          <rect x="630.0" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-16" data-start-bit="56" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="651.6" y="190" width="21.63" height="46" class="payload"/>
-          <text x="662.4000000000003" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-16">b</text>
-          <rect x="651.6" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-17" data-start-bit="60" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="673.2" y="190" width="21.63" height="46" class="payload"/>
-          <text x="684.0000000000003" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-17">c</text>
-          <rect x="673.2" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <text x="705.6000000000004" y="225" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-18">-</text>
-        <g id="cell-uuid-19" data-start-bit="64" data-bit-count="4" data-fields="variant,variant,payload,payload">
-          <title>9 = 1001; 2 Variant bits, 2 Payload bits</title>
-          <rect x="716.4" y="190" width="10.83" height="46" class="variant"/>
-          <rect x="727.2" y="190" width="10.83" height="46" class="payload"/>
-          <text x="727.2000000000004" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-19">9</text>
-          <rect x="716.4" y="239" width="10.8" height="7" class="variant"/>
-          <rect x="727.2" y="239" width="10.8" height="7" class="payload"/>
-          <line x1="727.2000000000004" y1="239" x2="727.2000000000004" y2="246" class="bg" fill="none" stroke="currentColor" stroke-width="1"/>
-          <text x="727.2000000000004" y="225" class="on-variant mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-19-variant-ink" clip-path="url(#cell-uuid-19-variant-clip)" aria-hidden="true">9</text>
-        </g>
-        <g id="cell-uuid-20" data-start-bit="68" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="738.0" y="190" width="21.63" height="46" class="payload"/>
-          <text x="748.8000000000004" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-20">d</text>
-          <rect x="738.0" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-21" data-start-bit="72" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="759.6" y="190" width="21.63" height="46" class="payload"/>
-          <text x="770.4000000000004" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-21">e</text>
-          <rect x="759.6" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-22" data-start-bit="76" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="781.2" y="190" width="21.63" height="46" class="payload"/>
-          <text x="792.0000000000005" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-22">f</text>
-          <rect x="781.2" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <text x="813.6000000000005" y="225" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-23">-</text>
-        <g id="cell-uuid-24" data-start-bit="80" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="824.4" y="190" width="21.63" height="46" class="payload"/>
-          <text x="835.2000000000005" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-24">0</text>
-          <rect x="824.4" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-25" data-start-bit="84" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="846.0" y="190" width="21.63" height="46" class="payload"/>
-          <text x="856.8000000000005" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-25">1</text>
-          <rect x="846.0" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-26" data-start-bit="88" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="867.6" y="190" width="21.63" height="46" class="payload"/>
-          <text x="878.4000000000005" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-26">2</text>
-          <rect x="867.6" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-27" data-start-bit="92" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="889.2" y="190" width="21.63" height="46" class="payload"/>
-          <text x="900.0000000000006" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-27">3</text>
-          <rect x="889.2" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-28" data-start-bit="96" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="910.8" y="190" width="21.63" height="46" class="payload"/>
-          <text x="921.6000000000006" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-28">4</text>
-          <rect x="910.8" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-29" data-start-bit="100" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="932.4" y="190" width="21.63" height="46" class="payload"/>
-          <text x="943.2000000000006" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-29">5</text>
-          <rect x="932.4" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-30" data-start-bit="104" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="954.0" y="190" width="21.63" height="46" class="payload"/>
-          <text x="964.8000000000006" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-30">6</text>
-          <rect x="954.0" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-31" data-start-bit="108" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="975.6" y="190" width="21.63" height="46" class="payload"/>
-          <text x="986.4000000000007" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-31">7</text>
-          <rect x="975.6" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-32" data-start-bit="112" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="997.2" y="190" width="21.63" height="46" class="payload"/>
-          <text x="1008.0000000000007" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-32">8</text>
-          <rect x="997.2" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-33" data-start-bit="116" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="1018.8" y="190" width="21.63" height="46" class="payload"/>
-          <text x="1029.6000000000008" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-33">9</text>
-          <rect x="1018.8" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-34" data-start-bit="120" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="1040.4" y="190" width="21.63" height="46" class="payload"/>
-          <text x="1051.2000000000007" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-34">a</text>
-          <rect x="1040.4" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-uuid-35" data-start-bit="124" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="1062.0" y="190" width="21.63" height="46" class="payload"/>
-          <text x="1072.8000000000006" y="225" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-uuid-35">b</text>
-          <rect x="1062.0" y="239" width="21.6" height="7" class="payload"/>
-        </g>
-      </g>
-      <text x="1230" y="225" class="ink sans" font-size="23" font-weight="500" id="uuid-use">UUID columns &amp; UUID-only APIs</text>
-      <g id="uuid-order-chip" aria-label="Ordered¹">
-        <rect x="1740.0" y="197.0" width="131" height="38" rx="5" class="time"/>
-        <text x="1754.0" y="225" class="fg sans" font-size="24" font-weight="600" id="uuid-order">Ordered¹</text>
-      </g>
-      <text x="1740.0" y="257" class="muted sans" font-size="19" font-weight="400" id="uuid-order-note">Same-case ASCII</text>
-      <text x="1938" y="225" class="ink sans" font-size="23" font-weight="500" id="uuid-case">Case-insensitive</text>
-      <line x1="1230" y1="301" x2="2142" y2="301" class="rule" fill="none" stroke="currentColor" stroke-width="0.7" opacity=".45"/>
-      <text x="1230" y="257" class="muted sans" font-size="20" font-weight="400" id="uuid-use-note">Time-range queries on UUIDv7 keys</text>
-      <text id="uuid-alphabet" x="38" y="281.0" class="muted mono" font-size="18" font-weight="400">0–9 a–f · hyphens</text>
-    </g>
-    <g id="row-bytes" data-representation="bytes" transform="translate(0 4)" data-primary-baseline="349" data-row-pitch="124" role="group" aria-labelledby="bytes-row-title" aria-describedby="bytes-row-description">
-      <title id="bytes-row-title">UUID bytes</title>
-      <desc id="bytes-row-description">01 98 ab cd 12 34 7a bc 9d ef 01 23 45 67 89 ab. 16 bytes · shown as hex. Binary storage &amp; transport. Generate / decode into your buffer. UUID byte order. Not text. Validation errors leave the buffer unchanged.</desc>
-      <text x="38" y="345" class="ink sans" font-size="25" font-weight="600" id="bytes-label">UUID bytes</text>
-      <text x="38" y="377" class="muted sans" font-size="20" font-weight="400" id="bytes-label-note" data-line="size">16 bytes · shown as hex</text>
-      <g id="specimen-bytes" aria-label="01 98 ab cd 12 34 7a bc 9d ef 01 23 45 67 89 ab" transform="translate(0 4)" aria-hidden="true">
-        <g id="cell-bytes-0" data-start-bit="0" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="306.0" y="310" width="21.63" height="46" class="time"/>
-          <text x="316.8" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-0">0</text>
-          <rect x="306.0" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-bytes-1" data-start-bit="4" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="327.6" y="310" width="21.63" height="46" class="time"/>
-          <text x="338.40000000000003" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-1">1</text>
-          <rect x="327.6" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <text x="354.6" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-2"> </text>
-        <g id="cell-bytes-3" data-start-bit="8" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="360.0" y="310" width="21.63" height="46" class="time"/>
-          <text x="370.80000000000007" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-3">9</text>
-          <rect x="360.0" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-bytes-4" data-start-bit="12" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="381.6" y="310" width="21.63" height="46" class="time"/>
-          <text x="392.4000000000001" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-4">8</text>
-          <rect x="381.6" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <text x="408.6000000000001" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-5"> </text>
-        <g id="cell-bytes-6" data-start-bit="16" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="414.0" y="310" width="21.63" height="46" class="time"/>
-          <text x="424.8000000000001" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-6">a</text>
-          <rect x="414.0" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-bytes-7" data-start-bit="20" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="435.6" y="310" width="21.63" height="46" class="time"/>
-          <text x="446.40000000000015" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-7">b</text>
-          <rect x="435.6" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <text x="462.60000000000014" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-8"> </text>
-        <g id="cell-bytes-9" data-start-bit="24" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="468.0" y="310" width="21.63" height="46" class="time"/>
-          <text x="478.8000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-9">c</text>
-          <rect x="468.0" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-bytes-10" data-start-bit="28" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="489.6" y="310" width="21.63" height="46" class="time"/>
-          <text x="500.4000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-10">d</text>
-          <rect x="489.6" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <text x="516.6000000000003" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-11"> </text>
-        <g id="cell-bytes-12" data-start-bit="32" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="522.0" y="310" width="21.63" height="46" class="time"/>
-          <text x="532.8000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-12">1</text>
-          <rect x="522.0" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-bytes-13" data-start-bit="36" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="543.6" y="310" width="21.63" height="46" class="time"/>
-          <text x="554.4000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-13">2</text>
-          <rect x="543.6" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <text x="570.6000000000003" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-14"> </text>
-        <g id="cell-bytes-15" data-start-bit="40" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="576.0" y="310" width="21.63" height="46" class="time"/>
-          <text x="586.8000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-15">3</text>
-          <rect x="576.0" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-bytes-16" data-start-bit="44" data-bit-count="4" data-fields="time,time,time,time">
-          <rect x="597.6" y="310" width="21.63" height="46" class="time"/>
-          <text x="608.4000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-16">4</text>
-          <rect x="597.6" y="359" width="21.6" height="7" class="time"/>
-        </g>
-        <text x="624.6000000000003" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-17"> </text>
-        <g id="cell-bytes-18" data-start-bit="48" data-bit-count="4" data-fields="version,version,version,version">
-          <rect x="630.0" y="310" width="21.63" height="46" class="version"/>
-          <text x="640.8000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-18">7</text>
-          <rect x="630.0" y="359" width="21.6" height="7" class="version"/>
-        </g>
-        <g id="cell-bytes-19" data-start-bit="52" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="651.6" y="310" width="21.63" height="46" class="payload"/>
-          <text x="662.4000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-19">a</text>
-          <rect x="651.6" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <text x="678.6000000000003" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-20"> </text>
-        <g id="cell-bytes-21" data-start-bit="56" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="684.0" y="310" width="21.63" height="46" class="payload"/>
-          <text x="694.8000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-21">b</text>
-          <rect x="684.0" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-bytes-22" data-start-bit="60" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="705.6" y="310" width="21.63" height="46" class="payload"/>
-          <text x="716.4000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-22">c</text>
-          <rect x="705.6" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <text x="732.6000000000003" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-23"> </text>
-        <g id="cell-bytes-24" data-start-bit="64" data-bit-count="4" data-fields="variant,variant,payload,payload">
-          <title>9 = 1001; 2 Variant bits, 2 Payload bits</title>
-          <rect x="738.0" y="310" width="10.83" height="46" class="variant"/>
-          <rect x="748.8" y="310" width="10.83" height="46" class="payload"/>
-          <text x="748.8000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-24">9</text>
-          <rect x="738.0" y="359" width="10.8" height="7" class="variant"/>
-          <rect x="748.8" y="359" width="10.8" height="7" class="payload"/>
-          <line x1="748.8000000000002" y1="359" x2="748.8000000000002" y2="366" class="bg" fill="none" stroke="currentColor" stroke-width="1"/>
-          <text x="748.8000000000002" y="345" class="on-variant mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-24-variant-ink" clip-path="url(#cell-bytes-24-variant-clip)" aria-hidden="true">9</text>
-        </g>
-        <g id="cell-bytes-25" data-start-bit="68" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="759.6" y="310" width="21.63" height="46" class="payload"/>
-          <text x="770.4000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-25">d</text>
-          <rect x="759.6" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <text x="786.6000000000003" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-26"> </text>
-        <g id="cell-bytes-27" data-start-bit="72" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="792.0" y="310" width="21.63" height="46" class="payload"/>
-          <text x="802.8000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-27">e</text>
-          <rect x="792.0" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-bytes-28" data-start-bit="76" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="813.6" y="310" width="21.63" height="46" class="payload"/>
-          <text x="824.4000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-28">f</text>
-          <rect x="813.6" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <text x="840.6000000000003" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-29"> </text>
-        <g id="cell-bytes-30" data-start-bit="80" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="846.0" y="310" width="21.63" height="46" class="payload"/>
-          <text x="856.8000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-30">0</text>
-          <rect x="846.0" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-bytes-31" data-start-bit="84" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="867.6" y="310" width="21.63" height="46" class="payload"/>
-          <text x="878.4000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-31">1</text>
-          <rect x="867.6" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <text x="894.6000000000003" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-32"> </text>
-        <g id="cell-bytes-33" data-start-bit="88" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="900.0" y="310" width="21.63" height="46" class="payload"/>
-          <text x="910.8000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-33">2</text>
-          <rect x="900.0" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-bytes-34" data-start-bit="92" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="921.6" y="310" width="21.63" height="46" class="payload"/>
-          <text x="932.4000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-34">3</text>
-          <rect x="921.6" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <text x="948.6000000000003" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-35"> </text>
-        <g id="cell-bytes-36" data-start-bit="96" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="954.0" y="310" width="21.63" height="46" class="payload"/>
-          <text x="964.8000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-36">4</text>
-          <rect x="954.0" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-bytes-37" data-start-bit="100" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="975.6" y="310" width="21.63" height="46" class="payload"/>
-          <text x="986.4000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-37">5</text>
-          <rect x="975.6" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <text x="1002.6000000000003" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-38"> </text>
-        <g id="cell-bytes-39" data-start-bit="104" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="1008.0" y="310" width="21.63" height="46" class="payload"/>
-          <text x="1018.8000000000002" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-39">6</text>
-          <rect x="1008.0" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-bytes-40" data-start-bit="108" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="1029.6" y="310" width="21.63" height="46" class="payload"/>
-          <text x="1040.4" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-40">7</text>
-          <rect x="1029.6" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <text x="1056.6000000000001" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-41"> </text>
-        <g id="cell-bytes-42" data-start-bit="112" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="1062.0" y="310" width="21.63" height="46" class="payload"/>
-          <text x="1072.8" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-42">8</text>
-          <rect x="1062.0" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-bytes-43" data-start-bit="116" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="1083.6" y="310" width="21.63" height="46" class="payload"/>
-          <text x="1094.3999999999999" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-43">9</text>
-          <rect x="1083.6" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <text x="1110.6" y="345" class="subtle mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-44"> </text>
-        <g id="cell-bytes-45" data-start-bit="120" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="1116.0" y="310" width="21.63" height="46" class="payload"/>
-          <text x="1126.7999999999997" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-45">a</text>
-          <rect x="1116.0" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-bytes-46" data-start-bit="124" data-bit-count="4" data-fields="payload,payload,payload,payload">
-          <rect x="1137.6" y="310" width="21.63" height="46" class="payload"/>
-          <text x="1148.3999999999996" y="345" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-bytes-46">b</text>
-          <rect x="1137.6" y="359" width="21.6" height="7" class="payload"/>
-        </g>
-      </g>
-      <text x="1230" y="345" class="ink sans" font-size="23" font-weight="500" id="bytes-use">Binary storage &amp; transport</text>
-      <text x="1230" y="377" class="muted sans" font-size="20" font-weight="400" id="bytes-use-note">Generate / decode into your buffer</text>
-      <g id="bytes-order-chip" aria-label="Ordered¹">
-        <rect x="1740.0" y="317.0" width="131" height="38" rx="5" class="time"/>
-        <text x="1754.0" y="345" class="fg sans" font-size="24" font-weight="600" id="bytes-order">Ordered¹</text>
-      </g>
-      <text x="1740.0" y="377" class="muted sans" font-size="19" font-weight="400" id="bytes-order-note">UUID byte order</text>
-      <text x="1938" y="345" class="ink sans" font-size="23" font-weight="500" id="bytes-case">Not text</text>
-      <line x1="1230" y1="421" x2="2142" y2="421" class="rule" fill="none" stroke="currentColor" stroke-width="0.7" opacity=".45"/>
-      <text x="1230" y="401" id="bytes-use-detail" class="muted sans" font-size="20" font-weight="400">Validation errors leave the buffer unchanged</text>
-    </g>
-    <g id="row-p64" data-representation="p64" transform="translate(0 8)" data-primary-baseline="473" data-row-pitch="124" role="group" aria-labelledby="p64-row-title" aria-describedby="p64-row-description">
-      <title id="p64-row-title">Plain base64url</title>
-      <desc id="p64-row-description">AZirzRI0eryd7wEjRWeJqw. 22 chars. Short URLs, logs &amp; JSON. 14 fewer characters than UUID text. Can reverse times. Case-sensitive. Decode with standard base64url tools. A–Z a–z 0–9 -_.</desc>
-      <text x="38" y="465" class="ink sans" font-size="25" font-weight="600" id="p64-label">Plain base64url</text>
-      <text x="38" y="497" class="muted sans" font-size="20" font-weight="400" id="p64-label-note" data-line="size">22 chars</text>
-      <g id="specimen-p64" aria-label="AZirzRI0eryd7wEjRWeJqw" transform="translate(0 4)" aria-hidden="true">
-        <g id="cell-p64-0" data-start-bit="0" data-bit-count="6" data-fields="time,time,time,time,time,time">
-          <rect x="306.0" y="430" width="21.63" height="46" class="time"/>
-          <text x="316.8" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-0">A</text>
-          <rect x="306.0" y="479" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p64-1" data-start-bit="6" data-bit-count="6" data-fields="time,time,time,time,time,time">
-          <rect x="327.6" y="430" width="21.63" height="46" class="time"/>
-          <text x="338.40000000000003" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-1">Z</text>
-          <rect x="327.6" y="479" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p64-2" data-start-bit="12" data-bit-count="6" data-fields="time,time,time,time,time,time">
-          <rect x="349.2" y="430" width="21.63" height="46" class="time"/>
-          <text x="360.00000000000006" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-2">i</text>
-          <rect x="349.2" y="479" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p64-3" data-start-bit="18" data-bit-count="6" data-fields="time,time,time,time,time,time">
-          <rect x="370.8" y="430" width="21.63" height="46" class="time"/>
-          <text x="381.6000000000001" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-3">r</text>
-          <rect x="370.8" y="479" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p64-4" data-start-bit="24" data-bit-count="6" data-fields="time,time,time,time,time,time">
-          <rect x="392.4" y="430" width="21.63" height="46" class="time"/>
-          <text x="403.2000000000001" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-4">z</text>
-          <rect x="392.4" y="479" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p64-5" data-start-bit="30" data-bit-count="6" data-fields="time,time,time,time,time,time">
-          <rect x="414.0" y="430" width="21.63" height="46" class="time"/>
-          <text x="424.8000000000001" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-5">R</text>
-          <rect x="414.0" y="479" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p64-6" data-start-bit="36" data-bit-count="6" data-fields="time,time,time,time,time,time">
-          <rect x="435.6" y="430" width="21.63" height="46" class="time"/>
-          <text x="446.40000000000015" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-6">I</text>
-          <rect x="435.6" y="479" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p64-7" data-start-bit="42" data-bit-count="6" data-fields="time,time,time,time,time,time">
-          <rect x="457.2" y="430" width="21.63" height="46" class="time"/>
-          <text x="468.00000000000017" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-7">0</text>
-          <rect x="457.2" y="479" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p64-8" data-start-bit="48" data-bit-count="6" data-fields="version,version,version,version,payload,payload">
-          <title>e = 011110; 4 Version bits, 2 Payload bits</title>
-          <rect x="478.8" y="430" width="14.43" height="46" class="version"/>
-          <rect x="493.2" y="430" width="7.23" height="46" class="payload"/>
-          <text x="489.6000000000002" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-8">e</text>
-          <rect x="478.8" y="479" width="14.4" height="7" class="version"/>
-          <rect x="493.2" y="479" width="7.2" height="7" class="payload"/>
-          <line x1="493.20000000000016" y1="479" x2="493.20000000000016" y2="486" class="bg" fill="none" stroke="currentColor" stroke-width="1"/>
-        </g>
-        <g id="cell-p64-9" data-start-bit="54" data-bit-count="6" data-fields="payload,payload,payload,payload,payload,payload">
-          <rect x="500.4" y="430" width="21.63" height="46" class="payload"/>
-          <text x="511.2000000000002" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-9">r</text>
-          <rect x="500.4" y="479" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p64-10" data-start-bit="60" data-bit-count="6" data-fields="payload,payload,payload,payload,variant,variant">
-          <title>y = 110010; 4 Payload bits, 2 Variant bits</title>
-          <rect x="522.0" y="430" width="14.43" height="46" class="payload"/>
-          <rect x="536.4" y="430" width="7.23" height="46" class="variant"/>
-          <text x="532.8000000000002" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-10">y</text>
-          <rect x="522.0" y="479" width="14.4" height="7" class="payload"/>
-          <rect x="536.4" y="479" width="7.2" height="7" class="variant"/>
-          <line x1="536.4000000000002" y1="479" x2="536.4000000000002" y2="486" class="bg" fill="none" stroke="currentColor" stroke-width="1"/>
-          <text x="532.8000000000002" y="465" class="on-variant mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-10-variant-ink" clip-path="url(#cell-p64-10-variant-clip)" aria-hidden="true">y</text>
-        </g>
-        <g id="cell-p64-11" data-start-bit="66" data-bit-count="6" data-fields="payload,payload,payload,payload,payload,payload">
-          <rect x="543.6" y="430" width="21.63" height="46" class="payload"/>
-          <text x="554.4000000000002" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-11">d</text>
-          <rect x="543.6" y="479" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p64-12" data-start-bit="72" data-bit-count="6" data-fields="payload,payload,payload,payload,payload,payload">
-          <rect x="565.2" y="430" width="21.63" height="46" class="payload"/>
-          <text x="576.0000000000002" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-12">7</text>
-          <rect x="565.2" y="479" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p64-13" data-start-bit="78" data-bit-count="6" data-fields="payload,payload,payload,payload,payload,payload">
-          <rect x="586.8" y="430" width="21.63" height="46" class="payload"/>
-          <text x="597.6000000000003" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-13">w</text>
-          <rect x="586.8" y="479" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p64-14" data-start-bit="84" data-bit-count="6" data-fields="payload,payload,payload,payload,payload,payload">
-          <rect x="608.4" y="430" width="21.63" height="46" class="payload"/>
-          <text x="619.2000000000003" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-14">E</text>
-          <rect x="608.4" y="479" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p64-15" data-start-bit="90" data-bit-count="6" data-fields="payload,payload,payload,payload,payload,payload">
-          <rect x="630.0" y="430" width="21.63" height="46" class="payload"/>
-          <text x="640.8000000000003" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-15">j</text>
-          <rect x="630.0" y="479" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p64-16" data-start-bit="96" data-bit-count="6" data-fields="payload,payload,payload,payload,payload,payload">
-          <rect x="651.6" y="430" width="21.63" height="46" class="payload"/>
-          <text x="662.4000000000003" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-16">R</text>
-          <rect x="651.6" y="479" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p64-17" data-start-bit="102" data-bit-count="6" data-fields="payload,payload,payload,payload,payload,payload">
-          <rect x="673.2" y="430" width="21.63" height="46" class="payload"/>
-          <text x="684.0000000000003" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-17">W</text>
-          <rect x="673.2" y="479" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p64-18" data-start-bit="108" data-bit-count="6" data-fields="payload,payload,payload,payload,payload,payload">
-          <rect x="694.8" y="430" width="21.63" height="46" class="payload"/>
-          <text x="705.6000000000004" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-18">e</text>
-          <rect x="694.8" y="479" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p64-19" data-start-bit="114" data-bit-count="6" data-fields="payload,payload,payload,payload,payload,payload">
-          <rect x="716.4" y="430" width="21.63" height="46" class="payload"/>
-          <text x="727.2000000000004" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-19">J</text>
-          <rect x="716.4" y="479" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p64-20" data-start-bit="120" data-bit-count="6" data-fields="payload,payload,payload,payload,payload,payload">
-          <rect x="738.0" y="430" width="21.63" height="46" class="payload"/>
-          <text x="748.8000000000004" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-20">q</text>
-          <rect x="738.0" y="479" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p64-21" data-start-bit="126" data-bit-count="6" data-fields="payload,payload,pad,pad,pad,pad">
-          <title>w = 110000; 2 Payload bits, 4 zero bits</title>
-          <rect x="759.6" y="430" width="7.23" height="46" class="payload"/>
-          <rect x="766.8" y="430" width="14.43" height="46" class="pad"/>
-          <text x="770.4000000000004" y="465" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p64-21">w</text>
-          <rect x="759.6" y="479" width="7.2" height="7" class="payload"/>
-          <rect x="766.8" y="479" width="14.4" height="7" class="pad"/>
-          <rect x="766.8" y="479" width="14.4" height="7" fill="url(#zero-hatch)"/>
-          <line x1="766.8000000000005" y1="479" x2="766.8000000000005" y2="486" class="bg" fill="none" stroke="currentColor" stroke-width="1"/>
-        </g>
-      </g>
-      <text x="1230" y="465" class="ink sans" font-size="23" font-weight="500" id="p64-use">Short URLs, logs &amp; JSON</text>
-      <text x="1230" y="497" class="muted sans" font-size="20" font-weight="400" id="p64-use-note">14 fewer characters than UUID text</text>
-      <g id="p64-order-chip" aria-label="Almost²">
-        <rect x="1740.0" y="437.0" width="178" height="38" rx="5" class="payload"/>
-        <text x="1754.0" y="465" class="fg sans" font-size="22" font-weight="600" id="p64-order">Approximate²</text>
-      </g>
-      <text x="1740.0" y="497" class="muted sans" font-size="19" font-weight="400" id="p64-order-note">Can reverse times</text>
-      <text x="1938" y="465" class="ink sans" font-size="23" font-weight="500" id="p64-case">Case-sensitive</text>
-      <line x1="1230" y1="541" x2="2142" y2="541" class="rule" fill="none" stroke="currentColor" stroke-width="0.7" opacity=".45"/>
-      <text x="1230" y="521" id="p64-use-detail" class="muted sans" font-size="20" font-weight="400">Decode with standard base64url tools</text>
-      <text id="p64-alphabet" x="38" y="521.0" class="muted mono" font-size="18" font-weight="400">A–Z a–z 0–9 -_</text>
-    </g>
-    <g id="row-p32" data-representation="p32" transform="translate(0 12)" data-primary-baseline="597" data-row-pitch="124" role="group" aria-labelledby="p32-row-title" aria-describedby="p32-row-description">
-      <title id="p32-row-title">Plain base32hex</title>
-      <desc id="p32-row-description">06canj8i6htbp7ff04hkaps9lc. 26 chars · lowercase. Case-insensitive files &amp; text keys. Time-range queries on the ID. Same-case ASCII. Case-insensitive. +4 characters vs plain base64url. 0–9 a–v.</desc>
-      <text x="38" y="585" class="ink sans" font-size="25" font-weight="600" id="p32-label">Plain base32hex</text>
-      <text x="38" y="617" class="muted sans" font-size="20" font-weight="400" id="p32-label-note" data-line="size">26 chars · lowercase</text>
-      <g id="specimen-p32" aria-label="06canj8i6htbp7ff04hkaps9lc" transform="translate(0 4)" aria-hidden="true">
-        <g id="cell-p32-0" data-start-bit="0" data-bit-count="5" data-fields="time,time,time,time,time">
-          <rect x="306.0" y="550" width="21.63" height="46" class="time"/>
-          <text x="316.8" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-0">0</text>
-          <rect x="306.0" y="599" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p32-1" data-start-bit="5" data-bit-count="5" data-fields="time,time,time,time,time">
-          <rect x="327.6" y="550" width="21.63" height="46" class="time"/>
-          <text x="338.40000000000003" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-1">6</text>
-          <rect x="327.6" y="599" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p32-2" data-start-bit="10" data-bit-count="5" data-fields="time,time,time,time,time">
-          <rect x="349.2" y="550" width="21.63" height="46" class="time"/>
-          <text x="360.00000000000006" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-2">c</text>
-          <rect x="349.2" y="599" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p32-3" data-start-bit="15" data-bit-count="5" data-fields="time,time,time,time,time">
-          <rect x="370.8" y="550" width="21.63" height="46" class="time"/>
-          <text x="381.6000000000001" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-3">a</text>
-          <rect x="370.8" y="599" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p32-4" data-start-bit="20" data-bit-count="5" data-fields="time,time,time,time,time">
-          <rect x="392.4" y="550" width="21.63" height="46" class="time"/>
-          <text x="403.2000000000001" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-4">n</text>
-          <rect x="392.4" y="599" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p32-5" data-start-bit="25" data-bit-count="5" data-fields="time,time,time,time,time">
-          <rect x="414.0" y="550" width="21.63" height="46" class="time"/>
-          <text x="424.8000000000001" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-5">j</text>
-          <rect x="414.0" y="599" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p32-6" data-start-bit="30" data-bit-count="5" data-fields="time,time,time,time,time">
-          <rect x="435.6" y="550" width="21.63" height="46" class="time"/>
-          <text x="446.40000000000015" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-6">8</text>
-          <rect x="435.6" y="599" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p32-7" data-start-bit="35" data-bit-count="5" data-fields="time,time,time,time,time">
-          <rect x="457.2" y="550" width="21.63" height="46" class="time"/>
-          <text x="468.00000000000017" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-7">i</text>
-          <rect x="457.2" y="599" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p32-8" data-start-bit="40" data-bit-count="5" data-fields="time,time,time,time,time">
-          <rect x="478.8" y="550" width="21.63" height="46" class="time"/>
-          <text x="489.6000000000002" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-8">6</text>
-          <rect x="478.8" y="599" width="21.6" height="7" class="time"/>
-        </g>
-        <g id="cell-p32-9" data-start-bit="45" data-bit-count="5" data-fields="time,time,time,version,version">
-          <title>h = 10001; 3 Timestamp bits, 2 Version bits</title>
-          <rect x="500.4" y="550" width="12.99" height="46" class="time"/>
-          <rect x="513.36" y="550" width="8.67" height="46" class="version"/>
-          <text x="511.2000000000002" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-9">h</text>
-          <rect x="500.4" y="599" width="12.96" height="7" class="time"/>
-          <rect x="513.36" y="599" width="8.64" height="7" class="version"/>
-          <line x1="513.3600000000002" y1="599" x2="513.3600000000002" y2="606" class="bg" fill="none" stroke="currentColor" stroke-width="1"/>
-        </g>
-        <g id="cell-p32-10" data-start-bit="50" data-bit-count="5" data-fields="version,version,payload,payload,payload">
-          <title>t = 11101; 2 Version bits, 3 Payload bits</title>
-          <rect x="522.0" y="550" width="8.67" height="46" class="version"/>
-          <rect x="530.64" y="550" width="12.99" height="46" class="payload"/>
-          <text x="532.8000000000002" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-10">t</text>
-          <rect x="522.0" y="599" width="8.64" height="7" class="version"/>
-          <rect x="530.64" y="599" width="12.96" height="7" class="payload"/>
-          <line x1="530.6400000000002" y1="599" x2="530.6400000000002" y2="606" class="bg" fill="none" stroke="currentColor" stroke-width="1"/>
-        </g>
-        <g id="cell-p32-11" data-start-bit="55" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="543.6" y="550" width="21.63" height="46" class="payload"/>
-          <text x="554.4000000000002" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-11">b</text>
-          <rect x="543.6" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-12" data-start-bit="60" data-bit-count="5" data-fields="payload,payload,payload,payload,variant">
-          <title>p = 11001; 4 Payload bits, 1 Variant bits</title>
-          <rect x="565.2" y="550" width="17.31" height="46" class="payload"/>
-          <rect x="582.48" y="550" width="4.35" height="46" class="variant"/>
-          <text x="576.0000000000002" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-12">p</text>
-          <rect x="565.2" y="599" width="17.28" height="7" class="payload"/>
-          <rect x="582.48" y="599" width="4.32" height="7" class="variant"/>
-          <line x1="582.4800000000002" y1="599" x2="582.4800000000002" y2="606" class="bg" fill="none" stroke="currentColor" stroke-width="1"/>
-          <text x="576.0000000000002" y="585" class="on-variant mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-12-variant-ink" clip-path="url(#cell-p32-12-variant-clip)" aria-hidden="true">p</text>
-        </g>
-        <g id="cell-p32-13" data-start-bit="65" data-bit-count="5" data-fields="variant,payload,payload,payload,payload">
-          <title>7 = 00111; 1 Variant bits, 4 Payload bits</title>
-          <rect x="586.8" y="550" width="4.35" height="46" class="variant"/>
-          <rect x="591.12" y="550" width="17.31" height="46" class="payload"/>
-          <text x="597.6000000000003" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-13">7</text>
-          <rect x="586.8" y="599" width="4.32" height="7" class="variant"/>
-          <rect x="591.12" y="599" width="17.28" height="7" class="payload"/>
-          <line x1="591.1200000000003" y1="599" x2="591.1200000000003" y2="606" class="bg" fill="none" stroke="currentColor" stroke-width="1"/>
-          <text x="597.6000000000003" y="585" class="on-variant mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-13-variant-ink" clip-path="url(#cell-p32-13-variant-clip)" aria-hidden="true">7</text>
-        </g>
-        <g id="cell-p32-14" data-start-bit="70" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="608.4" y="550" width="21.63" height="46" class="payload"/>
-          <text x="619.2000000000003" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-14">f</text>
-          <rect x="608.4" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-15" data-start-bit="75" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="630.0" y="550" width="21.63" height="46" class="payload"/>
-          <text x="640.8000000000003" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-15">f</text>
-          <rect x="630.0" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-16" data-start-bit="80" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="651.6" y="550" width="21.63" height="46" class="payload"/>
-          <text x="662.4000000000003" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-16">0</text>
-          <rect x="651.6" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-17" data-start-bit="85" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="673.2" y="550" width="21.63" height="46" class="payload"/>
-          <text x="684.0000000000003" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-17">4</text>
-          <rect x="673.2" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-18" data-start-bit="90" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="694.8" y="550" width="21.63" height="46" class="payload"/>
-          <text x="705.6000000000004" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-18">h</text>
-          <rect x="694.8" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-19" data-start-bit="95" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="716.4" y="550" width="21.63" height="46" class="payload"/>
-          <text x="727.2000000000004" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-19">k</text>
-          <rect x="716.4" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-20" data-start-bit="100" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="738.0" y="550" width="21.63" height="46" class="payload"/>
-          <text x="748.8000000000004" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-20">a</text>
-          <rect x="738.0" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-21" data-start-bit="105" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="759.6" y="550" width="21.63" height="46" class="payload"/>
-          <text x="770.4000000000004" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-21">p</text>
-          <rect x="759.6" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-22" data-start-bit="110" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="781.2" y="550" width="21.63" height="46" class="payload"/>
-          <text x="792.0000000000005" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-22">s</text>
-          <rect x="781.2" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-23" data-start-bit="115" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="802.8" y="550" width="21.63" height="46" class="payload"/>
-          <text x="813.6000000000005" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-23">9</text>
-          <rect x="802.8" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-24" data-start-bit="120" data-bit-count="5" data-fields="payload,payload,payload,payload,payload">
-          <rect x="824.4" y="550" width="21.63" height="46" class="payload"/>
-          <text x="835.2000000000005" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-24">l</text>
-          <rect x="824.4" y="599" width="21.6" height="7" class="payload"/>
-        </g>
-        <g id="cell-p32-25" data-start-bit="125" data-bit-count="5" data-fields="payload,payload,payload,pad,pad">
-          <title>c = 01100; 3 Payload bits, 2 zero bits</title>
-          <rect x="846.0" y="550" width="12.99" height="46" class="payload"/>
-          <rect x="858.96" y="550" width="8.67" height="46" class="pad"/>
-          <text x="856.8000000000005" y="585" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-p32-25">c</text>
-          <rect x="846.0" y="599" width="12.96" height="7" class="payload"/>
-          <rect x="858.96" y="599" width="8.64" height="7" class="pad"/>
-          <rect x="858.96" y="599" width="8.64" height="7" fill="url(#zero-hatch)"/>
-          <line x1="858.9600000000006" y1="599" x2="858.9600000000006" y2="606" class="bg" fill="none" stroke="currentColor" stroke-width="1"/>
-        </g>
-      </g>
-      <text x="1230" y="585" class="ink sans" font-size="23" font-weight="500" id="p32-use">Case-insensitive files &amp; text keys</text>
-      <text x="1230" y="617" class="muted sans" font-size="20" font-weight="400" id="p32-use-note">Time-range queries on the ID</text>
-      <g id="p32-order-chip" aria-label="Ordered¹">
-        <rect x="1740.0" y="557.0" width="131" height="38" rx="5" class="time"/>
-        <text x="1754.0" y="585" class="fg sans" font-size="24" font-weight="600" id="p32-order">Ordered¹</text>
-      </g>
-      <text x="1740.0" y="617" class="muted sans" font-size="19" font-weight="400" id="p32-order-note">Same-case ASCII</text>
-      <text x="1938" y="585" class="ink sans" font-size="23" font-weight="500" id="p32-case">Case-insensitive</text>
-      <title>Base32 alphabet 0–9 a–v; RFC 4648 §7 base32hex. API constant: BASE32HEX.</title>
-      <text x="1230" y="641" id="p32-use-detail" class="muted sans" font-size="20" font-weight="400">+4 characters vs plain base64url</text>
-      <text id="p32-alphabet" x="38" y="641.0" class="muted mono" font-size="18" font-weight="400">0–9 a–v</text>
-    </g>
-    <g id="row-m64" data-representation="m64" transform="translate(0 20)" data-primary-baseline="755" data-row-pitch="124" role="group" aria-labelledby="m64-row-title" aria-describedby="m64-row-description">
-      <title id="m64-row-title">Masked base64url</title>
-      <desc id="m64-row-description">ap225Qa_y6wN5LQCJgwH0z. 22 chars. Hide UUID fields; keep database UUIDs. Matching key + settings recover the UUID. Decode to sort. Case-sensitive. Keep old keys + settings for old links. A–Z a–z 0–9 -_.</desc>
-      <text x="38" y="735" class="masked sans" font-size="25" font-weight="600" id="m64-label">Masked base64url</text>
-      <text x="38" y="767" class="muted sans" font-size="20" font-weight="400" id="m64-label-note" data-line="size">22 chars</text>
-      <g id="specimen-m64" aria-label="ap225Qa_y6wN5LQCJgwH0z" transform="translate(0 4)" aria-hidden="true">
-        <g id="cell-m64-0" data-start-bit="0" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="306.0" y="700" width="21.63" height="46" class="masked"/>
-          <text x="316.8" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-0">a</text>
-          <rect x="306.0" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-1" data-start-bit="6" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="327.6" y="700" width="21.63" height="46" class="masked"/>
-          <text x="338.40000000000003" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-1">p</text>
-          <rect x="327.6" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-2" data-start-bit="12" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="349.2" y="700" width="21.63" height="46" class="masked"/>
-          <text x="360.00000000000006" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-2">2</text>
-          <rect x="349.2" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-3" data-start-bit="18" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="370.8" y="700" width="21.63" height="46" class="masked"/>
-          <text x="381.6000000000001" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-3">2</text>
-          <rect x="370.8" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-4" data-start-bit="24" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="392.4" y="700" width="21.63" height="46" class="masked"/>
-          <text x="403.2000000000001" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-4">5</text>
-          <rect x="392.4" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-5" data-start-bit="30" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="414.0" y="700" width="21.63" height="46" class="masked"/>
-          <text x="424.8000000000001" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-5">Q</text>
-          <rect x="414.0" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-6" data-start-bit="36" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="435.6" y="700" width="21.63" height="46" class="masked"/>
-          <text x="446.40000000000015" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-6">a</text>
-          <rect x="435.6" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-7" data-start-bit="42" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="457.2" y="700" width="21.63" height="46" class="masked"/>
-          <text x="468.00000000000017" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-7">_</text>
-          <rect x="457.2" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-8" data-start-bit="48" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="478.8" y="700" width="21.63" height="46" class="masked"/>
-          <text x="489.6000000000002" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-8">y</text>
-          <rect x="478.8" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-9" data-start-bit="54" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="500.4" y="700" width="21.63" height="46" class="masked"/>
-          <text x="511.2000000000002" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-9">6</text>
-          <rect x="500.4" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-10" data-start-bit="60" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="522.0" y="700" width="21.63" height="46" class="masked"/>
-          <text x="532.8000000000002" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-10">w</text>
-          <rect x="522.0" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-11" data-start-bit="66" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="543.6" y="700" width="21.63" height="46" class="masked"/>
-          <text x="554.4000000000002" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-11">N</text>
-          <rect x="543.6" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-12" data-start-bit="72" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="565.2" y="700" width="21.63" height="46" class="masked"/>
-          <text x="576.0000000000002" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-12">5</text>
-          <rect x="565.2" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-13" data-start-bit="78" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="586.8" y="700" width="21.63" height="46" class="masked"/>
-          <text x="597.6000000000003" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-13">L</text>
-          <rect x="586.8" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-14" data-start-bit="84" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="608.4" y="700" width="21.63" height="46" class="masked"/>
-          <text x="619.2000000000003" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-14">Q</text>
-          <rect x="608.4" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-15" data-start-bit="90" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="630.0" y="700" width="21.63" height="46" class="masked"/>
-          <text x="640.8000000000003" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-15">C</text>
-          <rect x="630.0" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-16" data-start-bit="96" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="651.6" y="700" width="21.63" height="46" class="masked"/>
-          <text x="662.4000000000003" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-16">J</text>
-          <rect x="651.6" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-17" data-start-bit="102" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="673.2" y="700" width="21.63" height="46" class="masked"/>
-          <text x="684.0000000000003" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-17">g</text>
-          <rect x="673.2" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-18" data-start-bit="108" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="694.8" y="700" width="21.63" height="46" class="masked"/>
-          <text x="705.6000000000004" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-18">w</text>
-          <rect x="694.8" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-19" data-start-bit="114" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="716.4" y="700" width="21.63" height="46" class="masked"/>
-          <text x="727.2000000000004" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-19">H</text>
-          <rect x="716.4" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-20" data-start-bit="120" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="738.0" y="700" width="21.63" height="46" class="masked"/>
-          <text x="748.8000000000004" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-20">0</text>
-          <rect x="738.0" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m64-21" data-start-bit="126" data-bit-count="6" data-fields="masked,masked,masked,masked,masked,masked">
-          <rect x="759.6" y="700" width="21.63" height="46" class="masked"/>
-          <text x="770.4000000000004" y="735" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m64-21">z</text>
-          <rect x="759.6" y="749" width="21.6" height="7" class="masked"/>
-        </g>
-      </g>
-      <text x="1230" y="735" class="ink sans" font-size="23" font-weight="500" id="m64-use">Hide UUID fields; keep database UUIDs</text>
-      <text x="1230" y="767" class="muted sans" font-size="20" font-weight="400" id="m64-use-note">Matching key + settings recover the UUID</text>
-      <g id="m64-order-chip" aria-label="None">
-        <rect x="1740.0" y="707.0" width="90" height="38" rx="5" class="masked"/>
-        <text x="1754.0" y="735" class="fg sans" font-size="24" font-weight="600" id="m64-order">None</text>
-      </g>
-      <text x="1755" y="798" class="muted sans" font-size="19" font-weight="400" id="m64-order-note">Decode to sort</text>
-      <text x="1938" y="735" class="ink sans" font-size="23" font-weight="500" id="m64-case">Case-sensitive</text>
-      <line x1="1230" y1="811" x2="2142" y2="811" class="rule" fill="none" stroke="currentColor" stroke-width="0.7" opacity=".45"/>
-      <text x="1230" y="791" id="m64-use-detail" class="muted sans" font-size="20" font-weight="400">Keep old keys + settings for old links</text>
-      <text id="m64-alphabet" x="38" y="791.0" class="muted mono" font-size="18" font-weight="400">A–Z a–z 0–9 -_</text>
-    </g>
-    <g id="row-m32" data-representation="m32" transform="translate(0 24)" data-primary-baseline="879" data-row-pitch="124" role="group" aria-labelledby="m32-row-title" aria-describedby="m32-row-description">
-      <title id="m32-row-title">Masked base32hex</title>
-      <desc id="m32-row-description">daerdp86nv5qo3f4mg12c307qco. 27 chars · lowercase. Masked IDs for case-insensitive files. Same UUID + key + settings → same slug. Case-insensitive. +5 chars; the codec reads either masked alphabet. 0–9 a–v.</desc>
-      <text x="38" y="855" class="masked sans" font-size="25" font-weight="600" id="m32-label">Masked base32hex</text>
-      <text x="38" y="887" class="muted sans" font-size="20" font-weight="400" id="m32-label-note" data-line="size">27 chars · lowercase</text>
-      <g id="specimen-m32" aria-label="daerdp86nv5qo3f4mg12c307qco" transform="translate(0 4)" aria-hidden="true">
-        <g id="cell-m32-0" data-start-bit="0" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="306.0" y="820" width="21.63" height="46" class="masked"/>
-          <text x="316.8" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-0">d</text>
-          <rect x="306.0" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-1" data-start-bit="5" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="327.6" y="820" width="21.63" height="46" class="masked"/>
-          <text x="338.40000000000003" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-1">a</text>
-          <rect x="327.6" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-2" data-start-bit="10" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="349.2" y="820" width="21.63" height="46" class="masked"/>
-          <text x="360.00000000000006" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-2">e</text>
-          <rect x="349.2" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-3" data-start-bit="15" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="370.8" y="820" width="21.63" height="46" class="masked"/>
-          <text x="381.6000000000001" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-3">r</text>
-          <rect x="370.8" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-4" data-start-bit="20" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="392.4" y="820" width="21.63" height="46" class="masked"/>
-          <text x="403.2000000000001" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-4">d</text>
-          <rect x="392.4" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-5" data-start-bit="25" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="414.0" y="820" width="21.63" height="46" class="masked"/>
-          <text x="424.8000000000001" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-5">p</text>
-          <rect x="414.0" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-6" data-start-bit="30" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="435.6" y="820" width="21.63" height="46" class="masked"/>
-          <text x="446.40000000000015" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-6">8</text>
-          <rect x="435.6" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-7" data-start-bit="35" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="457.2" y="820" width="21.63" height="46" class="masked"/>
-          <text x="468.00000000000017" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-7">6</text>
-          <rect x="457.2" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-8" data-start-bit="40" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="478.8" y="820" width="21.63" height="46" class="masked"/>
-          <text x="489.6000000000002" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-8">n</text>
-          <rect x="478.8" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-9" data-start-bit="45" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="500.4" y="820" width="21.63" height="46" class="masked"/>
-          <text x="511.2000000000002" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-9">v</text>
-          <rect x="500.4" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-10" data-start-bit="50" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="522.0" y="820" width="21.63" height="46" class="masked"/>
-          <text x="532.8000000000002" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-10">5</text>
-          <rect x="522.0" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-11" data-start-bit="55" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="543.6" y="820" width="21.63" height="46" class="masked"/>
-          <text x="554.4000000000002" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-11">q</text>
-          <rect x="543.6" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-12" data-start-bit="60" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="565.2" y="820" width="21.63" height="46" class="masked"/>
-          <text x="576.0000000000002" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-12">o</text>
-          <rect x="565.2" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-13" data-start-bit="65" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="586.8" y="820" width="21.63" height="46" class="masked"/>
-          <text x="597.6000000000003" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-13">3</text>
-          <rect x="586.8" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-14" data-start-bit="70" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="608.4" y="820" width="21.63" height="46" class="masked"/>
-          <text x="619.2000000000003" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-14">f</text>
-          <rect x="608.4" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-15" data-start-bit="75" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="630.0" y="820" width="21.63" height="46" class="masked"/>
-          <text x="640.8000000000003" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-15">4</text>
-          <rect x="630.0" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-16" data-start-bit="80" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="651.6" y="820" width="21.63" height="46" class="masked"/>
-          <text x="662.4000000000003" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-16">m</text>
-          <rect x="651.6" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-17" data-start-bit="85" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="673.2" y="820" width="21.63" height="46" class="masked"/>
-          <text x="684.0000000000003" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-17">g</text>
-          <rect x="673.2" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-18" data-start-bit="90" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="694.8" y="820" width="21.63" height="46" class="masked"/>
-          <text x="705.6000000000004" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-18">1</text>
-          <rect x="694.8" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-19" data-start-bit="95" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="716.4" y="820" width="21.63" height="46" class="masked"/>
-          <text x="727.2000000000004" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-19">2</text>
-          <rect x="716.4" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-20" data-start-bit="100" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="738.0" y="820" width="21.63" height="46" class="masked"/>
-          <text x="748.8000000000004" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-20">c</text>
-          <rect x="738.0" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-21" data-start-bit="105" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="759.6" y="820" width="21.63" height="46" class="masked"/>
-          <text x="770.4000000000004" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-21">3</text>
-          <rect x="759.6" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-22" data-start-bit="110" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="781.2" y="820" width="21.63" height="46" class="masked"/>
-          <text x="792.0000000000005" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-22">0</text>
-          <rect x="781.2" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-23" data-start-bit="115" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="802.8" y="820" width="21.63" height="46" class="masked"/>
-          <text x="813.6000000000005" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-23">7</text>
-          <rect x="802.8" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-24" data-start-bit="120" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="824.4" y="820" width="21.63" height="46" class="masked"/>
-          <text x="835.2000000000005" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-24">q</text>
-          <rect x="824.4" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-25" data-start-bit="125" data-bit-count="5" data-fields="masked,masked,masked,masked,masked">
-          <rect x="846.0" y="820" width="21.63" height="46" class="masked"/>
-          <text x="856.8000000000005" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-25">c</text>
-          <rect x="846.0" y="869" width="21.6" height="7" class="masked"/>
-        </g>
-        <g id="cell-m32-26" data-start-bit="130" data-bit-count="5" data-fields="masked,masked,pad,pad,pad">
-          <title>o = 11000; 2 Masked payload bits, 3 zero bits</title>
-          <rect x="867.6" y="820" width="8.67" height="46" class="masked"/>
-          <rect x="876.24" y="820" width="12.99" height="46" class="pad"/>
-          <text x="878.4000000000005" y="855" class="fg mono" font-size="36" font-weight="400" text-anchor="middle" id="glyph-m32-26">o</text>
-          <rect x="867.6" y="869" width="8.64" height="7" class="masked"/>
-          <rect x="876.24" y="869" width="12.96" height="7" class="pad"/>
-          <rect x="876.24" y="869" width="12.96" height="7" fill="url(#zero-hatch)"/>
-          <line x1="876.2400000000006" y1="869" x2="876.2400000000006" y2="876" class="bg" fill="none" stroke="currentColor" stroke-width="1"/>
-        </g>
-      </g>
-      <text x="1230" y="855" class="ink sans" font-size="23" font-weight="500" id="m32-use">Masked IDs for case-insensitive files</text>
-      <text x="1230" y="887" class="muted sans" font-size="20" font-weight="400" id="m32-use-note">Same UUID + key + settings → same slug</text>
-      <g id="m32-order-chip" aria-label="None">
-        <rect x="1740.0" y="827.0" width="90" height="38" rx="5" class="masked"/>
-        <text x="1754.0" y="855" class="fg sans" font-size="24" font-weight="600" id="m32-order">None</text>
-      </g>
-      <text x="1938" y="855" class="ink sans" font-size="23" font-weight="500" id="m32-case">Case-insensitive</text>
-      <title>Base32 alphabet 0–9 a–v; RFC 4648 §7 base32hex. API constant: BASE32HEX.</title>
-      <text x="1230" y="911" id="m32-use-detail" class="muted sans" font-size="20" font-weight="400">+5 chars; the codec reads either masked alphabet</text>
-      <text id="m32-alphabet" x="38" y="911.0" class="muted mono" font-size="18" font-weight="400">0–9 a–v</text>
-    </g>
-  </g>
-  <g id="shared-character-detail">
-    <!--Rendered by build.py from one tested example; do not move the main row geometry to fit it.-->
-    <text x="941" y="421" font-size="19" fill="#F5F7FC" font-weight="600" class="sans">One character, two fields</text>
-    <text x="941" y="446" font-size="18" fill="#C6D0E1" font-weight="400" class="sans">base64url</text>
-    <text x="947" y="477" font-size="28" fill="#F5F7FC" font-weight="400" class="mono">y</text>
-    <rect x="940" y="453" width="32" height="32" fill="none" stroke="#F5F7FC" stroke-width="1.2"/>
-    <rect x="997" y="452" width="23.6" height="32" fill="#FFE83F"/>
-    <text x="1009" y="477" font-size="22" fill="#08111F" font-weight="400" class="mono" text-anchor="middle">1</text>
-    <rect x="1021" y="452" width="23.6" height="32" fill="#FFE83F"/>
-    <text x="1033" y="477" font-size="22" fill="#08111F" font-weight="400" class="mono" text-anchor="middle">1</text>
-    <rect x="1045" y="452" width="23.6" height="32" fill="#FFE83F"/>
-    <text x="1057" y="477" font-size="22" fill="#08111F" font-weight="400" class="mono" text-anchor="middle">0</text>
-    <rect x="1069" y="452" width="23.6" height="32" fill="#FFE83F"/>
-    <text x="1081" y="477" font-size="22" fill="#08111F" font-weight="400" class="mono" text-anchor="middle">0</text>
-    <rect x="1093" y="452" width="23.6" height="32" fill="#4D50FF"/>
-    <text x="1105" y="477" font-size="22" fill="#F5F7FC" font-weight="400" class="mono" text-anchor="middle">1</text>
-    <rect x="1117" y="452" width="23.6" height="32" fill="#4D50FF"/>
-    <text x="1129" y="477" font-size="22" fill="#F5F7FC" font-weight="400" class="mono" text-anchor="middle">0</text>
-    <text x="941" y="511" font-size="18.5" fill="#C6D0E1" font-weight="400" class="sans">4 payload + 2 variant bits</text>
-    <text x="941" y="570" font-size="18" fill="#C6D0E1" font-weight="400" class="sans">base32hex</text>
-    <text x="947" y="601" font-size="28" fill="#F5F7FC" font-weight="400" class="mono">h</text>
-    <rect x="940" y="577" width="32" height="32" fill="none" stroke="#F5F7FC" stroke-width="1.2"/>
-    <rect x="997" y="576" width="23.6" height="32" fill="#00C8FF"/>
-    <text x="1009" y="601" font-size="22" fill="#08111F" font-weight="400" class="mono" text-anchor="middle">1</text>
-    <rect x="1021" y="576" width="23.6" height="32" fill="#00C8FF"/>
-    <text x="1033" y="601" font-size="22" fill="#08111F" font-weight="400" class="mono" text-anchor="middle">0</text>
-    <rect x="1045" y="576" width="23.6" height="32" fill="#00C8FF"/>
-    <text x="1057" y="601" font-size="22" fill="#08111F" font-weight="400" class="mono" text-anchor="middle">0</text>
-    <rect x="1069" y="576" width="23.6" height="32" fill="#FF49CD"/>
-    <text x="1081" y="601" font-size="22" fill="#08111F" font-weight="400" class="mono" text-anchor="middle">0</text>
-    <rect x="1093" y="576" width="23.6" height="32" fill="#FF49CD"/>
-    <text x="1105" y="601" font-size="22" fill="#08111F" font-weight="400" class="mono" text-anchor="middle">1</text>
-    <text x="941" y="635" font-size="18.5" fill="#C6D0E1" font-weight="400" class="sans">3 timestamp + 2 version bits</text>
-  </g>
-  <g id="mask-process" transform="translate(898 715)" class="avalanche" role="group" aria-labelledby="avalanche-title" aria-describedby="avalanche-description" data-width="300" data-height="224">
-    <title id="avalanche-title">Masking: avalanche effect</title>
-    <desc id="avalanche-description">The last UUID byte changes from 10101011 to 10101010: one bit flips. With the same key and settings, all 16 bytes of the mixed output block change for this example. Orange squares each represent one changed output byte. 62 of the block’s 128 bits flip; the remaining 66 do not. The four outer check bits are separate and are not drawn as a seventeenth byte. Branches show influence, not actual cipher wiring.</desc>
-    <!--Selected fan-out layout, native 300 x 224. Input is the real final byte (AB to AA), not a full-UUID schematic. Each output square is one of the 16 mixed-block bytes; the 4 outer check bits are excluded from this byte count. All 16 changed for this pair; do not generalize that count to every edit. See metadata/example for the values.-->
-    <text x="12" y="23" class="av-title" id="avalanche-heading">Masking: avalanche effect</text>
-    <text x="12" y="43" class="av-note" id="avalanche-input-label">Last UUID byte · one-bit edit</text>
-    <g id="avalanche-input" aria-label="Before and after the one-bit change">
-      <g id="avalanche-input-before" data-byte-hex="ab">
-        <text x="12" y="68" class="av-label">Before</text>
-        <g id="avalanche-before-bit-0" data-bit-position="120" data-bit="1" data-changed="false">
-          <rect x="78" y="54" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="89" y="68" text-anchor="middle" class="av-bit">1</text>
-        </g>
-        <g id="avalanche-before-bit-1" data-bit-position="121" data-bit="0" data-changed="false">
-          <rect x="104" y="54" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="115" y="68" text-anchor="middle" class="av-bit">0</text>
-        </g>
-        <g id="avalanche-before-bit-2" data-bit-position="122" data-bit="1" data-changed="false">
-          <rect x="130" y="54" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="141" y="68" text-anchor="middle" class="av-bit">1</text>
-        </g>
-        <g id="avalanche-before-bit-3" data-bit-position="123" data-bit="0" data-changed="false">
-          <rect x="156" y="54" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="167" y="68" text-anchor="middle" class="av-bit">0</text>
-        </g>
-        <g id="avalanche-before-bit-4" data-bit-position="124" data-bit="1" data-changed="false">
-          <rect x="182" y="54" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="193" y="68" text-anchor="middle" class="av-bit">1</text>
-        </g>
-        <g id="avalanche-before-bit-5" data-bit-position="125" data-bit="0" data-changed="false">
-          <rect x="208" y="54" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="219" y="68" text-anchor="middle" class="av-bit">0</text>
-        </g>
-        <g id="avalanche-before-bit-6" data-bit-position="126" data-bit="1" data-changed="false">
-          <rect x="234" y="54" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="245" y="68" text-anchor="middle" class="av-bit">1</text>
-        </g>
-        <g id="avalanche-before-bit-7" data-bit-position="127" data-bit="1" data-changed="false">
-          <rect x="260" y="54" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="271" y="68" text-anchor="middle" class="av-bit">1</text>
-        </g>
-      </g>
-      <g id="avalanche-input-after" data-byte-hex="aa">
-        <text x="12" y="90" class="av-label">After</text>
-        <g id="avalanche-after-bit-0" data-bit-position="120" data-bit="1" data-changed="false">
-          <rect x="78" y="76" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="89" y="90" text-anchor="middle" class="av-bit">1</text>
-        </g>
-        <g id="avalanche-after-bit-1" data-bit-position="121" data-bit="0" data-changed="false">
-          <rect x="104" y="76" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="115" y="90" text-anchor="middle" class="av-bit">0</text>
-        </g>
-        <g id="avalanche-after-bit-2" data-bit-position="122" data-bit="1" data-changed="false">
-          <rect x="130" y="76" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="141" y="90" text-anchor="middle" class="av-bit">1</text>
-        </g>
-        <g id="avalanche-after-bit-3" data-bit-position="123" data-bit="0" data-changed="false">
-          <rect x="156" y="76" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="167" y="90" text-anchor="middle" class="av-bit">0</text>
-        </g>
-        <g id="avalanche-after-bit-4" data-bit-position="124" data-bit="1" data-changed="false">
-          <rect x="182" y="76" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="193" y="90" text-anchor="middle" class="av-bit">1</text>
-        </g>
-        <g id="avalanche-after-bit-5" data-bit-position="125" data-bit="0" data-changed="false">
-          <rect x="208" y="76" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="219" y="90" text-anchor="middle" class="av-bit">0</text>
-        </g>
-        <g id="avalanche-after-bit-6" data-bit-position="126" data-bit="1" data-changed="false">
-          <rect x="234" y="76" width="22" height="18" rx="1.2" class="av-unchanged"/>
-          <text x="245" y="90" text-anchor="middle" class="av-bit">1</text>
-        </g>
-        <g id="avalanche-after-bit-7" data-bit-position="127" data-bit="0" data-changed="true">
-          <rect x="260" y="76" width="22" height="18" rx="1.2" class="av-changed"/>
-          <text x="271" y="90" text-anchor="middle" class="av-bit av-dark-bit">0</text>
-        </g>
-      </g>
-    </g>
-    <path id="avalanche-input-link" d="M271 95V99H150V103" marker-end="url(#avalanche-arrow)" class="av-edge" aria-hidden="true"/>
-    <g id="avalanche-mixing" aria-label="Mask again with the same key and settings">
-      <rect x="70" y="104" width="160" height="34" rx="4" class="bg" stroke="#FF921C" stroke-width="1.2"/>
-      <text x="150" y="118" text-anchor="middle" class="ink sans" font-size="14.5" font-weight="600">Masking</text>
-      <text x="150" y="132" text-anchor="middle" class="muted sans" font-size="12.5">Same key and settings</text>
-    </g>
-    <g id="avalanche-fan-out" aria-hidden="true">
-      <path id="avalanche-influence-0" d="M150 139C150 150 18.2 149 18.2 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-1" d="M150 139C150 150 35.6 149 35.6 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-2" d="M150 139C150 150 53.0 149 53.0 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-3" d="M150 139C150 150 70.4 149 70.4 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-4" d="M150 139C150 150 87.8 149 87.8 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-5" d="M150 139C150 150 105.2 149 105.2 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-6" d="M150 139C150 150 122.6 149 122.6 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-7" d="M150 139C150 150 140.0 149 140.0 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-8" d="M150 139C150 150 157.4 149 157.4 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-9" d="M150 139C150 150 174.8 149 174.8 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-10" d="M150 139C150 150 192.2 149 192.2 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-11" d="M150 139C150 150 209.6 149 209.6 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-12" d="M150 139C150 150 227.0 149 227.0 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-13" d="M150 139C150 150 244.4 149 244.4 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-14" d="M150 139C150 150 261.8 149 261.8 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-      <path id="avalanche-influence-15" d="M150 139C150 150 279.2 149 279.2 162" marker-end="url(#avalanche-arrow)" class="av-edge"/>
-    </g>
-    <g id="avalanche-output-bytes" aria-label="All 16 output bytes differ in this example">
-      <g id="avalanche-output-byte-0" data-byte-index="0" data-before-hex="6a" data-after-hex="84" data-xor-hex="ee" data-changed="true">
-        <title>Byte 1: 6a to 84; 6 of 8 bits change</title>
-        <rect x="12.0" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-1" data-byte-index="1" data-before-hex="9d" data-after-hex="01" data-xor-hex="9c" data-changed="true">
-        <title>Byte 2: 9d to 01; 4 of 8 bits change</title>
-        <rect x="29.4" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-2" data-byte-index="2" data-before-hex="b6" data-after-hex="de" data-xor-hex="68" data-changed="true">
-        <title>Byte 3: b6 to de; 3 of 8 bits change</title>
-        <rect x="46.8" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-3" data-byte-index="3" data-before-hex="e5" data-after-hex="44" data-xor-hex="a1" data-changed="true">
-        <title>Byte 4: e5 to 44; 3 of 8 bits change</title>
-        <rect x="64.2" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-4" data-byte-index="4" data-before-hex="06" data-after-hex="f9" data-xor-hex="ff" data-changed="true">
-        <title>Byte 5: 06 to f9; 8 of 8 bits change</title>
-        <rect x="81.6" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-5" data-byte-index="5" data-before-hex="bf" data-after-hex="89" data-xor-hex="36" data-changed="true">
-        <title>Byte 6: bf to 89; 4 of 8 bits change</title>
-        <rect x="99.0" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-6" data-byte-index="6" data-before-hex="cb" data-after-hex="16" data-xor-hex="dd" data-changed="true">
-        <title>Byte 7: cb to 16; 6 of 8 bits change</title>
-        <rect x="116.4" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-7" data-byte-index="7" data-before-hex="ac" data-after-hex="a8" data-xor-hex="04" data-changed="true">
-        <title>Byte 8: ac to a8; 1 of 8 bits change</title>
-        <rect x="133.8" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-8" data-byte-index="8" data-before-hex="0d" data-after-hex="ce" data-xor-hex="c3" data-changed="true">
-        <title>Byte 9: 0d to ce; 4 of 8 bits change</title>
-        <rect x="151.2" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-9" data-byte-index="9" data-before-hex="e4" data-after-hex="b9" data-xor-hex="5d" data-changed="true">
-        <title>Byte 10: e4 to b9; 5 of 8 bits change</title>
-        <rect x="168.6" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-10" data-byte-index="10" data-before-hex="b4" data-after-hex="75" data-xor-hex="c1" data-changed="true">
-        <title>Byte 11: b4 to 75; 3 of 8 bits change</title>
-        <rect x="186.0" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-11" data-byte-index="11" data-before-hex="02" data-after-hex="10" data-xor-hex="12" data-changed="true">
-        <title>Byte 12: 02 to 10; 2 of 8 bits change</title>
-        <rect x="203.4" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-12" data-byte-index="12" data-before-hex="26" data-after-hex="9e" data-xor-hex="b8" data-changed="true">
-        <title>Byte 13: 26 to 9e; 4 of 8 bits change</title>
-        <rect x="220.8" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-13" data-byte-index="13" data-before-hex="0c" data-after-hex="19" data-xor-hex="15" data-changed="true">
-        <title>Byte 14: 0c to 19; 3 of 8 bits change</title>
-        <rect x="238.2" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-14" data-byte-index="14" data-before-hex="07" data-after-hex="63" data-xor-hex="64" data-changed="true">
-        <title>Byte 15: 07 to 63; 3 of 8 bits change</title>
-        <rect x="255.6" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-      <g id="avalanche-output-byte-15" data-byte-index="15" data-before-hex="d3" data-after-hex="81" data-xor-hex="52" data-changed="true">
-        <title>Byte 16: d3 to 81; 3 of 8 bits change</title>
-        <rect x="273.0" y="165" width="12.4" height="13" rx="1.2" class="av-changed"/>
-      </g>
-    </g>
-    <text id="avalanche-result" x="12" y="198" class="av-result">All 16 output bytes change</text>
-    <text id="avalanche-result-scope" x="12" y="218" class="av-scope">In this example. Not every bit flips.</text>
-  </g>
-  <g id="notes">
-    <!--Ordering is scoped to encoded UUIDv7 time. The nearby-prefix benefit of base64url is retained without implying a universal sorting-accuracy percentage.-->
-    <line x1="38" y1="672" x2="2142" y2="672" class="masked" fill="none" stroke="currentColor" stroke-width="1.3"/>
-    <text x="38" y="700" class="masked sans" font-size="20" font-weight="600">Plain and masked base64url can look identical. Choose the reader for the format you issued.</text>
-    <text x="2142" y="700" class="muted sans" font-size="19" font-weight="400" text-anchor="end">Mask examples use a public demo key</text>
-    <line x1="38" y1="954" x2="2142" y2="954" class="rule" fill="none" stroke="currentColor" stroke-width="1.2"/>
-    <text x="38" y="988" class="muted sans" font-size="21" font-weight="400">¹ Encoded milliseconds, not event order; sort one case/alphabet.  ² Nearby times share prefixes; ASCII can reverse adjacent milliseconds.</text>
-    <text x="38" y="1022" class="muted sans" font-size="21" font-weight="400">Compare decoded UUIDs, not spellings. Masking: 16-bit check; wrong keys can return another UUID · time must fit the configured ~139-year range · not strong encryption.</text>
-    <path id="masked-order-shared" d="M1740 770 H1733 V852 H1740" fill="none" stroke="#9EAEC5" stroke-width="1.2"/>
-  </g>
-  <g id="source-reference-p64" data-reference-character="10">
-    <rect x="521.3" y="441" width="23" height="48" fill="none" stroke="#F5F7FC" stroke-width="1.4"/>
-  </g>
-  <g id="source-reference-p32" data-reference-character="9">
-    <rect x="499.7" y="565" width="23" height="48" fill="none" stroke="#F5F7FC" stroke-width="1.4"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="1610" viewBox="0 0 1100 1610" role="img" aria-labelledby="t d">
+<!-- Generated by scripts/readme-diagram.ts; edit that script, not this file. -->
+<title id="t">One UUIDv7, six representations</title>
+<desc id="d">The UUIDv7 0198abcd-1234-7abc-9def-0123456789ab as UUID text, 16 bytes, plain base64url AZirzRI0eryd7wEjRWeJqw, plain base32hex 06canj8i6htbp7ff04hkaps9lc, masked base64url ap225Qa_y6wN5LQCJgwH0z and masked base32hex daerdp86nv5qo3f4mg12c307qco, with what each form is for, how it sorts and whether case matters. Flipping the last UUID bit changes 22 of 22 masked base64url characters (hAHeRPmJFqjOuXUQnhljgb).</desc>
+<style>
+.bg{fill:#0B1423}.ink{fill:#F5F7FC}.muted{fill:#C6D0E1}.box{fill:#15243A}.same{fill:#24344D}
+.pkg{fill:#8CCFB4}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
+.time{color:#00C8FF}.version{color:#FF49CD}.variant{color:#4D50FF}.payload{color:#FFE83F}
+.masked{color:#FF921C}.pad{color:#8C9DB6}.f{fill:currentColor}.fg{fill:#08111F}.fw{fill:#FFFFFF}
+.sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-variant-ligatures:none}
+.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1}.lead{color:#C6D0E1}</style>
+<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
+<rect width="100%" height="100%" class="bg"/>
+<path class="ghost time" d="M36 260C36 266 36 266 36 272L280.8 272C280.8 266 280.8 266 280.8 260Z"/>
+<path class="ghost version" d="M280.8 260C280.8 266 280.8 266 280.8 272L312.3 272C312.3 266 312.3 266 312.3 260Z"/>
+<path class="ghost payload" d="M312.3 260C312.3 266 312.3 266 312.3 272L370.5 272C370.5 266 370.5 266 370.5 260Z"/>
+<path class="ghost variant" d="M370.5 260C370.5 266 370.5 266 370.5 272L392.2 272C392.2 266 392.2 266 392.2 260Z"/>
+<path class="ghost payload" d="M392.2 260C392.2 266 392.2 266 392.2 272L704.9 272C704.9 266 704.9 266 704.9 260Z"/>
+<path class="ghost time" d="M36 312C36 456 36 456 36 600L191.2 600C191.2 456 280.8 456 280.8 312Z"/>
+<path class="ghost version" d="M280.8 312C280.8 456 191.2 456 191.2 600L204.1 600C204.1 456 312.3 456 312.3 312Z"/>
+<path class="ghost payload" d="M312.3 312C312.3 456 204.1 456 204.1 600L242.9 600C242.9 456 370.5 456 370.5 312Z"/>
+<path class="ghost variant" d="M370.5 312C370.5 456 242.9 456 242.9 600L249.4 600C249.4 456 392.2 456 392.2 312Z"/>
+<path class="ghost payload" d="M392.2 312C392.2 456 249.4 456 249.4 600L449.9 600C449.9 456 704.9 456 704.9 312Z"/>
+<path class="ghost time" d="M36 644C36 714.5 36 714.5 36 785L222.2 785C222.2 714.5 191.2 714.5 191.2 644Z"/>
+<path class="ghost version" d="M191.2 644C191.2 714.5 222.2 714.5 222.2 785L237.8 785C237.8 714.5 204.1 714.5 204.1 644Z"/>
+<path class="ghost payload" d="M204.1 644C204.1 714.5 237.8 714.5 237.8 785L284.3 785C284.3 714.5 242.9 714.5 242.9 644Z"/>
+<path class="ghost variant" d="M242.9 644C242.9 714.5 284.3 714.5 284.3 785L292.1 785C292.1 714.5 249.4 714.5 249.4 644Z"/>
+<path class="ghost payload" d="M249.4 644C249.4 714.5 292.1 714.5 292.1 785L532.6 785C532.6 714.5 449.9 714.5 449.9 644Z"/>
+<text x="36" y="50" class="ink sans" font-size="34" font-weight="600">One UUIDv7, six representations</text>
+<text x="1064" y="50" class="pkg sans" font-size="20" font-weight="600" text-anchor="end">@anizoptera/uuid-slug</text>
+<text x="36" y="82" class="muted sans" font-size="18">Store one UUID. Every form below converts back to it losslessly (masked ones with your key). No mapping table.</text>
+<rect x="36" y="104" width="13" height="13" class="time f" rx="2"/>
+<text x="55" y="116" class="ink sans" font-size="16" font-weight="500">Timestamp</text>
+<rect x="144.1" y="104" width="13" height="13" class="version f" rx="2"/>
+<text x="163.1" y="116" class="ink sans" font-size="16" font-weight="500">Version</text>
+<rect x="236.5" y="104" width="13" height="13" class="variant f" rx="2"/>
+<text x="255.5" y="116" class="ink sans" font-size="16" font-weight="500">Variant</text>
+<rect x="328.8" y="104" width="13" height="13" class="payload f" rx="2"/>
+<text x="347.8" y="116" class="ink sans" font-size="16" font-weight="500">Payload (random or counter)</text>
+<rect x="579.2" y="104" width="13" height="13" class="masked f" rx="2"/>
+<text x="598.2" y="116" class="ink sans" font-size="16" font-weight="500">Masked</text>
+<rect x="663.6" y="104" width="13" height="13" class="pad f" rx="2"/>
+<rect x="663.6" y="104" width="13" height="13" class="" fill="url(#hatch)"/>
+<text x="682.6" y="116" class="ink sans" font-size="16" font-weight="500">Padding (zeros)</text>
+<text x="1064" y="116" class="muted sans" font-size="16" text-anchor="end">All text forms are URL-safe.</text>
+<path d="M36 136H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1.2"/>
+<text x="36" y="164" class="accent sans" font-size="16" font-weight="700">THE UUID · any version · 128 bits</text>
+<text x="36" y="202" class="ink sans" font-size="24" font-weight="600">UUID</text>
+<text x="286" y="202" class="muted sans" font-size="16">36 characters as text · 16 bytes in binary</text>
+<text x="790" y="234" class="accent sans" font-size="17" font-weight="700">Text</text>
+<text x="790" y="256" class="muted sans" font-size="16">36 chars · lowercase</text>
+<rect x="36.8" y="216" width="17.9" height="44" class="time f"/>
+<text x="45.7" y="248.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="56.2" y="216" width="17.9" height="44" class="time f"/>
+<text x="65.1" y="248.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect x="75.6" y="216" width="17.9" height="44" class="time f"/>
+<text x="84.5" y="248.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
+<rect x="94.9" y="216" width="17.9" height="44" class="time f"/>
+<text x="103.9" y="248.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect x="114.4" y="216" width="17.9" height="44" class="time f"/>
+<text x="123.3" y="248.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="133.8" y="216" width="17.9" height="44" class="time f"/>
+<text x="142.7" y="248.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<rect x="153.2" y="216" width="17.9" height="44" class="time f"/>
+<text x="162.1" y="248.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="172.6" y="216" width="17.9" height="44" class="time f"/>
+<text x="181.5" y="248.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect x="193.2" y="236.5" width="8" height="3" class="muted"/>
+<rect x="204" y="216" width="17.9" height="44" class="time f"/>
+<text x="212.9" y="248.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect x="223.4" y="216" width="17.9" height="44" class="time f"/>
+<text x="232.3" y="248.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect x="242.8" y="216" width="17.9" height="44" class="time f"/>
+<text x="251.7" y="248.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect x="262.2" y="216" width="17.9" height="44" class="time f"/>
+<text x="271.1" y="248.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect x="282.8" y="236.5" width="8" height="3" class="muted"/>
+<rect x="293.6" y="216" width="17.9" height="44" class="version f"/>
+<text x="302.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect x="313" y="216" width="17.9" height="44" class="payload f"/>
+<text x="322" y="248.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="332.4" y="216" width="17.9" height="44" class="payload f"/>
+<text x="341.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<rect x="351.8" y="216" width="17.9" height="44" class="payload f"/>
+<text x="360.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="372.5" y="236.5" width="8" height="3" class="muted"/>
+<rect x="383.2" y="216" width="9" height="44" class="variant f"/>
+<rect x="392.2" y="216" width="9" height="44" class="payload f"/>
+<clipPath id="k1"><rect x="383.2" y="216" width="9" height="44"/></clipPath><g clip-path="url(#k1)">
+<text x="392.2" y="248.5" class="fw mono" font-size="30" text-anchor="middle">9</text>
+</g>
+<clipPath id="k2"><rect x="392.2" y="216" width="9" height="44"/></clipPath><g clip-path="url(#k2)">
+<text x="392.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
+</g>
+<rect x="402.6" y="216" width="17.9" height="44" class="payload f"/>
+<text x="411.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect x="422" y="216" width="17.9" height="44" class="payload f"/>
+<text x="431" y="248.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect x="441.4" y="216" width="17.9" height="44" class="payload f"/>
+<text x="450.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect x="462.1" y="236.5" width="8" height="3" class="muted"/>
+<rect x="472.9" y="216" width="17.9" height="44" class="payload f"/>
+<text x="481.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="492.3" y="216" width="17.9" height="44" class="payload f"/>
+<text x="501.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect x="511.7" y="216" width="17.9" height="44" class="payload f"/>
+<text x="520.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect x="531.1" y="216" width="17.9" height="44" class="payload f"/>
+<text x="540" y="248.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect x="550.5" y="216" width="17.9" height="44" class="payload f"/>
+<text x="559.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect x="569.9" y="216" width="17.9" height="44" class="payload f"/>
+<text x="578.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect x="589.3" y="216" width="17.9" height="44" class="payload f"/>
+<text x="598.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect x="608.7" y="216" width="17.9" height="44" class="payload f"/>
+<text x="617.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect x="628.1" y="216" width="17.9" height="44" class="payload f"/>
+<text x="637" y="248.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect x="647.5" y="216" width="17.9" height="44" class="payload f"/>
+<text x="656.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
+<rect x="666.9" y="216" width="17.9" height="44" class="payload f"/>
+<text x="675.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="686.3" y="216" width="17.9" height="44" class="payload f"/>
+<text x="695.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<text x="790" y="290" class="accent sans" font-size="17" font-weight="700">Bytes</text>
+<text x="790" y="312" class="muted sans" font-size="16">16 bytes, binary, same order</text>
+<rect x="37" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="55.4" y="298" class="ink mono" font-size="21" text-anchor="middle">01</text>
+<rect x="37" y="306" width="4.6" height="6" class="time f"/>
+<rect x="41.6" y="306" width="4.6" height="6" class="time f"/>
+<rect x="46.2" y="306" width="4.6" height="6" class="time f"/>
+<rect x="50.8" y="306" width="4.6" height="6" class="time f"/>
+<rect x="55.4" y="306" width="4.6" height="6" class="time f"/>
+<rect x="60" y="306" width="4.6" height="6" class="time f"/>
+<rect x="64.6" y="306" width="4.6" height="6" class="time f"/>
+<rect x="69.2" y="306" width="4.6" height="6" class="time f"/>
+<rect x="75.8" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="94.2" y="298" class="ink mono" font-size="21" text-anchor="middle">98</text>
+<rect x="75.8" y="306" width="4.6" height="6" class="time f"/>
+<rect x="80.4" y="306" width="4.6" height="6" class="time f"/>
+<rect x="85" y="306" width="4.6" height="6" class="time f"/>
+<rect x="89.6" y="306" width="4.6" height="6" class="time f"/>
+<rect x="94.2" y="306" width="4.6" height="6" class="time f"/>
+<rect x="98.8" y="306" width="4.6" height="6" class="time f"/>
+<rect x="103.4" y="306" width="4.6" height="6" class="time f"/>
+<rect x="108" y="306" width="4.6" height="6" class="time f"/>
+<rect x="114.6" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="133" y="298" class="ink mono" font-size="21" text-anchor="middle">ab</text>
+<rect x="114.6" y="306" width="4.6" height="6" class="time f"/>
+<rect x="119.2" y="306" width="4.6" height="6" class="time f"/>
+<rect x="123.8" y="306" width="4.6" height="6" class="time f"/>
+<rect x="128.4" y="306" width="4.6" height="6" class="time f"/>
+<rect x="133" y="306" width="4.6" height="6" class="time f"/>
+<rect x="137.6" y="306" width="4.6" height="6" class="time f"/>
+<rect x="142.2" y="306" width="4.6" height="6" class="time f"/>
+<rect x="146.8" y="306" width="4.6" height="6" class="time f"/>
+<rect x="153.4" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="171.8" y="298" class="ink mono" font-size="21" text-anchor="middle">cd</text>
+<rect x="153.4" y="306" width="4.6" height="6" class="time f"/>
+<rect x="158" y="306" width="4.6" height="6" class="time f"/>
+<rect x="162.6" y="306" width="4.6" height="6" class="time f"/>
+<rect x="167.2" y="306" width="4.6" height="6" class="time f"/>
+<rect x="171.8" y="306" width="4.6" height="6" class="time f"/>
+<rect x="176.4" y="306" width="4.6" height="6" class="time f"/>
+<rect x="181" y="306" width="4.6" height="6" class="time f"/>
+<rect x="185.6" y="306" width="4.6" height="6" class="time f"/>
+<rect x="204.2" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="222.6" y="298" class="ink mono" font-size="21" text-anchor="middle">12</text>
+<rect x="204.2" y="306" width="4.6" height="6" class="time f"/>
+<rect x="208.8" y="306" width="4.6" height="6" class="time f"/>
+<rect x="213.4" y="306" width="4.6" height="6" class="time f"/>
+<rect x="218" y="306" width="4.6" height="6" class="time f"/>
+<rect x="222.6" y="306" width="4.6" height="6" class="time f"/>
+<rect x="227.2" y="306" width="4.6" height="6" class="time f"/>
+<rect x="231.8" y="306" width="4.6" height="6" class="time f"/>
+<rect x="236.4" y="306" width="4.6" height="6" class="time f"/>
+<rect x="243" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="261.4" y="298" class="ink mono" font-size="21" text-anchor="middle">34</text>
+<rect x="243" y="306" width="4.6" height="6" class="time f"/>
+<rect x="247.6" y="306" width="4.6" height="6" class="time f"/>
+<rect x="252.2" y="306" width="4.6" height="6" class="time f"/>
+<rect x="256.8" y="306" width="4.6" height="6" class="time f"/>
+<rect x="261.4" y="306" width="4.6" height="6" class="time f"/>
+<rect x="266" y="306" width="4.6" height="6" class="time f"/>
+<rect x="270.6" y="306" width="4.6" height="6" class="time f"/>
+<rect x="275.2" y="306" width="4.6" height="6" class="time f"/>
+<rect x="293.9" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="312.3" y="298" class="ink mono" font-size="21" text-anchor="middle">7a</text>
+<rect x="293.9" y="306" width="4.6" height="6" class="version f"/>
+<rect x="298.5" y="306" width="4.6" height="6" class="version f"/>
+<rect x="303.1" y="306" width="4.6" height="6" class="version f"/>
+<rect x="307.7" y="306" width="4.6" height="6" class="version f"/>
+<rect x="312.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="316.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="321.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="326.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="332.7" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="351.1" y="298" class="ink mono" font-size="21" text-anchor="middle">bc</text>
+<rect x="332.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="337.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="341.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="346.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="351.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="355.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="360.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="364.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="383.5" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="401.9" y="298" class="ink mono" font-size="21" text-anchor="middle">9d</text>
+<rect x="383.5" y="306" width="4.6" height="6" class="variant f"/>
+<rect x="388.1" y="306" width="4.6" height="6" class="variant f"/>
+<rect x="392.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="397.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="401.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="406.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="411.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="415.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="422.3" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="440.7" y="298" class="ink mono" font-size="21" text-anchor="middle">ef</text>
+<rect x="422.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="426.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="431.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="436.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="440.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="445.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="449.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="454.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="473.1" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="491.5" y="298" class="ink mono" font-size="21" text-anchor="middle">01</text>
+<rect x="473.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="477.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="482.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="486.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="491.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="496.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="500.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="505.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="511.9" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="530.3" y="298" class="ink mono" font-size="21" text-anchor="middle">23</text>
+<rect x="511.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="516.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="521.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="525.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="530.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="534.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="539.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="544.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="550.7" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="569.1" y="298" class="ink mono" font-size="21" text-anchor="middle">45</text>
+<rect x="550.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="555.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="559.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="564.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="569.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="573.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="578.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="582.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="589.5" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="607.9" y="298" class="ink mono" font-size="21" text-anchor="middle">67</text>
+<rect x="589.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="594.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="598.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="603.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="607.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="612.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="617.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="621.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="628.3" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="646.7" y="298" class="ink mono" font-size="21" text-anchor="middle">89</text>
+<rect x="628.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="632.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="637.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="642.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="646.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="651.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="655.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="660.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="667.1" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
+<text x="685.5" y="298" class="ink mono" font-size="21" text-anchor="middle">ab</text>
+<rect x="667.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="671.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="676.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="680.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="685.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="690.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="694.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect x="699.3" y="306" width="4.6" height="6" class="payload f"/>
+<path d="M36 318v6H280.8v-6" class="time" fill="none" stroke="currentColor" stroke-width="2"/>
+<text x="36" y="344" class="time f sans" font-size="16" font-weight="600">UUIDv7 48-bit timestamp: 1755229000244 ms = 2025-08-15 03:36:40.244 UTC</text>
+<text x="36" y="372" class="accent sans" font-size="17" font-weight="700">Text</text>
+<text x="100" y="372" class="ink sans" font-size="17" font-weight="600">For UUID columns and UUID-only APIs.</text>
+<text x="100" y="398" class="key sans" font-size="16">Sort</text>
+<text x="142" y="398" class="ink sans" font-size="17" font-weight="600">by time¹</text>
+<text x="430" y="398" class="key sans" font-size="16">Case</text>
+<text x="476" y="398" class="ink sans" font-size="17" font-weight="600">any accepted</text>
+<text x="100" y="420" class="muted sans" font-size="17">Time-range queries on UUIDv7 keys.</text>
+<text x="36" y="455" class="accent sans" font-size="17" font-weight="700">Bytes</text>
+<text x="100" y="455" class="ink sans" font-size="17" font-weight="600">For binary storage and transport.</text>
+<text x="100" y="481" class="key sans" font-size="16">Sort</text>
+<text x="142" y="481" class="ink sans" font-size="17" font-weight="600">by time¹ (byte order)</text>
+<text x="430" y="481" class="key sans" font-size="16">Case</text>
+<text x="476" y="481" class="ink sans" font-size="17" font-weight="600">none (binary)</text>
+<text x="100" y="503" class="muted sans" font-size="17">Generate or decode straight into your buffer; errors leave it unchanged.</text>
+<path d="M36 520H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1.2"/>
+<text x="36" y="548" class="accent sans" font-size="16" font-weight="700">PLAIN SLUGS · any UUID · no key · the same 128 bits in fewer characters</text>
+<text x="790" y="586" class="accent sans" font-size="17" font-weight="700">One character, two fields</text>
+<text x="36" y="586" class="ink sans" font-size="24" font-weight="600">Plain base64url</text>
+<text x="286" y="586" class="muted sans" font-size="16">22 chars · A–Z a–z 0–9 - _ · 6 bits each</text>
+<rect x="36.8" y="600" width="17.9" height="44" class="time f"/>
+<text x="45.7" y="632.5" class="fg mono" font-size="30" text-anchor="middle">A</text>
+<rect x="56.2" y="600" width="17.9" height="44" class="time f"/>
+<text x="65.1" y="632.5" class="fg mono" font-size="30" text-anchor="middle">Z</text>
+<rect x="75.6" y="600" width="17.9" height="44" class="time f"/>
+<text x="84.5" y="632.5" class="fg mono" font-size="30" text-anchor="middle">i</text>
+<rect x="94.9" y="600" width="17.9" height="44" class="time f"/>
+<text x="103.9" y="632.5" class="fg mono" font-size="30" text-anchor="middle">r</text>
+<rect x="114.4" y="600" width="17.9" height="44" class="time f"/>
+<text x="123.3" y="632.5" class="fg mono" font-size="30" text-anchor="middle">z</text>
+<rect x="133.8" y="600" width="17.9" height="44" class="time f"/>
+<text x="142.7" y="632.5" class="fg mono" font-size="30" text-anchor="middle">R</text>
+<rect x="153.2" y="600" width="17.9" height="44" class="time f"/>
+<text x="162.1" y="632.5" class="fg mono" font-size="30" text-anchor="middle">I</text>
+<rect x="172.6" y="600" width="17.9" height="44" class="time f"/>
+<text x="181.5" y="632.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="192" y="600" width="11.9" height="44" class="version f"/>
+<rect x="203.9" y="600" width="6" height="44" class="payload f"/>
+<text x="200.9" y="632.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect x="211.4" y="600" width="17.9" height="44" class="payload f"/>
+<text x="220.3" y="632.5" class="fg mono" font-size="30" text-anchor="middle">r</text>
+<rect x="230.8" y="600" width="11.9" height="44" class="payload f"/>
+<rect x="242.7" y="600" width="6" height="44" class="variant f"/>
+<clipPath id="k3"><rect x="230.8" y="600" width="11.9" height="44"/></clipPath><g clip-path="url(#k3)">
+<text x="239.7" y="632.5" class="fg mono" font-size="30" text-anchor="middle">y</text>
+</g>
+<clipPath id="k4"><rect x="242.7" y="600" width="6" height="44"/></clipPath><g clip-path="url(#k4)">
+<text x="239.7" y="632.5" class="fw mono" font-size="30" text-anchor="middle">y</text>
+</g>
+<rect x="250.2" y="600" width="17.9" height="44" class="payload f"/>
+<text x="259.1" y="632.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect x="269.6" y="600" width="17.9" height="44" class="payload f"/>
+<text x="278.5" y="632.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect x="289" y="600" width="17.9" height="44" class="payload f"/>
+<text x="297.9" y="632.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
+<rect x="308.3" y="600" width="17.9" height="44" class="payload f"/>
+<text x="317.3" y="632.5" class="fg mono" font-size="30" text-anchor="middle">E</text>
+<rect x="327.7" y="600" width="17.9" height="44" class="payload f"/>
+<text x="336.7" y="632.5" class="fg mono" font-size="30" text-anchor="middle">j</text>
+<rect x="347.1" y="600" width="17.9" height="44" class="payload f"/>
+<text x="356.1" y="632.5" class="fg mono" font-size="30" text-anchor="middle">R</text>
+<rect x="366.5" y="600" width="17.9" height="44" class="payload f"/>
+<text x="375.5" y="632.5" class="fg mono" font-size="30" text-anchor="middle">W</text>
+<rect x="385.9" y="600" width="17.9" height="44" class="payload f"/>
+<text x="394.9" y="632.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect x="405.3" y="600" width="17.9" height="44" class="payload f"/>
+<text x="414.3" y="632.5" class="fg mono" font-size="30" text-anchor="middle">J</text>
+<rect x="424.7" y="600" width="17.9" height="44" class="payload f"/>
+<text x="433.7" y="632.5" class="fg mono" font-size="30" text-anchor="middle">q</text>
+<rect x="444.1" y="600" width="6" height="44" class="payload f"/>
+<rect x="450.1" y="600" width="11.9" height="44" class="pad f"/>
+<rect x="450.1" y="600" width="11.9" height="44" class="" fill="url(#hatch)"/>
+<text x="453.1" y="632.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
+<rect x="230" y="597" width="19.4" height="50" class="" fill="none" stroke="#F5F7FC" stroke-width="2" rx="2"/>
+<path d="M239.7 647V652H776V620H786" class="lead" fill="none" stroke="currentColor" stroke-width="1.4"/>
+<rect x="790" y="610" width="21" height="21" class="box" stroke="#C6D0E1" stroke-width="1.2"/>
+<text x="800.5" y="626.4" class="ink mono" font-size="17" text-anchor="middle">y</text>
+<rect x="821" y="610" width="16.4" height="21" class="payload f"/>
+<text x="829.2" y="625.8" class="fg mono" font-size="15" text-anchor="middle">1</text>
+<rect x="838.9" y="610" width="16.4" height="21" class="payload f"/>
+<text x="847.1" y="625.8" class="fg mono" font-size="15" text-anchor="middle">1</text>
+<rect x="856.8" y="610" width="16.4" height="21" class="payload f"/>
+<text x="865" y="625.8" class="fg mono" font-size="15" text-anchor="middle">0</text>
+<rect x="874.6" y="610" width="16.4" height="21" class="payload f"/>
+<text x="882.8" y="625.8" class="fg mono" font-size="15" text-anchor="middle">0</text>
+<rect x="892.5" y="610" width="16.4" height="21" class="variant f"/>
+<text x="900.7" y="625.8" class="fw mono" font-size="15" text-anchor="middle">1</text>
+<rect x="910.4" y="610" width="16.4" height="21" class="variant f"/>
+<text x="918.6" y="625.8" class="fw mono" font-size="15" text-anchor="middle">0</text>
+<text x="790" y="653" class="muted sans" font-size="16">4 payload + 2 variant bits</text>
+<text x="36" y="674" class="ink sans" font-size="17" font-weight="600">For short URLs, logs and JSON.</text>
+<text x="36" y="700" class="key sans" font-size="16">Sort</text>
+<text x="78" y="700" class="ink sans" font-size="17" font-weight="600">roughly by time²</text>
+<text x="430" y="700" class="key sans" font-size="16">Case</text>
+<text x="476" y="700" class="ink sans" font-size="17" font-weight="600">must match</text>
+<text x="36" y="722" class="muted sans" font-size="17">14 characters shorter than UUID text; standard base64url tools decode it.</text>
+<text x="36" y="771" class="ink sans" font-size="24" font-weight="600">Plain base32hex</text>
+<text x="286" y="771" class="muted sans" font-size="16">26 chars · 0–9 a–v · 5 bits each · lowercase</text>
+<rect x="36.8" y="785" width="17.9" height="44" class="time f"/>
+<text x="45.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="56.2" y="785" width="17.9" height="44" class="time f"/>
+<text x="65.1" y="817.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect x="75.6" y="785" width="17.9" height="44" class="time f"/>
+<text x="84.5" y="817.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="94.9" y="785" width="17.9" height="44" class="time f"/>
+<text x="103.9" y="817.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="114.4" y="785" width="17.9" height="44" class="time f"/>
+<text x="123.3" y="817.5" class="fg mono" font-size="30" text-anchor="middle">n</text>
+<rect x="133.8" y="785" width="17.9" height="44" class="time f"/>
+<text x="142.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">j</text>
+<rect x="153.2" y="785" width="17.9" height="44" class="time f"/>
+<text x="162.1" y="817.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect x="172.6" y="785" width="17.9" height="44" class="time f"/>
+<text x="181.5" y="817.5" class="fg mono" font-size="30" text-anchor="middle">i</text>
+<rect x="192" y="785" width="17.9" height="44" class="time f"/>
+<text x="200.9" y="817.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect x="211.4" y="785" width="10.7" height="44" class="time f"/>
+<rect x="222.1" y="785" width="7.2" height="44" class="version f"/>
+<text x="220.3" y="817.5" class="fg mono" font-size="30" text-anchor="middle">h</text>
+<rect x="230.8" y="785" width="7.2" height="44" class="version f"/>
+<rect x="237.9" y="785" width="10.7" height="44" class="payload f"/>
+<text x="239.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">t</text>
+<rect x="250.2" y="785" width="17.9" height="44" class="payload f"/>
+<text x="259.1" y="817.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<rect x="269.6" y="785" width="14.3" height="44" class="payload f"/>
+<rect x="283.9" y="785" width="3.6" height="44" class="variant f"/>
+<clipPath id="k5"><rect x="269.6" y="785" width="14.3" height="44"/></clipPath><g clip-path="url(#k5)">
+<text x="278.5" y="817.5" class="fg mono" font-size="30" text-anchor="middle">p</text>
+</g>
+<clipPath id="k6"><rect x="283.9" y="785" width="3.6" height="44"/></clipPath><g clip-path="url(#k6)">
+<text x="278.5" y="817.5" class="fw mono" font-size="30" text-anchor="middle">p</text>
+</g>
+<rect x="289" y="785" width="3.6" height="44" class="variant f"/>
+<rect x="292.5" y="785" width="14.3" height="44" class="payload f"/>
+<clipPath id="k7"><rect x="289" y="785" width="3.6" height="44"/></clipPath><g clip-path="url(#k7)">
+<text x="297.9" y="817.5" class="fw mono" font-size="30" text-anchor="middle">7</text>
+</g>
+<clipPath id="k8"><rect x="292.5" y="785" width="14.3" height="44"/></clipPath><g clip-path="url(#k8)">
+<text x="297.9" y="817.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+</g>
+<rect x="308.3" y="785" width="17.9" height="44" class="payload f"/>
+<text x="317.3" y="817.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect x="327.7" y="785" width="17.9" height="44" class="payload f"/>
+<text x="336.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect x="347.1" y="785" width="17.9" height="44" class="payload f"/>
+<text x="356.1" y="817.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="366.5" y="785" width="17.9" height="44" class="payload f"/>
+<text x="375.5" y="817.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect x="385.9" y="785" width="17.9" height="44" class="payload f"/>
+<text x="394.9" y="817.5" class="fg mono" font-size="30" text-anchor="middle">h</text>
+<rect x="405.3" y="785" width="17.9" height="44" class="payload f"/>
+<text x="414.3" y="817.5" class="fg mono" font-size="30" text-anchor="middle">k</text>
+<rect x="424.7" y="785" width="17.9" height="44" class="payload f"/>
+<text x="433.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="444.1" y="785" width="17.9" height="44" class="payload f"/>
+<text x="453.1" y="817.5" class="fg mono" font-size="30" text-anchor="middle">p</text>
+<rect x="463.5" y="785" width="17.9" height="44" class="payload f"/>
+<text x="472.5" y="817.5" class="fg mono" font-size="30" text-anchor="middle">s</text>
+<rect x="482.9" y="785" width="17.9" height="44" class="payload f"/>
+<text x="491.9" y="817.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
+<rect x="502.3" y="785" width="17.9" height="44" class="payload f"/>
+<text x="511.3" y="817.5" class="fg mono" font-size="30" text-anchor="middle">l</text>
+<rect x="521.7" y="785" width="10.7" height="44" class="payload f"/>
+<rect x="532.5" y="785" width="7.2" height="44" class="pad f"/>
+<rect x="532.5" y="785" width="7.2" height="44" class="" fill="url(#hatch)"/>
+<text x="530.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="210.6" y="782" width="19.4" height="50" class="" fill="none" stroke="#F5F7FC" stroke-width="2" rx="2"/>
+<path d="M220.3 832V837H776V805H786" class="lead" fill="none" stroke="currentColor" stroke-width="1.4"/>
+<rect x="790" y="795" width="21" height="21" class="box" stroke="#C6D0E1" stroke-width="1.2"/>
+<text x="800.5" y="811.4" class="ink mono" font-size="17" text-anchor="middle">h</text>
+<rect x="821" y="795" width="16.4" height="21" class="time f"/>
+<text x="829.2" y="810.8" class="fg mono" font-size="15" text-anchor="middle">1</text>
+<rect x="838.9" y="795" width="16.4" height="21" class="time f"/>
+<text x="847.1" y="810.8" class="fg mono" font-size="15" text-anchor="middle">0</text>
+<rect x="856.8" y="795" width="16.4" height="21" class="time f"/>
+<text x="865" y="810.8" class="fg mono" font-size="15" text-anchor="middle">0</text>
+<rect x="874.6" y="795" width="16.4" height="21" class="version f"/>
+<text x="882.8" y="810.8" class="fg mono" font-size="15" text-anchor="middle">0</text>
+<rect x="892.5" y="795" width="16.4" height="21" class="version f"/>
+<text x="900.7" y="810.8" class="fg mono" font-size="15" text-anchor="middle">1</text>
+<text x="790" y="838" class="muted sans" font-size="16">3 timestamp + 2 version bits</text>
+<text x="36" y="859" class="ink sans" font-size="17" font-weight="600">For case-insensitive filenames and text keys.</text>
+<text x="36" y="885" class="key sans" font-size="16">Sort</text>
+<text x="78" y="885" class="ink sans" font-size="17" font-weight="600">by time¹</text>
+<text x="430" y="885" class="key sans" font-size="16">Case</text>
+<text x="476" y="885" class="ink sans" font-size="17" font-weight="600">any accepted</text>
+<text x="36" y="907" class="muted sans" font-size="17">Time-range queries on the ID itself; 4 characters longer than base64url.</text>
+<path d="M36 934H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1.2"/>
+<text x="36" y="962" class="masked f sans" font-size="16" font-weight="700">MASKED SLUGS · UUIDv7 only · need the matching key</text>
+<text x="1064" y="962" class="muted sans" font-size="15" text-anchor="end">Examples use the public demo key</text>
+<text x="36" y="984" class="muted sans" font-size="17">A keyed scramble hides the time and every UUID field, and decodes back to the exact UUID. 132 bits = 42-bit time</text>
+<text x="36" y="1007" class="muted sans" font-size="17">offset (~139 years from a start you set) + 74 payload bits + 16-bit check.</text>
+<text x="36" y="1042" class="ink sans" font-size="17" font-weight="700">Plain and masked base64url can look identical. Choose the reader for the format you issued.</text>
+<text x="36" y="1092" class="masked f sans" font-size="24" font-weight="600">Masked base64url</text>
+<text x="286" y="1092" class="muted sans" font-size="16">22 chars · A–Z a–z 0–9 - _ · 6 bits each</text>
+<rect x="36.8" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="45.7" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="56.2" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="65.1" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">p</text>
+<rect x="75.6" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="84.5" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect x="94.9" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="103.9" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect x="114.4" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="123.3" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect x="133.8" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="142.7" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">Q</text>
+<rect x="153.2" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="162.1" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="172.6" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="181.5" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">_</text>
+<rect x="192" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="200.9" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">y</text>
+<rect x="211.4" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="220.3" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect x="230.8" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="239.7" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
+<rect x="250.2" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="259.1" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">N</text>
+<rect x="269.6" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="278.5" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect x="289" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="297.9" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">L</text>
+<rect x="308.3" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="317.3" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">Q</text>
+<rect x="327.7" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="336.7" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">C</text>
+<rect x="347.1" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="356.1" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">J</text>
+<rect x="366.5" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="375.5" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">g</text>
+<rect x="385.9" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="394.9" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
+<rect x="405.3" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="414.3" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">H</text>
+<rect x="424.7" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="433.7" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="444.1" y="1106" width="17.9" height="44" class="masked f"/>
+<text x="453.1" y="1138.5" class="fg mono" font-size="30" text-anchor="middle">z</text>
+<text x="36" y="1180" class="ink sans" font-size="17" font-weight="600">For public IDs that hide the UUID's time and fields.</text>
+<text x="36" y="1206" class="key sans" font-size="16">Sort</text>
+<text x="78" y="1206" class="ink sans" font-size="17" font-weight="600">none: decode first</text>
+<text x="430" y="1206" class="key sans" font-size="16">Case</text>
+<text x="476" y="1206" class="ink sans" font-size="17" font-weight="600">must match</text>
+<text x="36" y="1228" class="muted sans" font-size="17">Your database keeps UUIDs. Only the matching key and settings decode it; keep</text>
+<text x="36" y="1251" class="muted sans" font-size="17">old keys for old links.</text>
+<text x="36" y="1300" class="masked f sans" font-size="24" font-weight="600">Masked base32hex</text>
+<text x="286" y="1300" class="muted sans" font-size="16">27 chars · 0–9 a–v · 5 bits each · lowercase</text>
+<rect x="36.8" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="45.7" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect x="56.2" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="65.1" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="75.6" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="84.5" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect x="94.9" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="103.9" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">r</text>
+<rect x="114.4" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="123.3" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect x="133.8" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="142.7" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">p</text>
+<rect x="153.2" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="162.1" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect x="172.6" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="181.5" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect x="192" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="200.9" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">n</text>
+<rect x="211.4" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="220.3" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">v</text>
+<rect x="230.8" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="239.7" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect x="250.2" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="259.1" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">q</text>
+<rect x="269.6" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="278.5" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">o</text>
+<rect x="289" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="297.9" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect x="308.3" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="317.3" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect x="327.7" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="336.7" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect x="347.1" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="356.1" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">m</text>
+<rect x="366.5" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="375.5" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">g</text>
+<rect x="385.9" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="394.9" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect x="405.3" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="414.3" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect x="424.7" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="433.7" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="444.1" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="453.1" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect x="463.5" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="472.5" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="482.9" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="491.9" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect x="502.3" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="511.3" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">q</text>
+<rect x="521.7" y="1314" width="17.9" height="44" class="masked f"/>
+<text x="530.7" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="541.1" y="1314" width="7.2" height="44" class="masked f"/>
+<rect x="548.3" y="1314" width="10.7" height="44" class="pad f"/>
+<rect x="548.3" y="1314" width="10.7" height="44" class="" fill="url(#hatch)"/>
+<text x="550.1" y="1346.5" class="fg mono" font-size="30" text-anchor="middle">o</text>
+<text x="36" y="1388" class="ink sans" font-size="17" font-weight="600">For masked IDs in case-insensitive filenames.</text>
+<text x="36" y="1414" class="key sans" font-size="16">Sort</text>
+<text x="78" y="1414" class="ink sans" font-size="17" font-weight="600">none: decode first</text>
+<text x="430" y="1414" class="key sans" font-size="16">Case</text>
+<text x="476" y="1414" class="ink sans" font-size="17" font-weight="600">any accepted</text>
+<text x="36" y="1436" class="muted sans" font-size="17">5 characters longer. The same UUID, key and settings always give the same slug;</text>
+<text x="36" y="1459" class="muted sans" font-size="17">one codec reads both masked alphabets.</text>
+<text x="790" y="1090" class="accent sans" font-size="17" font-weight="700">Masking: avalanche effect</text>
+<text x="790" y="1114" class="muted sans" font-size="16">Last UUID byte · flip one bit</text>
+<text x="790" y="1146.8" class="muted sans" font-size="16">Before</text>
+<rect x="848" y="1130" width="24" height="24" class="same" rx="2"/>
+<text x="860" y="1147.3" class="ink mono" font-size="16" text-anchor="middle">1</text>
+<rect x="874" y="1130" width="24" height="24" class="same" rx="2"/>
+<text x="886" y="1147.3" class="ink mono" font-size="16" text-anchor="middle">0</text>
+<rect x="900" y="1130" width="24" height="24" class="same" rx="2"/>
+<text x="912" y="1147.3" class="ink mono" font-size="16" text-anchor="middle">1</text>
+<rect x="926" y="1130" width="24" height="24" class="same" rx="2"/>
+<text x="938" y="1147.3" class="ink mono" font-size="16" text-anchor="middle">0</text>
+<rect x="952" y="1130" width="24" height="24" class="same" rx="2"/>
+<text x="964" y="1147.3" class="ink mono" font-size="16" text-anchor="middle">1</text>
+<rect x="978" y="1130" width="24" height="24" class="same" rx="2"/>
+<text x="990" y="1147.3" class="ink mono" font-size="16" text-anchor="middle">0</text>
+<rect x="1004" y="1130" width="24" height="24" class="same" rx="2"/>
+<text x="1016" y="1147.3" class="ink mono" font-size="16" text-anchor="middle">1</text>
+<rect x="1030" y="1130" width="24" height="24" class="same" rx="2"/>
+<text x="1042" y="1147.3" class="ink mono" font-size="16" text-anchor="middle">1</text>
+<text x="790" y="1176.8" class="muted sans" font-size="16">After</text>
+<rect x="848" y="1160" width="24" height="24" class="same" rx="2"/>
+<text x="860" y="1177.3" class="ink mono" font-size="16" text-anchor="middle">1</text>
+<rect x="874" y="1160" width="24" height="24" class="same" rx="2"/>
+<text x="886" y="1177.3" class="ink mono" font-size="16" text-anchor="middle">0</text>
+<rect x="900" y="1160" width="24" height="24" class="same" rx="2"/>
+<text x="912" y="1177.3" class="ink mono" font-size="16" text-anchor="middle">1</text>
+<rect x="926" y="1160" width="24" height="24" class="same" rx="2"/>
+<text x="938" y="1177.3" class="ink mono" font-size="16" text-anchor="middle">0</text>
+<rect x="952" y="1160" width="24" height="24" class="same" rx="2"/>
+<text x="964" y="1177.3" class="ink mono" font-size="16" text-anchor="middle">1</text>
+<rect x="978" y="1160" width="24" height="24" class="same" rx="2"/>
+<text x="990" y="1177.3" class="ink mono" font-size="16" text-anchor="middle">0</text>
+<rect x="1004" y="1160" width="24" height="24" class="same" rx="2"/>
+<text x="1016" y="1177.3" class="ink mono" font-size="16" text-anchor="middle">1</text>
+<rect x="1030" y="1160" width="24" height="24" class="masked f" rx="2"/>
+<text x="1042" y="1177.3" class="fg mono" font-size="16" text-anchor="middle">0</text>
+<path d="M1042 1190V1202H927V1212" class="masked" fill="none" stroke="currentColor" stroke-width="2"/>
+<rect x="817" y="1212" width="220" height="48" class="box" stroke="#FF921C" stroke-width="2" rx="4"/>
+<text x="927" y="1233" class="ink sans" font-size="17" font-weight="700" text-anchor="middle">Mask</text>
+<text x="927" y="1252" class="muted sans" font-size="15" text-anchor="middle">same key and settings</text>
+<path d="M927 1260C927 1290 796.5 1288 796.5 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="790" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 813.9 1288 813.9 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="807.4" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 831.3 1288 831.3 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="824.8" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 848.7 1288 848.7 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="842.2" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 866.1 1288 866.1 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="859.6" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 883.5 1288 883.5 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="877" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 900.9 1288 900.9 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="894.4" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 918.3 1288 918.3 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="911.8" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 935.7 1288 935.7 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="929.2" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 953.1 1288 953.1 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="946.6" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 970.5 1288 970.5 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="964" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 987.9 1288 987.9 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="981.4" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 1005.3 1288 1005.3 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="998.8" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 1022.7 1288 1022.7 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="1016.2" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 1040.1 1288 1040.1 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="1033.6" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<path d="M927 1260C927 1290 1057.5 1288 1057.5 1312" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
+<rect x="1051" y="1314" width="13" height="22" class="masked f" rx="2"/>
+<text x="790" y="1362" class="ink sans" font-size="17" font-weight="700">16 of 16 masked bytes change</text>
+<text x="790" y="1384" class="muted sans" font-size="15">62 of 128 bits flip (this example)</text>
+<text x="790" y="1408" class="ink sans" font-size="16" font-weight="600">Similar UUIDs, unrelated slugs</text>
+<text x="790" y="1438" class="ink mono" font-size="15.5">ap225Qa_y6wN5LQCJgwH0z</text>
+<text x="790" y="1460" class="masked f mono" font-size="15.5">hAHeRPmJFqjOuXUQnhljgb</text>
+<text x="790" y="1482" class="muted sans" font-size="15">22 of 22 characters differ</text>
+<path d="M36 1496H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1"/>
+<text x="36" y="1526" class="muted sans" font-size="15">¹ UUIDv7: sorts by creation millisecond if all IDs share one case and alphabet; not event order within a millisecond.</text>
+<text x="36" y="1548" class="muted sans" font-size="15">² Nearby times share prefixes, but ASCII order can swap adjacent milliseconds.</text>
+<text x="36" y="1570" class="muted sans" font-size="15">Compare decoded UUIDs, not spellings: one UUID has many valid spellings. A wrong key passes the 16-bit check about once in 65,536</text>
+<text x="36" y="1592" class="muted sans" font-size="15">tries and returns another UUID. Masking is not strong encryption.</text>
 </svg>

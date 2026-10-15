@@ -22,8 +22,6 @@ These items track unresolved copy; they do not authorize README edits or new mea
 
 - [ ] Push `7b17025` (badges, diagram after badges linking to the raw SVG) once runtime badges are final; pushes need explicit authorization.
 - [ ] Runtime badges: one consistent two-part style like the Node badge (logo label, version value); colours readable on light and dark GitHub; Cloudflare Workers as "CF Workers" with the Cloudflare logo; Bun and Deno show measured version floors.
-- [ ] Re-layout `docs/assets/uuid-representations.svg` at least 30% narrower so its smallest text stays readable at GitHub's README width; propose layouts and wait for approval before editing.
-- [ ] Make the SVG lean and maintainable: drop custom fonts and the link, keep one file (the image follows the browser colour scheme, not GitHub's theme); decide hand-edited vs generated after the layout is approved.
 
 ## Runtime support
 
