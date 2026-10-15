@@ -8,19 +8,9 @@ These items track unresolved copy; they do not authorize README edits or new mea
 - [ ] Read each section as a direct entry point. Keep the definitions, types, defaults, units and limits needed to understand its claims and use its examples there; link shared detail instead of copying it. Merge repetition only when the section remains usable on its own.
 - [ ] Reconcile the opening, examples, representation/API tables and guarantees with each other and their owning contracts. Fix inconsistent names, accepted forms, results, runtime requirements, package availability and upgrade/recovery guidance; preserve distinct benefits and supported claims.
 - [ ] Proofread the complete README for typos, grammar, ambiguous references and formatting after those repairs; preserve approved tone and sound wording. Compile changed examples independently and recheck affected links after heading edits.
-- [ ] Distinguish implemented TS/Rust/WASM support from published packages near installation; replace "published soon" with concrete availability when known.
-- [ ] Merge repeated ordering, supplied-time and clock-control bullets while retaining configurable rollback and payload layouts.
-- [ ] Merge repeated type-safety and composition bullets while retaining validation, buffer integrity and stable error codes.
-- [ ] Merge overlapping sentinel and reserved-ID bullets while retaining recognizable values, rotation behavior and application uses.
-- [ ] Explain the optional UUID object's benefit: validate and decode once, then reuse it for conversion and inspection.
-- [ ] State near the opening that plain conversion is lossless and the TypeScript package needs no native addon or WebAssembly.
-- [ ] Clarify "at every site" and replace "manually tailored" with a concrete API benefit, preserving the confident tone.
-- [ ] Surface plain decoding without keys or this library, and retained settings for masked decoding, earlier in the adoption guidance.
-- [ ] Resolve adoption questions about production-use evidence and maintenance/support commitments from evidence or a maintainer ruling; do not infer them from benchmarks or invent promises.
 
 ## README diagram and badges
 
-- [ ] Push `7b17025` (badges, diagram after badges linking to the raw SVG) once runtime badges are final; pushes need explicit authorization.
 - [ ] Runtime badges: one consistent two-part style like the Node badge (logo label, version value); colours readable on light and dark GitHub; Cloudflare Workers labelled "cloud | workers" with the Cloudflare logo; Bun and Deno show measured version floors.
 
 ## Runtime support

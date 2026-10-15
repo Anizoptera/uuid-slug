@@ -20,26 +20,25 @@ High-performance UUIDv4/v7 generation and handling for TS, Rust, and WASM, short
 
 - **Leading performance**, low memory and resource allocation!
   - Same API across Node, Bun, Deno, browsers and cloud workers. Native fast paths and portable fallbacks are used automatically.
-  - _IDs can be generated or decoded directly into caller-owned buffers; failed validation leaves them unchanged._
+  - _IDs can be generated or decoded [directly into your buffers](#work-with-uuid-bytes); failed validation leaves them unchanged._
 
 - **Zero runtime dependencies.** Small runtime-optimised bundles on Node, Bun, Deno and browsers.
 
-- **One UUID for storage, URLs and files, providing the most efficient representation at every site!**
+- **One UUID for storage, URLs and files, each in its [most compact form](#representations)!**
   - 16-byte binary UUID for storage or transport.
   - **Short 22-character base64url slug for URLs** (39% shorter than a naive UUID text).
   - 26-character base32hex lowercase slug suits case-insensitive (e.g., cross-OS) filenames. Plain UUIDv7 slugs in this alphabet sort by timestamp under ASCII comparison.
   - Optional **[UUIDv7 masked slug](#masked-slugs) form that hides timestamp and UUID structure.** Expose your IDs without revealing their creation time or nature!
-  - _Any UUID can be converted into a lossless plain slug, and vice versa. Existing database keys stay unchanged; no mapping table is needed._
+  - _Any UUID converts to a lossless plain slug and back. Existing database keys stay unchanged; no mapping table is needed._
+  - _Plain slugs decode with any standard base64url or base32hex decoder, without this library. Masked slugs need your key and settings._
 
 - **UUIDv4/v7 generation, conversion and inspection, configurable UUIDv7 masking, and plain conversion for any UUID!**
-  - **Full control over guarantees and options.** Control ordering, clock policy, custom payload layout and more.
-  - UUIDv7 can use recorded times or an application clock, with configurable handling of clock rollback.
-  - IDs and relationships can be created offline, before saving or syncing, without a central allocator or worker number.
-  - Masking key rotation and format migration keep old IDs readable while new IDs use current settings. Reserved IDs stay recognizable after rotation.
+  - **Full control of UUIDv7 time and order:** [recorded times](#generate-at-a-recorded-time) or your own clock, clock-rollback policy, custom payload layout, [timestamp extraction](#use-the-uuid-as-the-timestamp-source) and [time-range queries](#ordering-and-key-distribution).
+  - IDs and relationships can be [created offline](#assign-ids-before-saving-or-syncing), before saving or syncing, without a central allocator or worker number.
+  - Masking key rotation and format migration keep old IDs readable while new IDs use current settings.
   - Async key derivation yields during long work and can be cancelled.
-  - Optional UUID object for multiple operations over one ID.
-  - Timestamp and ordering tools for UUIDv7: timestamp extraction, time-range queries, supplied times and clock controls.
-  - Optional, [special UUID sentinel values](#sentinels) for testing, debugging, tracing and development needs.
+  - [Parse once](#parse-once-for-repeated-work): validate and decode an ID one time into the optimized UUID object, then reuse it for every conversion and inspection.
+  - Optional [sentinel IDs](#sentinels): reserved values for tests, debugging and tracing that stay recognizable in logs, even after key rotation.
   - Optimal, **safe and most efficient defaults!**
 
 - **Intuitive, ergonomic, agent-friendly manually tailored API.**
@@ -60,7 +59,7 @@ Use your favorite TS/JS package manager (npm/bun/pnpm/yarn/..), e.g.:
 bun install @anizoptera/uuid-slug
 ```
 
-_WASM and Rust versions will be published soon._
+_The [Rust crate](rust/uuid-slug) and WASM builds live in this repo but are not yet published._
 
 
 ## Quick start
