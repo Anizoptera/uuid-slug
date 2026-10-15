@@ -220,15 +220,40 @@ const LEGEND: [Field, string][] = [
 // ---------- drawing primitives ----------
 const SANS = `-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif`;
 const MONO = `ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace`;
+// Two hover gestures, one question each:
+// - a legend item asks "where is this field?": every other field's cells fade and the field's
+//   ribbons brighten;
+// - a character or byte asks "where do these bits go?" (see linkRules).
+// Cells themselves do not trigger the field view, so the two gestures never fire together.
+const FIELD_HOVER = LEGEND.map(([f]) => {
+  const ribbon =
+    f === "masked" || f === "pad"
+      ? ""
+      : ` svg:has(.lg-${f}:hover) .ghost.${f}{fill-opacity:.22;stroke-opacity:.7}`;
+  return `svg:has(.lg-${f}:hover) .cell:not(.${f}){opacity:.3}${ribbon}`;
+}).join("\n");
+// Slow auto-highlight: each field's ribbons brighten in turn, so the static README <img> (which
+// never receives the mouse) still shows how the fields travel between rows. Pointing at the
+// image stops it so the hover links take over; without scripts the stop cannot persist, so it
+// resumes when the pointer leaves. Reduced-motion users get the still image.
+const AUTO_FIELDS = ["time", "version", "variant", "payload"] as const;
+// Each field gets a 4 s turn of the 16 s cycle: ~2 s ease-in, a short hold, then a ~2.5 s
+// ease-out that overlaps the next field's rise, so the light hands over instead of blinking.
+const AUTO_STEP_S = 4;
+const AUTO_HIGHLIGHT = `@keyframes glow{0%,38%,100%{fill-opacity:.035;stroke-opacity:.1}12%,22%{fill-opacity:.14;stroke-opacity:.42}}
+${AUTO_FIELDS.map((f, i) => `.ghost.${f}{animation:glow ${AUTO_FIELDS.length * AUTO_STEP_S}s ease-in-out ${i * AUTO_STEP_S}s infinite both}`).join("")}
+svg:hover .ghost{animation:none}@media (prefers-reduced-motion:reduce){.ghost{animation:none}}`;
 const STYLE = `
-.bg{fill:#0B1423}.ink{fill:#F5F7FC}.muted{fill:#C6D0E1}.box{fill:#15243A}.same{fill:#24344D}
+.bg{fill:#0B1423}.ink{fill:#F5F7FC}.muted{fill:#C6D0E1}.box{fill:#15243A}.same{fill:#24344D}.chg{fill:#F5F7FC}
 .pkg{fill:#F5F7FC;fill-opacity:.6}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
 .time{color:#00C8FF}.version{color:#FF49CD}.variant{color:#4D50FF}.payload{color:#FFE83F}
 .masked{color:#FF921C}.pad{color:#8C9DB6}.f{fill:currentColor}.fg{fill:#08111F}.fw{fill:#FFFFFF}
 .sans{font-family:${SANS}}.mono{font-family:${MONO};font-variant-ligatures:none}
 .ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1}.lead{color:#C6D0E1}
 text,.hl,.ghost{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0}
-${(["time", "version", "variant", "payload"] as const).map((f) => `svg:has(.${f}.f:hover) .ghost.${f}{fill-opacity:.22;stroke-opacity:.7}`).join("")}`;
+.lg{pointer-events:auto}.cell{transition:opacity .15s}
+${FIELD_HOVER}
+${AUTO_HIGHLIGHT}`;
 const esc = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
 const r1 = (n: number) => Math.round(n * 10) / 10;
 // System fonts differ, so widths are estimates; layouts keep slack instead of measuring.
@@ -368,7 +393,7 @@ const drawGlyph = (f: Form, c: Cell, y: number, h: number, size: number, baselin
   const parts: [string, number, number][] = [];
   for (const [field, n] of runs) {
     const w = (n / c.bits) * (c.w - 1.5);
-    rect(x, y, w, h, `${field} f`);
+    rect(x, y, w, h, `${field} f cell`);
     if (field === "pad") rect(x, y, w, h, "", ` fill="url(#hatch)"`);
     parts.push([inkFor(field), x, w]);
     x += w;
@@ -412,6 +437,11 @@ const SIDE_X = 790,
   CASE_X = M + 394,
   TEXT_W = 712;
 const FS = { title: 34, sub: 18, head: 16, name: 24, small: 16, meta: 17, note: 15 };
+// Vertical rhythm: LINE between text lines, GAP between a specimen and what follows it,
+// ROW between two forms (and before a section rule). Every vertical step uses one of these.
+const LINE = 24,
+  GAP = 12,
+  ROW = 24;
 let y = 0;
 
 const section = (label: string, cls = "accent", right?: string) => {
@@ -426,21 +456,25 @@ const head = (name: string, facts: string, masked = false) => {
   y += 36;
 };
 // What the form is for comes first; sort order, case rule and details follow.
+// Every line sits on the M edge with one line height; a prefix such as "Text" joins the job
+// line as a run of the same <text>, so the font, not an estimate, spaces it.
 const meta = (f: Form, prefix?: string) => {
-  const x = M + (prefix ? 64 : 0);
-  if (prefix) text(M, y + 18, prefix, FS.meta, { cls: "accent", weight: 700 });
-  text(x, y + 18, f.job, FS.meta, { weight: 600 });
-  y += 26;
-  text(x, y + 18, "Sort", FS.meta - 1, { cls: "key" });
-  text(x + 42, y + 18, f.sort, FS.meta, { weight: 600 });
+  const lead = prefix
+    ? `<tspan class="accent" font-weight="700">${prefix}</tspan><tspan dx="10">`
+    : "<tspan>";
+  out.push(
+    `<text x="${M}" y="${y + 18}" class="ink sans" font-size="${FS.meta}" font-weight="600">${lead}${esc(f.job)}</tspan></text>`,
+  );
+  y += LINE;
+  text(M, y + 18, "Sort", FS.meta - 1, { cls: "key" });
+  text(M + 42, y + 18, f.sort, FS.meta, { weight: 600 });
   text(CASE_X, y + 18, "Case", FS.meta - 1, { cls: "key" });
   text(CASE_X + 46, y + 18, f.caseRule, FS.meta, { weight: 600 });
-  y += 28;
-  for (const l of wrap(f.detail, TEXT_W - (x - M), FS.meta)) {
-    text(x, y + 12, l, FS.meta, { cls: "muted" });
-    y += 23;
+  y += LINE;
+  for (const l of wrap(f.detail, TEXT_W, FS.meta)) {
+    text(M, y + 18, l, FS.meta, { cls: "muted" });
+    y += LINE;
   }
-  y += 6;
 };
 
 // Header.
@@ -448,14 +482,17 @@ text(M, 50, COPY.title, FS.title, { weight: 600 });
 text(W - M, 50, COPY.pkg, 20, { cls: "pkg", weight: 600, anchor: "end" });
 text(M, 82, COPY.subtitle, FS.sub, { cls: "muted" });
 {
-  let x = M;
-  for (const [f, label] of LEGEND) {
-    rect(x, 104, 13, 13, `${f} f`, ` rx="2"`);
-    if (f === "pad") rect(x, 104, 13, 13, "", ` fill="url(#hatch)"`);
-    text(x + 19, 116, label, FS.small, { weight: 500 });
-    x += 19 + textWidth(label, FS.small) * 0.95 + 18;
-  }
-  text(W - M, 116, COPY.urlSafe, FS.small, { cls: "muted", anchor: "end" });
+  // One text run, so the viewer's own font spaces the items evenly; separate elements would need
+  // width estimates, which drift with each system font. Swatches are glyphs (▨ for padding, to
+  // echo the hatch), and each item is a hover target for the field view.
+  const items = LEGEND.map(
+    ([f, label], i) =>
+      `<tspan class="lg lg-${f}"${i ? ' dx="22"' : ""}><tspan class="${f} f">${f === "pad" ? "▨" : "■"}</tspan> ${esc(label)}</tspan>`,
+  );
+  out.push(
+    `<text x="${M}" y="117" class="ink sans" font-size="${FS.small}" font-weight="500">${items.join("")}</text>`,
+  );
+  text(W - M, 117, COPY.urlSafe, FS.small, { cls: "muted", anchor: "end" });
 }
 y = 136;
 
@@ -468,7 +505,7 @@ text(SIDE_X, y + 18, "Text", FS.meta, { cls: "accent", weight: 700 });
 text(SIDE_X, y + 40, "36 chars · lowercase", FS.small, { cls: "muted" });
 const textTop = y;
 drawSpecimen(FORMS.uuid, uuidCells, y, CELL_H, MONO_SIZE, "u");
-y += CELL_H + 12;
+y += CELL_H + GAP;
 // Bytes sit under their own two hex digits: dark tiles, so they read as a different thing
 // than the text, with each bit's field shown only as a thin bar.
 const bytesTop = y,
@@ -491,11 +528,11 @@ for (let i = 0; i < 16; i++) {
       y + BYTES_H - 6,
       (w - 2) / 8,
       6,
-      `${plainField(i * 8 + k)} f`,
+      `${plainField(i * 8 + k)} f cell`,
     );
   close();
 }
-y += BYTES_H + 6;
+y += BYTES_H + GAP / 2;
 {
   const x1 = bitX(uuidCells, 0),
     x2 = bitX(uuidCells, 48);
@@ -504,10 +541,12 @@ y += BYTES_H + 6;
     cls: "time f",
     weight: 600,
   });
-  y += 36;
+  y += 26 + GAP;
 }
 meta(FORMS.uuid, "Text");
+y += GAP;
 meta(FORMS.bytes, "Bytes");
+y += ROW;
 
 // Plain slugs, with a callout for one character that holds bits of two fields.
 section("PLAIN SLUGS · any UUID · no key · the same 128 bits in fewer characters");
@@ -551,7 +590,7 @@ for (const [id, idx, label] of [
   for (let i = 0; i < c.bits; i++) {
     const field = f.field(c.start + i),
       bx = SIDE_X + bs + 10 + i * (bs * 0.78 + 1.5);
-    rect(bx, top + 10, bs * 0.78, bs, `${field} f`);
+    rect(bx, top + 10, bs * 0.78, bs, `${field} f cell`);
     text(bx + bs * 0.39, top + 10 + bs * 0.75, value[i]!, FS.small - 1, {
       cls: inkFor(field),
       anchor: "middle",
@@ -559,9 +598,9 @@ for (const [id, idx, label] of [
     });
   }
   text(SIDE_X, top + 10 + bs + 22, label, FS.small, { cls: "muted" });
-  y += CELL_H + 12;
+  y += CELL_H + GAP;
   meta(f);
-  y += 10;
+  y += ROW;
 }
 
 // Masked slugs, with the avalanche example beside them.
@@ -572,22 +611,22 @@ section(
 );
 for (const l of wrap(COPY.masking, W - 2 * M, FS.meta)) {
   text(M, y + 6, l, FS.meta, { cls: "muted" });
-  y += 23;
+  y += LINE;
 }
-y += 8;
+y += GAP / 2;
 for (const l of wrap(COPY.overlap, W - 2 * M, FS.meta)) {
   text(M, y + 10, l, FS.meta, { weight: 700 });
-  y += 24;
+  y += LINE;
 }
-y += 14;
+y += GAP;
 const maskedTop = y;
 for (const id of ["m64", "m32"] as const) {
   const f = FORMS[id];
   head(f.name, f.facts, true);
   drawSpecimen(f, cellsOf(f, M, CW), y, CELL_H, MONO_SIZE);
-  y += CELL_H + 12;
+  y += CELL_H + GAP;
   meta(f);
-  y += 10;
+  y += ROW;
 }
 {
   // One flipped input bit fans out to every masked byte; then the slug a reader actually sees.
@@ -604,7 +643,7 @@ for (const id of ["m64", "m32"] as const) {
     text(x0, ry + bs * 0.7, row ? "After" : "Before", FS.small, { cls: "muted" });
     bits.split("").forEach((b, i) => {
       const changed = row === 1 && b !== lastByte[0][i];
-      rect(bx + i * (bs + 2), ry, bs, bs, changed ? "masked f" : "same", ` rx="2"`);
+      rect(bx + i * (bs + 2), ry, bs, bs, changed ? "chg" : "same", ` rx="2"`);
       text(bx + i * (bs + 2) + bs / 2, ry + bs * 0.72, b, FS.small, {
         cls: changed ? "fg" : "ink",
         anchor: "middle",
@@ -632,7 +671,7 @@ for (const id of ["m64", "m32"] as const) {
       "masked",
       1.6,
     );
-    rect(x0 + i * (ow + og), outY, ow, 22, CHANGED_BYTES[i] ? "masked f" : "same", ` rx="2"`);
+    rect(x0 + i * (ow + og), outY, ow, 22, CHANGED_BYTES[i] ? "chg" : "same", ` rx="2"`);
   }
   let ty = outY + 48;
   text(x0, ty, `${CHANGED_BYTES.filter(Boolean).length} of 16 masked bytes change`, FS.meta, {
@@ -642,8 +681,10 @@ for (const id of ["m64", "m32"] as const) {
     cls: "muted",
   });
   text(x0, ty + 46, "Similar UUIDs, unrelated slugs", FS.small, { weight: 600 });
-  text(x0, ty + 76, M64, 15.5, { mono: true });
-  text(x0, ty + 98, M64_AFTER, 15.5, { cls: "masked f", mono: true });
+  text(x0, ty + 76, "Before", FS.small, { cls: "muted" });
+  text(bx, ty + 76, M64, 15, { cls: "masked f", mono: true });
+  text(x0, ty + 98, "After", FS.small, { cls: "muted" });
+  text(bx, ty + 98, M64_AFTER, 15, { cls: "masked f", mono: true });
   text(x0, ty + 120, `${CHAR_FLIPS} of 22 characters differ`, FS.small - 1, { cls: "muted" });
   ty += 134;
   y = Math.max(y, ty);
