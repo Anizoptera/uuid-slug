@@ -243,7 +243,7 @@ fails for a reason outside this package or supporting it would cost newer runtim
 | --- | --- | --- |
 | Node | `>=20` supported; works from 16.20 | `engines.node` and its CI matrix promise 20. 16.20 and 18 pass the probe; docs may say "works from 16" only while a 16.20 lane passes. |
 | Bun | `>=1.0.8` | Bun 1.0.0–1.0.7 run a `setImmediate` chain without ever firing timers, so `yieldToHost` in `src/mask.ts` cannot deliver an abort to async mask derivation. Everything else passes there, so the README badge may say `>=1.0`. Supporting them needs a version-sniffed yield path for builds replaced within weeks. |
-| Deno | `>=1.30` | Loads the compiled build through `npm:`. Deno 1.29 and older fetch their Node compatibility layer from `deno.land/std` at run time; that now returns HTTP 500, so they load no npm package. |
+| Deno | `>=1.29` | Oldest release CI can test: 1.28 ignores `NPM_CONFIG_REGISTRY`, so the probe cannot serve it an unpublished build; 1.25–1.27 need `--unstable` for `npm:`. Deno 1.x loads its Node layer from `deno.land/std` at run time, so a deno.land outage fails the lane; the probe retries once. |
 | Browsers, workers | not declared | Compiled output targets ES2022 (class and private fields, `Object.hasOwn`, error `cause`). No old engine has run the probe. |
 
 The `runtimes` CI matrix runs the Node engines floor. `bun scripts/floor-probe.ts` (CI job `floors`)
