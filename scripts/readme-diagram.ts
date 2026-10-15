@@ -8,6 +8,10 @@
 // Maintainer rulings. Keep each one unless the maintainer drops it, and record new ones here
 // when made: a ruling kept only in a chat is lost, and the next edit deletes it.
 // - UUID text and bytes must look different: 36 characters as text, 16 bytes in binary.
+// - Sections sit on tinted panels, not between rules.
+// - Under each specimen: Sort/Case first, then the "For …" line in lighter ink weight, then the
+//   details. These lines are indented from the specimen's left edge: the ribbons draw a vertical
+//   line there, and text starting on it looks unpadded.
 // - Faint field ribbons run under the rows: UUID text → bytes → base64url → base32hex, and
 //   masked base64url → masked base32hex (one band: the same 132 masked bits).
 // - Hover, every piece the same way:
@@ -55,10 +59,10 @@ import { browserEngines } from "./browser-engines.ts";
 import { checkDiagramHover } from "./readme-diagram-hover.ts";
 
 const OUT = new URL("../docs/assets/uuid-representations.svg", import.meta.url);
-// TEMPORARY layout variants for the maintainer to compare (DIAGRAM_LAYOUT=a,b): "panels" tints
-// each section instead of rules, "nojob" puts Sort/Case before what a form is for, "nocall"
-// drops the one-character callout leaders and the avalanche slug lines. Keep the chosen ones as
-// the only layout and delete the switch.
+// TEMPORARY switches that rebuild earlier layouts for comparison (DIAGRAM_LAYOUT=a,b): "rules"
+// separates sections with rules instead of panels, "jobfirst" puts what a form is for first,
+// "nocall" drops the one-character callout leaders and the avalanche slug lines. Delete them
+// once the maintainer has no further use for the comparison.
 const LAYOUT = new Set((process.env["DIAGRAM_LAYOUT"] ?? "").split(","));
 const panels: [number, string][] = [];
 
@@ -598,7 +602,7 @@ const LINE = 24,
 let y = 0;
 
 const section = (label: string, cls = "accent", right?: string) => {
-  if (LAYOUT.has("panels")) panels.push([y, cls]);
+  if (!LAYOUT.has("rules")) panels.push([y, cls]);
   else path(`M${M} ${y}H${W - M}`, "rule", 1.2);
   text(M, y + 28, label, FS.head, { cls, weight: 700 });
   if (right) text(W - M, y + 28, right, FS.head - 1, { cls: "muted", anchor: "end" });
@@ -609,24 +613,31 @@ const head = (name: string, facts: string, masked = false) => {
   text(FACTS_X, y + 22, facts, FS.small, { cls: "muted" });
   y += 36;
 };
-// What the form is for comes first; sort order, case rule and details follow.
-// Every line sits on the M edge with one line height; a prefix such as "Text" joins the job
-// line as a run of the same <text>, so the font, not an estimate, spaces it.
+// Lines under a specimen start this far right of its left edge, where the ribbons draw a line.
+const INDENT = 16;
+// Under each specimen: Sort and Case first (the facts a reader compares across forms), then what
+// the form is for in lighter ink, then the details. A prefix such as "Text" takes its own column
+// so the lines after it align.
 const meta = (f: Form, prefix?: string) => {
-  if (LAYOUT.has("nojob")) {
-    const x = M + (prefix ? 64 : 0);
-    if (prefix) text(M, y + 18, prefix, FS.meta, { cls: "accent", weight: 700 });
+  if (!LAYOUT.has("jobfirst")) {
+    const x0 = M + INDENT,
+      x = x0 + (prefix ? 64 : 0);
+    if (prefix) text(x0, y + 18, prefix, FS.meta, { cls: "accent", weight: 700 });
     text(x, y + 18, "Sort", FS.meta - 1, { cls: "key" });
     text(x + 42, y + 18, f.sort, FS.meta, { weight: 600 });
-    text(CASE_X, y + 18, "Case", FS.meta - 1, { cls: "key" });
-    text(CASE_X + 46, y + 18, f.caseRule, FS.meta, { weight: 600 });
+    text(CASE_X + INDENT, y + 18, "Case", FS.meta - 1, { cls: "key" });
+    text(CASE_X + INDENT + 46, y + 18, f.caseRule, FS.meta, { weight: 600 });
     y += LINE;
-    for (const l of wrap(`${f.job} ${f.detail}`, TEXT_W - (x - M), FS.meta)) {
+    text(x, y + 18, f.job, FS.meta, { weight: 400 });
+    y += LINE;
+    // Lines may run up to the side column (SIDE_X), keeping a gap before it.
+    for (const l of wrap(f.detail, SIDE_X - 24 - x, FS.meta)) {
       text(x, y + 18, l, FS.meta, { cls: "muted" });
       y += LINE;
     }
     return;
   }
+  // Earlier layout, kept for comparison: what the form is for first, on the M edge.
   const lead = prefix
     ? `<tspan class="accent" font-weight="700">${prefix}</tspan><tspan dx="10">`
     : "<tspan>";

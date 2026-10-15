@@ -184,6 +184,9 @@ svg:has(#gn25:hover) :is(#om20,#om21,#on25){opacity:1;transition-delay:0s}
 svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
 <rect width="100%" height="100%" class="bg"/>
+<rect x="22" y="138" width="1056" height="392" rx="10" fill="#0F1B2D"/>
+<rect x="22" y="538" width="1056" height="412" rx="10" fill="#0F1B2D"/>
+<rect x="22" y="958" width="1056" height="552" rx="10" fill="#17140F"/>
 <path class="ghost time" d="M36 260C36 266 36 266 36 272L280.8 272C280.8 266 280.8 266 280.8 260Z"/>
 <path class="ghost version" d="M280.8 260C280.8 266 280.8 266 280.8 272L312.3 272C312.3 266 312.3 266 312.3 260Z"/>
 <path class="ghost payload" d="M312.3 260C312.3 266 312.3 266 312.3 272L370.5 272C370.5 266 370.5 266 370.5 260Z"/>
@@ -241,7 +244,6 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect x="679.9" y="96" width="152.5" height="32" class="lghit"/>
 </g>
 <text x="1064" y="117" class="muted sans" font-size="16" text-anchor="end">All text forms are URL-safe.</text>
-<path d="M36 136H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1.2"/>
 <text x="36" y="164" class="accent sans" font-size="16" font-weight="700">THE UUID · any version · 128 bits</text>
 <text x="36" y="202" class="ink sans" font-size="24" font-weight="600">UUID</text>
 <text x="286" y="202" class="muted sans" font-size="16">36 characters as text · 16 bytes in binary</text>
@@ -629,19 +631,20 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect id="ob15" class="hl" x="666.1" y="270" width="38.8" height="44" rx="2"/></g>
 <path d="M36 318v6H280.8v-6" class="time" fill="none" stroke="currentColor" stroke-width="2"/>
 <text x="36" y="344" class="time f sans" font-size="16" font-weight="600">UUIDv7 48-bit timestamp: 1755229000244 ms = 2025-08-15 03:36:40.244 UTC</text>
-<text x="36" y="374" class="ink sans" font-size="17" font-weight="600"><tspan class="accent" font-weight="700">Text</tspan><tspan dx="10">For UUID columns and UUID-only APIs.</tspan></text>
-<text x="36" y="398" class="key sans" font-size="16">Sort</text>
-<text x="78" y="398" class="ink sans" font-size="17" font-weight="600">by time¹</text>
-<text x="430" y="398" class="key sans" font-size="16">Case</text>
-<text x="476" y="398" class="ink sans" font-size="17" font-weight="600">any accepted</text>
-<text x="36" y="422" class="muted sans" font-size="17">Time-range queries on UUIDv7 keys.</text>
-<text x="36" y="458" class="ink sans" font-size="17" font-weight="600"><tspan class="accent" font-weight="700">Bytes</tspan><tspan dx="10">For binary storage and transport.</tspan></text>
-<text x="36" y="482" class="key sans" font-size="16">Sort</text>
-<text x="78" y="482" class="ink sans" font-size="17" font-weight="600">by time¹ (byte order)</text>
-<text x="430" y="482" class="key sans" font-size="16">Case</text>
-<text x="476" y="482" class="ink sans" font-size="17" font-weight="600">none (binary)</text>
-<text x="36" y="506" class="muted sans" font-size="17">Generate or decode straight into your buffer; errors leave it unchanged.</text>
-<path d="M36 536H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1.2"/>
+<text x="52" y="374" class="accent sans" font-size="17" font-weight="700">Text</text>
+<text x="116" y="374" class="key sans" font-size="16">Sort</text>
+<text x="158" y="374" class="ink sans" font-size="17" font-weight="600">by time¹</text>
+<text x="446" y="374" class="key sans" font-size="16">Case</text>
+<text x="492" y="374" class="ink sans" font-size="17" font-weight="600">any accepted</text>
+<text x="116" y="398" class="ink sans" font-size="17" font-weight="400">For UUID columns and UUID-only APIs.</text>
+<text x="116" y="422" class="muted sans" font-size="17">Time-range queries on UUIDv7 keys.</text>
+<text x="52" y="458" class="accent sans" font-size="17" font-weight="700">Bytes</text>
+<text x="116" y="458" class="key sans" font-size="16">Sort</text>
+<text x="158" y="458" class="ink sans" font-size="17" font-weight="600">by time¹ (byte order)</text>
+<text x="446" y="458" class="key sans" font-size="16">Case</text>
+<text x="492" y="458" class="ink sans" font-size="17" font-weight="600">none (binary)</text>
+<text x="116" y="482" class="ink sans" font-size="17" font-weight="400">For binary storage and transport.</text>
+<text x="116" y="506" class="muted sans" font-size="17">Generate or decode straight into your buffer; errors leave it unchanged.</text>
 <text x="36" y="564" class="accent sans" font-size="16" font-weight="700">PLAIN SLUGS · any UUID · no key · the same 128 bits in fewer characters</text>
 <text x="790" y="602" class="accent sans" font-size="17" font-weight="700">One character, two fields</text>
 <text x="36" y="602" class="ink sans" font-size="24" font-weight="600">Plain base64url</text>
@@ -788,12 +791,12 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect x="910.4" y="620" width="17.9" height="33" class="hit variant"/>
 <text x="918.6" y="641.8" class="fw mono" font-size="15" text-anchor="middle">0</text>
 <text x="790" y="669" class="muted sans" font-size="16">4 payload + 2 variant bits</text>
-<text x="36" y="690" class="ink sans" font-size="17" font-weight="600"><tspan>For short URLs, logs and JSON.</tspan></text>
-<text x="36" y="714" class="key sans" font-size="16">Sort</text>
-<text x="78" y="714" class="ink sans" font-size="17" font-weight="600">roughly by time²</text>
-<text x="430" y="714" class="key sans" font-size="16">Case</text>
-<text x="476" y="714" class="ink sans" font-size="17" font-weight="600">must match</text>
-<text x="36" y="738" class="muted sans" font-size="17">14 characters shorter than UUID text; standard base64url tools decode it.</text>
+<text x="52" y="690" class="key sans" font-size="16">Sort</text>
+<text x="94" y="690" class="ink sans" font-size="17" font-weight="600">roughly by time²</text>
+<text x="446" y="690" class="key sans" font-size="16">Case</text>
+<text x="492" y="690" class="ink sans" font-size="17" font-weight="600">must match</text>
+<text x="52" y="714" class="ink sans" font-size="17" font-weight="400">For short URLs, logs and JSON.</text>
+<text x="52" y="738" class="muted sans" font-size="17">14 characters shorter than UUID text; standard base64url tools decode it.</text>
 <text x="36" y="790" class="ink sans" font-size="24" font-weight="600">Plain base32hex</text>
 <text x="286" y="790" class="muted sans" font-size="16">26 chars · 0–9 a–v · 5 bits each · lowercase</text>
 <g id="gq0">
@@ -962,13 +965,12 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect x="892.5" y="808" width="17.9" height="33" class="hit version"/>
 <text x="900.7" y="829.8" class="fg mono" font-size="15" text-anchor="middle">1</text>
 <text x="790" y="857" class="muted sans" font-size="16">3 timestamp + 2 version bits</text>
-<text x="36" y="878" class="ink sans" font-size="17" font-weight="600"><tspan>For case-insensitive filenames and text keys.</tspan></text>
-<text x="36" y="902" class="key sans" font-size="16">Sort</text>
-<text x="78" y="902" class="ink sans" font-size="17" font-weight="600">by time¹</text>
-<text x="430" y="902" class="key sans" font-size="16">Case</text>
-<text x="476" y="902" class="ink sans" font-size="17" font-weight="600">any accepted</text>
-<text x="36" y="926" class="muted sans" font-size="17">Time-range queries on the ID itself; 4 characters longer than base64url.</text>
-<path d="M36 956H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1.2"/>
+<text x="52" y="878" class="key sans" font-size="16">Sort</text>
+<text x="94" y="878" class="ink sans" font-size="17" font-weight="600">by time¹</text>
+<text x="446" y="878" class="key sans" font-size="16">Case</text>
+<text x="492" y="878" class="ink sans" font-size="17" font-weight="600">any accepted</text>
+<text x="52" y="902" class="ink sans" font-size="17" font-weight="400">For case-insensitive filenames and text keys.</text>
+<text x="52" y="926" class="muted sans" font-size="17">Time-range queries on the ID itself; 4 characters longer than base64url.</text>
 <text x="36" y="984" class="masked f sans" font-size="16" font-weight="700">MASKED SLUGS · UUIDv7 only · need the matching key</text>
 <text x="1064" y="984" class="muted sans" font-size="15" text-anchor="end">Examples use the public demo key</text>
 <text x="36" y="1006" class="muted sans" font-size="17">A keyed scramble hides the time and every UUID field, and decodes back to the exact UUID. 132 bits = 42-bit time</text>
@@ -1086,13 +1088,13 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="453.1" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">z</text>
 <rect x="443.4" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om21" class="hl" x="443.4" y="1124" width="19.4" height="48" rx="2"/></g>
-<text x="36" y="1200" class="ink sans" font-size="17" font-weight="600"><tspan>For public IDs that hide the UUID's time and fields.</tspan></text>
-<text x="36" y="1224" class="key sans" font-size="16">Sort</text>
-<text x="78" y="1224" class="ink sans" font-size="17" font-weight="600">none: decode first</text>
-<text x="430" y="1224" class="key sans" font-size="16">Case</text>
-<text x="476" y="1224" class="ink sans" font-size="17" font-weight="600">must match</text>
-<text x="36" y="1248" class="muted sans" font-size="17">Your database keeps UUIDs. Only the matching key and settings decode it; keep</text>
-<text x="36" y="1272" class="muted sans" font-size="17">old keys for old links.</text>
+<text x="52" y="1200" class="key sans" font-size="16">Sort</text>
+<text x="94" y="1200" class="ink sans" font-size="17" font-weight="600">none: decode first</text>
+<text x="446" y="1200" class="key sans" font-size="16">Case</text>
+<text x="492" y="1200" class="ink sans" font-size="17" font-weight="600">must match</text>
+<text x="52" y="1224" class="ink sans" font-size="17" font-weight="400">For public IDs that hide the UUID's time and fields.</text>
+<text x="52" y="1248" class="muted sans" font-size="17">Your database keeps UUIDs. Only the matching key and settings decode it; keep</text>
+<text x="52" y="1272" class="muted sans" font-size="17">old keys for old links.</text>
 <text x="36" y="1324" class="masked f sans" font-size="24" font-weight="600">Masked base32hex</text>
 <text x="286" y="1324" class="muted sans" font-size="16">27 chars · 0–9 a–v · 5 bits each · lowercase</text>
 <g id="gn0">
@@ -1232,13 +1234,13 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="550.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">o</text>
 <rect x="540.4" y="1332" width="19.4" height="56" class="hit masked pad"/>
 <rect id="on26" class="hl" x="540.4" y="1336" width="19.4" height="48" rx="2"/></g>
-<text x="36" y="1412" class="ink sans" font-size="17" font-weight="600"><tspan>For masked IDs in case-insensitive filenames.</tspan></text>
-<text x="36" y="1436" class="key sans" font-size="16">Sort</text>
-<text x="78" y="1436" class="ink sans" font-size="17" font-weight="600">none: decode first</text>
-<text x="430" y="1436" class="key sans" font-size="16">Case</text>
-<text x="476" y="1436" class="ink sans" font-size="17" font-weight="600">any accepted</text>
-<text x="36" y="1460" class="muted sans" font-size="17">5 characters longer. The same UUID, key and settings always give the same slug;</text>
-<text x="36" y="1484" class="muted sans" font-size="17">one codec reads both masked alphabets.</text>
+<text x="52" y="1412" class="key sans" font-size="16">Sort</text>
+<text x="94" y="1412" class="ink sans" font-size="17" font-weight="600">none: decode first</text>
+<text x="446" y="1412" class="key sans" font-size="16">Case</text>
+<text x="492" y="1412" class="ink sans" font-size="17" font-weight="600">any accepted</text>
+<text x="52" y="1436" class="ink sans" font-size="17" font-weight="400">For masked IDs in case-insensitive filenames.</text>
+<text x="52" y="1460" class="muted sans" font-size="17">5 characters longer. The same UUID, key and settings always give the same slug;</text>
+<text x="52" y="1484" class="muted sans" font-size="17">one codec reads both masked alphabets.</text>
 <text x="790" y="1110" class="accent sans" font-size="17" font-weight="700">Masking: avalanche effect</text>
 <text x="790" y="1134" class="muted sans" font-size="16">Last UUID byte · flip one bit</text>
 <text x="790" y="1166.8" class="muted sans" font-size="16">Before</text>
