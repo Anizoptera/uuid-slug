@@ -21,7 +21,7 @@ These items track unresolved copy; they do not authorize README edits or new mea
 ## README diagram and badges
 
 - [ ] Push `7b17025` (badges, diagram after badges linking to the raw SVG) once runtime badges are final; pushes need explicit authorization.
-- [ ] Runtime badges: one consistent two-part style like the Node badge (logo label, version value); colours readable on light and dark GitHub; Cloudflare Workers as "CF Workers" with the Cloudflare logo; Bun and Deno show measured version floors.
+- [ ] Runtime badges: one consistent two-part style like the Node badge (logo label, version value); colours readable on light and dark GitHub; Cloudflare Workers labelled "cloud | workers" with the Cloudflare logo; Bun and Deno show measured version floors.
 
 ## Runtime support
 

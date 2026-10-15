@@ -4,11 +4,11 @@ High-performance UUIDv4/v7 generation and handling for TS, Rust, and WASM, short
 
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
+[![Runtime deps](https://img.shields.io/badge/runtime_deps-0-2ea44f)](package.json)
 [![Node >=20](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](package.json)
 [![Bun >=1.0](https://img.shields.io/badge/bun-%3E%3D1.0-FBF0DF?logo=bun&logoColor=FBF0DF)](#runtime)
 [![Deno >=1.30](https://img.shields.io/badge/deno-%3E%3D1.30-70FFAF?logo=deno&logoColor=white)](#runtime)
-[![Cloudflare Workers](https://img.shields.io/badge/cloudflare-workers-F38020?logo=cloudflare&logoColor=white)](#runtime)
-[![Runtime deps](https://img.shields.io/badge/runtime_deps-0-2ea44f)](package.json)
+[![Cloudflare Workers](https://img.shields.io/badge/cloud-workers-F38020?logo=cloudflare&logoColor=white)](#runtime)
 [![License](https://img.shields.io/github/license/Anizoptera/uuid-slug)](LICENSE)
 
 [![One UUIDv7 shown as UUID text, 16 bytes, plain base64url and base32hex slugs, and masked base64url and base32hex slugs, with colours tracing timestamp, version, variant and payload bits](docs/assets/uuid-representations.svg)](https://raw.githubusercontent.com/Anizoptera/uuid-slug/main/docs/assets/uuid-representations.svg)
