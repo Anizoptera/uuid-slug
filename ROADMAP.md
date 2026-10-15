@@ -31,8 +31,16 @@ Deno consumers cannot load published 0.4.0: its `deno` export condition selects 
 
 - [ ] Route Deno to built JavaScript (export condition and `#runtime` entry) without degrading current Deno; keep Bun on source.
 - [ ] Make the packed-artifact check install the package as a real directory under `node_modules` and add a Deno `npm:`-style probe; the regression must fail on the current routing.
-- [ ] Measure the oldest Bun and Deno releases that pass the packed consumer smoke (generation, conversion, masking, parsing); widen support where it costs current runtimes nothing; record floors in `package.json` `engines` and the Runtime table.
-- [ ] Check floors for every other tested runtime (Node, workerd, browsers) against the same smoke; keep each floor exercised in CI.
+Measured with `__test__/consumer-probe.ts` alone against real installs (`node_modules` directory for Node and Bun, a local registry through `npm:` for Deno), on macOS arm64:
+
+- Node 16.20.2, 18.0.0, 18.20.8, 19.9.0, 20.0.0 and 24.21.0 pass.
+- Bun 1.0.8 through 1.4.3 pass. Bun 1.0.0–1.0.7 fail only async mask-derivation cancellation: their `setImmediate` chains never let timers run, so `yieldToHost` in `src/mask.ts` cannot deliver an abort.
+- Deno 1.30.3 through 2.9.7 pass once Deno loads compiled JavaScript; every tested Deno rejects TypeScript inside npm packages. Deno 1.29 and older cannot load any npm package today because they fetch their Node compatibility layer from `deno.land/std`, which returns HTTP 500.
+- Compiled output needs ES2022 (class and private fields, `Object.hasOwn`, error `cause`); browser floors follow from that and are not measured.
+
+- [ ] Decide the floors to declare (Node, Bun, Deno, browsers) and whether to support Bun 1.0.0–1.0.7 cancellation; record them in `package.json` `engines`, README badges and the Runtime table.
+- [ ] Decouple the CI floor probe from rival libraries: `__test__/rust-conform-probe.ts` imports `bench/candidates`, so `scripts/runtime-probe.ts` fails on Node 18 (`uniku` needs global `crypto`), Bun ≤1.2.0 (`@kripod/uuidv7`) and Deno ≤2.0 (harness `process` and `Buffer` globals) before reaching the package.
+- [ ] Exercise each declared floor in CI with the package-only probe: Node and Bun via the existing matrix, Deno via `npm:` resolution.
 - [ ] Propose the Aponte agent-gotcha rule (packed-consumer checks must match real install layout) and write it only with approval.
 
 ## Release notes
