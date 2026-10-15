@@ -2,13 +2,13 @@ import ts from "typescript-floor";
 import { command } from "./command";
 import {
   apiChangeLevel,
-  incompatibleExports,
   minimumRelease,
   normalizeDeclarations,
   satisfiesMinimum,
   sectionsLevel,
   typeScriptApiSections,
 } from "./release-comparison";
+import { incompatibleExports } from "./api-compatibility";
 import type { ReleaseLevel } from "./release-comparison";
 import { latestRelease } from "./release-history";
 import {

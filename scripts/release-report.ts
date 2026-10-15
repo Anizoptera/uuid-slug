@@ -7,13 +7,13 @@ import {
   lineApiSections,
   binarySize,
   combineReleaseLevels,
-  incompatibleExports,
   minimumRelease,
   normalizeDeclarations,
   satisfiesMinimum,
   sectionsLevel,
   typeScriptApiSections,
 } from "./release-comparison";
+import { incompatibleExports } from "./api-compatibility";
 import type { ApiDifference, ApiSections, ReleaseLevel } from "./release-comparison";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";

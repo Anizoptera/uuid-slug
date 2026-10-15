@@ -171,6 +171,9 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Use the `typescript` package for project checking; TypeScript 7 is the main compiler.
   `typescript-floor` is limited to the TypeScript 5.0 packed-consumer check and tooling that needs
   legacy in-process compiler APIs such as the parser, printer, or language service.
+  `typescript-checker` (the last in-process TypeScript, 6.x) is limited to the type checker in
+  `scripts/api-compatibility.ts`, which must read current library types that 5.0 rejects. Keep each
+  file on one of these packages: their syntax-kind numbers differ, so their nodes must not mix.
 - Run Bun's built-in project checker as a separate lane beside TypeScript, not a replacement. Inventory both `Bun.build` calls and Bun CLI argument arrays; every bundler check uses `check: true` or CLI `--check`. Use `bun --check` for the project because its `check` package script otherwise takes precedence.
 - Verify runtime behavior changes through owning correctness tests and existing regression checks
   for each affected runtime, output, capability and success or fallback branch. An aggregate result

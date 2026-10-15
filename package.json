@@ -154,6 +154,7 @@
     "svgo": "4.1.0",
     "tsdown": "^0.23.1",
     "typescript": "^7.0.2",
+    "typescript-checker": "npm:typescript@6.0.3",
     "typescript-floor": "npm:typescript@5.0.4",
     "uniku": "0.6.0",
     "uuid": "^14.0.3",

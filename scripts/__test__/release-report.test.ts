@@ -6,10 +6,10 @@ import {
   minimumRelease,
   normalizeDeclarations,
   binarySize,
-  incompatibleExports,
   satisfiesMinimum,
   typeScriptApiSections,
 } from "../release-comparison";
+import { incompatibleExports } from "../api-compatibility";
 import { consumerReleaseNotes, verifyCrateIdentity, verifyNpmIdentity } from "../release-report";
 import type { ReleaseReport } from "../release-report";
 
@@ -59,6 +59,14 @@ test("compatibility follows unexported types an export uses", () => {
       "export declare function wait(signal: string): void;",
     ),
   ]).toEqual(["wait"]);
+  // Released declarations use current library types; a compiler that cannot read them would turn
+  // every compatible change into a breaking one.
+  expect([
+    ...incompatibleExports(
+      "export declare function read(bytes: Uint8Array<ArrayBuffer>): void;",
+      "export declare function read(bytes: Uint8Array<ArrayBuffer>, offset?: number): void;",
+    ),
+  ]).toEqual([]);
   // A removed export shows its own row, never its members or private helpers it used.
   expect(
     sections(
