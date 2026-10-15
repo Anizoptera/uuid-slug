@@ -15,9 +15,9 @@ Items not marked "maintainer request" are leads that agents wrote, not requireme
 
 Published 0.4.0 does not load in Deno: its `deno` condition selects TypeScript, which Deno refuses inside npm packages. Development now routes Deno to compiled output; Deno users need the next release.
 
-Floors, their reasons and the measuring method live in `docs/cross-language.md` §Runtime floors.
+Floors, their reasons and the measuring method live in `dev/cross-language.md` §Runtime floors.
 
-- [ ] Decide later whether to also publish to JSR, where Deno can load the TypeScript source; it needs a ruling against the one-npm-package rule in `docs/cross-language.md`, a condition-free Deno entry and slow-types checks.
+- [ ] Decide later whether to also publish to JSR, where Deno can load the TypeScript source; it needs a ruling against the one-npm-package rule in `dev/cross-language.md`, a condition-free Deno entry and slow-types checks.
 - [ ] Propose the Aponte agent-gotcha rule (packed-consumer checks must match real install layout) and write it only with approval.
 
 ## Release notes

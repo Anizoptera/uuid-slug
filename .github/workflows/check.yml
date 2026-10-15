@@ -190,7 +190,7 @@ jobs:
         run: bun scripts/runtime-probe.ts runtime-reference.json
 
   # Bun and Deno engines floors and Node 16.20 run the package-only probe from a real install;
-  # the runtimes matrix owns the Node engines floor. docs/cross-language.md §Runtime floors.
+  # the runtimes matrix owns the Node engines floor. dev/cross-language.md §Runtime floors.
   floors:
     runs-on: ubuntu-latest
     timeout-minutes: 10

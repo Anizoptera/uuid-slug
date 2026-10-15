@@ -12,7 +12,7 @@
 //
 // Bun and Deno floors come from package.json `engines`. The Node engines floor is not repeated here:
 // the `runtimes` CI matrix already runs that exact release with the full shared-contract probe.
-// `docs/cross-language.md` §Runtime floors owns why each floor holds.
+// `dev/cross-language.md` §Runtime floors owns why each floor holds.
 // Usage: bun scripts/floor-probe.ts [package.tgz]
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -175,7 +175,7 @@ try {
   if (failures.length) {
     failed = true;
     throw new Error(
-      `Runtime floor probe failed:\n${failures.join("\n\n")}\n\nA declared floor no longer runs the package. Fix the package, or raise the floor in package.json engines and record the reason in docs/cross-language.md §Runtime floors.`,
+      `Runtime floor probe failed:\n${failures.join("\n\n")}\n\nA declared floor no longer runs the package. Fix the package, or raise the floor in package.json engines and record the reason in dev/cross-language.md §Runtime floors.`,
     );
   }
   console.log(

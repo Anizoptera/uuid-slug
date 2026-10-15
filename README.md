@@ -447,7 +447,7 @@ The [Rust crate](rust/uuid-slug) uses the same identifier formats. Cross-languag
 
 Bun's native UUIDv7 timestamp can advance ahead of the clock during bursts. Create a generator to control ordering, clock policy or payload layout.
 
-Conversion and timestamp extraction need no randomness, so read-only tools and static builds can use them. Generation needs secure randomness. See [runtime coverage](docs/cross-language.md#distribution-and-dependencies).
+Conversion and timestamp extraction need no randomness, so read-only tools and static builds can use them. Generation needs secure randomness.
 
 
 ## Upgrades and support

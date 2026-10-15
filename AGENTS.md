@@ -10,7 +10,7 @@ READ the owner before changing its subject; these references hold the detailed r
 | --- | --- |
 | ANY public TypeScript or Rust interface, type, error or declaration comment | `dev/interface.md` in full |
 | Masking, keys, sentinels or identifier formats | `docs/design.md` and `docs/security.md` |
-| Rust, TS/Rust parity, shared formats, filesystem-safe output, package entries, runtime floors or bundling | `docs/cross-language.md` |
+| Rust, TS/Rust parity, shared formats, filesystem-safe output, package entries, runtime floors or bundling | `dev/cross-language.md` |
 | Experiments, profiles, drivers, evidence cleanup or performance gates, even from `src/` | `bench/AGENTS.md` (priorities, gates), then `bench/README.md` (commands, reports) |
 | Versions, packaging, release tooling or workflows, publication, recovery, assets, notes or finalization | `docs/release.md` in full |
 | Consumer copy or generation guarantees | §Writing public documentation, then README opening, affected section and reference |
@@ -98,7 +98,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   separately to TypeScript and Rust, document the consumer effect, and verify each packaged surface.
 - Write each maintainer ruling into the file that owns its subject when it is made: consumer
   contracts in README, wire design in `docs/design.md`, security boundaries in `docs/security.md`,
-  cross-language and distribution decisions in `docs/cross-language.md`, measured conclusions in
+  cross-language and distribution decisions in `dev/cross-language.md`, measured conclusions in
   `bench/PERFORMANCE.md`. Plans, agent memory and session notes track progress only; a ruling kept
   there is lost. Durable code and docs must not reference plans, phases or task IDs.
 - Keep execution decisions and unfinished atomic work as Markdown tasks in the one live plan.
@@ -153,14 +153,14 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   sections before changing it. Preserve sentinel priority and stored trailing-bit aliases without
   weakening ordinary strict decoding. Writers and accepted old formats remain independent.
 - npm runtime dependencies are forbidden. Rust dependencies require the evidence described in
-  `docs/cross-language.md`. Benchmark dependencies stay dev-only and outside published artifacts.
+  `dev/cross-language.md`. Benchmark dependencies stay dev-only and outside published artifacts.
 - Keep one public code entry while named root imports tree-shake correctly. Add a subpath only when
   packed consumers prove useful tree shaking that the root cannot provide; startup timing alone is
   insufficient.
 - Order public export conditions as `types`, `bun`, `deno`, `development`, then `default`. Add a
   condition only when it selects different output or guards an incompatible lower condition. The
   private `#runtime` map selects Bun source, compiled portable code for Deno, or Node native code while built
-  hosts share one implementation graph. Runtime floors and why: `docs/cross-language.md` §Runtime floors;
+  hosts share one implementation graph. Runtime floors and why: `dev/cross-language.md` §Runtime floors;
   CI runs each (`runtimes` matrix, `bun scripts/floor-probe.ts`).
 - Treat shipped `src` as executable package code, not source-map support. Bun MUST resolve public
   entries and `#runtime` to TypeScript. Deno MUST load compiled output: it REJECTS TypeScript inside
@@ -178,7 +178,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   exclude unrelated heavy code and compare independent optimizers. Subpaths serve direct ESM,
   never replace removable root imports. Compare decoder-only bundles before adding writers to
   shared alphabet metadata; conversion speed cannot justify retaining unused encoding code.
-- Read `docs/cross-language.md` §JavaScript packaging before changing emitted module boundaries,
+- Read `dev/cross-language.md` §JavaScript packaging before changing emitted module boundaries,
   internal exports, moved code, import-time initialization, tsdown, minification, source maps,
   `sideEffects`, or optimizer annotations. Before deleting a moved file, account for every original
   implementation line, comment, and consumer. The packed-artifact check MUST preserve every

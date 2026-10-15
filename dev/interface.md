@@ -5,7 +5,7 @@ Design the public interface so the easiest call is correct, validated values sta
 This document owns interface design. README owns consumer promises and common workflows;
 [api.md](../docs/api.md) holds detailed TypeScript calls and migration recipes. [design.md](../docs/design.md)
 owns the wire format, [security.md](../docs/security.md) owns trust boundaries, and
-[cross-language.md](../docs/cross-language.md) owns parity and distribution.
+[cross-language.md](cross-language.md) owns parity and distribution.
 
 ## UUID slug vocabulary
 
