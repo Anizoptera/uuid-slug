@@ -2,6 +2,8 @@
 
 High-performance UUIDv4/v7 generation and handling for TS, Rust, and WASM, short base64/base32 plain slugs and configurable masked UUIDv7 slugs.  Zero runtime deps, tree-shakable, and optimised for your runtime.  One efficient ID for databases, URLs and files.
 
+![One UUIDv7 shown as UUID text, 16 bytes, plain base64url and base32hex slugs, and masked base64url and base32hex slugs, with colours tracing timestamp, version, variant and payload bits](docs/assets/uuid-representations.svg)
+
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
 [![Node >=20](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](package.json)
