@@ -229,6 +229,9 @@ Agent instructions live only in `AGENTS.md` files, never in public documents (RE
 - Give sizes as the saving the reader compares: "39% shorter than UUID text", not "14 characters
   shorter". Character and byte counts belong in definitions. Cut facts the reader cannot act on,
   such as bits per character.
+- Write byte sizes in binary units in every file and tool output: 1 KB is 1024 bytes, then MB and
+  GB. Never use SI units (1 kB = 1000 bytes). Release tooling formats sizes with `binarySize` in
+  `scripts/release-comparison.ts`; reuse it rather than formatting by hand.
 - Put limits/warnings beside the affected call, with the failure and fix. Explain actual decoding
   behavior, not "proof of issuance". Keep general security advice out of the opening and unrelated calls.
 - Every claim MUST give a concrete gain, caller action or boundary. Name what the reader can do,
@@ -293,7 +296,7 @@ Agent instructions live only in `AGENTS.md` files, never in public documents (RE
 
 ## Release
 
-- Release notes explain what changes for consumers and how to upgrade. Show only the minimal public API changes from the latest release in Markdown diff blocks; never publish declaration inventories, private helper types, repeated older comparisons, or API attachments. Read the body as a cold reader before publication.
+- Release notes explain what changes for consumers and how to upgrade. The `CHANGELOG.md` section holds prose only: `scripts/release-report.ts` appends one generated API diff at the end of `### Breaking changes`, `### Added` and `### Changed`, then package sizes and the npm, crate and commit-history links. Never hand-write API diff blocks in the changelog; never publish declaration inventories, private helper types, repeated older comparisons, or API attachments. Read the body as a cold reader before publication.
 - Describe only the packages being published; unpublished implementations and their reports are not consumer release notes.
 - Preserve declaration names, visibility and ownership from the compiler AST; do not infer them from printed signatures, which can hide valid quoted, computed or Unicode names.
 - Trace referenced types before reporting no public API change; unchanged exported signatures can hide newly required arguments or changed results.

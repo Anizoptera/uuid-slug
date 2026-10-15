@@ -5,12 +5,86 @@ import {
   apiDiff,
   minimumRelease,
   normalizeDeclarations,
-  publicApiDifference,
+  binarySize,
+  incompatibleExports,
   satisfiesMinimum,
-  sizeDelta,
+  typeScriptApiSections,
 } from "../release-comparison";
 import { consumerReleaseNotes, verifyCrateIdentity, verifyNpmIdentity } from "../release-report";
 import type { ReleaseReport } from "../release-report";
+
+// Every row the notes would show, whatever its section.
+const shownRows = (before: string, after: string) =>
+  Object.values(typeScriptApiSections(before, after, new Set()))
+    .filter(Boolean)
+    .join("\n");
+
+// `generate` uses the unexported `Options`, so a change there reaches callers only through it.
+const optionsApi = (field: string) =>
+  `declare interface Options { ${field} } export declare function generate(options: Options): string; declare type Helper = 1;`;
+
+const codecApi = (method: string) =>
+  `export interface Codec { ${method} } export declare function create(): Codec;`;
+
+const notesSections = (breaking: string, added: string) => ({ breaking, changed: "", added });
+
+test("compatibility follows unexported types an export uses", () => {
+  const before = optionsApi("at?: number;");
+  const sections = (after: string) =>
+    typeScriptApiSections(
+      normalizeDeclarations(before),
+      normalizeDeclarations(after),
+      incompatibleExports(before, after),
+    );
+  // `generate` prints identically, yet `generate({})` stops compiling.
+  expect(sections(optionsApi("at: number;"))).toEqual({
+    breaking: "```diff\n- Options: at?: number;\n+ Options: at: number;\n```",
+    changed: "",
+    added: "",
+  });
+  expect(sections(optionsApi("at?: number; extra?: string;"))).toEqual({
+    breaking: "",
+    changed: "",
+    added: "```diff\n+ Options: extra?: string;\n```",
+  });
+  // Assignability accepts a dropped optional parameter, yet `codec.encode(x, true)` stops compiling.
+  const wide = codecApi("encode(value: string, strict?: boolean): string;");
+  const narrow = codecApi("encode(value: string): string;");
+  expect([...incompatibleExports(wide, narrow)]).toEqual(["create"]);
+  expect([...incompatibleExports(narrow, wide)]).toEqual([]);
+  // An unresolved name is an error type that accepts anything, so it cannot prove compatibility.
+  expect([
+    ...incompatibleExports(
+      "export declare function wait(signal: Missing): void;",
+      "export declare function wait(signal: string): void;",
+    ),
+  ]).toEqual(["wait"]);
+  // A removed export shows its own row, never its members or private helpers it used.
+  expect(
+    sections(
+      optionsApi("at?: number;").replace(
+        "export declare function generate",
+        "export declare function create",
+      ),
+    ),
+  ).toEqual({
+    breaking: "```diff\n- export declare function generate(options: Options): string;\n```",
+    changed: "",
+    added: "```diff\n+ export declare function create(options: Options): string;\n```",
+  });
+});
+
+test("a compatible change to a branded export stays compatible", async () => {
+  // Each file's `unique symbol` is a distinct type, so without shared brands every branded result
+  // would look unrelated across versions and any touched export would read as breaking.
+  const source = await Bun.file(`${import.meta.dir}/../../api/typescript.api.d.ts`).text();
+  const widened = source.replace(
+    "export declare function isUuidString(value: unknown): value is UuidString;",
+    "export declare function isUuidString(value: unknown, strict?: boolean): value is UuidString;",
+  );
+  expect(widened).not.toBe(source);
+  expect([...incompatibleExports(source, widened)]).toEqual([]);
+});
 
 test("release API diff exposes removals and additions without restating unchanged lines", () => {
   expect(
@@ -30,7 +104,7 @@ test("public release diff omits private helpers while retaining changed exported
   const after = normalizeDeclarations(
     "declare type Helper = 2; declare const brand: unique symbol; export interface Value { x: number; unchanged: boolean; readonly [brand]: 2; readonly [Symbol.toStringTag]: 'after'; }",
   );
-  const report = publicApiDifference(before, after);
+  const report = shownRows(before, after);
   expect(report).toContain("- Value: x: string;");
   expect(report).toContain("+ Value: x: number;");
   expect(report).not.toContain("Helper");
@@ -38,13 +112,13 @@ test("public release diff omits private helpers while retaining changed exported
   expect(report).not.toContain("[brand]");
   expect(report).toContain("- Value: readonly [Symbol.toStringTag]: 'before';");
   expect(report).toContain("+ Value: readonly [Symbol.toStringTag]: 'after';");
-  expect(publicApiDifference(before, before)).toBe("");
+  expect(shownRows(before, before)).toBe("");
 });
 
 test.each(["Value$", "Ω"])("public changes retain compiler-valid owner %s", (name) => {
   const before = normalizeDeclarations(`export interface ${name} { x: string; }`);
   const after = normalizeDeclarations(`export interface ${name} { x: number; }`);
-  const report = publicApiDifference(before, after);
+  const report = shownRows(before, after);
   expect(report).toContain(`- ${name}: x: string;`);
   expect(report).toContain(`+ ${name}: x: number;`);
 });
@@ -56,7 +130,7 @@ test("named exports retain alias changes and callable symbol members", () => {
   const after = normalizeDeclarations(
     "declare const key: unique symbol; declare interface Value { [key](): number; } export { key, Value as Renamed };",
   );
-  const report = publicApiDifference(before, after);
+  const report = shownRows(before, after);
   expect(report).toContain("- export { key, Value as Public };");
   expect(report).toContain("+ export { key, Value as Renamed };");
   expect(report).toContain("- Value: [key](): string;");
@@ -70,7 +144,7 @@ test("public diffs isolate named variables and retain default exports", () => {
   const after = normalizeDeclarations(
     "declare const selected: number, internal: boolean; export { selected }; export default 1;",
   );
-  const report = publicApiDifference(before, after);
+  const report = shownRows(before, after);
   expect(report).toContain("- declare const selected: string;");
   expect(report).toContain("+ declare const selected: number;");
   expect(report).toContain("- export default selected;");
@@ -81,7 +155,7 @@ test("public diffs isolate named variables and retain default exports", () => {
 test("default-only exports retain changes to their underlying value", () => {
   const before = normalizeDeclarations("declare const selected: string; export default selected;");
   const after = normalizeDeclarations("declare const selected: number; export default selected;");
-  const report = publicApiDifference(before, after);
+  const report = shownRows(before, after);
   expect(report).toContain("- declare const selected: string;");
   expect(report).toContain("+ declare const selected: number;");
 });
@@ -97,49 +171,71 @@ test.each(['"read value"', "[Symbol.iterator]", "read$"])(
     const after = normalizeDeclarations(
       `export interface Value { ${second} ${first} stable: boolean; }`,
     );
-    const report = publicApiDifference(before, after);
+    const report = shownRows(before, after);
     expect(report).toContain("- Value: " + first);
     expect(report).toContain("+ Value: " + second);
     expect(report).not.toContain("stable");
   },
 );
 
-test("publication notes use only the latest comparison and selected package", () => {
+test("publication notes put each API diff at the end of its section, then size and links", () => {
   const report: ReleaseReport = {
-    current: { npm: 12, crate: 30, native: 999, wasm: 888 },
+    release: {
+      name: "@scope/pkg",
+      crate: "pkg",
+      version: "0.4.0",
+      repository: "https://github.com/owner/pkg",
+    },
+    current: { npm: 223_590, crate: 30_720, native: 999, wasm: 888 },
     comparisons: [
       {
         role: "releaseLine",
         tag: "v0.1.0",
         minimum: "minor",
         previous: {},
-        npmApi: "old npm inventory",
-        crateApi: "old crate inventory",
+        npmApi: notesSections("old npm inventory", ""),
+        crateApi: notesSections("old crate inventory", ""),
       },
       {
         role: "immediate",
         tag: "v0.3.0",
         minimum: "minor",
-        previous: { npm: 8, crate: 20 },
-        npmApi: "```diff\n- old()\n+ replacement()\n```",
-        crateApi: "crate change",
+        previous: { npm: 132_198, crate: 30_720 },
+        npmApi: notesSections("```diff\n- old()\n```", "```diff\n+ fresh()\n```"),
+        crateApi: notesSections("crate break", ""),
       },
     ],
   };
-  const npm = consumerReleaseNotes("Upgrade instructions.\n", report, "npm");
-  expect(npm).toContain("- old()\n+ replacement()");
-  expect(npm).toContain("12 B (+4 B, +50.0%)");
-  for (const omitted of ["crate", "v0.1.0", "inventory", "999", "888"])
-    expect(npm).not.toContain(omitted);
-  const crate = consumerReleaseNotes("Upgrade instructions.\n", report, "crate");
-  expect(crate).toContain("crate change");
-  expect(crate).not.toContain("replacement()");
-  const both = consumerReleaseNotes("Upgrade instructions.\n", report, "both");
-  expect(both).toContain("crate change");
-  expect(both).toContain("replacement()");
+  const changelog = "### Breaking changes\n\n- Rename `old`.\n\n### Fixed\n\n- A fix.\n";
+  expect(consumerReleaseNotes(changelog, report, "npm")).toBe(
+    [
+      "### Breaking changes\n\n- Rename `old`.\n\n```diff\n- old()\n```",
+      "### Fixed\n\n- A fix.",
+      "### Added\n\n```diff\n+ fresh()\n```",
+      "**Package size**: 218.3 KB compressed, up 89.3 KB (+69.1%) from v0.3.0\n**NPM Package**: [`@scope/pkg v0.4.0`](https://www.npmjs.com/package/@scope/pkg/v/0.4.0)\n**Full Commit History**: https://github.com/owner/pkg/compare/v0.3.0...v0.4.0\n",
+    ].join("\n\n"),
+  );
+  const both = consumerReleaseNotes(changelog, report, "both");
+  expect(both).toContain(
+    "**npm package**\n\n```diff\n- old()\n```\n\n**Rust crate**\n\ncrate break",
+  );
+  expect(both).toContain("**Rust crate size**: 30.0 KB compressed, unchanged from v0.3.0");
+  expect(both).toContain("**Rust Crate**: [`pkg v0.4.0`](https://crates.io/crates/pkg/0.4.0)");
+  for (const omitted of ["inventory", "999", "888"]) expect(both).not.toContain(omitted);
+  expect(consumerReleaseNotes(changelog, report, "crate")).not.toContain("old()");
+  // Only prose can tell callers how to upgrade, so a break without that heading stops the release.
+  expect(() => consumerReleaseNotes("### Fixed\n\n- A fix.\n", report, "npm")).toThrow(
+    "Breaking changes",
+  );
   expect(
-    consumerReleaseNotes("First release.\n", { current: { npm: 12 }, comparisons: [] }, "npm"),
-  ).toContain("| npm | 12 B |");
+    consumerReleaseNotes(
+      "First release.\n",
+      { ...report, current: { npm: 512 }, comparisons: [] },
+      "npm",
+    ),
+  ).toBe(
+    "First release.\n\n**Package size**: 512 bytes compressed\n**NPM Package**: [`@scope/pkg v0.4.0`](https://www.npmjs.com/package/@scope/pkg/v/0.4.0)\n**Full Commit History**: https://github.com/owner/pkg/commits/v0.4.0\n",
+  );
 });
 test("stable version distance must satisfy the derived release level", () => {
   expect(satisfiesMinimum("0.3.0", "0.4.0", "minor")).toBe(true);
@@ -191,10 +287,12 @@ test("hyphens in build metadata do not waive stable compatibility", () => {
   expect(satisfiesMinimum("1.4.0+build-old", "1.4.1", "major")).toBe(false);
 });
 
-test("release size deltas never invent a percentage for zero or missing denominators", () => {
-  expect(sizeDelta(12, 0)).toBe("12 B (+12 B)");
-  expect(sizeDelta(12, undefined)).toBe("12 B");
-  expect(sizeDelta(12, 8)).toBe("12 B (+4 B, +50.0%)");
+test("release sizes use binary units, where 1 KB is 1024 bytes", () => {
+  expect(binarySize(1023)).toBe("1023 bytes");
+  expect(binarySize(1024)).toBe("1.0 KB");
+  expect(binarySize(-89_242)).toBe("87.2 KB");
+  expect(binarySize(1024 ** 2 * 1.5)).toBe("1.5 MB");
+  expect(binarySize(1024 ** 4)).toBe("1024.0 GB");
 });
 
 test("the strongest structural or maintainer-classified change sets the minimum release", () => {
@@ -217,7 +315,9 @@ test("retained archives identify the selected package version and Git source", a
     ["uuid-slug-1.2.3/Cargo.toml", new Blob(['[package]\nversion = "1.2.3"\n'])],
     ["uuid-slug-1.2.3/.cargo_vcs_info.json", new Blob([JSON.stringify({ git: { sha1: "abc" } })])],
   ]);
-  expect(await verifyNpmIdentity(npm, "pkg", "1.2.3")).toMatchObject({ version: "1.2.3" });
+  expect(await verifyNpmIdentity(npm, "pkg", "1.2.3")).toMatchObject({
+    version: "1.2.3",
+  });
   await verifyCrateIdentity(crate, "1.2.3", "abc");
   await rejects(verifyNpmIdentity(npm, "pkg", "1.2.4"), /does not identify/);
   await rejects(verifyNpmIdentity(npm, "other-package", "1.2.3"), /does not identify/);

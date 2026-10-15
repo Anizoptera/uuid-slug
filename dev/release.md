@@ -47,15 +47,27 @@ Require the candidate's annotated tag to resolve to the checked-out commit befor
 publication. Preserve tag objects in release checkouts; a matching version string cannot identify
 the source that verification exercised. This does not change historical lightweight-tag selection.
 
-Release notes contain the committed `CHANGELOG.md` section verbatim, followed by the minimal public
-API changes from the latest release in Markdown diff blocks and package sizes.
+Release notes contain the committed `CHANGELOG.md` section, with one generated API diff appended
+at the end of `### Breaking changes`, `### Added` and `### Changed`, followed by package sizes and
+links to the published package and the commit history since the previous tag. The changelog holds
+prose only: callers need the upgrade explained, and a hand-written diff beside the generated one
+splits the same change in two places. A missing `### Added` or `### Changed` heading is created; a
+missing `### Breaking changes` heading stops the release while the API breaks callers, because only
+prose can say what to change.
+
+Breaking means old caller code stops compiling. TypeScript compatibility comes from the compiler:
+each export reaching a changed declaration, including unexported types it uses, must accept old
+calls (assignability plus argument count). Text comparison cannot decide this, and TypeScript never
+relates deferred conditional types across two files, so unchanged exports are compatible by
+definition and only changed ones are checked; a false failure can only call a change breaking.
+Rust compatibility comes from cargo-semver-checks.
 Keep complete API comparisons internal to compatibility checks. Do not publish declaration
 inventories, private helper types, repeated older API comparisons, or API attachments.
 Include only the packages selected for publication; keep unpublished implementations and their
 reports out of consumer notes.
-Report npm and crate compressed bytes separately
-from matched linked native and WebAssembly caller probes. State absolute changes; state percentages
-only for nonzero denominators. Generated tables do not belong in the changelog.
+Report npm and crate compressed sizes separately, in binary units (1 KB is 1024 bytes), and keep
+matched linked native and WebAssembly caller probes out of consumer notes. State absolute changes;
+state percentages only for nonzero denominators.
 
 Version the full consumer effect. A fix with no new public behavior is patch. Backward-compatible
 public behavior is minor. Incompatible behavior is major, or minor before 1.0. Structural API checks

@@ -2,9 +2,12 @@ import ts from "typescript-floor";
 import { command } from "./command";
 import {
   apiChangeLevel,
+  incompatibleExports,
   minimumRelease,
   normalizeDeclarations,
   satisfiesMinimum,
+  sectionsLevel,
+  typeScriptApiSections,
 } from "./release-comparison";
 import type { ReleaseLevel } from "./release-comparison";
 import { latestRelease } from "./release-history";
@@ -86,7 +89,10 @@ function collectTypeScriptEntries(
   file: ts.SourceFile,
   roots: readonly ts.Node[],
 ): ReadonlySet<string> {
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed, removeComments: true });
+  const printer = ts.createPrinter({
+    newLine: ts.NewLineKind.LineFeed,
+    removeComments: true,
+  });
   const entries = new Set<string>();
   const ownersFor = (node: ts.Node): string[] => {
     const owners: string[] = [];
@@ -303,7 +309,13 @@ export function verifyEvolution(
     );
   const levels: ReleaseLevel[] = [
     ...packageLevels,
-    apiChangeLevel(oldTsNormalized, newTsNormalized),
+    sectionsLevel(
+      typeScriptApiSections(
+        oldTsNormalized,
+        newTsNormalized,
+        incompatibleExports(oldTsSource, newTsSource),
+      ),
+    ),
     apiChangeLevel([...oldRustEntries].join("\n"), [...newRustEntries].join("\n")),
   ];
   const minimum = minimumRelease(currentVersion.split("-", 1)[0] ?? currentVersion, "", levels);

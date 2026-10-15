@@ -2,17 +2,19 @@ import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { command } from "./command";
+import { fromMarkdown } from "mdast-util-from-markdown";
 import {
-  apiDifference,
-  apiChangeLevel,
+  lineApiSections,
+  binarySize,
   combineReleaseLevels,
+  incompatibleExports,
   minimumRelease,
   normalizeDeclarations,
-  publicApiDifference,
   satisfiesMinimum,
-  sizeDelta,
+  sectionsLevel,
+  typeScriptApiSections,
 } from "./release-comparison";
-import type { ApiDifference, ReleaseLevel } from "./release-comparison";
+import type { ApiDifference, ApiSections, ReleaseLevel } from "./release-comparison";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
 import { preflightRelease } from "./release-notes";
@@ -35,16 +37,25 @@ export interface Sizes {
 }
 
 export interface ReleaseReport {
+  /** Identity for the notes' package and history links. */
+  readonly release: {
+    readonly name: string;
+    readonly crate: string;
+    readonly version: string;
+    readonly repository: string;
+  };
   readonly current: Sizes;
   readonly comparisons: readonly {
     readonly role: "immediate" | "releaseLine";
     readonly tag: string;
     readonly minimum: ReleaseLevel | undefined;
     readonly previous: Sizes;
-    readonly npmApi: string | undefined;
-    readonly crateApi: string | undefined;
+    readonly npmApi: ApiSections | undefined;
+    readonly crateApi: ApiSections | undefined;
   }[];
 }
+
+const CRATE_NAME = "uuid-slug";
 
 export function consumerReleaseNotes(
   notes: string,
@@ -53,20 +64,98 @@ export function consumerReleaseNotes(
 ): string {
   // Publication selection can change on retry; render from retained evidence, not stale notes.
   const latest = report.comparisons.find(({ role }) => role === "immediate");
-  const api = [
-    selected !== "crate" ? latest?.npmApi : undefined,
-    selected !== "npm" ? latest?.crateApi : undefined,
-  ].filter((value): value is string => value !== undefined && value !== "");
   const keys =
     selected === "npm"
       ? (["npm"] as const)
       : selected === "crate"
         ? (["crate"] as const)
         : (["npm", "crate"] as const);
-  const rows = keys.map(
-    (key) => `| ${key} | ${sizeDelta(report.current[key], latest?.previous[key])} |`,
+  const labels = { npm: "npm package", crate: "Rust crate" } as const;
+  // Each API diff goes to the end of the section a caller reads for that kind of change.
+  let body = notes.trimEnd();
+  for (const [section, heading] of [
+    ["breaking", "Breaking changes"],
+    ["added", "Added"],
+    ["changed", "Changed"],
+  ] as const) {
+    const parts = keys.flatMap((key) => {
+      const fragment = (key === "npm" ? latest?.npmApi : latest?.crateApi)?.[section];
+      if (!fragment) return [];
+      return [keys.length > 1 ? `**${labels[key]}**\n\n${fragment}` : fragment];
+    });
+    if (parts.length) body = appendToSection(body, heading, parts.join("\n\n"));
+  }
+  const { name, crate, version, repository } = report.release;
+  const sizes = keys.flatMap((key) => {
+    const now = report.current[key];
+    if (now === undefined) return [];
+    const before = latest?.previous[key];
+    const change =
+      before === undefined || !latest
+        ? ""
+        : now === before
+          ? `, unchanged from ${latest.tag}`
+          : `, ${now > before ? "up" : "down"} ${binarySize(now - before)}${before ? ` (${now > before ? "+" : ""}${(((now - before) / before) * 100).toFixed(1)}%)` : ""} from ${latest.tag}`;
+    return [
+      `**${keys.length > 1 ? `${labels[key]} size` : "Package size"}**: ${binarySize(now)} compressed${change}`,
+    ];
+  });
+  // GitHub renders each line break in a release body, so these stay one entry per line.
+  const links = [
+    ...(selected !== "crate"
+      ? [
+          `**NPM Package**: [\`${name} v${version}\`](https://www.npmjs.com/package/${name}/v/${version})`,
+        ]
+      : []),
+    ...(selected !== "npm"
+      ? [`**Rust Crate**: [\`${crate} v${version}\`](https://crates.io/crates/${crate}/${version})`]
+      : []),
+    `**Full Commit History**: ${latest ? `${repository}/compare/${latest.tag}...v${version}` : `${repository}/commits/v${version}`}`,
+  ];
+  return `${body}\n\n${[...sizes, ...links].join("\n")}\n`;
+}
+
+/** Release level of API sections plus package metadata, whose prose leads the matching section. */
+function withMetadata(
+  sections: ApiSections,
+  metadata: ApiDifference,
+  changed: boolean,
+): { level: ReleaseLevel; sections: ApiSections } {
+  const level = combineReleaseLevels(sectionsLevel(sections), metadata.level);
+  if (!changed) return { level, sections };
+  const key = metadata.level === "major" ? "breaking" : "changed";
+  return {
+    level,
+    sections: {
+      ...sections,
+      [key]: [metadata.report, sections[key]].filter(Boolean).join("\n\n"),
+    },
+  };
+}
+
+/**
+ * Appends `block` at the end of the `### heading` section. A missing Added or Changed heading is
+ * created; a missing Breaking changes heading fails, because only prose can tell callers how to upgrade.
+ */
+function appendToSection(notes: string, heading: string, block: string): string {
+  const headings = fromMarkdown(notes).children.filter(
+    (node) => node.type === "heading" && node.depth <= 3,
   );
-  return `${notes}${api.length ? `\n## API changes since ${latest?.tag}\n\n${api.join("\n\n")}\n` : ""}\n## Package size\n\nCompressed archive bytes; these are not installed sizes.\n\n| Package | Size and change from ${latest?.tag ?? "first publication"} |\n| --- | ---: |\n${rows.join("\n")}\n`;
+  const index = headings.findIndex(
+    (node) =>
+      node.type === "heading" &&
+      node.depth === 3 &&
+      node.children.map((child) => (child.type === "text" ? child.value : "")).join("") === heading,
+  );
+  if (index < 0) {
+    if (heading === "Breaking changes")
+      throw new Error(
+        'The API breaks existing callers, but the CHANGELOG section has no "### Breaking changes" heading. Explain there what callers must change.',
+      );
+    return `${notes}\n\n### ${heading}\n\n${block}`;
+  }
+  const end = headings[index + 1]?.position?.start.offset ?? notes.length;
+  return `${notes.slice(0, end).trimEnd()}\n\n${block}${end < notes.length ? `\n\n${notes.slice(end)}` : ""}`;
 }
 
 interface CommandResult {
@@ -93,12 +182,14 @@ export async function verifyCrateIdentity(
   version: string,
   commit: string,
 ): Promise<void> {
-  const prefix = `uuid-slug-${version}/`;
+  const prefix = `${CRATE_NAME}-${version}/`;
   verifyArchiveRoot(files, prefix);
   const cargo = files.get(`${prefix}Cargo.toml`);
   const vcs = files.get(`${prefix}.cargo_vcs_info.json`);
   if (!cargo || !vcs) throw new Error("Crate has no identity metadata.");
-  const manifest = Bun.TOML.parse(await cargo.text()) as { package?: { version?: unknown } };
+  const manifest = Bun.TOML.parse(await cargo.text()) as {
+    package?: { version?: unknown };
+  };
   const source = (await vcs.json()) as { git?: { sha1?: unknown } };
   if (manifest.package?.version !== version || source.git?.sha1 !== commit)
     throw new Error(`Crate does not identify ${version} at ${commit}.`);
@@ -184,7 +275,11 @@ async function declaration(
   name: string,
   version: string,
   historical = false,
-): Promise<{ declarations: string; package: NpmReleaseSurface }> {
+): Promise<{
+  source: string;
+  declarations: string;
+  package: NpmReleaseSurface;
+}> {
   const extracted = join(work, `npm-${label}`);
   const rollup = join(extracted, "public.d.ts");
   const packageRoot = join(extracted, "package");
@@ -205,13 +300,19 @@ async function declaration(
       dtsRollup: { enabled: true, untrimmedFilePath: rollup },
       // Published comments cannot be repaired; compare signatures without imposing newer prose rules.
       ...(historical
-        ? { messages: { tsdocMessageReporting: { default: { logLevel: "warning" } } } }
+        ? {
+            messages: {
+              tsdocMessageReporting: { default: { logLevel: "warning" } },
+            },
+          }
         : {}),
     }),
   );
   await command("api-extractor", ["run", "--local", "--config", config], root);
+  const source = await Bun.file(rollup).text();
   return {
-    declarations: normalizeDeclarations(await Bun.file(rollup).text()),
+    source,
+    declarations: normalizeDeclarations(source),
     package: npmReleaseSurface(metadata),
   };
 }
@@ -298,7 +399,11 @@ async function historicalEvidence(
 ): Promise<{ sizes: Sizes; crateRoot?: string }> {
   const { npm, crate } = comparison;
   if (!crate)
-    return { sizes: { ...(npm ? { npm: (await stat(resolve(root, npm.file))).size } : {}) } };
+    return {
+      sizes: {
+        ...(npm ? { npm: (await stat(resolve(root, npm.file))).size } : {}),
+      },
+    };
   const extracted = join(work, basename(crate.file, ".crate"));
   const crateRoot = await extractArchive(
     root,
@@ -371,51 +476,21 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
                 comparison.tag.slice(1),
                 true,
               );
-              const declarationLevel = apiChangeLevel(
+              const api = typeScriptApiSections(
                 previousTypeScript.declarations,
                 currentDeclaration.declarations,
+                incompatibleExports(previousTypeScript.source, currentDeclaration.source),
               );
               const metadata = npmSurfaceDifference(
                 previousTypeScript.package,
                 currentDeclaration.package,
               );
-              return {
-                level: combineReleaseLevels(declarationLevel, metadata.level),
-                report: [
-                  publicApiDifference(
-                    previousTypeScript.declarations,
-                    currentDeclaration.declarations,
-                  ),
-                  JSON.stringify(previousTypeScript.package) !==
-                  JSON.stringify(currentDeclaration.package)
-                    ? metadata.report
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join("\n\n"),
-              };
-            })()
-          : undefined;
-        const rust = previousCrateRoot
-          ? await (async () => {
-              const previousRust = await rustApi(root, join(previousCrateRoot, "Cargo.toml"));
-              const declarations = apiDifference(
-                previousRust.declarations,
-                currentRust.declarations,
-                "Rust declaration",
+              return withMetadata(
+                api,
+                metadata,
+                JSON.stringify(previousTypeScript.package) !==
+                  JSON.stringify(currentDeclaration.package),
               );
-              const metadata = cargoSurfaceDifference(previousRust.package, currentRust.package);
-              return {
-                level: combineReleaseLevels(declarations.level, metadata.level),
-                report: [
-                  previousRust.declarations !== currentRust.declarations ? declarations.report : "",
-                  JSON.stringify(previousRust.package) !== JSON.stringify(currentRust.package)
-                    ? metadata.report
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join("\n\n"),
-              };
             })()
           : undefined;
         const rustSemver = previous.crateRoot
@@ -425,6 +500,21 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
               previous.crateRoot,
               join(work, `semver-${comparison.tag}`),
             )
+          : undefined;
+        const rust = previousCrateRoot
+          ? await (async () => {
+              const previousRust = await rustApi(root, join(previousCrateRoot, "Cargo.toml"));
+              const metadata = cargoSurfaceDifference(previousRust.package, currentRust.package);
+              return withMetadata(
+                lineApiSections(
+                  previousRust.declarations,
+                  currentRust.declarations,
+                  rustSemver?.level === "major",
+                ),
+                metadata,
+                JSON.stringify(previousRust.package) !== JSON.stringify(currentRust.package),
+              );
+            })()
           : undefined;
         const minimum = minimumRelease(
           inputs.version,
@@ -442,12 +532,24 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
           tag: comparison.tag,
           minimum,
           previous: previous.sizes,
-          npmApi: typescript?.report,
-          crateApi: rust?.report,
+          npmApi: typescript?.sections,
+          crateApi: rust?.sections,
         };
       }),
     );
+    const manifest = (await Bun.file(join(root, "package.json")).json()) as {
+      repository?: { url?: string };
+    };
+    const repository = manifest.repository?.url?.replace(/^git\+/, "").replace(/\.git$/, "");
+    if (!repository?.startsWith("https://github.com/"))
+      throw new Error("package.json repository.url must name the GitHub repository.");
     const report: ReleaseReport = {
+      release: {
+        name: inputs.name,
+        crate: CRATE_NAME,
+        version: inputs.version,
+        repository,
+      },
       current,
       comparisons: sections,
     };
