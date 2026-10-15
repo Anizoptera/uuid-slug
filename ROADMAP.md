@@ -18,6 +18,23 @@ These items track unresolved copy; they do not authorize README edits or new mea
 - [ ] Surface plain decoding without keys or this library, and retained settings for masked decoding, earlier in the adoption guidance.
 - [ ] Resolve adoption questions about production-use evidence and maintenance/support commitments from evidence or a maintainer ruling; do not infer them from benchmarks or invent promises.
 
+## README diagram and badges
+
+- [ ] Push `7b17025` (badges, diagram after badges linking to the raw SVG) once runtime badges are final; pushes need explicit authorization.
+- [ ] Runtime badges: one consistent two-part style like the Node badge (logo label, version value); colours readable on light and dark GitHub; Cloudflare Workers as "CF Workers" with the Cloudflare logo; Bun and Deno show measured version floors.
+- [ ] Re-layout `docs/assets/uuid-representations.svg` at least 30% narrower so its smallest text stays readable at GitHub's README width; propose layouts and wait for approval before editing.
+- [ ] Make the SVG lean and maintainable: drop custom fonts and the link, keep one file (the image follows the browser colour scheme, not GitHub's theme); decide hand-edited vs generated after the layout is approved.
+
+## Runtime support
+
+Deno consumers cannot load published 0.4.0: its `deno` export condition selects `src/index.ts`, and Deno refuses type stripping under `node_modules` and its npm cache (`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`). `scripts/check-artifact.ts` symlinks the package from outside `node_modules`, so its Deno probes pass on a layout real installs never have.
+
+- [ ] Route Deno to built JavaScript (export condition and `#runtime` entry) without degrading current Deno; keep Bun on source.
+- [ ] Make the packed-artifact check install the package as a real directory under `node_modules` and add a Deno `npm:`-style probe; the regression must fail on the current routing.
+- [ ] Measure the oldest Bun and Deno releases that pass the packed consumer smoke (generation, conversion, masking, parsing); widen support where it costs current runtimes nothing; record floors in `package.json` `engines` and the Runtime table.
+- [ ] Check floors for every other tested runtime (Node, workerd, browsers) against the same smoke; keep each floor exercised in CI.
+- [ ] Propose the Aponte agent-gotcha rule (packed-consumer checks must match real install layout) and write it only with approval.
+
 ## Release notes
 
 Show consumers the minimal API changes from the latest release in Markdown diff blocks.
