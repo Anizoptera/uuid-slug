@@ -246,8 +246,9 @@ fails for a reason outside this package or supporting it would cost newer runtim
 | Deno | `>=1.30` | Loads the compiled build through `npm:`. Deno 1.29 and older fetch their Node compatibility layer from `deno.land/std` at run time; that now returns HTTP 500, so they load no npm package. |
 | Browsers, workers | not declared | Compiled output targets ES2022 (class and private fields, `Object.hasOwn`, error `cause`). No old engine has run the probe. |
 
-Measure floors with `__test__/consumer-probe.ts` alone, importing the package as a consumer installs it:
-a real directory in `node_modules` for Node and Bun, and `npm:` resolution for Deno. Do not use
+`bun scripts/floor-probe.ts` (CI job `floors`) reads the floors from `package.json` `engines`, downloads
+those exact releases and runs `__test__/consumer-probe.ts` against a real install: a `node_modules`
+directory for Node and Bun, `npm:` from a local registry for Deno. Do not use
 `scripts/runtime-probe.ts` for floors: it imports rival libraries through `bench/candidates`, and they
 fail on old runtimes before the package runs. Raise a floor only when its lane fails for a reason a
 fallback cannot fix without slowing current runtimes; record that reason in this table.

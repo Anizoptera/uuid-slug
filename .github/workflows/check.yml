@@ -189,6 +189,22 @@ jobs:
       - if: steps.runtime.outputs.node == 'current'
         run: bun scripts/runtime-probe.ts runtime-reference.json
 
+  # Declared floors in package.json engines run the package-only probe from a real install;
+  # docs/cross-language.md §Runtime floors explains each floor.
+  floors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .tool-versions
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun scripts/floor-probe.ts
+
   # Keep timing outside the Rust-profile matrix and its combined WASM verification budget.
   timing-web:
     runs-on: ubuntu-latest

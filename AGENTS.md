@@ -172,7 +172,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   condition only when it selects different output or guards an incompatible lower condition. The
   private `#runtime` map selects Bun source, compiled portable code for Deno, or Node native code while built
   hosts share one implementation graph. Runtime floors and why: `docs/cross-language.md` §Runtime floors;
-  change one only with its CI lane.
+  `bun scripts/floor-probe.ts` runs them from `engines`.
 - Treat shipped `src` as executable package code, not source-map support. Bun MUST resolve public
   entries and `#runtime` to TypeScript. Deno MUST load compiled output: it REJECTS TypeScript inside
   npm packages. Prove every runtime route and loader claim with a packed consumer installed as a REAL
