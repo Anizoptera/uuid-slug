@@ -33,6 +33,12 @@
 //   down every wire, the changed bytes and After characters turn over in shuffled order, hold,
 //   then turn back. A reader must see it move without waiting for it.
 // - Reduced-motion users get the still image.
+// - Copy sells. Each form says what it is "Great for"; lengths are "N% shorter than UUID text",
+//   never character counts; a limited claim leads with its value (AGENTS.md §Writing public
+//   documentation). No bits-per-character facts: a cold reader gets nothing from them.
+// - Typography: wider spaces around "·", a double space between sentences, no-break spaces
+//   between a number and its unit, and wrapped lines start new sentences at the left edge (typo,
+//   wrap).
 // - README: the image links to the raw SVG, and a text link under it says the raw view is
 //   interactive.
 //
@@ -43,10 +49,10 @@
 // - Every colour has one meaning. Field colours mark which UUIDv7 field a bit belongs to, and
 //   orange marks masked bits. Mint marks headings and labels, slate marks "Sort"/"Case" keys,
 //   and the package name is dimmed title ink. White outlines appear only on hover matches.
-//   Violet marks top selling points only (maintainer ruling: the most important claims must
-//   stand out, first "39% shorter than UUID text"): bold white text on a violet highlighter band.
-//   Violet is the one free hue that no field uses; a solid fill was rejected because solid
-//   tiles with dark text already mean "a field's bits" (cells) and "a changed byte" (avalanche).
+//   Violet marks top selling points only, so the claims that decide adoption stand out: bold
+//   white text on a violet highlighter band. Violet is the only hue no field uses. A solid tile
+//   was rejected: solid tiles with dark text already mean a field's bits (cells) and a changed
+//   byte (avalanche).
 // - System fonts only: GitHub serves the SVG as an image, so web fonts and links do not load.
 // - Hover works only where the SVG is a document, such as the raw file the README image links
 //   to. GitHub's raw host allows inline CSS but no scripts, so hover is pure CSS `:has()`.
@@ -197,7 +203,7 @@ const FORMS = {
     field: plainField,
     masked: false,
     facts: 'default · 22 chars · A–Z a–z 0–9 "-" "_"',
-    sort: "roughly by time²",
+    sort: "mostly by time²",
     caseRule: "sensitive",
     job: "Great for text storage and transport: URLs, logs, JSON.",
     win: shorter(P64),
@@ -254,7 +260,7 @@ const COPY = {
     "Plain and masked base64url look alike. Decode each with the function for the form you issued.",
   notes: [
     "¹ UUIDv7: sorts by creation millisecond if all IDs share one case and alphabet; not event order within a millisecond.",
-    "² Base64url digits are not in ASCII order, so sorting as text puts about 1 in 5 pairs of IDs out of time order.",
+    "² Text order follows creation time for most IDs. For exact time order, use base32hex.",
     "Compare decoded UUIDs, not strings: one UUID has many valid spellings. A wrong key passes the check about 1 time in 65,536 and returns a wrong UUID. Masking is not proven-secure encryption.",
   ],
 };
@@ -271,7 +277,7 @@ const LEGEND: [Field, string][] = [
 const SANS = `-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif`;
 const MONO = `ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace`;
 // Field hover, per the rulings above: pointing at a legend item or a piece focuses the same way.
-// A piece's hit area (`.hit`) carries the class of the field it lights (fieldsOf). Hovering it,
+// A piece's hit area (`.hit`) carries the class of the field it lights (smallestField). Hovering it,
 // or f's legend item, fades every cell and legend item, then restores f's cells, legend item,
 // glow (`.chip-f`, the pill behind the legend item) and ribbons.
 // Pieces add outlines on top (linkRules). Every lit state sets transition-delay 0 so it appears
@@ -522,15 +528,14 @@ const linkRules = () =>
 // gap belongs to each side) and GAP/2 above and below (so the UUID text and byte rows meet):
 // moving the pointer along or between rows never crosses a dead zone that would drop the
 // highlight. It carries the field that field hover lights for it.
-const pieceHit = (x0: number, x1: number, y: number, h: number, fields: Field[]) =>
-  rect(x0, y - GAP / 2, x1 - x0, h + GAP, `hit ${fields.join(" ")}`);
+const pieceHit = (x0: number, x1: number, y: number, h: number, field: Field) =>
+  rect(x0, y - GAP / 2, x1 - x0, h + GAP, `hit ${field}`);
 // Smallest field first. A piece holding two fields lights only the smaller one (version,
 // variant or padding): the large neighbour is everywhere already, so lighting it too hides the
 // small field the reader pointed at.
 const BY_SIZE: Field[] = ["pad", "variant", "version", "time", "masked", "payload"];
-const fieldsOf = (field: (b: number) => Field, start: number, bits: number) => [
-  BY_SIZE.find((f) => Array.from({ length: bits }, (_, i) => field(start + i)).includes(f))!,
-];
+const smallestField = (field: (b: number) => Field, start: number, bits: number) =>
+  BY_SIZE.find((f) => Array.from({ length: bits }, (_, i) => field(start + i)).includes(f))!;
 let clipId = 0;
 const drawSpecimen = (
   f: Form,
@@ -569,7 +574,7 @@ const drawSpecimen = (
       next ? (c.x + c.w + next.x) / 2 : c.x + c.w,
       y,
       h,
-      fieldsOf(f.field, c.start, c.bits),
+      smallestField(f.field, c.start, c.bits),
     );
     close?.();
   }
@@ -801,7 +806,7 @@ for (let i = 0; i < 16; i++) {
     after ? (a.x + w + after.x) / 2 : a.x + w,
     y,
     BYTES_H,
-    fieldsOf(plainField, i * 8, 8),
+    smallestField(plainField, i * 8, 8),
   );
   close();
 }
@@ -866,7 +871,7 @@ for (const [id, idx, label] of [
     const field = f.field(c.start + i),
       bx = SIDE_X + bs + 10 + i * (bs * 0.78 + 1.5);
     rect(bx, top + 10, bs * 0.78, bs, `${field} f cell`);
-    pieceHit(bx, bx + bs * 0.78 + 1.5, top + 10, bs, [field]);
+    pieceHit(bx, bx + bs * 0.78 + 1.5, top + 10, bs, field);
     text(bx + bs * 0.39, top + 10 + bs * 0.75, value[i]!, FS.small - 1, {
       cls: inkFor(field),
       anchor: "middle",

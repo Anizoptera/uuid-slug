@@ -14,7 +14,7 @@ READ the owner before changing its subject; these references hold the detailed r
 | Experiments, profiles, drivers, evidence cleanup or performance gates, even from `src/` | `bench/AGENTS.md` (priorities, gates), then `bench/README.md` (commands, reports) |
 | Versions, packaging, release tooling or workflows, publication, recovery, assets, notes or finalization | `docs/release.md` in full |
 | Consumer copy or generation guarantees | §Writing public documentation, then README opening, affected section and reference |
-| README diagram (`docs/assets/uuid-representations.svg`, generated) | Header of `scripts/readme-diagram.ts`: it holds every maintainer ruling on layout, colour, hover and motion. Write each new ruling there when made; keep each ruled behaviour unless the maintainer drops it. Every build checks the hover rulings in Chromium (`scripts/readme-diagram-hover.ts`); add a check with each new hover ruling |
+| README diagram (`docs/assets/uuid-representations.svg`, generated) | Header of `scripts/readme-diagram.ts`: it holds every maintainer ruling on layout, colour, hover and motion. Write each new ruling there when made; keep each ruled behaviour unless the maintainer drops it. Every build checks the hover rulings in Chromium (`scripts/readme-diagram-hover.ts`); add a check with each new hover ruling. Its text is consumer copy: follow §Writing public documentation |
 
 ## Work scope
 
@@ -299,6 +299,10 @@ Keep agent rules in `AGENTS.md`; engineering and measurement detail stays in its
   State the gain before its controls; keep distinct gains separate. Short empty copy still fails.
 - State benefits as facts, not "Get..." sales commands. Imperatives belong in usage and warnings.
   DO NOT weaken a supported claim or force passive voice to make it sound like documentation.
+- A claim with a limit: sell what it delivers in plain words, then point to the limit once.
+  Example: base64url sorts "mostly by time", footnote "for exact time order, use base32hex".
+  Hedges ("roughly", "partly"), "no" labels, statistics and coined terms ("clustered") bury the
+  value. Verify a limit once before stating it; never let it lead.
 - Before rewriting, identify each useful claim and where it survives. Change only named defects;
   preserve approved copy exactly otherwise. Cut repetition, never capabilities, reasons or boundaries.
 - Examples MUST stand alone. After building, run `bun scripts/check-readme.ts` for README links and TS examples.
