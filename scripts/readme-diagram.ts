@@ -1,5 +1,7 @@
 // Generates docs/assets/uuid-representations.svg, the README's opening diagram.
 // Run `bun scripts/readme-diagram.ts` after changing this file; never edit the SVG by hand.
+// Review a change before committing it with `bun scripts/readme-diagram-preview.ts`: the working
+// tree beside the committed diagram, live hover, both themes.
 //
 // Why a generator: every slug, byte and bit count below comes from the library, so the picture
 // cannot drift from what the code produces, and a layout change edits a few constants instead
@@ -82,11 +84,6 @@ import { checkDiagramHover } from "./readme-diagram-hover.ts";
 const OUT = process.env["DIAGRAM_OUT"]
   ? new URL(`file://${process.env["DIAGRAM_OUT"]}`)
   : new URL("../docs/assets/uuid-representations.svg", import.meta.url);
-// TEMPORARY switches that rebuild earlier layouts for comparison (DIAGRAM_LAYOUT=a,b): "rules"
-// separates sections with rules instead of panels, "jobfirst" puts what a form is for first,
-// "nocall" drops the one-character callout leaders and the avalanche slug lines. Delete them
-// once the maintainer has no further use for the comparison.
-const LAYOUT = new Set((process.env["DIAGRAM_LAYOUT"] ?? "").split(","));
 // Theme palettes: dark by default, light under prefers-color-scheme (see Layout constraints).
 // Field colours stay the same in both: they fill cells under dark
 // glyphs, which read on either background. Field-coloured text is darkened on light
@@ -719,8 +716,7 @@ const W = 1100,
 const SIDE_X = 790,
   SIDE_W = W - M - SIDE_X,
   FACTS_X = M + 250,
-  CASE_X = M + 394,
-  TEXT_W = 712;
+  CASE_X = M + 394;
 const FS = { title: 34, sub: 18, head: 16, name: 24, small: 16, meta: 17, note: 15 };
 // Vertical rhythm: LINE between text lines, GAP between a specimen and what follows it,
 // ROW between two forms (and before a section rule). Every vertical step uses one of these.
@@ -730,8 +726,7 @@ const LINE = 24,
 let y = 0;
 
 const section = (label: string, cls = "accent", right?: string) => {
-  if (!LAYOUT.has("rules")) panels.push([y, cls]);
-  else path(`M${M} ${y}H${W - M}`, "rule", 1.2);
+  panels.push([y, cls]);
   text(M, y + 28, label, FS.head, { cls, weight: 700 });
   if (right) text(W - M, y + 28, right, FS.head - 1, { cls: "muted", anchor: "end" });
   y += 44;
@@ -749,52 +744,32 @@ const WIN_W = new Map((await measureSans(wins, FS.meta, 700)).map((w, i) => [win
 // the form is for in lighter ink, then the details. A prefix such as "Text" takes its own column
 // so the lines after it align.
 const meta = (f: Form, prefix?: string) => {
-  if (!LAYOUT.has("jobfirst")) {
-    const x0 = M + INDENT,
-      x = x0 + (prefix ? 64 : 0);
-    if (prefix) text(x0, y + 18, prefix, FS.meta, { cls: "accent", weight: 700 });
-    text(x, y + 18, "Sort", FS.meta - 1, { cls: "key" });
-    text(x + 42, y + 18, f.sort, FS.meta, { weight: 600 });
-    text(CASE_X + INDENT, y + 18, "Case", FS.meta - 1, { cls: "key" });
-    text(CASE_X + INDENT + 46, y + 18, f.caseRule, FS.meta, { weight: 600 });
-    y += LINE;
-    text(x, y + 18, f.job, FS.meta, { weight: 400 });
-    y += LINE;
-    // Lines may run up to the side column (SIDE_X), keeping a gap before it.
-    let lead = 0;
-    if (f.win) {
-      // Highlighter band over the lower part of the text, measured so it fits the claim exactly;
-      // `textLength` holds that width in viewers with another system font.
-      const w = WIN_W.get(f.win)!;
-      rect(x - 5, y + 18 - 13, w + 10, 18, "win", ` rx="4"`);
-      out.push(
-        `<text x="${x}" y="${y + 18}" class="ink sans" font-size="${FS.meta}" font-weight="700" textLength="${r1(w)}" lengthAdjust="spacing">${esc(f.win)}</text>`,
-      );
-      lead = w + 14;
-    }
-    wrap(f.detail, SIDE_X - 24 - x, FS.meta, SIDE_X - 24 - x - lead).forEach((l, i) => {
-      text(x + (i ? 0 : lead), y + 18, l, FS.meta, { cls: "muted" });
-      y += LINE;
-    });
-    return;
-  }
-  // Earlier layout, kept for comparison: what the form is for first, on the M edge.
-  const lead = prefix
-    ? `<tspan class="accent" font-weight="700">${prefix}</tspan><tspan dx="10">`
-    : "<tspan>";
-  out.push(
-    `<text x="${M}" y="${y + 18}" class="ink sans" font-size="${FS.meta}" font-weight="600">${lead}${esc(f.job)}</tspan></text>`,
-  );
+  const x0 = M + INDENT,
+    x = x0 + (prefix ? 64 : 0);
+  if (prefix) text(x0, y + 18, prefix, FS.meta, { cls: "accent", weight: 700 });
+  text(x, y + 18, "Sort", FS.meta - 1, { cls: "key" });
+  text(x + 42, y + 18, f.sort, FS.meta, { weight: 600 });
+  text(CASE_X + INDENT, y + 18, "Case", FS.meta - 1, { cls: "key" });
+  text(CASE_X + INDENT + 46, y + 18, f.caseRule, FS.meta, { weight: 600 });
   y += LINE;
-  text(M, y + 18, "Sort", FS.meta - 1, { cls: "key" });
-  text(M + 42, y + 18, f.sort, FS.meta, { weight: 600 });
-  text(CASE_X, y + 18, "Case", FS.meta - 1, { cls: "key" });
-  text(CASE_X + 46, y + 18, f.caseRule, FS.meta, { weight: 600 });
+  text(x, y + 18, f.job, FS.meta, { weight: 400 });
   y += LINE;
-  for (const l of wrap(f.detail, TEXT_W, FS.meta)) {
-    text(M, y + 18, l, FS.meta, { cls: "muted" });
-    y += LINE;
+  // Lines may run up to the side column (SIDE_X), keeping a gap before it.
+  let lead = 0;
+  if (f.win) {
+    // Highlighter band over the lower part of the text, measured so it fits the claim exactly;
+    // `textLength` holds that width in viewers with another system font.
+    const w = WIN_W.get(f.win)!;
+    rect(x - 5, y + 18 - 13, w + 10, 18, "win", ` rx="4"`);
+    out.push(
+      `<text x="${x}" y="${y + 18}" class="ink sans" font-size="${FS.meta}" font-weight="700" textLength="${r1(w)}" lengthAdjust="spacing">${esc(f.win)}</text>`,
+    );
+    lead = w + 14;
   }
+  wrap(f.detail, SIDE_X - 24 - x, FS.meta, SIDE_X - 24 - x - lead).forEach((l, i) => {
+    text(x + (i ? 0 : lead), y + 18, l, FS.meta, { cls: "muted" });
+    y += LINE;
+  });
 };
 
 // Header.
@@ -924,21 +899,19 @@ for (const [id, idx, label] of [
   plainRows[id] = { cells, top };
   drawSpecimen(f, cells, top, CELL_H, MONO_SIZE, id === "p64" ? "p" : "q");
   const c = cells[idx]!;
-  if (!LAYOUT.has("nocall")) {
-    rect(
-      c.x,
-      top - 3,
-      c.w,
-      CELL_H + 6,
-      "",
-      ` fill="none" style="stroke:${P.muted}" stroke-width="1.4" rx="2"`,
-    );
-    path(
-      `M${r1(c.x + c.w / 2)} ${top + CELL_H + 3}V${top + CELL_H + 8}H${SIDE_X - 14}V${top + 20}H${SIDE_X - 4}`,
-      "lead",
-      1.4,
-    );
-  }
+  rect(
+    c.x,
+    top - 3,
+    c.w,
+    CELL_H + 6,
+    "",
+    ` fill="none" style="stroke:${P.muted}" stroke-width="1.4" rx="2"`,
+  );
+  path(
+    `M${r1(c.x + c.w / 2)} ${top + CELL_H + 3}V${top + CELL_H + 8}H${SIDE_X - 14}V${top + 20}H${SIDE_X - 4}`,
+    "lead",
+    1.4,
+  );
   // The callout: glyph, its bits coloured by field, and what they hold.
   const bs = 21,
     value = (f.bitsPerChar === 6 ? ALPHA64 : ALPHA32)
@@ -1057,32 +1030,27 @@ for (const id of ["m64", "m32"] as const) {
     cls: "muted",
   });
   text(x0, ty + 46, "Similar UUIDs, unrelated slugs", FS.small, { weight: 600 });
-  if (LAYOUT.has("nocall")) ty += 60;
-  else {
-    text(x0, ty + 76, "Before", FS.small, { cls: "muted" });
-    text(bx, ty + 76, M64, 15, { cls: "masked f", mono: true });
-    text(x0, ty + 98, "After", FS.small, { cls: "muted" });
-    // The After slug is a stack of same-position lines, one tspan per character; monospace keeps
-    // every line's characters aligned. Layers: the After slug itself (changed characters `.c`) and
-    // the Before characters (`.b`, only changed positions visible), which is invisible at rest.
-    const layer = (s: string, cls: string, onlyChanged: boolean) =>
-      out.push(
-        `<text x="${r1(bx)}" y="${r1(ty + 98)}" class="masked f mono" font-size="15">${s
-          .split("")
-          .map((ch, i) => {
-            if (M64_AFTER[i] !== M64[i])
-              return `<tspan class="av ${cls}" style="--r:${spread(i, 22)}">${esc(ch)}</tspan>`;
-            return onlyChanged
-              ? `<tspan class="x">${esc(ch)}</tspan>`
-              : `<tspan>${esc(ch)}</tspan>`;
-          })
-          .join("")}</text>`,
-      );
-    layer(M64_AFTER, "c", false);
-    layer(M64, "b", true);
-    text(x0, ty + 120, `${CHAR_FLIPS} of 22 characters differ`, FS.small - 1, { cls: "muted" });
-    ty += 134;
-  }
+  text(x0, ty + 76, "Before", FS.small, { cls: "muted" });
+  text(bx, ty + 76, M64, 15, { cls: "masked f", mono: true });
+  text(x0, ty + 98, "After", FS.small, { cls: "muted" });
+  // The After slug is a stack of same-position lines, one tspan per character; monospace keeps
+  // every line's characters aligned. Layers: the After slug itself (changed characters `.c`) and
+  // the Before characters (`.b`, only changed positions visible), which is invisible at rest.
+  const layer = (s: string, cls: string, onlyChanged: boolean) =>
+    out.push(
+      `<text x="${r1(bx)}" y="${r1(ty + 98)}" class="masked f mono" font-size="15">${s
+        .split("")
+        .map((ch, i) => {
+          if (M64_AFTER[i] !== M64[i])
+            return `<tspan class="av ${cls}" style="--r:${spread(i, 22)}">${esc(ch)}</tspan>`;
+          return onlyChanged ? `<tspan class="x">${esc(ch)}</tspan>` : `<tspan>${esc(ch)}</tspan>`;
+        })
+        .join("")}</text>`,
+    );
+  layer(M64_AFTER, "c", false);
+  layer(M64, "b", true);
+  text(x0, ty + 120, `${CHAR_FLIPS} of 22 characters differ`, FS.small - 1, { cls: "muted" });
+  ty += 134;
   y = Math.max(y, ty);
 }
 

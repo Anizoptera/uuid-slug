@@ -1,0 +1,187 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>README diagram variants</title>
+<style>
+  body {
+    margin: 0;
+    font:
+      14px -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+  }
+  body.light {
+    background: #fff;
+    color: #1f2328;
+  }
+  #bar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 9;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(22, 27, 34, 0.94);
+    border-bottom: 1px solid #30363d;
+    backdrop-filter: blur(6px);
+  }
+  button {
+    font: inherit;
+    color: #e6edf3;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+  button.on {
+    background: #1f6feb;
+    border-color: #1f6feb;
+  }
+  #info {
+    margin-left: auto;
+    color: #8b949e;
+  }
+  kbd {
+    font:
+      12px ui-monospace,
+      monospace;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 0 4px;
+  }
+  #stage {
+    padding: 64px 0 40px;
+    display: grid;
+    justify-items: center;
+  }
+  .v {
+    grid-area: 1 / 1;
+    visibility: hidden;
+  }
+  .v.on {
+    visibility: visible;
+  }
+  .readme {
+    width: 880px;
+  }
+</style>
+<div id="bar"></div>
+<div id="stage"></div>
+<script>
+  // [name, file, note]; scripts/readme-diagram-preview.ts injects the list it built.
+  const VARIANTS = __VARIANTS__;
+  const bar = document.getElementById("bar"),
+    stage = document.getElementById("stage");
+  let cur = 0,
+    prev = 1,
+    raw = false;
+  const buttons = VARIANTS.map(([name], i) => {
+    const b = document.createElement("button");
+    b.textContent = name;
+    b.onclick = () => show(i);
+    bar.append(b);
+    return b;
+  });
+  const mode = document.createElement("button"),
+    bg = document.createElement("button"),
+    info = document.createElement("span");
+  mode.onclick = () => setMode(!raw);
+  // The SVGs pick their scheme with @media (prefers-color-scheme: light), which an embedded
+  // document takes from the OS, not from this page. So the light rule is forced on or off
+  // inside each loaded SVG instead.
+  let light = false;
+  const applyTheme = (el) => {
+    const doc = el.contentDocument;
+    if (!doc) return;
+    for (const sheet of doc.styleSheets)
+      for (const rule of sheet.cssRules)
+        if (
+          rule instanceof doc.defaultView.CSSMediaRule &&
+          (rule.themeRule || rule.conditionText.includes("prefers-color-scheme"))
+        ) {
+          rule.themeRule = true;
+          rule.media.mediaText = light ? "all" : "not all";
+        }
+  };
+  const toggleTheme = () => {
+    light = !light;
+    document.body.classList.toggle("light", light);
+    bg.textContent = light ? "light" : "dark";
+    for (const el of stage.children) applyTheme(el);
+  };
+  bg.onclick = toggleTheme;
+  bg.textContent = "dark";
+  info.id = "info";
+  info.innerHTML =
+    "<kbd>0–9</kbd> <kbd>←</kbd><kbd>→</kbd> switch · hold <kbd>Space</kbd> = previous · <kbd>M</kbd> mode · <kbd>B</kbd> dark/light";
+  bar.append(mode, bg, info);
+
+  // Every variant is loaded once and stacked; switching flips visibility, so there is no reload
+  // flicker and the scroll position stays put.
+  const build = () => {
+    stage.replaceChildren(
+      ...VARIANTS.map(([, file], i) => {
+        // Both modes load the SVG as a document so hover works; an <img> never is. README mode scales it
+        // to the 880 px column, raw mode shows its own size like the raw file the README links to.
+        const el = Object.assign(document.createElement("object"), {
+          data: file,
+          type: "image/svg+xml",
+        });
+        if (!raw) el.classList.add("readme");
+        // An <object> does not size itself from its SVG; take the aspect from the loaded viewBox.
+        el.onload = () => {
+          applyTheme(el);
+          if (raw) return;
+          const v = el.contentDocument.documentElement.viewBox.baseVal;
+          el.style.height = `${(880 * v.height) / v.width}px`;
+        };
+        el.classList.add("v");
+        if (i === cur) el.classList.add("on");
+        return el;
+      }),
+    );
+  };
+  // display() only changes what is visible; show() also changes the selection.
+  const display = (i) => {
+    [...stage.children].forEach((el, j) => el.classList.toggle("on", j === i));
+    buttons.forEach((b, j) => b.classList.toggle("on", j === i));
+    document.title = `${VARIANTS[i][0]} — ${VARIANTS[i][2]}`;
+  };
+  const show = (i, remember = true) => {
+    if (i < 0 || i >= VARIANTS.length) return;
+    if (remember && i !== cur) prev = cur;
+    cur = i;
+    display(i);
+  };
+  const setMode = (r) => {
+    raw = r;
+    mode.textContent = raw ? "mode: raw (hover)" : "mode: README width (880 px, interactive)";
+    build();
+    show(cur, false);
+  };
+  let held = false;
+  addEventListener("keydown", (e) => {
+    if (e.key >= "0" && e.key <= "9") show(+e.key);
+    else if (e.key === "ArrowRight") show(cur + 1);
+    else if (e.key === "ArrowLeft") show(cur - 1);
+    else if (e.key === "m" || e.key === "M") setMode(!raw);
+    else if (e.key === "b" || e.key === "B") toggleTheme();
+    else if (e.key === " " && !held) {
+      held = true;
+      display(prev);
+    } else return;
+    e.preventDefault();
+  });
+  addEventListener("keyup", (e) => {
+    if (e.key !== " ") return;
+    held = false;
+    display(cur);
+  });
+  setMode(false);
+  show(0, false);
+</script>

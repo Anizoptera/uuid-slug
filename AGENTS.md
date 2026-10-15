@@ -15,7 +15,7 @@ READ the owner before changing its subject; these references hold the detailed r
 | Experiments, profiles, drivers, evidence cleanup or performance gates, even from `src/` | `bench/AGENTS.md` (priorities, gates), then `bench/README.md` (commands, reports) |
 | Versions, packaging, release tooling or workflows, publication, recovery, assets, notes or finalization | `dev/release.md` in full |
 | Consumer copy or generation guarantees | §Writing public documentation, then README opening, affected section and reference |
-| README diagram (`docs/assets/uuid-representations.svg`, generated) | Header of `scripts/readme-diagram.ts`: it holds every maintainer ruling on layout, colour, hover and motion. Write each new ruling there when made; keep each ruled behaviour unless the maintainer drops it. Every build checks the hover rulings in Chromium (`scripts/readme-diagram-hover.ts`); add a check with each new hover ruling. Its text is consumer copy: follow §Writing public documentation |
+| README diagram (`docs/assets/uuid-representations.svg`, generated) | Header of `scripts/readme-diagram.ts`: it holds every maintainer ruling on layout, colour, hover and motion. Write each new ruling there when made; keep each ruled behaviour unless the maintainer drops it. Every build checks the hover rulings in Chromium (`scripts/readme-diagram-hover.ts`); add a check with each new hover ruling. Show the maintainer visual changes with `bun scripts/readme-diagram-preview.ts` (working tree vs committed, both themes, live hover). Its text is consumer copy: follow §Writing public documentation |
 
 ## Work scope
 
