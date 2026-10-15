@@ -29,7 +29,7 @@ const runtimeCapabilities: Runtime = {
 // WebKit's fixed formatter slowed unrelated successful calls in mixed comparisons. Native hex
 // did not reproduce a repeated loss while other engines retain their fixed writers. This identity
 // selects cost only; absent hex support still uses the portable writer. Remeasure after browser
-// changes (bench/PERFORMANCE.md); the shared ASCII decoder also slowed slug output.
+// changes (bench/decisions.md); the shared ASCII decoder also slowed slug output.
 if (
   typeof navigator !== "undefined" &&
   navigator.vendor === "Apple Computer, Inc." &&

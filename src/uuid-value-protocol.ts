@@ -11,7 +11,7 @@ export const UUID_VALUE_CONTEXT = Symbol.for("@anizoptera/uuid-slug.uuid-value-c
  * importing the value class, and private fields keep the state off the frozen value's own properties.
  *
  * A module `WeakMap` keyed by value is the rejected alternative: registering each value cost more
- * than the rest of value creation (bench/PERFORMANCE.md). Remeasure if engines change how they
+ * than the rest of value creation (bench/decisions.md). Remeasure if engines change how they
  * store private fields or weak collections.
  */
 export class LocalUuidValue {

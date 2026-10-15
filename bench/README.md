@@ -1,6 +1,6 @@
 # Benchmarks
 
-Read the [performance results](PERFORMANCE.md), browse [generated reports](results/), or rerun the comparisons below.
+Read the [performance results](decisions.md), browse [generated reports](results/), or rerun the comparisons below.
 
 ## Run a comparison
 
@@ -39,7 +39,7 @@ Profiles show timing, CPU and memory costs. Allocation profiles estimate allocat
 
 - [Tracked reports](results/) contain throughput and randomness results.
 - `bench/reports/` holds raw measurements, profiles and captured inputs; Git ignores it.
-- [Performance results](PERFORMANCE.md) explain the findings.
+- [Performance results](decisions.md) explain the findings.
 
 ## More controls
 

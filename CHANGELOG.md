@@ -85,7 +85,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
 ### Performance
 
 - Use available Node and Bun encoding primitives, avoid redundant byte views, and decode rotated-key input once. Freshness checks inspect decoded bytes directly; boolean predicates avoid constructing decoded buffers and discarded errors.
-- Add runtime-specific resource and timing regression checks. Reproducible measurements and their limits are documented in `bench/PERFORMANCE.md`; improvements vary by runtime and workload.
+- Add runtime-specific resource and timing regression checks. Reproducible measurements and their limits are documented in `bench/decisions.md`; improvements vary by runtime and workload.
 
 ### Fixed
 

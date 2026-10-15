@@ -75,7 +75,7 @@ Rules for editing the TypeScript package. Root `AGENTS.md` applies too.
   the strongest rejected alternative, its boundary and remeasurement trigger. Public JSDoc covers
   caller inputs, results, failures, effects, guarantees and choices, never internal reasoning.
   Non-public TSDoc may explain constraints when editor help is useful. Keep versions, numbers,
-  workloads and statistical limits in `bench/PERFORMANCE.md`; link it rather than copy them.
+  workloads and statistical limits in `bench/decisions.md`; link it rather than copy them.
 - A runtime/compiler floor forbids unguarded newer APIs, not useful newer APIs. Use a newer
   JavaScript capability only for measured runtime or resource value, probe it once, retain a
   compatible fallback, and exercise both paths in their owning runtime lanes.

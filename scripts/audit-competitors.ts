@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-const document = "bench/PERFORMANCE.md";
+const document = "bench/decisions.md";
 const source = await readFile(document, "utf8");
 const rustSection = source.match(/### Rust competitor inventory\n(?<body>[\s\S]*?)(?=\n#{2,3} |$)/)
   ?.groups?.body;

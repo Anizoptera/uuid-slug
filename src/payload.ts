@@ -178,7 +178,7 @@ export function ownedUuidV7BytesToMaskedSlug(
   // Raw sentinels have zero outer bits. Only that tail can collide with retained base64 reads;
   // other writes need neither a second encoding nor a lookup for a collision that cannot occur.
   // Skipping the lookup matters: on V8 it hashed and flattened every base64url slug
-  // (bench/PERFORMANCE.md).
+  // (bench/decisions.md).
   const canonical =
     alphabet === BASE64URL_NAME || (tail === 0 && reserved?.size)
       ? encode(raw, BASE64URL, tail, OUTER_TAG_BITS)
@@ -203,7 +203,7 @@ export const noMaskedSlugMatch = /* @__NO_SIDE_EFFECTS__ */ (): UuidSlugError =>
  * Decode a masked slug and return `undefined` when every mask's check rejects it. Source-specific
  * readers report that miss with `noMaskedSlugMatch`; a codec reading an ambiguous 22-character slug
  * takes the plain reading instead, so the miss builds no error. Readers call this directly: a wrapper
- * that built the error slowed the masked-slug text reader on Node (bench/PERFORMANCE.md).
+ * that built the error slowed the masked-slug text reader on Node (bench/decisions.md).
  */
 export function unmaskSlug(
   slug: string,

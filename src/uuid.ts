@@ -87,7 +87,7 @@ for (let i = 0; i < 16; i += 1) {
   HEX_NIBBLES[UPPERCASE_HEX.charCodeAt(i)] = i;
 }
 // Bun's Latin-1 writer and the fixed writer share lazily built case tables; native hex needs none.
-// bench/PERFORMANCE.md owns the comparison and recheck conditions. Tables are built on first use.
+// bench/decisions.md owns the comparison and recheck conditions. Tables are built on first use.
 let uuidTextScratch: Latin1Scratch | undefined;
 let lowercaseHexCodes: Uint8Array | undefined;
 let uppercaseHexCodes: Uint8Array | undefined;
@@ -123,7 +123,7 @@ function formatUuidBytesLatin1(
       : (lowercaseHexCodes ??= hexCodes(HEX));
   const text = scratch.bytes;
   // Fixed positions remove the loop and offset-table reads on Bun's selected writer.
-  // The indexed loop loses repeated complete text calls; bench/PERFORMANCE.md owns the evidence.
+  // The indexed loop loses repeated complete text calls; bench/decisions.md owns the evidence.
   // Keep native string construction and shared storage; remeasure after JSC or writer changes.
   const code0 = (bytes[offset + 0] as number) * 2;
   text[0] = codes[code0] as number;
@@ -267,7 +267,7 @@ export function uuidStringToBytes(
 
   // One pass decodes and validates: OR-ing every character code and every decoded pair exposes a
   // non-ASCII or non-hex character after the loop. Validating before a second decoding pass cost
-  // about twice as much on Node and three times on Bun (bench/PERFORMANCE.md). Only failing text
+  // about twice as much on Node and three times on Bun (bench/decisions.md). Only failing text
   // pays a second scan, which locates the offset for the message.
   const target = out === undefined ? new Uint8Array(16) : decodedUuidScratch;
   let codes = 0;
@@ -286,7 +286,7 @@ export function uuidStringToBytes(
   if (codes < 128 && pairs < 256) {
     if (out === undefined) return target;
     // A byte loop rather than `set`: the native call made Bun text-to-slug conversion slower
-    // (bench/PERFORMANCE.md).
+    // (bench/decisions.md).
     for (let byteIndex = 0; byteIndex < 16; byteIndex += 1)
       out[offset + byteIndex] = target[byteIndex] as number;
     return out;
@@ -374,7 +374,7 @@ export function formatUuidBytesUnchecked<Case extends UuidTextCase = typeof UUID
   // Bun retains its Latin-1 writer. A fixed argument list makes one flat string without
   // temporary bytes, intermediate hex or concatenation. WebKit selects native hex to avoid
   // repeated mixed-workload losses; remeasure both paths after engine changes
-  // (bench/PERFORMANCE.md). Keep case selection and fixed writing together to avoid another call.
+  // (bench/decisions.md). Keep case selection and fixed writing together to avoid another call.
   if (createLatin1Scratch)
     return formatUuidBytesLatin1(
       createLatin1Scratch,
@@ -484,10 +484,10 @@ export function isUuidText(value: unknown): value is UuidText {
 }
 
 // Canonical guards stay regular expressions: a character loop measured slower on Node and Bun
-// (bench/PERFORMANCE.md, Canonical UUID text).
+// (bench/decisions.md, Canonical UUID text).
 // Pair repetition improves canonical calls, but slows Bun's successful base32 normalization.
 // Reuse its existing Latin-1 selection once; neither pattern needs a builder or per-call dispatch.
-// Remeasure normalization if this capability moves to another adapter (bench/PERFORMANCE.md).
+// Remeasure normalization if this capability moves to another adapter (bench/decisions.md).
 const UUID_RE = createLatin1Scratch
   ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
   : /^(?:[0-9a-f][0-9a-f]){4}-(?:[0-9a-f][0-9a-f]){2}-(?:[0-9a-f][0-9a-f]){2}-(?:[0-9a-f][0-9a-f]){2}-(?:[0-9a-f][0-9a-f]){6}$/;
@@ -517,7 +517,7 @@ export function isUuidV4Text(value: unknown): value is UuidV4Text {
 export function isUuidV7Text(value: unknown): value is UuidV7Text {
   // Canonical text uses the same syntax with either case, avoiding the full digit loop before
   // timestamp parsing. Other spellings retain their existing checks; remeasure after engine or
-  // accepted-syntax changes (bench/PERFORMANCE.md).
+  // accepted-syntax changes (bench/decisions.md).
   if (typeof value === "string" && value.length === UUID_LENGTH) return UUID_V7_TEXT_RE.test(value);
   if (!isUuidText(value)) return false;
   const textStart = uuidTextStart(value);

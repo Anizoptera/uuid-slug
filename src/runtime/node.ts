@@ -35,7 +35,7 @@ if (nodeOptions?.includes("jitless")) {
 
 /**
  * Node's native UTF-8 encoder materially reduces string-seed construction; the portable adapter
- * remains the compatibility boundary. bench/PERFORMANCE.md owns the measured runtime scope.
+ * remains the compatibility boundary. bench/decisions.md owns the measured runtime scope.
  */
 export const encodeUtf8 = /* @__NO_SIDE_EFFECTS__ */ (text: string): Uint8Array =>
   Buffer.from(text, "utf8");
@@ -53,7 +53,7 @@ const nodeRuntime: Runtime = {
   }),
   // Pooled formatting wins with the JIT; native text wins without it. Missing native capability
   // stays undefined so the generator uses its tested portable fallback. Remeasure both modes
-  // after Node changes; bench/PERFORMANCE.md owns the compared calls and resource limits.
+  // after Node changes; bench/decisions.md owns the compared calls and resource limits.
   ...(jitless ? { jitless: true, uuidV4: crypto.randomUUID } : {}),
 };
 

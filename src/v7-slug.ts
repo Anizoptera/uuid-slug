@@ -56,7 +56,7 @@ const portableUuidV7Slug = (): string | UuidSlugError => {
 
 // Direct native output removes clock, entropy, byte writing and encoding from ordinary calls.
 // Configured calls and base32hex remain portable. Remeasure complete calls and resources if this
-// boundary changes; bench/PERFORMANCE.md owns evidence. Trust proper native results directly;
+// boundary changes; bench/decisions.md owns evidence. Trust proper native results directly;
 // result validation and identity tracking would impose stronger default guarantees.
 function nativeUuidV7Slug(): string | UuidSlugError {
   const native = runtime.uuidV7Slug;

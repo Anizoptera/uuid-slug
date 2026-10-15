@@ -74,7 +74,7 @@ class ParsedUuidValue<
 {
   // Private bytes are already a complete immutable UUID; public conversion would validate them
   // again. Resolve caller selectors, then use the same writers directly without caching spellings.
-  // Revisit if private storage becomes mutable or borrowed; measurements live in bench/PERFORMANCE.md.
+  // Revisit if private storage becomes mutable or borrowed; measurements live in bench/decisions.md.
   get version(): Version {
     return uuidVersion(LocalUuidValue.ownBytes(this), 0) as Version;
   }

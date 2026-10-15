@@ -119,12 +119,12 @@ export class UuidSlugError extends Error {
 
 // One immutable prototype property avoids adding storage to every error while preserving the same
 // marker across realms and duplicate package copies. Remeasure if supported engines change their
-// prototype-property access or Error layout; benchmark evidence belongs in bench/PERFORMANCE.md.
+// prototype-property access or Error layout; benchmark evidence belongs in bench/decisions.md.
 Object.defineProperty(UuidSlugError.prototype, ERROR_MARKER, { value: true });
 
 // Keep local identity before the costlier cross-realm capability, but isolate the probes: a proxy
 // that blocks one operation must not suppress a later independent one. Remeasure if Error branding
-// or inlining changes in a supported engine; results and statistical limits live in PERFORMANCE.md.
+// or inlining changes in a supported engine; results and statistical limits live in bench/decisions.md.
 /*#__NO_SIDE_EFFECTS__*/
 function hasErrorBrand(candidate: object): boolean {
   try {
@@ -189,7 +189,7 @@ export function isError(value: unknown): value is Error {
 
 // A slot probe is the only proof of a genuine buffer, but calling one on anything else
 // throws, and building that native TypeError costs three orders of magnitude more than the checks
-// below (bench/PERFORMANCE.md). For buffers, local identity answers the common case without reading
+// below (bench/decisions.md). For buffers, local identity answers the common case without reading
 // the tag at all; the tag then recognizes another realm's value. The tag is caller-visible, so a value
 // carrying its own Symbol.toStringTag still reaches the probe and keeps its acceptance, and that
 // own-property lookup runs only after the tag misses. Only a value whose realm re-tagged the

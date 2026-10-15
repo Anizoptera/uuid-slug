@@ -2,7 +2,7 @@
 
 Apply `../AGENTS.md` §Work scope before starting experiments; keep required regression checks.
 Read `README.md` for commands, `methods.md` for experiment and measurement mechanics,
-and `PERFORMANCE.md` for measured conclusions.
+and `decisions.md` for measured conclusions.
 
 ## Choose the decision
 
@@ -38,7 +38,7 @@ and `PERFORMANCE.md` for measured conclusions.
   higher-ranked calls and enough value to justify its lifetime cost.
 - Give each call family a native-floor row. Defaults, including case/alphabet presets, must approach
   equivalent native floors and qualified rivals; configured calls add only work those floors lack.
-  Keep gaps open until closed, negligible or explained as unavoidable in `PERFORMANCE.md`.
+  Keep gaps open until closed, negligible or explained as unavoidable in `decisions.md`.
 - Test the focused mechanism before the full runtime matrix; run every applicable runtime before retention.
 - Choose separately by runtime and output: native, patched-native, pooled entropy or portable work.
   Count wrapper, conversion, startup and resource costs; minimize faster native delegation first.
@@ -70,7 +70,7 @@ and `PERFORMANCE.md` for measured conclusions.
 4. Run the selected path and compatible fallback through the same public-route corpus. Prove wire
    results, errors, ownership, and resource behavior before comparing speed. Run decision-relevant
    measurements twice and apply the runtime priority ladder above.
-5. Keep only decision-changing conclusions in `bench/PERFORMANCE.md`: observed versions and
+5. Keep only decision-changing conclusions in `bench/decisions.md`: observed versions and
    behavior, selected path, rejected live alternatives, evidence limits, and the condition that
    requires review again. Generated capability inventories and reports stay under `bench/reports/`.
 
@@ -79,7 +79,7 @@ and `PERFORMANCE.md` for measured conclusions.
 - Extend the nearest driver in `bench/` or `scripts/`; read exports and callers first. Split only
   for a different oracle, runtime, isolation or feedback boundary, never because a filename matches.
   Isolate source substitutions from the shared working tree. Keep benchmark dependencies dev-only.
-- Keep drivers in the repository, raw output in `reports/` and conclusions in `PERFORMANCE.md`.
+- Keep drivers in the repository, raw output in `reports/` and conclusions in `decisions.md`.
   Extract executable baselines outside the repository; Git ignores do not exclude compiler or tests.
   Source captures must be text or archives, never executable `.ts` files. Never bypass artifact checks
   or suppress source-capture compiler errors.

@@ -48,7 +48,7 @@ const UUID_V7_BYTE_OPTIONS = {
 /**
  * Text and bytes keep independent lazy state so neither output form pays cross-form coordination.
  * Native defaults avoid constructing this generator. Explicit time, configured generators and
- * native failure still need portable state; bench/PERFORMANCE.md owns the selection evidence.
+ * native failure still need portable state; bench/decisions.md owns the selection evidence.
  */
 let textGenerator: PortableUuidV7Generator | undefined;
 let byteGenerator: PortableUuidV7Generator | undefined;
@@ -69,7 +69,7 @@ const keylessTextBytes = new Uint8Array(16);
 
 /**
  * Draw with options this module already read. Rebuilding an options object for the generator's
- * public method allocated it and read every option a second time (bench/PERFORMANCE.md).
+ * public method allocated it and read every option a second time (bench/decisions.md).
  */
 function drawFromReadOptions(
   generator: PortableUuidV7Generator,
@@ -101,10 +101,10 @@ export const uuidV7BytesAt = (at: unknown): Uint8Array | UuidSlugError => drawAt
  * Slug and pair writers encode their bytes before returning and draw nothing in between, so they
  * borrow the generator's private text scratch instead of validating a second module buffer as
  * caller output. Text keeps cached generator delegation; replacing it with a direct module
- * formatter has not earned its cost on the primary calls (bench/PERFORMANCE.md).
+ * formatter has not earned its cost on the primary calls (bench/decisions.md).
  * Keep configured output validation and the generator's reentrancy guard; a borrowed buffer
  * must never escape or survive another draw. Remeasure complete calls when either writer changes
- * (bench/PERFORMANCE.md), rather than assuming fewer checks improve every runtime.
+ * (bench/decisions.md), rather than assuming fewer checks improve every runtime.
  */
 export const currentUuidV7Scratch = (): Uint8Array | UuidSlugError =>
   v7Text().drawUuidV7Bytes(undefined, keylessTextBytes);
@@ -123,7 +123,7 @@ const portableUuidV7Text = (textCase: UuidTextCase): string | UuidSlugError =>
 
 // Trust proper native results directly; validation and identity tracking add guarantees beyond
 // the default native baseline. Keep exception fallback separate from configured calls, and
-// remeasure complete calls when host capabilities change; bench/PERFORMANCE.md owns evidence.
+// remeasure complete calls when host capabilities change; bench/decisions.md owns evidence.
 function generateNativeDefaultUuidV7<Case extends UuidTextCase>(
   selectedCase: Case,
 ): UuidV7StringFor<Case> | UuidSlugError {
@@ -281,7 +281,7 @@ export const currentUuidV7Bytes = (): UuidV7Bytes | UuidSlugError =>
 // Independent draws remove unrequested sequence work from owned defaults. Keep JITless on its
 // measured generator path; configured calls and immutable values retain their declared layout.
 // Remeasure complete calls if entropy, timestamp writing or runtime selection changes;
-// bench/PERFORMANCE.md owns runtime comparisons rather than this selection comment.
+// bench/decisions.md owns runtime comparisons rather than this selection comment.
 const generateSelectedDefaultUuidV7Bytes = runtime.jitless
   ? currentUuidV7Bytes
   : generateDefaultOwnedUuidV7Bytes;

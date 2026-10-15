@@ -28,7 +28,7 @@ export function readGenerationOptions(
       return new UuidSlugError(INVALID_OPTIONS, `Unknown ${operation} option: ${unknown}.`);
     const source = options as GenerationOptionValues;
     // Direct assignments build one object; a conditional spread per option allocated a temporary
-    // object for each (bench/PERFORMANCE.md). Each accepted own property is read once, in this
+    // object for each (bench/decisions.md). Each accepted own property is read once, in this
     // order. Callers resolve `alphabet` and `textCase`, which also unwraps `String` objects.
     const values: { -readonly [Key in keyof GenerationOptionValues]: unknown } = {};
     if (accepted.alphabet && Object.hasOwn(source, "alphabet")) values.alphabet = source.alphabet;

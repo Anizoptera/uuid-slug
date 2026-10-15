@@ -70,7 +70,7 @@ export function feistel16(
     const key = (direction === "mask" ? round : ROUNDS - 1 - round) * 2;
     // The round function is `halfSipHash(keys[key], keys[key + 1], [right0, right1], 8)`, written
     // out for its fixed two-word message: the call through word arrays cost about a fifth more of
-    // the network on Node and Bun (bench/PERFORMANCE.md). The fixed vector in `feistel.test.ts`
+    // the network on Node and Bun (bench/decisions.md). The fixed vector in `feistel.test.ts`
     // and the wire-format vectors hold it to issued slugs.
     const key0 = keys[key] as number;
     const key1 = keys[key + 1] as number;

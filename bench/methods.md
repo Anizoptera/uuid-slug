@@ -229,7 +229,7 @@ fresh timing processes and compiles every retained generator call for native Rus
 tracked, unlike the profiling artifacts under ignored
 `bench/reports/`, because a report git tracks shows its own date and can be diffed between runs,
 while a hand-pasted snapshot rots behind a date that looks fresh. Nothing in them is typed in.
-They are evidence for `bench/PERFORMANCE.md`, which owns conclusions; a figure in them is one
+They are evidence for `bench/decisions.md`, which owns conclusions; a figure in them is one
 machine's and moves between runs, so read the direction of a difference, not its digits. The
 command runs full settings only.
 

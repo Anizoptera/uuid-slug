@@ -62,7 +62,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   Position the package by the complete consumer contract: base64url and base32hex plain slugs for
   any UUID, caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime
   paths. Keep version-neutral encoding separate from UUIDv7-only masking. Generation alone is not
-  distinctive. Keep measured gaps in `bench/PERFORMANCE.md`; do not imply wins on those calls.
+  distinctive. Keep measured gaps in `bench/decisions.md`; do not imply wins on those calls.
 - Generate only UUIDv4 and UUIDv7. Keep parsing, inspection, and plain-slug conversion
   version-neutral so other UUID versions work without version-specific machinery. Add support for
   another generated version only after the maintainer reopens it for concrete demand.
@@ -83,7 +83,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Write each maintainer ruling into the file that owns its subject when it is made: consumer
   contracts in README, wire design in `docs/design.md`, security boundaries in `docs/security.md`,
   cross-language and distribution decisions in `dev/cross-language.md`, measured conclusions in
-  `bench/PERFORMANCE.md`. Plans, agent memory and session notes track progress only; a ruling kept
+  `bench/decisions.md`. Plans, agent memory and session notes track progress only; a ruling kept
   there is lost. Durable code and docs must not reference plans, phases or task IDs.
 - Keep execution decisions and unfinished atomic work as Markdown tasks in the one live plan.
   Replace superseded state in place; retain completed facts only when later work needs them.
@@ -264,7 +264,7 @@ Agent instructions live only in `AGENTS.md` files, never in public documents (RE
 - Performance copy MUST sell speed, memory/resource efficiency and small bundles together.
   "Native APIs with TypeScript fallbacks" alone fails: it names machinery, not a gain.
   Preserve approved positioning. DO NOT put rival-by-runtime benchmark rows in README;
-  rankings, measured gaps, timings and methods belong in `bench/PERFORMANCE.md`, not the pitch.
+  rankings, measured gaps, timings and methods belong in `bench/decisions.md`, not the pitch.
 - Claims need an owning contract or evidence. Guarantees need a ruling and a test that fails without
   them; `docs/security.md` wins conflicts. A runtime/competitor "cannot" or "never" needs its probe.
   Delete claims with no possible owner; do not soften them.

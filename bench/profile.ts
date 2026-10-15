@@ -26,7 +26,7 @@ const threadCpuUsage = (
 const isNode = !versions.bun && !versions.deno;
 // Live heap misses collected garbage; the native cumulative counter avoids GC reconstruction.
 // Bun's same-named field falls after GC. Requalify host semantics after runtime updates;
-// bench/PERFORMANCE.md owns the controls and limits. Missing counters are not zero allocation.
+// bench/decisions.md owns the controls and limits. Missing counters are not zero allocation.
 const heapAllocationProbe = versions.bun
   ? undefined
   : (v8.getHeapStatistics() as { readonly total_allocated_bytes?: number }).total_allocated_bytes;

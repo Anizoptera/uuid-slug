@@ -48,7 +48,7 @@ class ReturnObject {
  *
  * Structural validation allocated a validated object and rescanned the layout keys on every call
  * that passed `generator`, and the untrusted-generator call then needed a scratch buffer, byte
- * validation, an `at` check, and a copy (bench/PERFORMANCE.md). The stamp adds a private field
+ * validation, an `at` check, and a copy (bench/decisions.md). The stamp adds a private field
  * instead of a class prototype, so the public object stays plain. A module `WeakMap` is the rejected
  * alternative: registration made default generator creation 1.6 times slower. Remeasure if engines
  * change how they store private fields or weak collections.
@@ -106,7 +106,7 @@ export function readUuidV7Generator(
  *
  * The generator receives the result buffer and may keep a reference to it, so a result the caller
  * keeps is a copy. Pass `borrowed` only when the package consumes the bytes before returning and
- * never returns them: text, slug, and masked-slug writers skip that copy (bench/PERFORMANCE.md).
+ * never returns them: text, slug, and masked-slug writers skip that copy (bench/decisions.md).
  */
 export function generateUuidV7BytesWithGenerator(
   generator: ValidatedUuidV7Generator,

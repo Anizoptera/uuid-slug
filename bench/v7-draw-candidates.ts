@@ -167,7 +167,7 @@ export function v7Candidates(source: string, uuidSource?: string): readonly Sour
   const directText = (latin1 = false, pairs = false, reusePrefix = false) => {
     // Remove intermediate stores without changing sequence policy or adding tables and buffers.
     // A separate function leaves owned-byte calls unchanged; its extra closure is a cold cost
-    // to measure only if complete text calls survive the screen (bench/PERFORMANCE.md).
+    // to measure only if complete text calls survive the screen (bench/decisions.md).
     const start = source.indexOf("  function bytes(out?: Uint8Array, offset = 0)");
     const end = source.indexOf("\n  function bytesAt(", start);
     if (start < 0 || end < start) throw new Error("Clock draw moved; repair the text experiment.");
@@ -608,7 +608,7 @@ export function v7Candidates(source: string, uuidSource?: string): readonly Sour
     {
       // Keep byte elimination fixed while changing string construction. Native storage replaces
       // the generic formatter's storage for preset-only consumers, but mixed calls can retain
-      // both buffers; that cost must be measured before retention (bench/PERFORMANCE.md).
+      // both buffers; that cost must be measured before retention (bench/decisions.md).
       name: "direct-text-latin1",
       get source() {
         return directText(true);

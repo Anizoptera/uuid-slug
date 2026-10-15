@@ -7,11 +7,11 @@
  * tracked on purpose: a report git tracks shows its own date, changes only when this command runs,
  * and lets a reviewer diff two runs, while a hand-pasted snapshot rots behind a date that still
  * looks fresh. Nothing here is typed in. Every figure comes from the two drivers this file spawns,
- * so there is no prose to go stale. `bench/PERFORMANCE.md` owns conclusions; these files are its
+ * so there is no prose to go stale. `bench/decisions.md` owns conclusions; these files are its
  * evidence, never claims of their own.
  *
  * Full runs only, so there is no `--smoke`. Smoke settings rank nothing, and the paired runs in
- * `bench/PERFORMANCE.md` show smoke disagreeing with full runs by tens of percent on some routes;
+ * `bench/decisions.md` show smoke disagreeing with full runs by tens of percent on some routes;
  * a smoke report in a tracked file would be read as a result.
  */
 import { mkdir } from "node:fs/promises";

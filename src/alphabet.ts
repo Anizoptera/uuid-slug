@@ -367,7 +367,7 @@ export function decodeInto(
   // keep the accumulator below for every other byte length, alphabet, and tail width.
   // Fixed paths check every character once after the loop: ORing the codes exposes any code
   // above 127, whose low bits the table read would alias, and ORing the digits turns any -1
-  // negative. A branch per character was slower on Node and Bun (bench/PERFORMANCE.md).
+  // negative. A branch per character was slower on Node and Bun (bench/decisions.md).
   if (alpha === BASE64URL && byteLength === 16 && (tailBits === 0 || tailBits === 4)) {
     let codes = 0;
     let digits = 0;
@@ -491,7 +491,7 @@ export function decodeInto(
 }
 
 // Fixed 16-byte groups avoid per-character concatenation and temporary text buffers on V8.
-// Bun keeps its Latin-1 writer; remeasure after engine changes (bench/PERFORMANCE.md).
+// Bun keeps its Latin-1 writer; remeasure after engine changes (bench/decisions.md).
 // Character tables belong to the alphabet owner; callers select only supported tail widths.
 /*#__NO_SIDE_EFFECTS__*/
 function writeBase64url(bytes: Uint8Array, codes: Uint8Array, tail: number): string {

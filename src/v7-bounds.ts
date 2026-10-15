@@ -70,7 +70,7 @@ function fixedTextEndpoint<Case extends UuidTextCase>(
 ): UuidV7StringFor<Case> {
   // Fixed character arguments reduce consumed bounds costs on V8 with the JIT. Byte pairs remain
   // faster on Bun and JITless Node; selection is outside per-ID calls. Remeasure engine changes
-  // against bench/PERFORMANCE.md, including both endpoint reads and lazy table construction.
+  // against bench/decisions.md, including both endpoint reads and lazy table construction.
   const hex = (hexCodes ??= Uint8Array.from("0123456789abcdef", (digit) => digit.charCodeAt(0)));
   // Validated timestamps have 48 bits; splitting avoids truncating their upper 16 bits.
   const high = Math.floor(unixMs / 0x1_0000_0000);
@@ -102,7 +102,7 @@ function textEndpoint<Case extends UuidTextCase>(
 ): UuidV7StringFor<Case> {
   // Byte pairs avoid radix formatting and beat fixed character arguments on Bun and JITless Node.
   // Build the table on first use so imports that never request bounds pay no table construction.
-  // Remeasure radix formatting and fixed arguments after engine changes (bench/PERFORMANCE.md).
+  // Remeasure radix formatting and fixed arguments after engine changes (bench/decisions.md).
   const hex = (hexBytes ??= Array.from({ length: 256 }, (_, byte) =>
     byte.toString(16).padStart(2, "0"),
   ));
@@ -163,7 +163,7 @@ export function uuidV7StringBounds(
   const end = intervalEnd(startUnixMs, endUnixMs);
   if (typeof end !== "number") return end;
   // Direct formatting avoids two temporary byte arrays. Keep the byte writer independent unless
-  // repeated public-route measurements reverse this result; bench/PERFORMANCE.md owns that trigger.
+  // repeated public-route measurements reverse this result; bench/decisions.md owns that trigger.
   return {
     startInclusive: selectedTextEndpoint(startUnixMs, false, textCase),
     endInclusive: selectedTextEndpoint(end, true, textCase),

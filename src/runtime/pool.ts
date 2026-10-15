@@ -55,7 +55,7 @@ export function pooledFill(
     // Continuation draws need four bytes. Fixed stores avoid their loop without another view
     // or retained buffer. Owned draws use four-byte blocks, reusing each source offset rather
     // than repeating its arithmetic. Blocks keep the body smaller than fully expanded stores;
-    // other lengths keep the indexed loop. Complete-call comparisons in bench/PERFORMANCE.md
+    // other lengths keep the indexed loop. Complete-call comparisons in bench/decisions.md
     // decide this shape, not copy-only timing. Remeasure if draw widths
     // or the runtime's typed-array handling change.
     if (length === 4) {

@@ -555,7 +555,7 @@ function buildUuidSlugCodec(
       // function past the size JavaScriptCore inlines into a small caller, which costs Bun sentinel
       // reads a few nanoseconds; moving it into a helper cost more because Bun did not inline the
       // helper either. Recheck `sentinel.base32.decode` on Bun when this function changes
-      // (bench/PERFORMANCE.md).
+      // (bench/decisions.md).
       if (uuid.length === 36) {
         if (selectedCase === UUID_TEXT_LOWERCASE && isUuidString(uuid))
           return uuid as UuidStringFor<Case>;

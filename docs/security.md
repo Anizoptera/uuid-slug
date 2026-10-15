@@ -31,7 +31,7 @@ bytes are drawn in batches into an internal buffer; see [Memory](#memory-and-uns
 - Deno uses Web Crypto `randomUUID()` for UUIDv4 text and pooled `getRandomValues()` for byte
   output and UUIDv7. Cloudflare Workers and browsers use pooled `getRandomValues()` for both UUID versions.
 
-These choices reflect [measured call costs](../bench/PERFORMANCE.md). Each source must supply
+These choices reflect [measured call costs](../bench/decisions.md). Each source must supply
 secure randomness or report failure.
 
 The platform source choices are documented by [Node](https://nodejs.org/api/crypto.html#cryptorandomfillsyncbuffer-offset-size),

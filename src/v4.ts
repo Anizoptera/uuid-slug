@@ -127,7 +127,7 @@ export function generatePortableUuidV4<Case extends UuidTextCase = typeof UUID_T
 /**
  * Fill the module scratch with UUIDv4 bytes for a writer that reads them before its next draw. Text
  * and slug writers never expose the scratch, so they skip a new array and the public converters'
- * input checks, which cost about a third of Node's portable text call (bench/PERFORMANCE.md).
+ * input checks, which cost about a third of Node's portable text call (bench/decisions.md).
  * Encoding cannot draw entropy, so the scratch cannot change between this return and the read.
  */
 export function drawUuidV4Scratch(): Uint8Array | UuidSlugError {
@@ -172,7 +172,7 @@ export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
   // Trust proper native output directly: validation and identity tracking impose guarantees
   // beyond the default native baseline. Configured entropy still validates at its caller seam.
   // Remeasure each output form if case normalization, host APIs or engine inlining
-  // changes; bench/PERFORMANCE.md owns the evidence.
+  // changes; bench/decisions.md owns the evidence.
   const native = runtime.uuidV4;
   if (!native) return generatedOrThrow(generatePortableUuidV4(textCase));
   let uuid: string | UuidSlugError;

@@ -105,7 +105,7 @@ function writeTimestampLoop(bytes: Uint8Array, ms: number, offset: number) {
 }
 
 // Measured Bun favors the loop while Node and Chromium favor fixed writes; select once so generation
-// pays no per-call branch. bench/PERFORMANCE.md owns the measurements and replacement condition.
+// pays no per-call branch. bench/decisions.md owns the measurements and replacement condition.
 const writeTimestamp = (globalThis as { Bun?: object }).Bun
   ? writeTimestampLoop
   : writeTimestampWords;

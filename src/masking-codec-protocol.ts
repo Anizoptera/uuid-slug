@@ -3,7 +3,7 @@
 // Only this package's frozen codecs may borrow private UUID storage. Structural callbacks can
 // retain or mutate their input; public shape checks cannot establish ownership.
 // A private stamp follows the generator ownership protocol without a WeakSet registration or lookup;
-// construction and conversion measurements are owned by bench/PERFORMANCE.md.
+// construction and conversion measurements are owned by bench/decisions.md.
 // Remeasure construction and parsed conversions if engines change private-field storage.
 // eslint-disable-next-line typescript/no-extraneous-class -- returning the codec lets the subclass stamp the existing plain object
 class ReturnCodec {

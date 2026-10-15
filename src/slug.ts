@@ -245,7 +245,7 @@ export function uuidBytesToPlainSlug(
     if (selectedAlphabet === BASE32HEX_NAME) return encode(bytes, BASE32HEX) as PlainUuidSlug;
     // Native encoding owns this exact plain-payload job. Offset windows and non-array forms retain
     // general conversion; masked tails never enter here. Keep base32 controls in the comparison
-    // when changing this dispatch (bench/PERFORMANCE.md).
+    // when changing this dispatch (bench/decisions.md).
     if (selectedAlphabet === BASE64URL_NAME) {
       if (nativePlainUuidBase64) {
         try {
@@ -361,7 +361,7 @@ export function uuidStringToPlainSlug(
   // Resolve caller selectors before scratch is live, then parse and encode without callbacks.
   // Separate text-to-slug
   // writers read hex pairs and concatenated characters, and were slower on every runtime
-  // (bench/PERFORMANCE.md). Reassess scratch ownership if encoding adds caller-controlled work.
+  // (bench/decisions.md). Reassess scratch ownership if encoding adds caller-controlled work.
   const bytes = uuidStringToBytes(uuidText, textSlugScratch);
   if (bytes instanceof Error) return bytes;
   return encode(bytes, alpha) as PlainUuidSlug;
@@ -549,7 +549,7 @@ export function uuidToString(
     textCase = caseAfterOffset;
   } else textCase = byteOffsetOrCase;
   // Canonical lowercase text is already the default output, so it is returned without decoding.
-  // An inline `typeof` guard ahead of the helper slowed Node mixed-case text (bench/PERFORMANCE.md).
+  // An inline `typeof` guard ahead of the helper slowed Node mixed-case text (bench/decisions.md).
   if (textCase === UUID_TEXT_LOWERCASE && isUuidString(uuid)) return uuid;
   const localBytes = exactLocalUuidBytes(uuid);
   if (localBytes) {
@@ -570,7 +570,7 @@ export function uuidToString(
     }
   }
   // Only text leaves this call. Reuse private scratch instead of an owned decode array;
-  // public caller-buffer decoding adds validation and copying (bench/PERFORMANCE.md).
+  // public caller-buffer decoding adds validation and copying (bench/decisions.md).
   const alpha = typeof input === "string" ? SLUG_ALPHABET_BY_LENGTH[input.length] : undefined;
   const decoded =
     typeof input === "string"
@@ -671,7 +671,7 @@ function fixedCanonicalUuidV7UnixMs(text: string): number {
   // low word so timestamps above its sign bit preserve all 48 bits. Only validated canonical text
   // reaches this helper; compact text retains its contiguous parse. Table reads slightly favor
   // Bun but lose on Node in the source screen; remeasure complete calls after parser or engine
-  // changes (bench/PERFORMANCE.md).
+  // changes (bench/decisions.md).
   const high =
     (validatedHexNibble(text, 0) << 12) |
     (validatedHexNibble(text, 1) << 8) |
@@ -696,7 +696,7 @@ function parsedCanonicalUuidV7UnixMs(text: string): number {
 }
 
 // Reuse the runtime's settled JIT selection; no flag parsing or table construction belongs here.
-// Recheck both complete calls after engine changes against bench/PERFORMANCE.md.
+// Recheck both complete calls after engine changes against bench/decisions.md.
 const canonicalUuidV7UnixMsUnchecked = runtime.jitless
   ? parsedCanonicalUuidV7UnixMs
   : fixedCanonicalUuidV7UnixMs;
