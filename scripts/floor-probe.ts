@@ -10,8 +10,10 @@
 // Bun load a real node_modules directory, and Deno resolves `npm:` from a local registry that
 // serves the same tarball.
 //
-// Floors come from package.json `engines`; `docs/cross-language.md` §Runtime floors owns why each
-// one holds. Usage: bun scripts/floor-probe.ts [package.tgz]
+// Bun and Deno floors come from package.json `engines`. The Node engines floor is not repeated here:
+// the `runtimes` CI matrix already runs that exact release with the full shared-contract probe.
+// `docs/cross-language.md` §Runtime floors owns why each floor holds.
+// Usage: bun scripts/floor-probe.ts [package.tgz]
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -25,7 +27,7 @@ const NAME: string = manifest.name;
 // README and docs state Node "works from 16.20" beside the supported engines floor; keep it run.
 const NODE_WORKS_FROM = "16.20.2";
 
-function floorVersion(key: "node" | "bun" | "deno"): string {
+function floorVersion(key: "bun" | "deno"): string {
   const range: unknown = manifest.engines?.[key];
   const match = typeof range === "string" ? /^>=(\d+)(?:\.(\d+))?(?:\.(\d+))?$/.exec(range) : null;
   if (!match)
@@ -146,7 +148,6 @@ try {
   );
 
   const lanes: [Runtime, string][] = [
-    ["node", floorVersion("node")],
     ["node", NODE_WORKS_FROM],
     ["bun", floorVersion("bun")],
     ["deno", floorVersion("deno")],

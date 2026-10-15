@@ -189,8 +189,8 @@ jobs:
       - if: steps.runtime.outputs.node == 'current'
         run: bun scripts/runtime-probe.ts runtime-reference.json
 
-  # Declared floors in package.json engines run the package-only probe from a real install;
-  # docs/cross-language.md §Runtime floors explains each floor.
+  # Bun and Deno engines floors and Node 16.20 run the package-only probe from a real install;
+  # the runtimes matrix owns the Node engines floor. docs/cross-language.md §Runtime floors.
   floors:
     runs-on: ubuntu-latest
     timeout-minutes: 10

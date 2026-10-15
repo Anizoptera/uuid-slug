@@ -428,8 +428,8 @@ These profiled timings include instrumentation and do not replace ordinary throu
 Deno's sampled allocation attributes substantial bytes to every decoder closure, including
 the package. Buffer copies also allocate through Deno's `byteLength` and `getEncodingOps`.
 The methods complete different call counts, warm-up is included, and source attribution can
-merge inlined allocations. These captures do not establish total bytes per call, resource parity,
-or a production-source Deno verdict. Two processes with fixed case order cannot bound a small
+merge inlined allocations. These captures do not establish total bytes per call or resource
+parity. Two processes with fixed case order cannot bound a small
 remaining effect. Keep the resource gap open; no production substitution follows from this study.
 
 Argument-free immutable UUIDv7 generation has no caller configuration to read. The
@@ -2002,8 +2002,8 @@ and Buffer compositions. Buffer-only byte results are incomplete floors even whe
 report says `qualified`: they do not return private plain arrays. The Deno text-to-byte comparison
 is 156.8 ns against native `fromHex` at 196.4 ns, not the faster Buffer-only result.
 Three process medians on fixed canonical inputs do not bound equivalence or individual latency.
-Node reported heap allocation is covered above; total allocation, broader input-form comparisons
-and Deno source-entry parity remain unproved. These rankings do not justify another writer change.
+Node reported heap allocation is covered above; total allocation and broader input-form
+comparisons remain unproved. These rankings do not justify another writer change.
 
 Two full competitor runs on 2026-09-16 measured Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and Chromium;
 one-row-per-process probes added Node 26.8.2. Medians in nanoseconds, package against floor:
@@ -3018,7 +3018,7 @@ Process-exit profiles require their own completed-call records. The repeat prese
 `node-exit.jsonl`, `node-v8.jsonl`, `deno-cli.jsonl`, `bun-cpu.jsonl` and `bun-heap.jsonl`;
 the first capture lacks those records and cannot support normalized allocation estimates for those
 processes. Node and Deno inspector counts and Chromium counts come from the same captured processes.
-Deno loads compiled output here, so normal TypeScript entry cost remains unmeasured. These are
+Deno loads compiled output here, as Deno consumers do. These are
 two processes on one machine with fixed case order, not confidence bounds or competitor resource
 parity. Investigate clock and sequence allocation and fewer string-construction steps before
 another entropy-copy candidate; require a causal substitution and repeated complete-call gains
@@ -4146,9 +4146,8 @@ not proof of equivalence, especially with the wider browser intervals.
 Bun 1.4.2, Deno 2.9.7 and Chromium. The selected corpus checks exact output and ownership before
 profiling. Production behavior checks pass 384 Node and 328 Bun tests, including lazy entropy,
 refill failures and consumed-byte erasure. Fixed stores add no array, view or retained state;
-the maintained resource counters preserve those counts. Profiles include setup and warm-up, and
-Deno profiles execute compiled output, so they do not establish total per-call allocation parity
-or the cost of Deno's normal source entry. Native and competitor parity remains open.
+the maintained resource counters preserve those counts. Profiles include setup and warm-up, so
+they do not establish total per-call allocation parity. Native and competitor parity remains open.
 
 Retain fixed stores for four-byte draws and four-byte blocks for sixteen-byte draws; other widths
 keep the indexed loop. The four-byte comparison above does not measure the sixteen-byte change

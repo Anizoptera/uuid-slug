@@ -150,9 +150,9 @@ interface is complete, useful, or clear.
 - Preserve native ESM and module seams. Consumer bundlers already remove unused root exports;
   bundling this package first would hide those seams from them.
 - A public condition must select different output or guard an incompatible lower condition. Put
-  `deno` before `development` and `node`: Deno activates `node` and may activate `development`.
-  Route Deno to compiled ESM: Deno refuses TypeScript inside npm packages, both from its npm cache
-  and from `node_modules`. Its condition still guards `development`, which selects source.
+  `deno` before `development` and `node`: Deno always activates `node`, and `development` when a
+  consumer passes `--conditions development`. Route Deno to compiled ESM in both: Deno refuses
+  TypeScript inside npm packages, from its npm cache and from `node_modules`.
   Bun MUST load TypeScript normally. If it loads compiled public JavaScript directly, `#runtime`
   MUST still select the Bun TypeScript adapter and native primitives. Use the private map for adapters.
 

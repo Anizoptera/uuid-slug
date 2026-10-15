@@ -370,10 +370,11 @@ export async function inspectArtifact(
     if (failures.length) throw new AggregateError(failures, "Packed consumers failed.");
     if (web) {
       const denoOptions = ["--node-modules-dir=manual", "--cached-only", "--allow-read"];
+      // Deno's default route is already compiled output. The development run proves the `deno`
+      // condition still wins over the opt-in source condition, which Deno rejects in node_modules.
       await Promise.all([
         command("deno", ["run", ...denoOptions, runner], root),
         command("deno", ["run", "--conditions", "development", ...denoOptions, runner], root),
-        command("deno", ["run", ...denoOptions, builtRunner], root),
       ]);
     }
     if (web || edge) {
