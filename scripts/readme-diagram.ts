@@ -24,9 +24,9 @@
 //     to the nearest piece, and leaving a piece waits a moment before un-highlighting;
 //   - a lit legend item shows as a crisp chip: a rounded pill with a faint field-colour fill
 //     and border behind its white label (a blurred glow read as tacky neon).
-// - Idle motion, slow and gentle: fields light in turn (with their legend items). It stops while
-//   a piece or legend item is hovered (real interaction), not merely while the pointer rests on
-//   the image, and resumes after.
+// - Idle motion, slow and gentle: fields light in turn (with their legend items). It stops as
+//   soon as the pointer enters the image, anywhere on it, and resumes when it leaves: motion
+//   that keeps running under a reader who is looking feels broken.
 // - The avalanche is drawn, not only counted: flipped input bit → mask → 16 output bytes. It
 //   animates constantly, never stops, on one clock: the input bit flips, irregular dashes stream
 //   down every wire, the changed bytes and After characters turn over in shuffled order, hold,
@@ -195,7 +195,7 @@ const FORMS = {
     bitsPerChar: 6,
     field: plainField,
     masked: false,
-    facts: "22 chars · A–Z a–z 0–9 - _ · 6 bits each",
+    facts: "22 chars · A–Z a–z 0–9 - _",
     sort: "roughly by time²",
     caseRule: "must match",
     job: "For short URLs, logs and JSON.",
@@ -208,7 +208,7 @@ const FORMS = {
     bitsPerChar: 5,
     field: plainField,
     masked: false,
-    facts: "26 chars · 0–9 a–v · 5 bits each · lowercase",
+    facts: "26 chars · 0–9 a–v · lowercase",
     sort: "by time¹",
     caseRule: "any accepted",
     job: "For case-insensitive filenames and text keys.",
@@ -220,7 +220,7 @@ const FORMS = {
     bitsPerChar: 6,
     field: maskedField,
     masked: true,
-    facts: "22 chars · A–Z a–z 0–9 - _ · 6 bits each",
+    facts: "22 chars · A–Z a–z 0–9 - _",
     sort: "none: decode first",
     caseRule: "must match",
     job: "For public IDs that hide the UUID's time and fields.",
@@ -233,7 +233,7 @@ const FORMS = {
     bitsPerChar: 5,
     field: maskedField,
     masked: true,
-    facts: "27 chars · 0–9 a–v · 5 bits each · lowercase",
+    facts: "27 chars · 0–9 a–v · lowercase",
     sort: "none: decode first",
     caseRule: "any accepted",
     job: "For masked IDs in case-insensitive filenames.",
@@ -289,9 +289,8 @@ ${LEGEND.map(([f]) => {
 }).join("\n")}`;
 // Slow auto-highlight: each field's ribbons and legend glow brighten in turn, so the static
 // README <img> (which never receives the mouse) still shows how the fields travel between rows.
-// Hovering a piece or legend item stops it (STILL) so the hover focus is the only one lit; a
-// pointer merely resting on the image does not, or the raw view, where the pointer is almost
-// always over the image, would never move.
+// The pointer anywhere on the image stops it (STILL): the reader is looking, and a hover focus
+// must be the only one lit.
 const AUTO_FIELDS = ["time", "version", "variant", "payload", "masked"] as const;
 // Each field gets a 4 s turn of the 20 s cycle: ~2 s ease-in, a short hold, then a ~2.5 s
 // ease-out that overlaps the next field's rise, so the light hands over instead of blinking.
@@ -338,16 +337,20 @@ const AVALANCHE = `@keyframes avin{0%,6%{fill:${DIM}}10%,76%{fill:${LIT}}80%,100
 const WIRE_DASHES = ["2 8", "4 6", "1 4 3 2", "6 14", "3 7", "1 9", "5 5", "2 3 1 4"];
 // Fixed shuffle of 0..n-1 scaled to [0, 1): 37 is prime and divides none of the part counts.
 const spread = (i: number, n: number) => ((i * 37 + 11) % n) / n;
-// Hovering a piece or legend item stops the field cycle so the hover focus is the only one lit.
+// The pointer on the image stops the field cycle. `none`, not `paused`: an animated value beats
+// the hover rules, so a paused cycle would keep its field lit beside the hover focus.
 // The avalanche keeps running: no hover state touches it.
-const STILL = `svg:has(.hit:hover,.lg:hover) :is(.ghost,.chip){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.chip,.av){animation:none}}`;
+// "On the image" means over the drawing (the background rect takes the pointer for this), not
+// `svg:hover`: opened as its own document, the root <svg> is hovered anywhere in the browser
+// tab, so the cycle would stop for good.
+const STILL = `svg:has(.bg:hover,.hit:hover,.lg:hover) :is(.ghost,.chip){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.chip,.av){animation:none}}`;
 // Highlights wait this long before fading, so a pointer crossing a gap or moving to the next piece
 // never drops them for a frame. Lit states override it with LIT_NOW.
 const UNLIT_AFTER = ".12s";
 // Only hit areas (`.hit`) and legend items (`.lg`) take the pointer: any other shape drawn later
 // (a hyphen bar, a byte box) would sit on top of a hit area and open a dead zone.
 const STYLE = `
-.bg{fill:#0B1423}.ink{fill:#F5F7FC}.muted{fill:#C6D0E1}.box{fill:#15243A}.same{fill:#24344D}.chg{fill:#F5F7FC}
+.bg{fill:#0B1423;pointer-events:all}.ink{fill:#F5F7FC}.muted{fill:#C6D0E1}.box{fill:#15243A}.same{fill:#24344D}.chg{fill:#F5F7FC}
 .pkg{fill:#F5F7FC;fill-opacity:.6}.win{fill:#A78BFA;fill-opacity:.42}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
 .time{color:#00C8FF}.version{color:#FF49CD}.variant{color:#4D50FF}.payload{color:#FFE83F}
 .masked{color:#FF921C}.pad{color:#8C9DB6}.f{fill:currentColor}.fg{fill:#08111F}.fw{fill:#FFFFFF}
@@ -386,18 +389,42 @@ const measureSans = async (strings: string[], size: number, weight: number) => {
 };
 // Elsewhere system fonts differ, so widths are estimates; layouts keep slack instead of measuring.
 const textWidth = (s: string, size: number, bold = false) => s.length * size * (bold ? 0.58 : 0.52);
+// Typography for every rendered string. SVG collapses runs of ASCII spaces, so wider gaps use
+// Unicode spaces it keeps:
+// - an en space each side of "·" separates facts more clearly than a word space;
+// - a no-break space plus a space after a sentence end gives the double sentence gap, and keeps
+//   the period with its sentence when wrapping;
+// - a no-break space binds a number to its unit, so "22 chars" never splits across lines.
+const typo = (s: string) =>
+  s
+    .replaceAll(" · ", () => "\u2002·\u2002")
+    .replace(/([.?!]) (?=[A-Z0-9])/g, (_, p: string) => `${p}\u00A0 `)
+    .replace(
+      /(\d) (?=(?:chars?|characters|bits?|bytes?|years|time)\b)/g,
+      (_, d: string) => `${d}\u00A0`,
+    );
 // `firstW` narrows the first line when something (a highlighted claim) already starts it.
-const wrap = (s: string, maxW: number, size: number, firstW = maxW): string[] => {
+// A line that must wrap breaks after its last full sentence when that sentence fills at least
+// half the line: a new sentence then starts at the left edge, where the eye finds it.
+const wrap = (raw: string, maxW: number, size: number, firstW = maxW): string[] => {
   const lines: string[] = [];
-  let cur = "";
-  for (const word of s.split(" ")) {
-    const next = cur ? `${cur} ${word}` : word;
-    if (cur && textWidth(next, size) > (lines.length ? maxW : firstW)) {
-      lines.push(cur);
-      cur = word;
-    } else cur = next;
+  let words: string[] = [];
+  for (const word of typo(raw).split(" ")) {
+    const limit = lines.length ? maxW : firstW;
+    if (words.length && textWidth([...words, word].join(" "), size) > limit) {
+      const end = words.map((w) => w.endsWith("\u00A0")).lastIndexOf(true);
+      const head = words.slice(0, end + 1).join(" ");
+      if (end >= 0 && end < words.length - 1 && textWidth(head, size) >= limit / 2) {
+        lines.push(head);
+        words = words.slice(end + 1);
+      } else {
+        lines.push(words.join(" "));
+        words = [];
+      }
+    }
+    words.push(word);
   }
-  if (cur) lines.push(cur);
+  if (words.length) lines.push(words.join(" "));
   return lines;
 };
 
@@ -412,7 +439,7 @@ const text = (x: number, y: number, s: string, size: number, o: TextOpts = {}) =
   const anchor = o.anchor ? ` text-anchor="${o.anchor}"` : "";
   const weight = o.weight ? ` font-weight="${o.weight}"` : "";
   out.push(
-    `<text x="${r1(x)}" y="${r1(y)}" class="${o.cls ?? "ink"} ${o.mono ? "mono" : "sans"}" font-size="${size}"${weight}${anchor}>${esc(s)}</text>`,
+    `<text x="${r1(x)}" y="${r1(y)}" class="${o.cls ?? "ink"} ${o.mono ? "mono" : "sans"}" font-size="${size}"${weight}${anchor}>${esc(o.mono ? s : typo(s))}</text>`,
   );
 };
 const rect = (x: number, y: number, w: number, h: number, cls: string, extra = "") =>

@@ -111,16 +111,26 @@ export const checkDiagramHover = async (svgPath: string): Promise<string[]> => {
             .length,
         sel,
       );
-    // A spot on the image but on no piece: its bottom-right corner, below the footnotes.
-    const rest = await page.evaluate(() => {
+    const { rest, blank } = await page.evaluate(() => {
       const r = document.querySelector("svg")!.getBoundingClientRect();
-      return { x: r.right - 4, y: r.bottom - 4 };
+      // Off the image, below it; and on the image but on no piece (bottom-right corner).
+      return {
+        rest: { x: r.left + 4, y: r.bottom + 40 },
+        blank: { x: r.right - 4, y: r.bottom - 4 },
+      };
     });
-    // The pointer rests on the image but on no piece: everything keeps moving.
     await page.mouse.move(rest.x, rest.y);
     if ((await running(".ghost")) === 0)
-      failures.push("idle motion: the field cycle must run while no piece is hovered");
+      failures.push("idle motion: the field cycle must run while the pointer is off the image");
     if ((await running(".av")) === 0) failures.push("avalanche motion: it must run constantly");
+    await page.mouse.move(blank.x, blank.y);
+    await page.waitForTimeout(SETTLE_MS);
+    if ((await running(".ghost")) !== 0)
+      failures.push(
+        "idle motion: the field cycle must stop while the pointer is anywhere on the image",
+      );
+    if ((await running(".av")) === 0)
+      failures.push("avalanche motion: it must keep moving while the pointer is on the image");
     for (const { ruling, point, probes } of CHECKS) {
       const at = await page.evaluate(({ sel, edge }) => {
         const r = document.querySelector(sel)?.getBoundingClientRect();
