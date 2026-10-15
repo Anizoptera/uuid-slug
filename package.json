@@ -161,6 +161,8 @@
     "webpack": "5.111.1"
   },
   "engines": {
+    "bun": ">=1.0.8",
+    "deno": ">=1.30",
     "node": ">=20"
   },
   "publish-clean": {

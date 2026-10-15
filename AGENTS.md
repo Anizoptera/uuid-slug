@@ -171,11 +171,12 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Order public export conditions as `types`, `bun`, `deno`, `development`, then `default`. Add a
   condition only when it selects different output or guards an incompatible lower condition. The
   private `#runtime` map selects Bun source, compiled portable code for Deno, or Node native code while built
-  hosts share one implementation graph.
+  hosts share one implementation graph. Runtime floors and why: `docs/cross-language.md` §Runtime floors;
+  change one only with its CI lane.
 - Treat shipped `src` as executable package code, not source-map support. Bun MUST resolve public
-  entries and `#runtime` to TypeScript. Route another TypeScript-capable runtime to source unless a
-  packed consumer proves that its normal resolver cannot load this graph; document and test that
-  fallback at the package boundary.
+  entries and `#runtime` to TypeScript. Deno MUST load compiled output: it REJECTS TypeScript inside
+  npm packages. Prove every runtime route and loader claim with a packed consumer installed as a REAL
+  `node_modules` directory; a symlink resolves outside `node_modules` and hides that rejection.
 - Every relative import in `src` MUST name its real `.ts` file. The build rewrites emitted imports
   to `.js`; never omit the extension or write `.js` in TypeScript.
 - Keep compiled public JavaScript executable under Bun even though Bun normally selects source.

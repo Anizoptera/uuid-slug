@@ -5,9 +5,9 @@ High-performance UUIDv4/v7 generation and handling for TS, Rust, and WASM, short
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
 [![Node >=20](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](package.json)
-[![Bun](https://img.shields.io/badge/Bun-14151A?logo=bun&logoColor=FBF0DF)](#runtime)
-[![Deno](https://img.shields.io/badge/Deno-000000?logo=deno&logoColor=white)](#runtime)
-[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?logo=cloudflareworkers&logoColor=white)](#runtime)
+[![Bun >=1.0](https://img.shields.io/badge/bun-%3E%3D1.0-FBF0DF?logo=bun&logoColor=FBF0DF)](#runtime)
+[![Deno >=1.30](https://img.shields.io/badge/deno-%3E%3D1.30-70FFAF?logo=deno&logoColor=white)](#runtime)
+[![Cloudflare Workers](https://img.shields.io/badge/cloudflare-workers-F38020?logo=cloudflare&logoColor=white)](#runtime)
 [![Runtime deps](https://img.shields.io/badge/runtime_deps-0-2ea44f)](package.json)
 [![License](https://img.shields.io/github/license/Anizoptera/uuid-slug)](LICENSE)
 
@@ -437,9 +437,9 @@ The [Rust crate](rust/uuid-slug) uses the same identifier formats. Cross-languag
 
 | Runtime | Package code |
 | --- | --- |
-| Node 20 and newer | Uses compiled JavaScript |
-| Bun | Uses TypeScript source |
-| Deno | Compiled JavaScript; no flag or import map needed |
+| Node 20 and newer (also works from 16.20) | Uses compiled JavaScript |
+| Bun 1.0.8 and newer | Uses TypeScript source |
+| Deno 1.30 and newer | Compiled JavaScript; no flag or import map needed |
 | Cloudflare Workers, browsers and other compatible runtimes | Compiled JavaScript over Web Crypto |
 
 Bun's native UUIDv7 timestamp can advance ahead of the clock during bursts. Create a generator to control ordering, clock policy or payload layout.
