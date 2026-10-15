@@ -648,7 +648,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="36" y="564" class="accent sans" font-size="16" font-weight="700">PLAIN SLUGS · any UUID · no key · the same 128 bits in fewer characters</text>
 <text x="790" y="602" class="accent sans" font-size="17" font-weight="700">One character, two fields</text>
 <text x="36" y="602" class="ink sans" font-size="24" font-weight="600">Plain base64url</text>
-<text x="286" y="602" class="muted sans" font-size="16">default · 22 chars · [A-Za-z0-9_-]</text>
+<text x="286" y="602" class="muted sans" font-size="16">22 chars · [A-Za-z0-9_-]</text>
 <g id="gp0">
 <rect x="36.8" y="616" width="17.9" height="44" class="time f cell"/>
 <text x="45.7" y="648.5" class="fg mono" font-size="30" text-anchor="middle">A</text>
@@ -979,7 +979,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="36" y="1030" class="muted sans" font-size="17">Inside: 42-bit time (~139 years from 1970, or from an optional start date you set) + 74 payload bits + 16-bit check.</text>
 <text x="36" y="1064" class="ink sans" font-size="17" font-weight="500">Plain and masked base64url look alike.  Decode each with the function for the form you issued.</text>
 <text x="36" y="1112" class="masked f sans" font-size="24" font-weight="600">Masked base64url</text>
-<text x="286" y="1112" class="muted sans" font-size="16">default · 22 chars · [A-Za-z0-9_-]</text>
+<text x="286" y="1112" class="muted sans" font-size="16">22 chars · [A-Za-z0-9_-]</text>
 <g id="gm0">
 <rect x="36.8" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="45.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
