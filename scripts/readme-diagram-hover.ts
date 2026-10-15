@@ -21,7 +21,7 @@ const CHECKS: { ruling: string; point: Point; probes: Probe[] }[] = [
       [".chip-time", "fill-opacity", ">0.05"],
       [".lg-time", "opacity", "1"],
       [".lg-payload", "opacity", "0.45"],
-      [".ghost.time", "fill-opacity", "0.22"],
+      [".ghost.time", "fill-opacity", ">0.15"],
       [".time.cell", "opacity", "1"],
       [".payload.cell", "opacity", "0.3"],
     ],
@@ -31,7 +31,7 @@ const CHECKS: { ruling: string; point: Point; probes: Probe[] }[] = [
     point: { sel: "#gu0 .hit" },
     probes: [
       [".chip-time", "fill-opacity", ">0.05"],
-      [".ghost.time", "fill-opacity", "0.22"],
+      [".ghost.time", "fill-opacity", ">0.15"],
       [".payload.cell", "opacity", "0.3"],
       ["#ob0", "opacity", "1"],
       ["#op0", "opacity", "1"],
@@ -73,7 +73,7 @@ const CHECKS: { ruling: string; point: Point; probes: Probe[] }[] = [
     point: { sel: ".lg-masked" },
     probes: [
       [".chip-masked", "fill-opacity", ">0.05"],
-      [".ghost.masked", "fill-opacity", "0.22"],
+      [".ghost.masked", "fill-opacity", ">0.15"],
       [".time.cell", "opacity", "0.3"],
       [".masked.cell", "opacity", "1"],
     ],
@@ -84,7 +84,7 @@ const CHECKS: { ruling: string; point: Point; probes: Probe[] }[] = [
     point: { sel: "#gm0 .hit" },
     probes: [
       [".chip-masked", "fill-opacity", ">0.05"],
-      [".ghost.masked", "fill-opacity", "0.22"],
+      [".ghost.masked", "fill-opacity", ">0.15"],
       // Masked bits 0–5 lie in base32hex characters 0 (bits 0–4) and 1 (bits 5–9).
       ["#on0", "opacity", "1"],
       ["#on1", "opacity", "1"],
@@ -173,6 +173,22 @@ export const checkDiagramHover = async (svgPath: string): Promise<string[]> => {
       await page.mouse.move(rest.x, rest.y);
       await page.waitForTimeout(SETTLE_MS);
     }
+    // A snapshot at time 0 (thumbnail, preview, print) must show the avalanche's finished
+    // state: every changed byte lit. Checked last, because it pauses every animation. A CSS
+    // minifier that reorders an `animation` shorthand after its `animation-delay` breaks this.
+    const unlit = await page.evaluate(() => {
+      for (const a of document.getAnimations()) {
+        a.pause();
+        a.currentTime = 0;
+      }
+      const bytes = [...document.querySelectorAll(".av.o")];
+      const unchanged = getComputedStyle(document.querySelector(".same")!).fill;
+      return bytes.filter((e) => getComputedStyle(e).fill === unchanged).length;
+    });
+    if (unlit)
+      failures.push(
+        `avalanche snapshot: at time 0, ${unlit} changed bytes still look unchanged; each loop must start inside its hold`,
+      );
   } finally {
     await browser.close();
   }

@@ -63,6 +63,10 @@
 //   `prefers-color-scheme: light`. An <img> SVG follows the browser's scheme, not GitHub's theme
 //   toggle, so a light-OS reader on GitHub's dark theme sees the light version; separate files
 //   in a <picture> would follow GitHub's toggle, but the maintainer chose one adaptive file.
+//   Light keeps the dark look's balance: faint tints (ribbons) are stronger on white, which
+//   washes them out.
+// - The stored SVG is minified by SVGO, without losing what search engines and screen readers
+//   read (title, description, role, every text) or what the CSS targets (ids, classes).
 import {
   BASE32HEX,
   createUuidV7MaskingCodec,
@@ -70,6 +74,7 @@ import {
   UUID_V7_TEST_MASK,
   uuidStringToPlainSlug,
 } from "../src/index.ts";
+import { optimize } from "svgo";
 import { browserEngines } from "./browser-engines.ts";
 import { checkDiagramHover } from "./readme-diagram-hover.ts";
 
@@ -102,6 +107,13 @@ const DARK_PALETTE = {
   wire: "#FFD9A8",
   win: "#A78BFA",
   winOpacity: ".42",
+  // Ribbon opacities: at rest, at the idle-cycle peak, and when hovered.
+  ghost: ".035",
+  ghostEdge: ".1",
+  glow: ".14",
+  glowEdge: ".42",
+  ghostLit: ".22",
+  ghostLitEdge: ".7",
   fieldText: "",
 };
 const LIGHT_PALETTE: typeof DARK_PALETTE = {
@@ -120,6 +132,13 @@ const LIGHT_PALETTE: typeof DARK_PALETTE = {
   wire: "#E07A10",
   win: "#8B5CF6",
   winOpacity: ".22",
+  // White washes faint tints out, so light ribbons need roughly 2–3× the dark opacities to show.
+  ghost: ".1",
+  ghostEdge: ".26",
+  glow: ".26",
+  glowEdge: ".6",
+  ghostLit: ".36",
+  ghostLitEdge: ".85",
   fieldText: "text.f{fill:color-mix(in srgb,currentColor 68%,#000)}",
 };
 // Every colour is a CSS variable, so one SVG serves both schemes.
@@ -348,7 +367,9 @@ const FIELD_HOVER = `svg:has(.hit:hover,.lg:hover) .cell{opacity:.3;${LIT_NOW}}s
 ${LEGEND.map(([f]) => {
   const either = `svg:has(.lg-${f}:hover,.${f}.hit:hover)`;
   const ribbon =
-    f === "pad" ? "" : `${either} .ghost.${f}{fill-opacity:.22;stroke-opacity:.7;${LIT_NOW}}`;
+    f === "pad"
+      ? ""
+      : `${either} .ghost.${f}{fill-opacity:${P.ghostLit};stroke-opacity:${P.ghostLitEdge};${LIT_NOW}}`;
   return `${either} .cell.${f}{opacity:1}${either} .lg.lg-${f}{opacity:1}${either} .chip-${f}{${CHIP};${LIT_NOW}}${ribbon}`;
 }).join("\n")}`;
 // Slow auto-highlight: each field's ribbons and legend glow brighten in turn, so the static
@@ -360,7 +381,7 @@ const AUTO_FIELDS = ["time", "version", "variant", "payload", "masked"] as const
 // ease-out that overlaps the next field's rise, so the light hands over instead of blinking.
 const AUTO_STEP_S = 4;
 // The legend glow follows the same clock as its ribbons, so the reader can name the moving colour.
-const AUTO_HIGHLIGHT = `@keyframes glow{0%,30%,100%{fill-opacity:.035;stroke-opacity:.1}10%,18%{fill-opacity:.14;stroke-opacity:.42}}
+const AUTO_HIGHLIGHT = `@keyframes glow{0%,30%,100%{fill-opacity:${P.ghost};stroke-opacity:${P.ghostEdge}}10%,18%{fill-opacity:${P.glow};stroke-opacity:${P.glowEdge}}}
 @keyframes chiplit{0%,30%,100%{fill-opacity:0;stroke-opacity:0}10%,18%{${CHIP}}}
 ${AUTO_FIELDS.map((f, i) => {
   const timing = `${AUTO_FIELDS.length * AUTO_STEP_S}s ease-in-out ${i * AUTO_STEP_S}s infinite both`;
@@ -391,10 +412,10 @@ const AVALANCHE = `@keyframes avin{0%,6%{fill:${DIM}}10%,76%{fill:${LIT}}80%,100
 @keyframes avsurge{0%,6%{opacity:.4}12%{opacity:1}26%,100%{opacity:.4}}
 .av.in{animation:avin ${AV_S}s ease-in-out ${AV_START} infinite both}
 .av.int{animation:avint ${AV_S}s ease-in-out ${AV_START} infinite both}
-.av.o{animation:avo ${AV_S}s ease-in-out infinite both;animation-delay:${AV_SPREAD}}
-.av.c{animation:avc ${AV_S}s ease-in-out infinite both;animation-delay:${AV_SPREAD}}
-.av.b{animation:avb ${AV_S}s ease-in-out infinite both;animation-delay:${AV_SPREAD}}
-.av.cm{animation:avflow linear infinite,avsurge ${AV_S}s ease-in-out infinite both;animation-duration:calc(.8s + var(--r) * 1.4s),${AV_S}s;animation-delay:0s,${AV_START}}`;
+.av.o{animation:avo ${AV_S}s ease-in-out ${AV_SPREAD} infinite both}
+.av.c{animation:avc ${AV_S}s ease-in-out ${AV_SPREAD} infinite both}
+.av.b{animation:avb ${AV_S}s ease-in-out ${AV_SPREAD} infinite both}
+.av.cm{animation:avflow calc(.8s + var(--r) * 1.4s) linear infinite,avsurge ${AV_S}s ease-in-out ${AV_START} infinite both}`;
 // Dash patterns for the wires, one per wire in turn. Each period divides avflow's 20-unit shift
 // (wires use pathLength 100), so every wire loops without a jump; mixed patterns and speeds keep
 // the streams from marching in step.
@@ -420,7 +441,7 @@ ${THEME}
 .time{color:#00C8FF}.version{color:#FF49CD}.variant{color:#4D50FF}.payload{color:#FFE83F}
 .masked{color:#FF921C}.pad{color:#8C9DB6}.f{fill:currentColor}.fg{fill:#08111F}.fw{fill:#FFFFFF}
 .sans{font-family:${SANS}}.mono{font-family:${MONO};font-variant-ligatures:none}
-.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1;transition:fill-opacity .2s ease ${UNLIT_AFTER},stroke-opacity .2s ease ${UNLIT_AFTER}}.lead{color:${P.muted}}
+.ghost{fill:currentColor;fill-opacity:${P.ghost};stroke:currentColor;stroke-opacity:${P.ghostEdge};stroke-width:1;transition:fill-opacity .2s ease ${UNLIT_AFTER},stroke-opacity .2s ease ${UNLIT_AFTER}}.lead{color:${P.muted}}
 text,rect,path{pointer-events:none}.hl{fill:none;stroke:${P.ink};stroke-width:2.5;opacity:0;transition:opacity .12s ease ${UNLIT_AFTER}}
 .hit{fill:none;pointer-events:all}.lg{transition:opacity .2s ease ${UNLIT_AFTER}}.lghit{fill:none;pointer-events:all}.cell{transition:opacity .2s ease ${UNLIT_AFTER}}
 .chip{fill:currentColor;stroke:currentColor;stroke-width:1.2;fill-opacity:0;stroke-opacity:0;transition:fill-opacity .2s ease ${UNLIT_AFTER},stroke-opacity .2s ease ${UNLIT_AFTER}}
@@ -1106,7 +1127,7 @@ const background = [
 // carries the pitch: every form, its example and its gain.
 const desc = `${COPY.pkg}: one UUIDv7 in six forms that all convert back to the same UUID. UUID text ${UUID}; 16 bytes; plain base64url ${P64} (${shorter(P64)}); plain base32hex ${P32} (${shorter(P32)}, sorts by time); masked base64url ${M64} and masked base32hex ${M32} hide the UUID's time and fields and decode with your key. Flipping one UUID bit changes ${CHAR_FLIPS} of 22 masked base64url characters (${M64_AFTER}).`;
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="t d">
-<!-- Generated by scripts/readme-diagram.ts; edit that script, not this file. -->
+<!--! Generated by scripts/readme-diagram.ts; edit that script, not this file. -->
 <title id="t">${esc(COPY.title)}</title>
 <desc id="d">${esc(desc)}</desc>
 <style>${STYLE}
@@ -1116,8 +1137,35 @@ ${linkRules()}</style>
 ${[...background, ...out].join("\n")}
 </svg>
 `;
-await Bun.write(OUT, svg);
-console.log(`${OUT.pathname}: ${W}x${H}, ${svg.length} bytes`);
+// SVGO shrinks the stored and served file (about 7% raw, 2% gzip). Everything the hover CSS,
+// search engines and screen readers rely on is kept: ids and classes (the :has() rules key on
+// them), <title>, <desc>, role and aria attributes, and every <text>. Rects stay rects and
+// paths stay separate, because CSS rules target them by element and class.
+const { data: minified } = optimize(svg, {
+  multipass: true,
+  plugins: [
+    {
+      name: "preset-default",
+      params: {
+        overrides: {
+          cleanupIds: false,
+          inlineStyles: false,
+          mergePaths: false,
+          convertShapeToPath: false,
+          removeUnknownsAndDefaults: { keepRoleAttr: true, keepAriaAttrs: true },
+          removeDesc: false,
+          // The default restructuring merges and reorders CSS rules (most of the CSS saving). So
+          // no rule may depend on a separate longhand following its shorthand: an
+          // `animation-delay` placed after `animation` was moved before it and reset to 0.
+          // Write each animation as one shorthand. The hover check's avalanche-snapshot and
+          // hover probes run on the minified file and catch reorderings that change behaviour.
+        },
+      },
+    },
+  ],
+});
+await Bun.write(OUT, minified);
+console.log(`${OUT.pathname}: ${W}x${H}, ${minified.length} bytes (${svg.length} before SVGO)`);
 // Prove the hover and motion rulings in a real browser on every build.
 const broken = await checkDiagramHover(OUT.pathname);
 if (broken.length)

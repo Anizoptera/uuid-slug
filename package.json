@@ -149,6 +149,7 @@
     "rollup": "4.64.5",
     "short-uuid": "6.0.3",
     "slugid": "5.0.1",
+    "svgo": "4.1.0",
     "tsdown": "^0.23.1",
     "typescript": "^7.0.2",
     "typescript-floor": "npm:typescript@5.0.4",
