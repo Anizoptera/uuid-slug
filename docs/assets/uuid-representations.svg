@@ -8,179 +8,182 @@
 .time{color:#00C8FF}.version{color:#FF49CD}.variant{color:#4D50FF}.payload{color:#FFE83F}
 .masked{color:#FF921C}.pad{color:#8C9DB6}.f{fill:currentColor}.fg{fill:#08111F}.fw{fill:#FFFFFF}
 .sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-variant-ligatures:none}
-.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1}.lead{color:#C6D0E1}
-text,.hl,.ghost{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0}
-.lg{pointer-events:auto;stroke:currentColor;stroke-width:6px;stroke-opacity:0;stroke-linejoin:round;paint-order:stroke;transition:stroke-opacity .15s,fill-opacity .15s}
-.cell{transition:opacity .15s}
-.x,.av.b,.av.s1,.av.s2,.av.s3{fill-opacity:0}.av.cm,.av.ring{opacity:0}
-svg:has(.lg-time:hover,.time.cell:hover) .lg-time{stroke-opacity:.45}svg:has(.lg-time:hover,.time.cell:hover) .ghost.time{fill-opacity:.22;stroke-opacity:.7}
-svg:has(.lg-time:hover) .cell:not(.time){opacity:.3}svg:has(.lg-time:hover) .lg:not(.lg-time){fill-opacity:.45}
-svg:has(.lg-version:hover,.version.cell:hover) .lg-version{stroke-opacity:.45}svg:has(.lg-version:hover,.version.cell:hover) .ghost.version{fill-opacity:.22;stroke-opacity:.7}
-svg:has(.lg-version:hover) .cell:not(.version){opacity:.3}svg:has(.lg-version:hover) .lg:not(.lg-version){fill-opacity:.45}
-svg:has(.lg-variant:hover,.variant.cell:hover) .lg-variant{stroke-opacity:.45}svg:has(.lg-variant:hover,.variant.cell:hover) .ghost.variant{fill-opacity:.22;stroke-opacity:.7}
-svg:has(.lg-variant:hover) .cell:not(.variant){opacity:.3}svg:has(.lg-variant:hover) .lg:not(.lg-variant){fill-opacity:.45}
-svg:has(.lg-payload:hover,.payload.cell:hover) .lg-payload{stroke-opacity:.45}svg:has(.lg-payload:hover,.payload.cell:hover) .ghost.payload{fill-opacity:.22;stroke-opacity:.7}
-svg:has(.lg-payload:hover) .cell:not(.payload){opacity:.3}svg:has(.lg-payload:hover) .lg:not(.lg-payload){fill-opacity:.45}
-svg:has(.lg-masked:hover,.masked.cell:hover) .lg-masked{stroke-opacity:.45}svg:has(.lg-masked:hover,.masked.cell:hover) .ghost.masked{fill-opacity:.22;stroke-opacity:.7}
-svg:has(.lg-masked:hover) .cell:not(.masked){opacity:.3}svg:has(.lg-masked:hover) .lg:not(.lg-masked){fill-opacity:.45}
-svg:has(.lg-pad:hover,.pad.cell:hover) .lg-pad{stroke-opacity:.45}
-svg:has(.lg-pad:hover) .cell:not(.pad){opacity:.3}svg:has(.lg-pad:hover) .lg:not(.lg-pad){fill-opacity:.45}
+.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1;transition:fill-opacity .2s ease .12s,stroke-opacity .2s ease .12s}.lead{color:#C6D0E1}
+text,rect,path{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0;transition:opacity .12s ease .12s}
+.hit{fill:none;pointer-events:all}.lg{pointer-events:auto;transition:fill-opacity .2s ease .12s}.cell{transition:opacity .2s ease .12s}
+.lgg-time{--g:0.45}.lgg-version{--g:0.6}.lgg-variant{--g:0.85}.lgg-payload{--g:0.3}.lgg-masked{--g:0.5}.lgg-pad{--g:0.55}
+.gl{fill:currentColor;stroke:currentColor;stroke-width:12px;stroke-linejoin:round;fill-opacity:0;stroke-opacity:0;transition:fill-opacity .2s ease .12s,stroke-opacity .2s ease .12s}
+.x,.av.b{fill-opacity:0}.av.cm{opacity:0}
+svg:has(.hit:hover,.lg:hover) .cell{opacity:.3;transition-delay:0s}svg:has(.hit:hover,.lg:hover) .lg{fill-opacity:.45;transition-delay:0s}
+svg:has(.lg-time:hover,.time.hit:hover) .cell.time{opacity:1}svg:has(.lg-time:hover,.time.hit:hover) .lg.lg-time{fill-opacity:1}svg:has(.lg-time:hover,.time.hit:hover) .lgg-time{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}svg:has(.lg-time:hover,.time.hit:hover) .ghost.time{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
+svg:has(.lg-version:hover,.version.hit:hover) .cell.version{opacity:1}svg:has(.lg-version:hover,.version.hit:hover) .lg.lg-version{fill-opacity:1}svg:has(.lg-version:hover,.version.hit:hover) .lgg-version{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}svg:has(.lg-version:hover,.version.hit:hover) .ghost.version{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
+svg:has(.lg-variant:hover,.variant.hit:hover) .cell.variant{opacity:1}svg:has(.lg-variant:hover,.variant.hit:hover) .lg.lg-variant{fill-opacity:1}svg:has(.lg-variant:hover,.variant.hit:hover) .lgg-variant{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}svg:has(.lg-variant:hover,.variant.hit:hover) .ghost.variant{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
+svg:has(.lg-payload:hover,.payload.hit:hover) .cell.payload{opacity:1}svg:has(.lg-payload:hover,.payload.hit:hover) .lg.lg-payload{fill-opacity:1}svg:has(.lg-payload:hover,.payload.hit:hover) .lgg-payload{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}svg:has(.lg-payload:hover,.payload.hit:hover) .ghost.payload{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
+svg:has(.lg-masked:hover,.masked.hit:hover) .cell.masked{opacity:1}svg:has(.lg-masked:hover,.masked.hit:hover) .lg.lg-masked{fill-opacity:1}svg:has(.lg-masked:hover,.masked.hit:hover) .lgg-masked{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}svg:has(.lg-masked:hover,.masked.hit:hover) .ghost.masked{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
+svg:has(.lg-pad:hover,.pad.hit:hover) .cell.pad{opacity:1}svg:has(.lg-pad:hover,.pad.hit:hover) .lg.lg-pad{fill-opacity:1}svg:has(.lg-pad:hover,.pad.hit:hover) .lgg-pad{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}
 @keyframes glow{0%,30%,100%{fill-opacity:.035;stroke-opacity:.1}10%,18%{fill-opacity:.14;stroke-opacity:.42}}
-@keyframes lgglow{0%,30%,100%{stroke-opacity:0}10%,18%{stroke-opacity:.45}}
-.ghost.time{animation:glow 20s ease-in-out 0s infinite both}.lg-time{animation:lgglow 20s ease-in-out 0s infinite both}.ghost.version{animation:glow 20s ease-in-out 4s infinite both}.lg-version{animation:lgglow 20s ease-in-out 4s infinite both}.ghost.variant{animation:glow 20s ease-in-out 8s infinite both}.lg-variant{animation:lgglow 20s ease-in-out 8s infinite both}.ghost.payload{animation:glow 20s ease-in-out 12s infinite both}.lg-payload{animation:lgglow 20s ease-in-out 12s infinite both}.ghost.masked{animation:glow 20s ease-in-out 16s infinite both}.lg-masked{animation:lgglow 20s ease-in-out 16s infinite both}
-@keyframes avin{0%,4%{fill:#24344D}10%,86%{fill:#F5F7FC}94%,100%{fill:#24344D}}
-@keyframes avint{0%,4%{fill:#F5F7FC}10%,86%{fill:#08111F}94%,100%{fill:#F5F7FC}}
-.av.in{animation:avin 8s ease-in-out infinite both;animation-delay:-4s}.av.int{animation:avint 8s ease-in-out infinite both;animation-delay:-4s}@keyframes avo{0%,16%{fill:#24344D}22%,86%{fill:#F5F7FC}94%,100%{fill:#24344D}}@keyframes avc{0%,22%{fill-opacity:0}28%,86%{fill-opacity:1}94%,100%{fill-opacity:0}}
-@keyframes avb{0%,22%{fill-opacity:1}28%,86%{fill-opacity:0}94%,100%{fill-opacity:1}}
-.av.o{animation:avo 8s ease-in-out infinite both;animation-delay:-4s;animation-delay:calc(var(--r) * 1.6s - 4s)}
-.av.c{animation:avc 8s ease-in-out infinite both;animation-delay:-4s;animation-delay:calc(var(--r) * 1.6s - 4s)}.av.b{animation:avb 8s ease-in-out infinite both;animation-delay:-4s;animation-delay:calc(var(--r) * 1.6s - 4s)}
-svg:hover :is(.ghost,.lg,.av){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.lg,.av){animation:none}}
-svg:has(#gu0:hover) :is(#ou0,#ob0,#op0,#oq0){opacity:1}
-svg:has(#gu1:hover) :is(#ou1,#ob0,#op0,#op1,#oq0,#oq1){opacity:1}
-svg:has(#gu2:hover) :is(#ou2,#ob1,#op1,#oq1,#oq2){opacity:1}
-svg:has(#gu3:hover) :is(#ou3,#ob1,#op2,#oq2,#oq3){opacity:1}
-svg:has(#gu4:hover) :is(#ou4,#ob2,#op2,#op3,#oq3){opacity:1}
-svg:has(#gu5:hover) :is(#ou5,#ob2,#op3,#oq4){opacity:1}
-svg:has(#gu6:hover) :is(#ou6,#ob3,#op4,#oq4,#oq5){opacity:1}
-svg:has(#gu7:hover) :is(#ou7,#ob3,#op4,#op5,#oq5,#oq6){opacity:1}
-svg:has(#gu8:hover) :is(#ou8,#ob4,#op5,#oq6,#oq7){opacity:1}
-svg:has(#gu9:hover) :is(#ou9,#ob4,#op6,#oq7){opacity:1}
-svg:has(#gu10:hover) :is(#ou10,#ob5,#op6,#op7,#oq8){opacity:1}
-svg:has(#gu11:hover) :is(#ou11,#ob5,#op7,#oq8,#oq9){opacity:1}
-svg:has(#gu12:hover) :is(#ou12,#ob6,#op8,#oq9,#oq10){opacity:1}
-svg:has(#gu13:hover) :is(#ou13,#ob6,#op8,#op9,#oq10,#oq11){opacity:1}
-svg:has(#gu14:hover) :is(#ou14,#ob7,#op9,#oq11){opacity:1}
-svg:has(#gu15:hover) :is(#ou15,#ob7,#op10,#oq12){opacity:1}
-svg:has(#gu16:hover) :is(#ou16,#ob8,#op10,#op11,#oq12,#oq13){opacity:1}
-svg:has(#gu17:hover) :is(#ou17,#ob8,#op11,#oq13,#oq14){opacity:1}
-svg:has(#gu18:hover) :is(#ou18,#ob9,#op12,#oq14,#oq15){opacity:1}
-svg:has(#gu19:hover) :is(#ou19,#ob9,#op12,#op13,#oq15){opacity:1}
-svg:has(#gu20:hover) :is(#ou20,#ob10,#op13,#oq16){opacity:1}
-svg:has(#gu21:hover) :is(#ou21,#ob10,#op14,#oq16,#oq17){opacity:1}
-svg:has(#gu22:hover) :is(#ou22,#ob11,#op14,#op15,#oq17,#oq18){opacity:1}
-svg:has(#gu23:hover) :is(#ou23,#ob11,#op15,#oq18,#oq19){opacity:1}
-svg:has(#gu24:hover) :is(#ou24,#ob12,#op16,#oq19){opacity:1}
-svg:has(#gu25:hover) :is(#ou25,#ob12,#op16,#op17,#oq20){opacity:1}
-svg:has(#gu26:hover) :is(#ou26,#ob13,#op17,#oq20,#oq21){opacity:1}
-svg:has(#gu27:hover) :is(#ou27,#ob13,#op18,#oq21,#oq22){opacity:1}
-svg:has(#gu28:hover) :is(#ou28,#ob14,#op18,#op19,#oq22,#oq23){opacity:1}
-svg:has(#gu29:hover) :is(#ou29,#ob14,#op19,#oq23){opacity:1}
-svg:has(#gu30:hover) :is(#ou30,#ob15,#op20,#oq24){opacity:1}
-svg:has(#gu31:hover) :is(#ou31,#ob15,#op20,#op21,#oq24,#oq25){opacity:1}
-svg:has(#gb0:hover) :is(#ou0,#ou1,#ob0,#op0,#op1,#oq0,#oq1){opacity:1}
-svg:has(#gb1:hover) :is(#ou2,#ou3,#ob1,#op1,#op2,#oq1,#oq2,#oq3){opacity:1}
-svg:has(#gb2:hover) :is(#ou4,#ou5,#ob2,#op2,#op3,#oq3,#oq4){opacity:1}
-svg:has(#gb3:hover) :is(#ou6,#ou7,#ob3,#op4,#op5,#oq4,#oq5,#oq6){opacity:1}
-svg:has(#gb4:hover) :is(#ou8,#ou9,#ob4,#op5,#op6,#oq6,#oq7){opacity:1}
-svg:has(#gb5:hover) :is(#ou10,#ou11,#ob5,#op6,#op7,#oq8,#oq9){opacity:1}
-svg:has(#gb6:hover) :is(#ou12,#ou13,#ob6,#op8,#op9,#oq9,#oq10,#oq11){opacity:1}
-svg:has(#gb7:hover) :is(#ou14,#ou15,#ob7,#op9,#op10,#oq11,#oq12){opacity:1}
-svg:has(#gb8:hover) :is(#ou16,#ou17,#ob8,#op10,#op11,#oq12,#oq13,#oq14){opacity:1}
-svg:has(#gb9:hover) :is(#ou18,#ou19,#ob9,#op12,#op13,#oq14,#oq15){opacity:1}
-svg:has(#gb10:hover) :is(#ou20,#ou21,#ob10,#op13,#op14,#oq16,#oq17){opacity:1}
-svg:has(#gb11:hover) :is(#ou22,#ou23,#ob11,#op14,#op15,#oq17,#oq18,#oq19){opacity:1}
-svg:has(#gb12:hover) :is(#ou24,#ou25,#ob12,#op16,#op17,#oq19,#oq20){opacity:1}
-svg:has(#gb13:hover) :is(#ou26,#ou27,#ob13,#op17,#op18,#oq20,#oq21,#oq22){opacity:1}
-svg:has(#gb14:hover) :is(#ou28,#ou29,#ob14,#op18,#op19,#oq22,#oq23){opacity:1}
-svg:has(#gb15:hover) :is(#ou30,#ou31,#ob15,#op20,#op21,#oq24,#oq25){opacity:1}
-svg:has(#gp0:hover) :is(#ou0,#ou1,#ob0,#op0,#oq0,#oq1){opacity:1}
-svg:has(#gp1:hover) :is(#ou1,#ou2,#ob0,#ob1,#op1,#oq1,#oq2){opacity:1}
-svg:has(#gp2:hover) :is(#ou3,#ou4,#ob1,#ob2,#op2,#oq2,#oq3){opacity:1}
-svg:has(#gp3:hover) :is(#ou4,#ou5,#ob2,#op3,#oq3,#oq4){opacity:1}
-svg:has(#gp4:hover) :is(#ou6,#ou7,#ob3,#op4,#oq4,#oq5){opacity:1}
-svg:has(#gp5:hover) :is(#ou7,#ou8,#ob3,#ob4,#op5,#oq6,#oq7){opacity:1}
-svg:has(#gp6:hover) :is(#ou9,#ou10,#ob4,#ob5,#op6,#oq7,#oq8){opacity:1}
-svg:has(#gp7:hover) :is(#ou10,#ou11,#ob5,#op7,#oq8,#oq9){opacity:1}
-svg:has(#gp8:hover) :is(#ou12,#ou13,#ob6,#op8,#oq9,#oq10){opacity:1}
-svg:has(#gp9:hover) :is(#ou13,#ou14,#ob6,#ob7,#op9,#oq10,#oq11){opacity:1}
-svg:has(#gp10:hover) :is(#ou15,#ou16,#ob7,#ob8,#op10,#oq12,#oq13){opacity:1}
-svg:has(#gp11:hover) :is(#ou16,#ou17,#ob8,#op11,#oq13,#oq14){opacity:1}
-svg:has(#gp12:hover) :is(#ou18,#ou19,#ob9,#op12,#oq14,#oq15){opacity:1}
-svg:has(#gp13:hover) :is(#ou19,#ou20,#ob9,#ob10,#op13,#oq15,#oq16){opacity:1}
-svg:has(#gp14:hover) :is(#ou21,#ou22,#ob10,#ob11,#op14,#oq16,#oq17){opacity:1}
-svg:has(#gp15:hover) :is(#ou22,#ou23,#ob11,#op15,#oq18,#oq19){opacity:1}
-svg:has(#gp16:hover) :is(#ou24,#ou25,#ob12,#op16,#oq19,#oq20){opacity:1}
-svg:has(#gp17:hover) :is(#ou25,#ou26,#ob12,#ob13,#op17,#oq20,#oq21){opacity:1}
-svg:has(#gp18:hover) :is(#ou27,#ou28,#ob13,#ob14,#op18,#oq21,#oq22){opacity:1}
-svg:has(#gp19:hover) :is(#ou28,#ou29,#ob14,#op19,#oq22,#oq23){opacity:1}
-svg:has(#gp20:hover) :is(#ou30,#ou31,#ob15,#op20,#oq24,#oq25){opacity:1}
-svg:has(#gp21:hover) :is(#ou31,#ob15,#op21,#oq25){opacity:1}
-svg:has(#gq0:hover) :is(#ou0,#ou1,#ob0,#op0,#oq0){opacity:1}
-svg:has(#gq1:hover) :is(#ou1,#ou2,#ob0,#ob1,#op0,#op1,#oq1){opacity:1}
-svg:has(#gq2:hover) :is(#ou2,#ou3,#ob1,#op1,#op2,#oq2){opacity:1}
-svg:has(#gq3:hover) :is(#ou3,#ou4,#ob1,#ob2,#op2,#op3,#oq3){opacity:1}
-svg:has(#gq4:hover) :is(#ou5,#ou6,#ob2,#ob3,#op3,#op4,#oq4){opacity:1}
-svg:has(#gq5:hover) :is(#ou6,#ou7,#ob3,#op4,#oq5){opacity:1}
-svg:has(#gq6:hover) :is(#ou7,#ou8,#ob3,#ob4,#op5,#oq6){opacity:1}
-svg:has(#gq7:hover) :is(#ou8,#ou9,#ob4,#op5,#op6,#oq7){opacity:1}
-svg:has(#gq8:hover) :is(#ou10,#ou11,#ob5,#op6,#op7,#oq8){opacity:1}
-svg:has(#gq9:hover) :is(#ou11,#ou12,#ob5,#ob6,#op7,#op8,#oq9){opacity:1}
-svg:has(#gq10:hover) :is(#ou12,#ou13,#ob6,#op8,#op9,#oq10){opacity:1}
-svg:has(#gq11:hover) :is(#ou13,#ou14,#ob6,#ob7,#op9,#oq11){opacity:1}
-svg:has(#gq12:hover) :is(#ou15,#ou16,#ob7,#ob8,#op10,#oq12){opacity:1}
-svg:has(#gq13:hover) :is(#ou16,#ou17,#ob8,#op10,#op11,#oq13){opacity:1}
-svg:has(#gq14:hover) :is(#ou17,#ou18,#ob8,#ob9,#op11,#op12,#oq14){opacity:1}
-svg:has(#gq15:hover) :is(#ou18,#ou19,#ob9,#op12,#op13,#oq15){opacity:1}
-svg:has(#gq16:hover) :is(#ou20,#ou21,#ob10,#op13,#op14,#oq16){opacity:1}
-svg:has(#gq17:hover) :is(#ou21,#ou22,#ob10,#ob11,#op14,#oq17){opacity:1}
-svg:has(#gq18:hover) :is(#ou22,#ou23,#ob11,#op15,#oq18){opacity:1}
-svg:has(#gq19:hover) :is(#ou23,#ou24,#ob11,#ob12,#op15,#op16,#oq19){opacity:1}
-svg:has(#gq20:hover) :is(#ou25,#ou26,#ob12,#ob13,#op16,#op17,#oq20){opacity:1}
-svg:has(#gq21:hover) :is(#ou26,#ou27,#ob13,#op17,#op18,#oq21){opacity:1}
-svg:has(#gq22:hover) :is(#ou27,#ou28,#ob13,#ob14,#op18,#op19,#oq22){opacity:1}
-svg:has(#gq23:hover) :is(#ou28,#ou29,#ob14,#op19,#oq23){opacity:1}
-svg:has(#gq24:hover) :is(#ou30,#ou31,#ob15,#op20,#oq24){opacity:1}
-svg:has(#gq25:hover) :is(#ou31,#ob15,#op20,#op21,#oq25){opacity:1}
-svg:has(#gm0:hover) :is(#om0,#on0,#on1){opacity:1}
-svg:has(#gm1:hover) :is(#om1,#on1,#on2){opacity:1}
-svg:has(#gm2:hover) :is(#om2,#on2,#on3){opacity:1}
-svg:has(#gm3:hover) :is(#om3,#on3,#on4){opacity:1}
-svg:has(#gm4:hover) :is(#om4,#on4,#on5){opacity:1}
-svg:has(#gm5:hover) :is(#om5,#on6,#on7){opacity:1}
-svg:has(#gm6:hover) :is(#om6,#on7,#on8){opacity:1}
-svg:has(#gm7:hover) :is(#om7,#on8,#on9){opacity:1}
-svg:has(#gm8:hover) :is(#om8,#on9,#on10){opacity:1}
-svg:has(#gm9:hover) :is(#om9,#on10,#on11){opacity:1}
-svg:has(#gm10:hover) :is(#om10,#on12,#on13){opacity:1}
-svg:has(#gm11:hover) :is(#om11,#on13,#on14){opacity:1}
-svg:has(#gm12:hover) :is(#om12,#on14,#on15){opacity:1}
-svg:has(#gm13:hover) :is(#om13,#on15,#on16){opacity:1}
-svg:has(#gm14:hover) :is(#om14,#on16,#on17){opacity:1}
-svg:has(#gm15:hover) :is(#om15,#on18,#on19){opacity:1}
-svg:has(#gm16:hover) :is(#om16,#on19,#on20){opacity:1}
-svg:has(#gm17:hover) :is(#om17,#on20,#on21){opacity:1}
-svg:has(#gm18:hover) :is(#om18,#on21,#on22){opacity:1}
-svg:has(#gm19:hover) :is(#om19,#on22,#on23){opacity:1}
-svg:has(#gm20:hover) :is(#om20,#on24,#on25){opacity:1}
-svg:has(#gm21:hover) :is(#om21,#on25,#on26){opacity:1}
-svg:has(#gn0:hover) :is(#om0,#on0){opacity:1}
-svg:has(#gn1:hover) :is(#om0,#om1,#on1){opacity:1}
-svg:has(#gn2:hover) :is(#om1,#om2,#on2){opacity:1}
-svg:has(#gn3:hover) :is(#om2,#om3,#on3){opacity:1}
-svg:has(#gn4:hover) :is(#om3,#om4,#on4){opacity:1}
-svg:has(#gn5:hover) :is(#om4,#on5){opacity:1}
-svg:has(#gn6:hover) :is(#om5,#on6){opacity:1}
-svg:has(#gn7:hover) :is(#om5,#om6,#on7){opacity:1}
-svg:has(#gn8:hover) :is(#om6,#om7,#on8){opacity:1}
-svg:has(#gn9:hover) :is(#om7,#om8,#on9){opacity:1}
-svg:has(#gn10:hover) :is(#om8,#om9,#on10){opacity:1}
-svg:has(#gn11:hover) :is(#om9,#on11){opacity:1}
-svg:has(#gn12:hover) :is(#om10,#on12){opacity:1}
-svg:has(#gn13:hover) :is(#om10,#om11,#on13){opacity:1}
-svg:has(#gn14:hover) :is(#om11,#om12,#on14){opacity:1}
-svg:has(#gn15:hover) :is(#om12,#om13,#on15){opacity:1}
-svg:has(#gn16:hover) :is(#om13,#om14,#on16){opacity:1}
-svg:has(#gn17:hover) :is(#om14,#on17){opacity:1}
-svg:has(#gn18:hover) :is(#om15,#on18){opacity:1}
-svg:has(#gn19:hover) :is(#om15,#om16,#on19){opacity:1}
-svg:has(#gn20:hover) :is(#om16,#om17,#on20){opacity:1}
-svg:has(#gn21:hover) :is(#om17,#om18,#on21){opacity:1}
-svg:has(#gn22:hover) :is(#om18,#om19,#on22){opacity:1}
-svg:has(#gn23:hover) :is(#om19,#on23){opacity:1}
-svg:has(#gn24:hover) :is(#om20,#on24){opacity:1}
-svg:has(#gn25:hover) :is(#om20,#om21,#on25){opacity:1}
-svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
-<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
+@keyframes lgglow{0%,30%,100%{fill-opacity:0;stroke-opacity:0}10%,18%{fill-opacity:var(--g);stroke-opacity:var(--g)}}
+.ghost.time{animation:glow 20s ease-in-out 0s infinite both}.lgg-time{animation:lgglow 20s ease-in-out 0s infinite both}.ghost.version{animation:glow 20s ease-in-out 4s infinite both}.lgg-version{animation:lgglow 20s ease-in-out 4s infinite both}.ghost.variant{animation:glow 20s ease-in-out 8s infinite both}.lgg-variant{animation:lgglow 20s ease-in-out 8s infinite both}.ghost.payload{animation:glow 20s ease-in-out 12s infinite both}.lgg-payload{animation:lgglow 20s ease-in-out 12s infinite both}.ghost.masked{animation:glow 20s ease-in-out 16s infinite both}.lgg-masked{animation:lgglow 20s ease-in-out 16s infinite both}
+@keyframes avin{0%,6%{fill:#24344D}10%,76%{fill:#F5F7FC}80%,100%{fill:#24344D}}
+@keyframes avint{0%,6%{fill:#F5F7FC}10%,76%{fill:#08111F}80%,100%{fill:#F5F7FC}}
+@keyframes avo{0%,14%{fill:#24344D}20%,76%{fill:#F5F7FC}82%,100%{fill:#24344D}}
+@keyframes avc{0%,16%{fill-opacity:0}22%,76%{fill-opacity:1}82%,100%{fill-opacity:0}}
+@keyframes avb{0%,16%{fill-opacity:1}22%,76%{fill-opacity:0}82%,100%{fill-opacity:1}}
+@keyframes avflow{to{stroke-dashoffset:-20}}
+@keyframes avsurge{0%,6%{opacity:.4}12%{opacity:1}26%,100%{opacity:.4}}
+.av.in{animation:avin 6s ease-in-out -3s infinite both}
+.av.int{animation:avint 6s ease-in-out -3s infinite both}
+.av.o{animation:avo 6s ease-in-out infinite both;animation-delay:calc(var(--r) * 1.2000000000000002s - 3s)}
+.av.c{animation:avc 6s ease-in-out infinite both;animation-delay:calc(var(--r) * 1.2000000000000002s - 3s)}
+.av.b{animation:avb 6s ease-in-out infinite both;animation-delay:calc(var(--r) * 1.2000000000000002s - 3s)}
+.av.cm{animation:avflow linear infinite,avsurge 6s ease-in-out infinite both;animation-duration:calc(.8s + var(--r) * 1.4s),6s;animation-delay:0s,-3s}
+svg:has(.hit:hover,.lg:hover) :is(.ghost,.gl){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.gl,.av){animation:none}}
+svg:has(#gu0:hover) :is(#ou0,#ob0,#op0,#oq0){opacity:1;transition-delay:0s}
+svg:has(#gu1:hover) :is(#ou1,#ob0,#op0,#op1,#oq0,#oq1){opacity:1;transition-delay:0s}
+svg:has(#gu2:hover) :is(#ou2,#ob1,#op1,#oq1,#oq2){opacity:1;transition-delay:0s}
+svg:has(#gu3:hover) :is(#ou3,#ob1,#op2,#oq2,#oq3){opacity:1;transition-delay:0s}
+svg:has(#gu4:hover) :is(#ou4,#ob2,#op2,#op3,#oq3){opacity:1;transition-delay:0s}
+svg:has(#gu5:hover) :is(#ou5,#ob2,#op3,#oq4){opacity:1;transition-delay:0s}
+svg:has(#gu6:hover) :is(#ou6,#ob3,#op4,#oq4,#oq5){opacity:1;transition-delay:0s}
+svg:has(#gu7:hover) :is(#ou7,#ob3,#op4,#op5,#oq5,#oq6){opacity:1;transition-delay:0s}
+svg:has(#gu8:hover) :is(#ou8,#ob4,#op5,#oq6,#oq7){opacity:1;transition-delay:0s}
+svg:has(#gu9:hover) :is(#ou9,#ob4,#op6,#oq7){opacity:1;transition-delay:0s}
+svg:has(#gu10:hover) :is(#ou10,#ob5,#op6,#op7,#oq8){opacity:1;transition-delay:0s}
+svg:has(#gu11:hover) :is(#ou11,#ob5,#op7,#oq8,#oq9){opacity:1;transition-delay:0s}
+svg:has(#gu12:hover) :is(#ou12,#ob6,#op8,#oq9,#oq10){opacity:1;transition-delay:0s}
+svg:has(#gu13:hover) :is(#ou13,#ob6,#op8,#op9,#oq10,#oq11){opacity:1;transition-delay:0s}
+svg:has(#gu14:hover) :is(#ou14,#ob7,#op9,#oq11){opacity:1;transition-delay:0s}
+svg:has(#gu15:hover) :is(#ou15,#ob7,#op10,#oq12){opacity:1;transition-delay:0s}
+svg:has(#gu16:hover) :is(#ou16,#ob8,#op10,#op11,#oq12,#oq13){opacity:1;transition-delay:0s}
+svg:has(#gu17:hover) :is(#ou17,#ob8,#op11,#oq13,#oq14){opacity:1;transition-delay:0s}
+svg:has(#gu18:hover) :is(#ou18,#ob9,#op12,#oq14,#oq15){opacity:1;transition-delay:0s}
+svg:has(#gu19:hover) :is(#ou19,#ob9,#op12,#op13,#oq15){opacity:1;transition-delay:0s}
+svg:has(#gu20:hover) :is(#ou20,#ob10,#op13,#oq16){opacity:1;transition-delay:0s}
+svg:has(#gu21:hover) :is(#ou21,#ob10,#op14,#oq16,#oq17){opacity:1;transition-delay:0s}
+svg:has(#gu22:hover) :is(#ou22,#ob11,#op14,#op15,#oq17,#oq18){opacity:1;transition-delay:0s}
+svg:has(#gu23:hover) :is(#ou23,#ob11,#op15,#oq18,#oq19){opacity:1;transition-delay:0s}
+svg:has(#gu24:hover) :is(#ou24,#ob12,#op16,#oq19){opacity:1;transition-delay:0s}
+svg:has(#gu25:hover) :is(#ou25,#ob12,#op16,#op17,#oq20){opacity:1;transition-delay:0s}
+svg:has(#gu26:hover) :is(#ou26,#ob13,#op17,#oq20,#oq21){opacity:1;transition-delay:0s}
+svg:has(#gu27:hover) :is(#ou27,#ob13,#op18,#oq21,#oq22){opacity:1;transition-delay:0s}
+svg:has(#gu28:hover) :is(#ou28,#ob14,#op18,#op19,#oq22,#oq23){opacity:1;transition-delay:0s}
+svg:has(#gu29:hover) :is(#ou29,#ob14,#op19,#oq23){opacity:1;transition-delay:0s}
+svg:has(#gu30:hover) :is(#ou30,#ob15,#op20,#oq24){opacity:1;transition-delay:0s}
+svg:has(#gu31:hover) :is(#ou31,#ob15,#op20,#op21,#oq24,#oq25){opacity:1;transition-delay:0s}
+svg:has(#gb0:hover) :is(#ou0,#ou1,#ob0,#op0,#op1,#oq0,#oq1){opacity:1;transition-delay:0s}
+svg:has(#gb1:hover) :is(#ou2,#ou3,#ob1,#op1,#op2,#oq1,#oq2,#oq3){opacity:1;transition-delay:0s}
+svg:has(#gb2:hover) :is(#ou4,#ou5,#ob2,#op2,#op3,#oq3,#oq4){opacity:1;transition-delay:0s}
+svg:has(#gb3:hover) :is(#ou6,#ou7,#ob3,#op4,#op5,#oq4,#oq5,#oq6){opacity:1;transition-delay:0s}
+svg:has(#gb4:hover) :is(#ou8,#ou9,#ob4,#op5,#op6,#oq6,#oq7){opacity:1;transition-delay:0s}
+svg:has(#gb5:hover) :is(#ou10,#ou11,#ob5,#op6,#op7,#oq8,#oq9){opacity:1;transition-delay:0s}
+svg:has(#gb6:hover) :is(#ou12,#ou13,#ob6,#op8,#op9,#oq9,#oq10,#oq11){opacity:1;transition-delay:0s}
+svg:has(#gb7:hover) :is(#ou14,#ou15,#ob7,#op9,#op10,#oq11,#oq12){opacity:1;transition-delay:0s}
+svg:has(#gb8:hover) :is(#ou16,#ou17,#ob8,#op10,#op11,#oq12,#oq13,#oq14){opacity:1;transition-delay:0s}
+svg:has(#gb9:hover) :is(#ou18,#ou19,#ob9,#op12,#op13,#oq14,#oq15){opacity:1;transition-delay:0s}
+svg:has(#gb10:hover) :is(#ou20,#ou21,#ob10,#op13,#op14,#oq16,#oq17){opacity:1;transition-delay:0s}
+svg:has(#gb11:hover) :is(#ou22,#ou23,#ob11,#op14,#op15,#oq17,#oq18,#oq19){opacity:1;transition-delay:0s}
+svg:has(#gb12:hover) :is(#ou24,#ou25,#ob12,#op16,#op17,#oq19,#oq20){opacity:1;transition-delay:0s}
+svg:has(#gb13:hover) :is(#ou26,#ou27,#ob13,#op17,#op18,#oq20,#oq21,#oq22){opacity:1;transition-delay:0s}
+svg:has(#gb14:hover) :is(#ou28,#ou29,#ob14,#op18,#op19,#oq22,#oq23){opacity:1;transition-delay:0s}
+svg:has(#gb15:hover) :is(#ou30,#ou31,#ob15,#op20,#op21,#oq24,#oq25){opacity:1;transition-delay:0s}
+svg:has(#gp0:hover) :is(#ou0,#ou1,#ob0,#op0,#oq0,#oq1){opacity:1;transition-delay:0s}
+svg:has(#gp1:hover) :is(#ou1,#ou2,#ob0,#ob1,#op1,#oq1,#oq2){opacity:1;transition-delay:0s}
+svg:has(#gp2:hover) :is(#ou3,#ou4,#ob1,#ob2,#op2,#oq2,#oq3){opacity:1;transition-delay:0s}
+svg:has(#gp3:hover) :is(#ou4,#ou5,#ob2,#op3,#oq3,#oq4){opacity:1;transition-delay:0s}
+svg:has(#gp4:hover) :is(#ou6,#ou7,#ob3,#op4,#oq4,#oq5){opacity:1;transition-delay:0s}
+svg:has(#gp5:hover) :is(#ou7,#ou8,#ob3,#ob4,#op5,#oq6,#oq7){opacity:1;transition-delay:0s}
+svg:has(#gp6:hover) :is(#ou9,#ou10,#ob4,#ob5,#op6,#oq7,#oq8){opacity:1;transition-delay:0s}
+svg:has(#gp7:hover) :is(#ou10,#ou11,#ob5,#op7,#oq8,#oq9){opacity:1;transition-delay:0s}
+svg:has(#gp8:hover) :is(#ou12,#ou13,#ob6,#op8,#oq9,#oq10){opacity:1;transition-delay:0s}
+svg:has(#gp9:hover) :is(#ou13,#ou14,#ob6,#ob7,#op9,#oq10,#oq11){opacity:1;transition-delay:0s}
+svg:has(#gp10:hover) :is(#ou15,#ou16,#ob7,#ob8,#op10,#oq12,#oq13){opacity:1;transition-delay:0s}
+svg:has(#gp11:hover) :is(#ou16,#ou17,#ob8,#op11,#oq13,#oq14){opacity:1;transition-delay:0s}
+svg:has(#gp12:hover) :is(#ou18,#ou19,#ob9,#op12,#oq14,#oq15){opacity:1;transition-delay:0s}
+svg:has(#gp13:hover) :is(#ou19,#ou20,#ob9,#ob10,#op13,#oq15,#oq16){opacity:1;transition-delay:0s}
+svg:has(#gp14:hover) :is(#ou21,#ou22,#ob10,#ob11,#op14,#oq16,#oq17){opacity:1;transition-delay:0s}
+svg:has(#gp15:hover) :is(#ou22,#ou23,#ob11,#op15,#oq18,#oq19){opacity:1;transition-delay:0s}
+svg:has(#gp16:hover) :is(#ou24,#ou25,#ob12,#op16,#oq19,#oq20){opacity:1;transition-delay:0s}
+svg:has(#gp17:hover) :is(#ou25,#ou26,#ob12,#ob13,#op17,#oq20,#oq21){opacity:1;transition-delay:0s}
+svg:has(#gp18:hover) :is(#ou27,#ou28,#ob13,#ob14,#op18,#oq21,#oq22){opacity:1;transition-delay:0s}
+svg:has(#gp19:hover) :is(#ou28,#ou29,#ob14,#op19,#oq22,#oq23){opacity:1;transition-delay:0s}
+svg:has(#gp20:hover) :is(#ou30,#ou31,#ob15,#op20,#oq24,#oq25){opacity:1;transition-delay:0s}
+svg:has(#gp21:hover) :is(#ou31,#ob15,#op21,#oq25){opacity:1;transition-delay:0s}
+svg:has(#gq0:hover) :is(#ou0,#ou1,#ob0,#op0,#oq0){opacity:1;transition-delay:0s}
+svg:has(#gq1:hover) :is(#ou1,#ou2,#ob0,#ob1,#op0,#op1,#oq1){opacity:1;transition-delay:0s}
+svg:has(#gq2:hover) :is(#ou2,#ou3,#ob1,#op1,#op2,#oq2){opacity:1;transition-delay:0s}
+svg:has(#gq3:hover) :is(#ou3,#ou4,#ob1,#ob2,#op2,#op3,#oq3){opacity:1;transition-delay:0s}
+svg:has(#gq4:hover) :is(#ou5,#ou6,#ob2,#ob3,#op3,#op4,#oq4){opacity:1;transition-delay:0s}
+svg:has(#gq5:hover) :is(#ou6,#ou7,#ob3,#op4,#oq5){opacity:1;transition-delay:0s}
+svg:has(#gq6:hover) :is(#ou7,#ou8,#ob3,#ob4,#op5,#oq6){opacity:1;transition-delay:0s}
+svg:has(#gq7:hover) :is(#ou8,#ou9,#ob4,#op5,#op6,#oq7){opacity:1;transition-delay:0s}
+svg:has(#gq8:hover) :is(#ou10,#ou11,#ob5,#op6,#op7,#oq8){opacity:1;transition-delay:0s}
+svg:has(#gq9:hover) :is(#ou11,#ou12,#ob5,#ob6,#op7,#op8,#oq9){opacity:1;transition-delay:0s}
+svg:has(#gq10:hover) :is(#ou12,#ou13,#ob6,#op8,#op9,#oq10){opacity:1;transition-delay:0s}
+svg:has(#gq11:hover) :is(#ou13,#ou14,#ob6,#ob7,#op9,#oq11){opacity:1;transition-delay:0s}
+svg:has(#gq12:hover) :is(#ou15,#ou16,#ob7,#ob8,#op10,#oq12){opacity:1;transition-delay:0s}
+svg:has(#gq13:hover) :is(#ou16,#ou17,#ob8,#op10,#op11,#oq13){opacity:1;transition-delay:0s}
+svg:has(#gq14:hover) :is(#ou17,#ou18,#ob8,#ob9,#op11,#op12,#oq14){opacity:1;transition-delay:0s}
+svg:has(#gq15:hover) :is(#ou18,#ou19,#ob9,#op12,#op13,#oq15){opacity:1;transition-delay:0s}
+svg:has(#gq16:hover) :is(#ou20,#ou21,#ob10,#op13,#op14,#oq16){opacity:1;transition-delay:0s}
+svg:has(#gq17:hover) :is(#ou21,#ou22,#ob10,#ob11,#op14,#oq17){opacity:1;transition-delay:0s}
+svg:has(#gq18:hover) :is(#ou22,#ou23,#ob11,#op15,#oq18){opacity:1;transition-delay:0s}
+svg:has(#gq19:hover) :is(#ou23,#ou24,#ob11,#ob12,#op15,#op16,#oq19){opacity:1;transition-delay:0s}
+svg:has(#gq20:hover) :is(#ou25,#ou26,#ob12,#ob13,#op16,#op17,#oq20){opacity:1;transition-delay:0s}
+svg:has(#gq21:hover) :is(#ou26,#ou27,#ob13,#op17,#op18,#oq21){opacity:1;transition-delay:0s}
+svg:has(#gq22:hover) :is(#ou27,#ou28,#ob13,#ob14,#op18,#op19,#oq22){opacity:1;transition-delay:0s}
+svg:has(#gq23:hover) :is(#ou28,#ou29,#ob14,#op19,#oq23){opacity:1;transition-delay:0s}
+svg:has(#gq24:hover) :is(#ou30,#ou31,#ob15,#op20,#oq24){opacity:1;transition-delay:0s}
+svg:has(#gq25:hover) :is(#ou31,#ob15,#op20,#op21,#oq25){opacity:1;transition-delay:0s}
+svg:has(#gm0:hover) :is(#om0,#on0,#on1){opacity:1;transition-delay:0s}
+svg:has(#gm1:hover) :is(#om1,#on1,#on2){opacity:1;transition-delay:0s}
+svg:has(#gm2:hover) :is(#om2,#on2,#on3){opacity:1;transition-delay:0s}
+svg:has(#gm3:hover) :is(#om3,#on3,#on4){opacity:1;transition-delay:0s}
+svg:has(#gm4:hover) :is(#om4,#on4,#on5){opacity:1;transition-delay:0s}
+svg:has(#gm5:hover) :is(#om5,#on6,#on7){opacity:1;transition-delay:0s}
+svg:has(#gm6:hover) :is(#om6,#on7,#on8){opacity:1;transition-delay:0s}
+svg:has(#gm7:hover) :is(#om7,#on8,#on9){opacity:1;transition-delay:0s}
+svg:has(#gm8:hover) :is(#om8,#on9,#on10){opacity:1;transition-delay:0s}
+svg:has(#gm9:hover) :is(#om9,#on10,#on11){opacity:1;transition-delay:0s}
+svg:has(#gm10:hover) :is(#om10,#on12,#on13){opacity:1;transition-delay:0s}
+svg:has(#gm11:hover) :is(#om11,#on13,#on14){opacity:1;transition-delay:0s}
+svg:has(#gm12:hover) :is(#om12,#on14,#on15){opacity:1;transition-delay:0s}
+svg:has(#gm13:hover) :is(#om13,#on15,#on16){opacity:1;transition-delay:0s}
+svg:has(#gm14:hover) :is(#om14,#on16,#on17){opacity:1;transition-delay:0s}
+svg:has(#gm15:hover) :is(#om15,#on18,#on19){opacity:1;transition-delay:0s}
+svg:has(#gm16:hover) :is(#om16,#on19,#on20){opacity:1;transition-delay:0s}
+svg:has(#gm17:hover) :is(#om17,#on20,#on21){opacity:1;transition-delay:0s}
+svg:has(#gm18:hover) :is(#om18,#on21,#on22){opacity:1;transition-delay:0s}
+svg:has(#gm19:hover) :is(#om19,#on22,#on23){opacity:1;transition-delay:0s}
+svg:has(#gm20:hover) :is(#om20,#on24,#on25){opacity:1;transition-delay:0s}
+svg:has(#gm21:hover) :is(#om21,#on25,#on26){opacity:1;transition-delay:0s}
+svg:has(#gn0:hover) :is(#om0,#on0){opacity:1;transition-delay:0s}
+svg:has(#gn1:hover) :is(#om0,#om1,#on1){opacity:1;transition-delay:0s}
+svg:has(#gn2:hover) :is(#om1,#om2,#on2){opacity:1;transition-delay:0s}
+svg:has(#gn3:hover) :is(#om2,#om3,#on3){opacity:1;transition-delay:0s}
+svg:has(#gn4:hover) :is(#om3,#om4,#on4){opacity:1;transition-delay:0s}
+svg:has(#gn5:hover) :is(#om4,#on5){opacity:1;transition-delay:0s}
+svg:has(#gn6:hover) :is(#om5,#on6){opacity:1;transition-delay:0s}
+svg:has(#gn7:hover) :is(#om5,#om6,#on7){opacity:1;transition-delay:0s}
+svg:has(#gn8:hover) :is(#om6,#om7,#on8){opacity:1;transition-delay:0s}
+svg:has(#gn9:hover) :is(#om7,#om8,#on9){opacity:1;transition-delay:0s}
+svg:has(#gn10:hover) :is(#om8,#om9,#on10){opacity:1;transition-delay:0s}
+svg:has(#gn11:hover) :is(#om9,#on11){opacity:1;transition-delay:0s}
+svg:has(#gn12:hover) :is(#om10,#on12){opacity:1;transition-delay:0s}
+svg:has(#gn13:hover) :is(#om10,#om11,#on13){opacity:1;transition-delay:0s}
+svg:has(#gn14:hover) :is(#om11,#om12,#on14){opacity:1;transition-delay:0s}
+svg:has(#gn15:hover) :is(#om12,#om13,#on15){opacity:1;transition-delay:0s}
+svg:has(#gn16:hover) :is(#om13,#om14,#on16){opacity:1;transition-delay:0s}
+svg:has(#gn17:hover) :is(#om14,#on17){opacity:1;transition-delay:0s}
+svg:has(#gn18:hover) :is(#om15,#on18){opacity:1;transition-delay:0s}
+svg:has(#gn19:hover) :is(#om15,#om16,#on19){opacity:1;transition-delay:0s}
+svg:has(#gn20:hover) :is(#om16,#om17,#on20){opacity:1;transition-delay:0s}
+svg:has(#gn21:hover) :is(#om17,#om18,#on21){opacity:1;transition-delay:0s}
+svg:has(#gn22:hover) :is(#om18,#om19,#on22){opacity:1;transition-delay:0s}
+svg:has(#gn23:hover) :is(#om19,#on23){opacity:1;transition-delay:0s}
+svg:has(#gn24:hover) :is(#om20,#on24){opacity:1;transition-delay:0s}
+svg:has(#gn25:hover) :is(#om20,#om21,#on25){opacity:1;transition-delay:0s}
+svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
+<defs><filter id="legend-glow" x="-5%" y="-100%" width="110%" height="300%"><feGaussianBlur stdDeviation="3.5"/></filter><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
 <rect width="100%" height="100%" class="bg"/>
 <path class="ghost time" d="M36 260C36 266 36 266 36 272L280.8 272C280.8 266 280.8 266 280.8 260Z"/>
 <path class="ghost version" d="M280.8 260C280.8 266 280.8 266 280.8 272L312.3 272C312.3 266 312.3 266 312.3 260Z"/>
@@ -201,7 +204,8 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <text x="36" y="50" class="ink sans" font-size="34" font-weight="600">One UUIDv7, six representations</text>
 <text x="1064" y="50" class="pkg sans" font-size="20" font-weight="600" text-anchor="end">@anizoptera/uuid-slug</text>
 <text x="36" y="82" class="muted sans" font-size="18">Store one UUID. Every form below converts back to it losslessly (masked ones with your key). No mapping table.</text>
-<text x="36" y="117" class="ink sans" font-size="16" font-weight="500"><tspan class="lg lg-time time"><tspan class="time f">■</tspan> Timestamp</tspan><tspan class="lg lg-version version" dx="22"><tspan class="version f">■</tspan> Version</tspan><tspan class="lg lg-variant variant" dx="22"><tspan class="variant f">■</tspan> Variant</tspan><tspan class="lg lg-payload payload" dx="22"><tspan class="payload f">■</tspan> Payload (random or counter)</tspan><tspan class="lg lg-masked masked" dx="22"><tspan class="masked f">■</tspan> Masked</tspan><tspan class="lg lg-pad pad" dx="22"><tspan class="pad f">▨</tspan> Padding (zeros)</tspan></text>
+<text x="36" y="117" class="ink sans" font-size="16" font-weight="500" filter="url(#legend-glow)"><tspan class="gl lgg-time time">■ Timestamp  </tspan><tspan class="gl lgg-version version">  ■ Version  </tspan><tspan class="gl lgg-variant variant">  ■ Variant  </tspan><tspan class="gl lgg-payload payload">  ■ Payload (random or counter)  </tspan><tspan class="gl lgg-masked masked">  ■ Masked  </tspan><tspan class="gl lgg-pad pad">  ▨ Padding (zeros)</tspan></text>
+<text x="36" y="117" class="ink sans" font-size="16" font-weight="500"><tspan class="lg lg-time time"><tspan class="time f">■</tspan> Timestamp  </tspan><tspan class="lg lg-version version">  <tspan class="version f">■</tspan> Version  </tspan><tspan class="lg lg-variant variant">  <tspan class="variant f">■</tspan> Variant  </tspan><tspan class="lg lg-payload payload">  <tspan class="payload f">■</tspan> Payload (random or counter)  </tspan><tspan class="lg lg-masked masked">  <tspan class="masked f">■</tspan> Masked  </tspan><tspan class="lg lg-pad pad">  <tspan class="pad f">▨</tspan> Padding (zeros)</tspan></text>
 <text x="1064" y="117" class="muted sans" font-size="16" text-anchor="end">All text forms are URL-safe.</text>
 <path d="M36 136H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1.2"/>
 <text x="36" y="164" class="accent sans" font-size="16" font-weight="700">THE UUID · any version · 128 bits</text>
@@ -212,68 +216,84 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <g id="gu0">
 <rect x="36.8" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="45.7" y="248.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="36" y="210" width="19.4" height="56" class="hit time"/>
 <rect id="ou0" class="hl" x="36" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu1">
 <rect x="56.2" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="65.1" y="248.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect x="55.4" y="210" width="19.4" height="56" class="hit time"/>
 <rect id="ou1" class="hl" x="55.4" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu2">
 <rect x="75.6" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="84.5" y="248.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
+<rect x="74.8" y="210" width="19.4" height="56" class="hit time"/>
 <rect id="ou2" class="hl" x="74.8" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu3">
 <rect x="94.9" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="103.9" y="248.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect x="94.2" y="210" width="19.4" height="56" class="hit time"/>
 <rect id="ou3" class="hl" x="94.2" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu4">
 <rect x="114.4" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="123.3" y="248.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="113.6" y="210" width="19.4" height="56" class="hit time"/>
 <rect id="ou4" class="hl" x="113.6" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu5">
 <rect x="133.8" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="142.7" y="248.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<rect x="133" y="210" width="19.4" height="56" class="hit time"/>
 <rect id="ou5" class="hl" x="133" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu6">
 <rect x="153.2" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="162.1" y="248.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="152.4" y="210" width="19.4" height="56" class="hit time"/>
 <rect id="ou6" class="hl" x="152.4" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu7">
 <rect x="172.6" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="181.5" y="248.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect x="171.8" y="210" width="25.4" height="56" class="hit time"/>
 <rect id="ou7" class="hl" x="171.8" y="214" width="19.4" height="48" rx="2"/></g>
 <rect x="193.2" y="236.5" width="8" height="3" class="muted"/>
 <g id="gu8">
 <rect x="204" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="212.9" y="248.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect x="197.2" y="210" width="25.4" height="56" class="hit time"/>
 <rect id="ou8" class="hl" x="203.2" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu9">
 <rect x="223.4" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="232.3" y="248.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect x="222.6" y="210" width="19.4" height="56" class="hit time"/>
 <rect id="ou9" class="hl" x="222.6" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu10">
 <rect x="242.8" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="251.7" y="248.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect x="242" y="210" width="19.4" height="56" class="hit time"/>
 <rect id="ou10" class="hl" x="242" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu11">
 <rect x="262.2" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="271.1" y="248.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect x="261.4" y="210" width="25.4" height="56" class="hit time"/>
 <rect id="ou11" class="hl" x="261.4" y="214" width="19.4" height="48" rx="2"/></g>
 <rect x="282.8" y="236.5" width="8" height="3" class="muted"/>
 <g id="gu12">
 <rect x="293.6" y="216" width="17.9" height="44" class="version f cell"/>
 <text x="302.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect x="286.8" y="210" width="25.4" height="56" class="hit version"/>
 <rect id="ou12" class="hl" x="292.9" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu13">
 <rect x="313" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="322" y="248.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="312.3" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou13" class="hl" x="312.3" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu14">
 <rect x="332.4" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="341.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<rect x="331.7" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou14" class="hl" x="331.7" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu15">
 <rect x="351.8" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="360.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="351.1" y="210" width="25.4" height="56" class="hit payload"/>
 <rect id="ou15" class="hl" x="351.1" y="214" width="19.4" height="48" rx="2"/></g>
 <rect x="372.5" y="236.5" width="8" height="3" class="muted"/>
 <g id="gu16">
@@ -285,67 +305,83 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <clipPath id="k2"><rect x="392.2" y="216" width="9" height="44"/></clipPath><g clip-path="url(#k2)">
 <text x="392.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
 </g>
+<rect x="376.5" y="210" width="25.4" height="56" class="hit variant payload"/>
 <rect id="ou16" class="hl" x="382.5" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu17">
 <rect x="402.6" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="411.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect x="401.9" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou17" class="hl" x="401.9" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu18">
 <rect x="422" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="431" y="248.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect x="421.3" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou18" class="hl" x="421.3" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu19">
 <rect x="441.4" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="450.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect x="440.7" y="210" width="25.4" height="56" class="hit payload"/>
 <rect id="ou19" class="hl" x="440.7" y="214" width="19.4" height="48" rx="2"/></g>
 <rect x="462.1" y="236.5" width="8" height="3" class="muted"/>
 <g id="gu20">
 <rect x="472.9" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="481.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="466.1" y="210" width="25.4" height="56" class="hit payload"/>
 <rect id="ou20" class="hl" x="472.1" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu21">
 <rect x="492.3" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="501.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect x="491.5" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou21" class="hl" x="491.5" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu22">
 <rect x="511.7" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="520.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect x="510.9" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou22" class="hl" x="510.9" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu23">
 <rect x="531.1" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="540" y="248.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect x="530.3" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou23" class="hl" x="530.3" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu24">
 <rect x="550.5" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="559.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect x="549.7" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou24" class="hl" x="549.7" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu25">
 <rect x="569.9" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="578.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect x="569.1" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou25" class="hl" x="569.1" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu26">
 <rect x="589.3" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="598.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect x="588.5" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou26" class="hl" x="588.5" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu27">
 <rect x="608.7" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="617.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect x="607.9" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou27" class="hl" x="607.9" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu28">
 <rect x="628.1" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="637" y="248.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect x="627.3" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou28" class="hl" x="627.3" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu29">
 <rect x="647.5" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="656.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
+<rect x="646.7" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou29" class="hl" x="646.7" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu30">
 <rect x="666.9" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="675.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="666.1" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou30" class="hl" x="666.1" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu31">
 <rect x="686.3" y="216" width="17.9" height="44" class="payload f cell"/>
 <text x="695.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<rect x="685.5" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou31" class="hl" x="685.5" y="214" width="19.4" height="48" rx="2"/></g>
 <text x="790" y="290" class="accent sans" font-size="17" font-weight="700">Bytes</text>
 <text x="790" y="312" class="muted sans" font-size="16">16 bytes, binary, same order</text>
@@ -360,6 +396,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="60" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="64.6" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="69.2" y="306" width="4.6" height="6" class="time f cell"/>
+<rect x="36" y="266" width="38.8" height="52" class="hit time"/>
 <rect id="ob0" class="hl" x="36" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb1">
 <rect x="75.8" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -372,6 +409,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="98.8" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="103.4" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="108" y="306" width="4.6" height="6" class="time f cell"/>
+<rect x="74.8" y="266" width="38.8" height="52" class="hit time"/>
 <rect id="ob1" class="hl" x="74.8" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb2">
 <rect x="114.6" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -384,6 +422,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="137.6" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="142.2" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="146.8" y="306" width="4.6" height="6" class="time f cell"/>
+<rect x="113.6" y="266" width="38.8" height="52" class="hit time"/>
 <rect id="ob2" class="hl" x="113.6" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb3">
 <rect x="153.4" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -396,6 +435,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="176.4" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="181" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="185.6" y="306" width="4.6" height="6" class="time f cell"/>
+<rect x="152.4" y="266" width="44.8" height="52" class="hit time"/>
 <rect id="ob3" class="hl" x="152.4" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb4">
 <rect x="204.2" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -408,6 +448,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="227.2" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="231.8" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="236.4" y="306" width="4.6" height="6" class="time f cell"/>
+<rect x="197.2" y="266" width="44.8" height="52" class="hit time"/>
 <rect id="ob4" class="hl" x="203.2" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb5">
 <rect x="243" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -420,6 +461,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="266" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="270.6" y="306" width="4.6" height="6" class="time f cell"/>
 <rect x="275.2" y="306" width="4.6" height="6" class="time f cell"/>
+<rect x="242" y="266" width="44.8" height="52" class="hit time"/>
 <rect id="ob5" class="hl" x="242" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb6">
 <rect x="293.9" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -432,6 +474,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="316.9" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="321.5" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="326.1" y="306" width="4.6" height="6" class="payload f cell"/>
+<rect x="286.8" y="266" width="44.8" height="52" class="hit version payload"/>
 <rect id="ob6" class="hl" x="292.9" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb7">
 <rect x="332.7" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -444,6 +487,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="355.7" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="360.3" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="364.9" y="306" width="4.6" height="6" class="payload f cell"/>
+<rect x="331.7" y="266" width="44.8" height="52" class="hit payload"/>
 <rect id="ob7" class="hl" x="331.7" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb8">
 <rect x="383.5" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -456,6 +500,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="406.5" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="411.1" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="415.7" y="306" width="4.6" height="6" class="payload f cell"/>
+<rect x="376.5" y="266" width="44.8" height="52" class="hit variant payload"/>
 <rect id="ob8" class="hl" x="382.5" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb9">
 <rect x="422.3" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -468,6 +513,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="445.3" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="449.9" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="454.5" y="306" width="4.6" height="6" class="payload f cell"/>
+<rect x="421.3" y="266" width="44.8" height="52" class="hit payload"/>
 <rect id="ob9" class="hl" x="421.3" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb10">
 <rect x="473.1" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -480,6 +526,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="496.1" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="500.7" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="505.3" y="306" width="4.6" height="6" class="payload f cell"/>
+<rect x="466.1" y="266" width="44.8" height="52" class="hit payload"/>
 <rect id="ob10" class="hl" x="472.1" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb11">
 <rect x="511.9" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -492,6 +539,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="534.9" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="539.5" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="544.1" y="306" width="4.6" height="6" class="payload f cell"/>
+<rect x="510.9" y="266" width="38.8" height="52" class="hit payload"/>
 <rect id="ob11" class="hl" x="510.9" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb12">
 <rect x="550.7" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -504,6 +552,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="573.7" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="578.3" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="582.9" y="306" width="4.6" height="6" class="payload f cell"/>
+<rect x="549.7" y="266" width="38.8" height="52" class="hit payload"/>
 <rect id="ob12" class="hl" x="549.7" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb13">
 <rect x="589.5" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -516,6 +565,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="612.5" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="617.1" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="621.7" y="306" width="4.6" height="6" class="payload f cell"/>
+<rect x="588.5" y="266" width="38.8" height="52" class="hit payload"/>
 <rect id="ob13" class="hl" x="588.5" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb14">
 <rect x="628.3" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -528,6 +578,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="651.3" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="655.9" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="660.5" y="306" width="4.6" height="6" class="payload f cell"/>
+<rect x="627.3" y="266" width="38.8" height="52" class="hit payload"/>
 <rect id="ob14" class="hl" x="627.3" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb15">
 <rect x="667.1" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -540,6 +591,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="690.1" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="694.7" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="699.3" y="306" width="4.6" height="6" class="payload f cell"/>
+<rect x="666.1" y="266" width="38.8" height="52" class="hit payload"/>
 <rect id="ob15" class="hl" x="666.1" y="270" width="38.8" height="44" rx="2"/></g>
 <path d="M36 318v6H280.8v-6" class="time" fill="none" stroke="currentColor" stroke-width="2"/>
 <text x="36" y="344" class="time f sans" font-size="16" font-weight="600">UUIDv7 48-bit timestamp: 1755229000244 ms = 2025-08-15 03:36:40.244 UTC</text>
@@ -563,43 +615,53 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <g id="gp0">
 <rect x="36.8" y="616" width="17.9" height="44" class="time f cell"/>
 <text x="45.7" y="648.5" class="fg mono" font-size="30" text-anchor="middle">A</text>
+<rect x="36" y="610" width="19.4" height="56" class="hit time"/>
 <rect id="op0" class="hl" x="36" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp1">
 <rect x="56.2" y="616" width="17.9" height="44" class="time f cell"/>
 <text x="65.1" y="648.5" class="fg mono" font-size="30" text-anchor="middle">Z</text>
+<rect x="55.4" y="610" width="19.4" height="56" class="hit time"/>
 <rect id="op1" class="hl" x="55.4" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp2">
 <rect x="75.6" y="616" width="17.9" height="44" class="time f cell"/>
 <text x="84.5" y="648.5" class="fg mono" font-size="30" text-anchor="middle">i</text>
+<rect x="74.8" y="610" width="19.4" height="56" class="hit time"/>
 <rect id="op2" class="hl" x="74.8" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp3">
 <rect x="94.9" y="616" width="17.9" height="44" class="time f cell"/>
 <text x="103.9" y="648.5" class="fg mono" font-size="30" text-anchor="middle">r</text>
+<rect x="94.2" y="610" width="19.4" height="56" class="hit time"/>
 <rect id="op3" class="hl" x="94.2" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp4">
 <rect x="114.4" y="616" width="17.9" height="44" class="time f cell"/>
 <text x="123.3" y="648.5" class="fg mono" font-size="30" text-anchor="middle">z</text>
+<rect x="113.6" y="610" width="19.4" height="56" class="hit time"/>
 <rect id="op4" class="hl" x="113.6" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp5">
 <rect x="133.8" y="616" width="17.9" height="44" class="time f cell"/>
 <text x="142.7" y="648.5" class="fg mono" font-size="30" text-anchor="middle">R</text>
+<rect x="133" y="610" width="19.4" height="56" class="hit time"/>
 <rect id="op5" class="hl" x="133" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp6">
 <rect x="153.2" y="616" width="17.9" height="44" class="time f cell"/>
 <text x="162.1" y="648.5" class="fg mono" font-size="30" text-anchor="middle">I</text>
+<rect x="152.4" y="610" width="19.4" height="56" class="hit time"/>
 <rect id="op6" class="hl" x="152.4" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp7">
 <rect x="172.6" y="616" width="17.9" height="44" class="time f cell"/>
 <text x="181.5" y="648.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="171.8" y="610" width="19.4" height="56" class="hit time"/>
 <rect id="op7" class="hl" x="171.8" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp8">
 <rect x="192" y="616" width="11.9" height="44" class="version f cell"/>
 <rect x="203.9" y="616" width="6" height="44" class="payload f cell"/>
 <text x="200.9" y="648.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect x="191.2" y="610" width="19.4" height="56" class="hit version payload"/>
 <rect id="op8" class="hl" x="191.2" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp9">
 <rect x="211.4" y="616" width="17.9" height="44" class="payload f cell"/>
 <text x="220.3" y="648.5" class="fg mono" font-size="30" text-anchor="middle">r</text>
+<rect x="210.6" y="610" width="19.4" height="56" class="hit payload"/>
 <rect id="op9" class="hl" x="210.6" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp10">
 <rect x="230.8" y="616" width="11.9" height="44" class="payload f cell"/>
@@ -610,68 +672,86 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <clipPath id="k4"><rect x="242.7" y="616" width="6" height="44"/></clipPath><g clip-path="url(#k4)">
 <text x="239.7" y="648.5" class="fw mono" font-size="30" text-anchor="middle">y</text>
 </g>
+<rect x="230" y="610" width="19.4" height="56" class="hit payload variant"/>
 <rect id="op10" class="hl" x="230" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp11">
 <rect x="250.2" y="616" width="17.9" height="44" class="payload f cell"/>
 <text x="259.1" y="648.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect x="249.4" y="610" width="19.4" height="56" class="hit payload"/>
 <rect id="op11" class="hl" x="249.4" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp12">
 <rect x="269.6" y="616" width="17.9" height="44" class="payload f cell"/>
 <text x="278.5" y="648.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect x="268.8" y="610" width="19.4" height="56" class="hit payload"/>
 <rect id="op12" class="hl" x="268.8" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp13">
 <rect x="289" y="616" width="17.9" height="44" class="payload f cell"/>
 <text x="297.9" y="648.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
+<rect x="288.2" y="610" width="19.4" height="56" class="hit payload"/>
 <rect id="op13" class="hl" x="288.2" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp14">
 <rect x="308.3" y="616" width="17.9" height="44" class="payload f cell"/>
 <text x="317.3" y="648.5" class="fg mono" font-size="30" text-anchor="middle">E</text>
+<rect x="307.6" y="610" width="19.4" height="56" class="hit payload"/>
 <rect id="op14" class="hl" x="307.6" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp15">
 <rect x="327.7" y="616" width="17.9" height="44" class="payload f cell"/>
 <text x="336.7" y="648.5" class="fg mono" font-size="30" text-anchor="middle">j</text>
+<rect x="327" y="610" width="19.4" height="56" class="hit payload"/>
 <rect id="op15" class="hl" x="327" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp16">
 <rect x="347.1" y="616" width="17.9" height="44" class="payload f cell"/>
 <text x="356.1" y="648.5" class="fg mono" font-size="30" text-anchor="middle">R</text>
+<rect x="346.4" y="610" width="19.4" height="56" class="hit payload"/>
 <rect id="op16" class="hl" x="346.4" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp17">
 <rect x="366.5" y="616" width="17.9" height="44" class="payload f cell"/>
 <text x="375.5" y="648.5" class="fg mono" font-size="30" text-anchor="middle">W</text>
+<rect x="365.8" y="610" width="19.4" height="56" class="hit payload"/>
 <rect id="op17" class="hl" x="365.8" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp18">
 <rect x="385.9" y="616" width="17.9" height="44" class="payload f cell"/>
 <text x="394.9" y="648.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect x="385.2" y="610" width="19.4" height="56" class="hit payload"/>
 <rect id="op18" class="hl" x="385.2" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp19">
 <rect x="405.3" y="616" width="17.9" height="44" class="payload f cell"/>
 <text x="414.3" y="648.5" class="fg mono" font-size="30" text-anchor="middle">J</text>
+<rect x="404.6" y="610" width="19.4" height="56" class="hit payload"/>
 <rect id="op19" class="hl" x="404.6" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp20">
 <rect x="424.7" y="616" width="17.9" height="44" class="payload f cell"/>
 <text x="433.7" y="648.5" class="fg mono" font-size="30" text-anchor="middle">q</text>
+<rect x="424" y="610" width="19.4" height="56" class="hit payload"/>
 <rect id="op20" class="hl" x="424" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp21">
 <rect x="444.1" y="616" width="6" height="44" class="payload f cell"/>
 <rect x="450.1" y="616" width="11.9" height="44" class="pad f cell"/>
 <rect x="450.1" y="616" width="11.9" height="44" class="" fill="url(#hatch)"/>
 <text x="453.1" y="648.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
+<rect x="443.4" y="610" width="19.4" height="56" class="hit payload pad"/>
 <rect id="op21" class="hl" x="443.4" y="614" width="19.4" height="48" rx="2"/></g>
 <rect x="230" y="613" width="19.4" height="50" class="" fill="none" stroke="#C6D0E1" stroke-width="1.4" rx="2"/>
 <path d="M239.7 663V668H776V636H786" class="lead" fill="none" stroke="currentColor" stroke-width="1.4"/>
 <rect x="790" y="626" width="21" height="21" class="box" stroke="#C6D0E1" stroke-width="1.2"/>
 <text x="800.5" y="642.4" class="ink mono" font-size="17" text-anchor="middle">y</text>
 <rect x="821" y="626" width="16.4" height="21" class="payload f cell"/>
+<rect x="821" y="620" width="17.9" height="33" class="hit payload"/>
 <text x="829.2" y="641.8" class="fg mono" font-size="15" text-anchor="middle">1</text>
 <rect x="838.9" y="626" width="16.4" height="21" class="payload f cell"/>
+<rect x="838.9" y="620" width="17.9" height="33" class="hit payload"/>
 <text x="847.1" y="641.8" class="fg mono" font-size="15" text-anchor="middle">1</text>
 <rect x="856.8" y="626" width="16.4" height="21" class="payload f cell"/>
+<rect x="856.8" y="620" width="17.9" height="33" class="hit payload"/>
 <text x="865" y="641.8" class="fg mono" font-size="15" text-anchor="middle">0</text>
 <rect x="874.6" y="626" width="16.4" height="21" class="payload f cell"/>
+<rect x="874.6" y="620" width="17.9" height="33" class="hit payload"/>
 <text x="882.8" y="641.8" class="fg mono" font-size="15" text-anchor="middle">0</text>
 <rect x="892.5" y="626" width="16.4" height="21" class="variant f cell"/>
+<rect x="892.5" y="620" width="17.9" height="33" class="hit variant"/>
 <text x="900.7" y="641.8" class="fw mono" font-size="15" text-anchor="middle">1</text>
 <rect x="910.4" y="626" width="16.4" height="21" class="variant f cell"/>
+<rect x="910.4" y="620" width="17.9" height="33" class="hit variant"/>
 <text x="918.6" y="641.8" class="fw mono" font-size="15" text-anchor="middle">0</text>
 <text x="790" y="669" class="muted sans" font-size="16">4 payload + 2 variant bits</text>
 <text x="36" y="690" class="ink sans" font-size="17" font-weight="600"><tspan>For short URLs, logs and JSON.</tspan></text>
@@ -685,52 +765,64 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <g id="gq0">
 <rect x="36.8" y="804" width="17.9" height="44" class="time f cell"/>
 <text x="45.7" y="836.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="36" y="798" width="19.4" height="56" class="hit time"/>
 <rect id="oq0" class="hl" x="36" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq1">
 <rect x="56.2" y="804" width="17.9" height="44" class="time f cell"/>
 <text x="65.1" y="836.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect x="55.4" y="798" width="19.4" height="56" class="hit time"/>
 <rect id="oq1" class="hl" x="55.4" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq2">
 <rect x="75.6" y="804" width="17.9" height="44" class="time f cell"/>
 <text x="84.5" y="836.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="74.8" y="798" width="19.4" height="56" class="hit time"/>
 <rect id="oq2" class="hl" x="74.8" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq3">
 <rect x="94.9" y="804" width="17.9" height="44" class="time f cell"/>
 <text x="103.9" y="836.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="94.2" y="798" width="19.4" height="56" class="hit time"/>
 <rect id="oq3" class="hl" x="94.2" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq4">
 <rect x="114.4" y="804" width="17.9" height="44" class="time f cell"/>
 <text x="123.3" y="836.5" class="fg mono" font-size="30" text-anchor="middle">n</text>
+<rect x="113.6" y="798" width="19.4" height="56" class="hit time"/>
 <rect id="oq4" class="hl" x="113.6" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq5">
 <rect x="133.8" y="804" width="17.9" height="44" class="time f cell"/>
 <text x="142.7" y="836.5" class="fg mono" font-size="30" text-anchor="middle">j</text>
+<rect x="133" y="798" width="19.4" height="56" class="hit time"/>
 <rect id="oq5" class="hl" x="133" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq6">
 <rect x="153.2" y="804" width="17.9" height="44" class="time f cell"/>
 <text x="162.1" y="836.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect x="152.4" y="798" width="19.4" height="56" class="hit time"/>
 <rect id="oq6" class="hl" x="152.4" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq7">
 <rect x="172.6" y="804" width="17.9" height="44" class="time f cell"/>
 <text x="181.5" y="836.5" class="fg mono" font-size="30" text-anchor="middle">i</text>
+<rect x="171.8" y="798" width="19.4" height="56" class="hit time"/>
 <rect id="oq7" class="hl" x="171.8" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq8">
 <rect x="192" y="804" width="17.9" height="44" class="time f cell"/>
 <text x="200.9" y="836.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect x="191.2" y="798" width="19.4" height="56" class="hit time"/>
 <rect id="oq8" class="hl" x="191.2" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq9">
 <rect x="211.4" y="804" width="10.7" height="44" class="time f cell"/>
 <rect x="222.1" y="804" width="7.2" height="44" class="version f cell"/>
 <text x="220.3" y="836.5" class="fg mono" font-size="30" text-anchor="middle">h</text>
+<rect x="210.6" y="798" width="19.4" height="56" class="hit time version"/>
 <rect id="oq9" class="hl" x="210.6" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq10">
 <rect x="230.8" y="804" width="7.2" height="44" class="version f cell"/>
 <rect x="237.9" y="804" width="10.7" height="44" class="payload f cell"/>
 <text x="239.7" y="836.5" class="fg mono" font-size="30" text-anchor="middle">t</text>
+<rect x="230" y="798" width="19.4" height="56" class="hit version payload"/>
 <rect id="oq10" class="hl" x="230" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq11">
 <rect x="250.2" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="259.1" y="836.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<rect x="249.4" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq11" class="hl" x="249.4" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq12">
 <rect x="269.6" y="804" width="14.3" height="44" class="payload f cell"/>
@@ -741,6 +833,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <clipPath id="k6"><rect x="283.9" y="804" width="3.6" height="44"/></clipPath><g clip-path="url(#k6)">
 <text x="278.5" y="836.5" class="fw mono" font-size="30" text-anchor="middle">p</text>
 </g>
+<rect x="268.8" y="798" width="19.4" height="56" class="hit payload variant"/>
 <rect id="oq12" class="hl" x="268.8" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq13">
 <rect x="289" y="804" width="3.6" height="44" class="variant f cell"/>
@@ -751,70 +844,88 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <clipPath id="k8"><rect x="292.5" y="804" width="14.3" height="44"/></clipPath><g clip-path="url(#k8)">
 <text x="297.9" y="836.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
 </g>
+<rect x="288.2" y="798" width="19.4" height="56" class="hit variant payload"/>
 <rect id="oq13" class="hl" x="288.2" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq14">
 <rect x="308.3" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="317.3" y="836.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect x="307.6" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq14" class="hl" x="307.6" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq15">
 <rect x="327.7" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="336.7" y="836.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect x="327" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq15" class="hl" x="327" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq16">
 <rect x="347.1" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="356.1" y="836.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="346.4" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq16" class="hl" x="346.4" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq17">
 <rect x="366.5" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="375.5" y="836.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect x="365.8" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq17" class="hl" x="365.8" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq18">
 <rect x="385.9" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="394.9" y="836.5" class="fg mono" font-size="30" text-anchor="middle">h</text>
+<rect x="385.2" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq18" class="hl" x="385.2" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq19">
 <rect x="405.3" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="414.3" y="836.5" class="fg mono" font-size="30" text-anchor="middle">k</text>
+<rect x="404.6" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq19" class="hl" x="404.6" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq20">
 <rect x="424.7" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="433.7" y="836.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="424" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq20" class="hl" x="424" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq21">
 <rect x="444.1" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="453.1" y="836.5" class="fg mono" font-size="30" text-anchor="middle">p</text>
+<rect x="443.4" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq21" class="hl" x="443.4" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq22">
 <rect x="463.5" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="472.5" y="836.5" class="fg mono" font-size="30" text-anchor="middle">s</text>
+<rect x="462.8" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq22" class="hl" x="462.8" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq23">
 <rect x="482.9" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="491.9" y="836.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
+<rect x="482.2" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq23" class="hl" x="482.2" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq24">
 <rect x="502.3" y="804" width="17.9" height="44" class="payload f cell"/>
 <text x="511.3" y="836.5" class="fg mono" font-size="30" text-anchor="middle">l</text>
+<rect x="501.6" y="798" width="19.4" height="56" class="hit payload"/>
 <rect id="oq24" class="hl" x="501.6" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq25">
 <rect x="521.7" y="804" width="10.7" height="44" class="payload f cell"/>
 <rect x="532.5" y="804" width="7.2" height="44" class="pad f cell"/>
 <rect x="532.5" y="804" width="7.2" height="44" class="" fill="url(#hatch)"/>
 <text x="530.7" y="836.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="521" y="798" width="19.4" height="56" class="hit payload pad"/>
 <rect id="oq25" class="hl" x="521" y="802" width="19.4" height="48" rx="2"/></g>
 <rect x="210.6" y="801" width="19.4" height="50" class="" fill="none" stroke="#C6D0E1" stroke-width="1.4" rx="2"/>
 <path d="M220.3 851V856H776V824H786" class="lead" fill="none" stroke="currentColor" stroke-width="1.4"/>
 <rect x="790" y="814" width="21" height="21" class="box" stroke="#C6D0E1" stroke-width="1.2"/>
 <text x="800.5" y="830.4" class="ink mono" font-size="17" text-anchor="middle">h</text>
 <rect x="821" y="814" width="16.4" height="21" class="time f cell"/>
+<rect x="821" y="808" width="17.9" height="33" class="hit time"/>
 <text x="829.2" y="829.8" class="fg mono" font-size="15" text-anchor="middle">1</text>
 <rect x="838.9" y="814" width="16.4" height="21" class="time f cell"/>
+<rect x="838.9" y="808" width="17.9" height="33" class="hit time"/>
 <text x="847.1" y="829.8" class="fg mono" font-size="15" text-anchor="middle">0</text>
 <rect x="856.8" y="814" width="16.4" height="21" class="time f cell"/>
+<rect x="856.8" y="808" width="17.9" height="33" class="hit time"/>
 <text x="865" y="829.8" class="fg mono" font-size="15" text-anchor="middle">0</text>
 <rect x="874.6" y="814" width="16.4" height="21" class="version f cell"/>
+<rect x="874.6" y="808" width="17.9" height="33" class="hit version"/>
 <text x="882.8" y="829.8" class="fg mono" font-size="15" text-anchor="middle">0</text>
 <rect x="892.5" y="814" width="16.4" height="21" class="version f cell"/>
+<rect x="892.5" y="808" width="17.9" height="33" class="hit version"/>
 <text x="900.7" y="829.8" class="fg mono" font-size="15" text-anchor="middle">1</text>
 <text x="790" y="857" class="muted sans" font-size="16">3 timestamp + 2 version bits</text>
 <text x="36" y="878" class="ink sans" font-size="17" font-weight="600"><tspan>For case-insensitive filenames and text keys.</tspan></text>
@@ -834,90 +945,112 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <g id="gm0">
 <rect x="36.8" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="45.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="36" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om0" class="hl" x="36" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm1">
 <rect x="56.2" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="65.1" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">p</text>
+<rect x="55.4" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om1" class="hl" x="55.4" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm2">
 <rect x="75.6" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="84.5" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect x="74.8" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om2" class="hl" x="74.8" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm3">
 <rect x="94.9" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="103.9" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect x="94.2" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om3" class="hl" x="94.2" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm4">
 <rect x="114.4" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="123.3" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect x="113.6" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om4" class="hl" x="113.6" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm5">
 <rect x="133.8" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="142.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">Q</text>
+<rect x="133" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om5" class="hl" x="133" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm6">
 <rect x="153.2" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="162.1" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="152.4" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om6" class="hl" x="152.4" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm7">
 <rect x="172.6" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="181.5" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">_</text>
+<rect x="171.8" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om7" class="hl" x="171.8" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm8">
 <rect x="192" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="200.9" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">y</text>
+<rect x="191.2" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om8" class="hl" x="191.2" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm9">
 <rect x="211.4" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="220.3" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect x="210.6" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om9" class="hl" x="210.6" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm10">
 <rect x="230.8" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="239.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
+<rect x="230" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om10" class="hl" x="230" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm11">
 <rect x="250.2" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="259.1" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">N</text>
+<rect x="249.4" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om11" class="hl" x="249.4" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm12">
 <rect x="269.6" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="278.5" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect x="268.8" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om12" class="hl" x="268.8" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm13">
 <rect x="289" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="297.9" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">L</text>
+<rect x="288.2" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om13" class="hl" x="288.2" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm14">
 <rect x="308.3" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="317.3" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">Q</text>
+<rect x="307.6" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om14" class="hl" x="307.6" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm15">
 <rect x="327.7" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="336.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">C</text>
+<rect x="327" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om15" class="hl" x="327" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm16">
 <rect x="347.1" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="356.1" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">J</text>
+<rect x="346.4" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om16" class="hl" x="346.4" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm17">
 <rect x="366.5" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="375.5" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">g</text>
+<rect x="365.8" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om17" class="hl" x="365.8" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm18">
 <rect x="385.9" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="394.9" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
+<rect x="385.2" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om18" class="hl" x="385.2" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm19">
 <rect x="405.3" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="414.3" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">H</text>
+<rect x="404.6" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om19" class="hl" x="404.6" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm20">
 <rect x="424.7" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="433.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="424" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om20" class="hl" x="424" y="1124" width="19.4" height="48" rx="2"/></g>
 <g id="gm21">
 <rect x="444.1" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="453.1" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">z</text>
+<rect x="443.4" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om21" class="hl" x="443.4" y="1124" width="19.4" height="48" rx="2"/></g>
 <text x="36" y="1200" class="ink sans" font-size="17" font-weight="600"><tspan>For public IDs that hide the UUID's time and fields.</tspan></text>
 <text x="36" y="1224" class="key sans" font-size="16">Sort</text>
@@ -931,112 +1064,139 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <g id="gn0">
 <rect x="36.8" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="45.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect x="36" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on0" class="hl" x="36" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn1">
 <rect x="56.2" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="65.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect x="55.4" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on1" class="hl" x="55.4" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn2">
 <rect x="75.6" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="84.5" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect x="74.8" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on2" class="hl" x="74.8" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn3">
 <rect x="94.9" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="103.9" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">r</text>
+<rect x="94.2" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on3" class="hl" x="94.2" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn4">
 <rect x="114.4" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="123.3" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect x="113.6" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on4" class="hl" x="113.6" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn5">
 <rect x="133.8" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="142.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">p</text>
+<rect x="133" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on5" class="hl" x="133" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn6">
 <rect x="153.2" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="162.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect x="152.4" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on6" class="hl" x="152.4" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn7">
 <rect x="172.6" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="181.5" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect x="171.8" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on7" class="hl" x="171.8" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn8">
 <rect x="192" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="200.9" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">n</text>
+<rect x="191.2" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on8" class="hl" x="191.2" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn9">
 <rect x="211.4" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="220.3" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">v</text>
+<rect x="210.6" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on9" class="hl" x="210.6" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn10">
 <rect x="230.8" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="239.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect x="230" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on10" class="hl" x="230" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn11">
 <rect x="250.2" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="259.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">q</text>
+<rect x="249.4" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on11" class="hl" x="249.4" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn12">
 <rect x="269.6" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="278.5" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">o</text>
+<rect x="268.8" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on12" class="hl" x="268.8" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn13">
 <rect x="289" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="297.9" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect x="288.2" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on13" class="hl" x="288.2" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn14">
 <rect x="308.3" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="317.3" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect x="307.6" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on14" class="hl" x="307.6" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn15">
 <rect x="327.7" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="336.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect x="327" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on15" class="hl" x="327" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn16">
 <rect x="347.1" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="356.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">m</text>
+<rect x="346.4" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on16" class="hl" x="346.4" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn17">
 <rect x="366.5" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="375.5" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">g</text>
+<rect x="365.8" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on17" class="hl" x="365.8" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn18">
 <rect x="385.9" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="394.9" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect x="385.2" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on18" class="hl" x="385.2" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn19">
 <rect x="405.3" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="414.3" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect x="404.6" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on19" class="hl" x="404.6" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn20">
 <rect x="424.7" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="433.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="424" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on20" class="hl" x="424" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn21">
 <rect x="444.1" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="453.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect x="443.4" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on21" class="hl" x="443.4" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn22">
 <rect x="463.5" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="472.5" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect x="462.8" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on22" class="hl" x="462.8" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn23">
 <rect x="482.9" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="491.9" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect x="482.2" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on23" class="hl" x="482.2" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn24">
 <rect x="502.3" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="511.3" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">q</text>
+<rect x="501.6" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on24" class="hl" x="501.6" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn25">
 <rect x="521.7" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="530.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect x="521" y="1332" width="19.4" height="56" class="hit masked"/>
 <rect id="on25" class="hl" x="521" y="1336" width="19.4" height="48" rx="2"/></g>
 <g id="gn26">
 <rect x="541.1" y="1338" width="7.2" height="44" class="masked f cell"/>
 <rect x="548.3" y="1338" width="10.7" height="44" class="pad f cell"/>
 <rect x="548.3" y="1338" width="10.7" height="44" class="" fill="url(#hatch)"/>
 <text x="550.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">o</text>
+<rect x="540.4" y="1332" width="19.4" height="56" class="hit masked pad"/>
 <rect id="on26" class="hl" x="540.4" y="1336" width="19.4" height="48" rx="2"/></g>
 <text x="36" y="1412" class="ink sans" font-size="17" font-weight="600"><tspan>For masked IDs in case-insensitive filenames.</tspan></text>
 <text x="36" y="1436" class="key sans" font-size="16">Sort</text>
@@ -1085,55 +1245,54 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <rect x="817" y="1232" width="220" height="48" class="box" stroke="#FF921C" stroke-width="2" rx="4"/>
 <text x="927" y="1253" class="ink sans" font-size="17" font-weight="700" text-anchor="middle">Mask</text>
 <text x="927" y="1272" class="muted sans" font-size="15" text-anchor="middle">same key and settings</text>
-<circle class="av ring" cx="927" cy="1280" r="0" fill="none" stroke="#FF921C" stroke-width="2"/>
 <path d="M927 1280C927 1310 796.5 1308 796.5 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 796.5 1308 796.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="790" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.6875;--k:0;--d:1"/>
+<path d="M927 1280C927 1310 796.5 1308 796.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="2 8" style="--r:0.6875"/>
+<rect x="790" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.6875"/>
 <path d="M927 1280C927 1310 813.9 1308 813.9 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 813.9 1308 813.9 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="807.4" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0;--k:0.06666666666666667;--d:0.8"/>
+<path d="M927 1280C927 1310 813.9 1308 813.9 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="4 6" style="--r:0"/>
+<rect x="807.4" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0"/>
 <path d="M927 1280C927 1310 831.3 1308 831.3 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 831.3 1308 831.3 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="824.8" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.3125;--k:0.13333333333333333;--d:0.7"/>
+<path d="M927 1280C927 1310 831.3 1308 831.3 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="1 4 3 2" style="--r:0.3125"/>
+<rect x="824.8" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.3125"/>
 <path d="M927 1280C927 1310 848.7 1308 848.7 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 848.7 1308 848.7 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="842.2" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.625;--k:0.2;--d:0.6"/>
+<path d="M927 1280C927 1310 848.7 1308 848.7 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="6 14" style="--r:0.625"/>
+<rect x="842.2" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.625"/>
 <path d="M927 1280C927 1310 866.1 1308 866.1 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 866.1 1308 866.1 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="859.6" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.9375;--k:0.26666666666666666;--d:0.4"/>
+<path d="M927 1280C927 1310 866.1 1308 866.1 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="3 7" style="--r:0.9375"/>
+<rect x="859.6" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.9375"/>
 <path d="M927 1280C927 1310 883.5 1308 883.5 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 883.5 1308 883.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="877" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.25;--k:0.3333333333333333;--d:0.3"/>
+<path d="M927 1280C927 1310 883.5 1308 883.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="1 9" style="--r:0.25"/>
+<rect x="877" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.25"/>
 <path d="M927 1280C927 1310 900.9 1308 900.9 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 900.9 1308 900.9 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="894.4" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.5625;--k:0.4;--d:0.2"/>
+<path d="M927 1280C927 1310 900.9 1308 900.9 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="5 5" style="--r:0.5625"/>
+<rect x="894.4" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.5625"/>
 <path d="M927 1280C927 1310 918.3 1308 918.3 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 918.3 1308 918.3 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="911.8" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.875;--k:0.4666666666666667;--d:0.1"/>
+<path d="M927 1280C927 1310 918.3 1308 918.3 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="2 3 1 4" style="--r:0.875"/>
+<rect x="911.8" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.875"/>
 <path d="M927 1280C927 1310 935.7 1308 935.7 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 935.7 1308 935.7 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="929.2" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.1875;--k:0.5333333333333333;--d:0.1"/>
+<path d="M927 1280C927 1310 935.7 1308 935.7 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="2 8" style="--r:0.1875"/>
+<rect x="929.2" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.1875"/>
 <path d="M927 1280C927 1310 953.1 1308 953.1 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 953.1 1308 953.1 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="946.6" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.5;--k:0.6;--d:0.2"/>
+<path d="M927 1280C927 1310 953.1 1308 953.1 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="4 6" style="--r:0.5"/>
+<rect x="946.6" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.5"/>
 <path d="M927 1280C927 1310 970.5 1308 970.5 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 970.5 1308 970.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="964" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.8125;--k:0.6666666666666666;--d:0.3"/>
+<path d="M927 1280C927 1310 970.5 1308 970.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="1 4 3 2" style="--r:0.8125"/>
+<rect x="964" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.8125"/>
 <path d="M927 1280C927 1310 987.9 1308 987.9 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 987.9 1308 987.9 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="981.4" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.125;--k:0.7333333333333333;--d:0.4"/>
+<path d="M927 1280C927 1310 987.9 1308 987.9 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="6 14" style="--r:0.125"/>
+<rect x="981.4" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.125"/>
 <path d="M927 1280C927 1310 1005.3 1308 1005.3 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 1005.3 1308 1005.3 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="998.8" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.4375;--k:0.8;--d:0.6"/>
+<path d="M927 1280C927 1310 1005.3 1308 1005.3 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="3 7" style="--r:0.4375"/>
+<rect x="998.8" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.4375"/>
 <path d="M927 1280C927 1310 1022.7 1308 1022.7 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 1022.7 1308 1022.7 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="1016.2" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.75;--k:0.8666666666666667;--d:0.7"/>
+<path d="M927 1280C927 1310 1022.7 1308 1022.7 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="1 9" style="--r:0.75"/>
+<rect x="1016.2" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.75"/>
 <path d="M927 1280C927 1310 1040.1 1308 1040.1 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 1040.1 1308 1040.1 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="1033.6" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.0625;--k:0.9333333333333333;--d:0.8"/>
+<path d="M927 1280C927 1310 1040.1 1308 1040.1 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="5 5" style="--r:0.0625"/>
+<rect x="1033.6" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.0625"/>
 <path d="M927 1280C927 1310 1057.5 1308 1057.5 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<path d="M927 1280C927 1310 1057.5 1308 1057.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
-<rect x="1051" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.375;--k:1;--d:1"/>
+<path d="M927 1280C927 1310 1057.5 1308 1057.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="2 3 1 4" style="--r:0.375"/>
+<rect x="1051" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.375"/>
 <text x="790" y="1382" class="ink sans" font-size="17" font-weight="700">16 of 16 masked bytes change</text>
 <text x="790" y="1404" class="muted sans" font-size="15">62 of 128 bits flip (this example)</text>
 <text x="790" y="1428" class="ink sans" font-size="16" font-weight="600">Similar UUIDs, unrelated slugs</text>
@@ -1142,9 +1301,6 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <text x="790" y="1480" class="muted sans" font-size="16">After</text>
 <text x="848" y="1480" class="masked f mono" font-size="15"><tspan class="av c" style="--r:0.5">h</tspan><tspan class="av c" style="--r:0.18181818181818182">A</tspan><tspan class="av c" style="--r:0.8636363636363636">H</tspan><tspan class="av c" style="--r:0.5454545454545454">e</tspan><tspan class="av c" style="--r:0.22727272727272727">R</tspan><tspan class="av c" style="--r:0.9090909090909091">P</tspan><tspan class="av c" style="--r:0.5909090909090909">m</tspan><tspan class="av c" style="--r:0.2727272727272727">J</tspan><tspan class="av c" style="--r:0.9545454545454546">F</tspan><tspan class="av c" style="--r:0.6363636363636364">q</tspan><tspan class="av c" style="--r:0.3181818181818182">j</tspan><tspan class="av c" style="--r:0">O</tspan><tspan class="av c" style="--r:0.6818181818181818">u</tspan><tspan class="av c" style="--r:0.36363636363636365">X</tspan><tspan class="av c" style="--r:0.045454545454545456">U</tspan><tspan class="av c" style="--r:0.7272727272727273">Q</tspan><tspan class="av c" style="--r:0.4090909090909091">n</tspan><tspan class="av c" style="--r:0.09090909090909091">h</tspan><tspan class="av c" style="--r:0.7727272727272727">l</tspan><tspan class="av c" style="--r:0.45454545454545453">j</tspan><tspan class="av c" style="--r:0.13636363636363635">g</tspan><tspan class="av c" style="--r:0.8181818181818182">b</tspan></text>
 <text x="848" y="1480" class="masked f mono" font-size="15"><tspan class="av b" style="--r:0.5">a</tspan><tspan class="av b" style="--r:0.18181818181818182">p</tspan><tspan class="av b" style="--r:0.8636363636363636">2</tspan><tspan class="av b" style="--r:0.5454545454545454">2</tspan><tspan class="av b" style="--r:0.22727272727272727">5</tspan><tspan class="av b" style="--r:0.9090909090909091">Q</tspan><tspan class="av b" style="--r:0.5909090909090909">a</tspan><tspan class="av b" style="--r:0.2727272727272727">_</tspan><tspan class="av b" style="--r:0.9545454545454546">y</tspan><tspan class="av b" style="--r:0.6363636363636364">6</tspan><tspan class="av b" style="--r:0.3181818181818182">w</tspan><tspan class="av b" style="--r:0">N</tspan><tspan class="av b" style="--r:0.6818181818181818">5</tspan><tspan class="av b" style="--r:0.36363636363636365">L</tspan><tspan class="av b" style="--r:0.045454545454545456">Q</tspan><tspan class="av b" style="--r:0.7272727272727273">C</tspan><tspan class="av b" style="--r:0.4090909090909091">J</tspan><tspan class="av b" style="--r:0.09090909090909091">g</tspan><tspan class="av b" style="--r:0.7727272727272727">w</tspan><tspan class="av b" style="--r:0.45454545454545453">H</tspan><tspan class="av b" style="--r:0.13636363636363635">0</tspan><tspan class="av b" style="--r:0.8181818181818182">z</tspan></text>
-<text x="848" y="1480" class="masked f mono" font-size="15"><tspan class="av s1" style="--r:0.5">W</tspan><tspan class="av s1" style="--r:0.18181818181818182">z</tspan><tspan class="av s1" style="--r:0.8636363636363636">Q</tspan><tspan class="av s1" style="--r:0.5454545454545454">t</tspan><tspan class="av s1" style="--r:0.22727272727272727">K</tspan><tspan class="av s1" style="--r:0.9090909090909091">n</tspan><tspan class="av s1" style="--r:0.5909090909090909">E</tspan><tspan class="av s1" style="--r:0.2727272727272727">h</tspan><tspan class="av s1" style="--r:0.9545454545454546">-</tspan><tspan class="av s1" style="--r:0.6363636363636364">b</tspan><tspan class="av s1" style="--r:0.3181818181818182">4</tspan><tspan class="av s1" style="--r:0">V</tspan><tspan class="av s1" style="--r:0.6818181818181818">y</tspan><tspan class="av s1" style="--r:0.36363636363636365">P</tspan><tspan class="av s1" style="--r:0.045454545454545456">s</tspan><tspan class="av s1" style="--r:0.7272727272727273">J</tspan><tspan class="av s1" style="--r:0.4090909090909091">m</tspan><tspan class="av s1" style="--r:0.09090909090909091">D</tspan><tspan class="av s1" style="--r:0.7727272727272727">g</tspan><tspan class="av s1" style="--r:0.45454545454545453">9</tspan><tspan class="av s1" style="--r:0.13636363636363635">a</tspan><tspan class="av s1" style="--r:0.8181818181818182">3</tspan></text>
-<text x="848" y="1480" class="masked f mono" font-size="15"><tspan class="av s2" style="--r:0.5">n</tspan><tspan class="av s2" style="--r:0.18181818181818182">E</tspan><tspan class="av s2" style="--r:0.8636363636363636">h</tspan><tspan class="av s2" style="--r:0.5454545454545454">-</tspan><tspan class="av s2" style="--r:0.22727272727272727">b</tspan><tspan class="av s2" style="--r:0.9090909090909091">4</tspan><tspan class="av s2" style="--r:0.5909090909090909">V</tspan><tspan class="av s2" style="--r:0.2727272727272727">y</tspan><tspan class="av s2" style="--r:0.9545454545454546">P</tspan><tspan class="av s2" style="--r:0.6363636363636364">s</tspan><tspan class="av s2" style="--r:0.3181818181818182">J</tspan><tspan class="av s2" style="--r:0">m</tspan><tspan class="av s2" style="--r:0.6818181818181818">D</tspan><tspan class="av s2" style="--r:0.36363636363636365">g</tspan><tspan class="av s2" style="--r:0.045454545454545456">9</tspan><tspan class="av s2" style="--r:0.7272727272727273">a</tspan><tspan class="av s2" style="--r:0.4090909090909091">3</tspan><tspan class="av s2" style="--r:0.09090909090909091">U</tspan><tspan class="av s2" style="--r:0.7727272727272727">x</tspan><tspan class="av s2" style="--r:0.45454545454545453">O</tspan><tspan class="av s2" style="--r:0.13636363636363635">r</tspan><tspan class="av s2" style="--r:0.8181818181818182">I</tspan></text>
-<text x="848" y="1480" class="masked f mono" font-size="15"><tspan class="av s3" style="--r:0.5">4</tspan><tspan class="av s3" style="--r:0.18181818181818182">V</tspan><tspan class="av s3" style="--r:0.8636363636363636">y</tspan><tspan class="av s3" style="--r:0.5454545454545454">P</tspan><tspan class="av s3" style="--r:0.22727272727272727">s</tspan><tspan class="av s3" style="--r:0.9090909090909091">J</tspan><tspan class="av s3" style="--r:0.5909090909090909">m</tspan><tspan class="av s3" style="--r:0.2727272727272727">D</tspan><tspan class="av s3" style="--r:0.9545454545454546">g</tspan><tspan class="av s3" style="--r:0.6363636363636364">9</tspan><tspan class="av s3" style="--r:0.3181818181818182">a</tspan><tspan class="av s3" style="--r:0">3</tspan><tspan class="av s3" style="--r:0.6818181818181818">U</tspan><tspan class="av s3" style="--r:0.36363636363636365">x</tspan><tspan class="av s3" style="--r:0.045454545454545456">O</tspan><tspan class="av s3" style="--r:0.7272727272727273">r</tspan><tspan class="av s3" style="--r:0.4090909090909091">I</tspan><tspan class="av s3" style="--r:0.09090909090909091">l</tspan><tspan class="av s3" style="--r:0.7727272727272727">C</tspan><tspan class="av s3" style="--r:0.45454545454545453">f</tspan><tspan class="av s3" style="--r:0.13636363636363635">8</tspan><tspan class="av s3" style="--r:0.8181818181818182">Z</tspan></text>
 <text x="790" y="1502" class="muted sans" font-size="15">22 of 22 characters differ</text>
 <path d="M36 1516H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1"/>
 <text x="36" y="1546" class="muted sans" font-size="15">¹ UUIDv7: sorts by creation millisecond if all IDs share one case and alphabet; not event order within a millisecond.</text>

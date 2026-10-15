@@ -7,45 +7,72 @@
 // maintainer dropped that ruling, delete the check together with the ruling text.
 import { browserEngines } from "./browser-engines.ts";
 
-// [selector, CSS property, expected computed value]
+// [selector, CSS property, expected computed value]; ">x" means a number above x, for values that
+// are tuned per field (glow strength), so the check asserts "lit" rather than one tuning.
 type Probe = [string, string, string];
-const CHECKS: { ruling: string; point: string; probes: Probe[] }[] = [
+// Where to put the pointer: the centre of an element, or just inside its right edge, which for
+// a hit area is the gap or half-hyphen it covers and for a legend item is its trailing space.
+type Point = { sel: string; edge?: boolean };
+const CHECKS: { ruling: string; point: Point; probes: Probe[] }[] = [
   {
     ruling: "a legend item lights itself and its field everywhere and fades every other field",
-    point: ".lg-time",
+    point: { sel: ".lg-time" },
     probes: [
-      [".lg-time", "stroke-opacity", "0.45"],
+      [".lgg-time", "fill-opacity", ">0.2"],
+      [".lg-time", "fill-opacity", "1"],
+      [".lg-payload", "fill-opacity", "0.45"],
+      [".ghost.time", "fill-opacity", "0.22"],
+      [".time.cell", "opacity", "1"],
+      [".payload.cell", "opacity", "0.3"],
+    ],
+  },
+  {
+    ruling: "a piece focuses like a legend item and outlines the same bits in other rows",
+    point: { sel: "#gu0 .hit" },
+    probes: [
+      [".lgg-time", "fill-opacity", ">0.2"],
       [".ghost.time", "fill-opacity", "0.22"],
       [".payload.cell", "opacity", "0.3"],
-      [".lg-payload", "fill-opacity", "0.45"],
-    ],
-  },
-  {
-    ruling:
-      "a character outlines the same bits in other rows, brightens its field's ribbons and lights its legend item",
-    point: "#gu0 .cell",
-    probes: [
-      [".lg-time", "stroke-opacity", "0.45"],
-      [".ghost.time", "fill-opacity", "0.22"],
       ["#ob0", "opacity", "1"],
       ["#op0", "opacity", "1"],
-      // Pieces do not fade other fields; only legend items do.
-      [".payload.cell", "opacity", "1"],
     ],
   },
   {
-    ruling: "a byte's field bar lights its field's ribbons and legend item",
-    point: "#gb15 .payload.cell",
+    ruling: "a piece holding two fields keeps both lit",
+    // Byte 6 holds 4 version bits and 4 payload bits.
+    point: { sel: "#gb6 .hit" },
     probes: [
-      [".lg-payload", "stroke-opacity", "0.45"],
-      [".ghost.payload", "fill-opacity", "0.22"],
+      [".lgg-version", "fill-opacity", ">0.2"],
+      [".lgg-payload", "fill-opacity", ">0.2"],
+      [".version.cell", "opacity", "1"],
+      [".payload.cell", "opacity", "1"],
+      [".time.cell", "opacity", "0.3"],
     ],
+  },
+  {
+    ruling: "no dead zones: the gap between two characters belongs to a piece",
+    point: { sel: "#gu0 .hit", edge: true },
+    probes: [["#ou0", "opacity", "1"]],
+  },
+  {
+    ruling: "no dead zones: half of a hyphen belongs to the character before it",
+    // UUID character 7 is the last digit before the first hyphen.
+    point: { sel: "#gu7 .hit", edge: true },
+    probes: [
+      ["#ou7", "opacity", "1"],
+      [".lgg-time", "fill-opacity", ">0.2"],
+    ],
+  },
+  {
+    ruling: "no dead zones: the space after a legend item still hovers it",
+    point: { sel: ".lg-time", edge: true },
+    probes: [[".lgg-time", "fill-opacity", ">0.2"]],
   },
   {
     ruling: "the Masked legend item lights masked rows and their ribbon",
-    point: ".lg-masked",
+    point: { sel: ".lg-masked" },
     probes: [
-      [".lg-masked", "stroke-opacity", "0.45"],
+      [".lgg-masked", "fill-opacity", ">0.2"],
       [".ghost.masked", "fill-opacity", "0.22"],
       [".time.cell", "opacity", "0.3"],
       [".masked.cell", "opacity", "1"],
@@ -54,9 +81,9 @@ const CHECKS: { ruling: string; point: string; probes: Probe[] }[] = [
   {
     ruling:
       "a masked character outlines its bits in the other masked row only, and lights Masked and its ribbon",
-    point: "#gm0 .cell",
+    point: { sel: "#gm0 .hit" },
     probes: [
-      [".lg-masked", "stroke-opacity", "0.45"],
+      [".lgg-masked", "fill-opacity", ">0.2"],
       [".ghost.masked", "fill-opacity", "0.22"],
       // Masked bits 0–5 lie in base32hex characters 0 (bits 0–4) and 1 (bits 5–9).
       ["#on0", "opacity", "1"],
@@ -67,8 +94,8 @@ const CHECKS: { ruling: string; point: string; probes: Probe[] }[] = [
     ],
   },
 ];
-// Longer than the 0.15 s hover transitions, so computed values have settled.
-const SETTLE_MS = 400;
+// Longer than the hover transitions and their un-highlight delay, so values have settled.
+const SETTLE_MS = 500;
 
 /** Returns one line per broken ruling; empty when every ruling holds. */
 export const checkDiagramHover = async (svgPath: string): Promise<string[]> => {
@@ -77,18 +104,32 @@ export const checkDiagramHover = async (svgPath: string): Promise<string[]> => {
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 1800 } });
     await page.goto(`file://${svgPath}`);
-    const away = () => page.mouse.move(0, 1799);
-    const animations = () => page.evaluate(() => document.getAnimations().length);
-    if ((await animations()) === 0)
-      failures.push("idle motion: no animation runs while nothing is hovered");
+    const running = (sel: string) =>
+      page.evaluate(
+        (s) =>
+          document.getAnimations().filter((a) => (a.effect as KeyframeEffect).target?.matches(s))
+            .length,
+        sel,
+      );
+    // A spot on the image but on no piece: its bottom-right corner, below the footnotes.
+    const rest = await page.evaluate(() => {
+      const r = document.querySelector("svg")!.getBoundingClientRect();
+      return { x: r.right - 4, y: r.bottom - 4 };
+    });
+    // The pointer rests on the image but on no piece: everything keeps moving.
+    await page.mouse.move(rest.x, rest.y);
+    if ((await running(".ghost")) === 0)
+      failures.push("idle motion: the field cycle must run while no piece is hovered");
+    if ((await running(".av")) === 0) failures.push("avalanche motion: it must run constantly");
     for (const { ruling, point, probes } of CHECKS) {
-      const at = await page.evaluate((s) => {
-        const r = document.querySelector(s)?.getBoundingClientRect();
-        // The right end of a legend item is its label, the part the swatch-only bug missed.
-        return r && { x: r.right - Math.min(10, r.width / 3), y: r.top + r.height / 2 };
+      const at = await page.evaluate(({ sel, edge }) => {
+        const r = document.querySelector(sel)?.getBoundingClientRect();
+        if (!r) return undefined;
+        const x = edge ? r.right - 1 : r.right - Math.min(10, r.width / 3);
+        return { x, y: r.top + r.height / 2 };
       }, point);
       if (!at) {
-        failures.push(`${ruling}: hover target ${point} is missing`);
+        failures.push(`${ruling}: hover target ${point.sel} is missing`);
         continue;
       }
       await page.mouse.move(at.x, at.y);
@@ -101,15 +142,21 @@ export const checkDiagramHover = async (svgPath: string): Promise<string[]> => {
           },
           [sel, prop],
         );
-        if (got !== want)
-          failures.push(`${ruling}: hovering ${point} gives ${sel} ${prop} ${got}, want ${want}`);
+        const ok = want.startsWith(">") ? Number(got) > Number(want.slice(1)) : got === want;
+        if (!ok)
+          failures.push(
+            `${ruling}: hovering ${point.sel} gives ${sel} ${prop} ${got}, want ${want}`,
+          );
       }
-      await away();
+      if (point.sel.includes(".hit")) {
+        if ((await running(".ghost")) !== 0)
+          failures.push(`${ruling}: the field cycle must stop while a piece is hovered`);
+        if ((await running(".av")) === 0)
+          failures.push(`${ruling}: the avalanche must keep moving while a piece is hovered`);
+      }
+      await page.mouse.move(rest.x, rest.y);
       await page.waitForTimeout(SETTLE_MS);
     }
-    await page.mouse.move(500, 300);
-    if ((await animations()) !== 0)
-      failures.push("idle motion stops while the pointer is on the image: animations still run");
   } finally {
     await browser.close();
   }

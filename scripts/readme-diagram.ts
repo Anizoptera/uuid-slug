@@ -11,16 +11,23 @@
 // - Faint field ribbons run under the rows: UUID text → bytes → base64url → base32hex, and
 //   masked base64url → masked base32hex (one band: the same 132 masked bits).
 // - Hover, every piece the same way:
-//   - a character, byte or bit outlines the same bits in every other row of its kind, brightens
-//     its field's ribbons and lights its field's legend item;
-//   - a legend item lights itself and its field everywhere and fades every other field;
+//   - a legend item and a piece focus the same way: their fields' cells, ribbons and legend
+//     items light up and every other field fades; a piece holding two fields keeps both;
+//   - a character, byte or bit also outlines the same bits in every other row of its kind;
 //   - masked rows too: both masked spellings carry the same 132 bits, so a masked character
-//     outlines its bits in the other masked row and lights the Masked legend item.
-// - Idle motion, slow and gentle: fields light in turn (with their legend items), and the
-//   avalanche gently animates how one flipped input bit randomises the masked output. It shows
-//   what the static README <img> cannot: how fields travel and how masking mixes bits.
-//   All motion stops while the pointer is on the image, and for reduced-motion users.
-// - The avalanche is drawn, not only counted: flipped input bit → mask → 16 output bytes.
+//     outlines its bits in the other masked row and lights the Masked legend item;
+//   - no dead zones: moving along a row never drops the highlight, so gaps and hyphens belong
+//     to the nearest piece, and leaving a piece waits a moment before un-highlighting;
+//   - a lit legend item gets a soft glow in its field colour behind the label, readable for
+//     every field colour.
+// - Idle motion, slow and gentle: fields light in turn (with their legend items). It stops while
+//   a piece or legend item is hovered (real interaction), not merely while the pointer rests on
+//   the image, and resumes after.
+// - The avalanche is drawn, not only counted: flipped input bit → mask → 16 output bytes. It
+//   animates constantly, never stops, on one clock: the input bit flips, irregular dashes stream
+//   down every wire, the changed bytes and After characters turn over in shuffled order, hold,
+//   then turn back. A reader must see it move without waiting for it.
+// - Reduced-motion users get the still image.
 // - README: the image links to the raw SVG, and a text link under it says the raw view is
 //   interactive.
 //
@@ -240,125 +247,104 @@ const LEGEND: [Field, string][] = [
 // ---------- drawing primitives ----------
 const SANS = `-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif`;
 const MONO = `ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace`;
-// Field hover, per the rulings above. Pointing at a coloured piece (a `.cell` of field f) or at
-// f's legend item lights that legend item and f's ribbons; only the legend item also fades the
-// other fields. Pieces skip the fade on purpose: sweeping the pointer along a row would flash the
-// whole image on every character, and the outlines from linkRules already answer "where do
-// these bits go?".
-const FIELD_HOVER = LEGEND.map(([f]) => {
-  const either = `svg:has(.lg-${f}:hover,.${f}.cell:hover)`;
-  const ribbon = f === "pad" ? "" : `${either} .ghost.${f}{fill-opacity:.22;stroke-opacity:.7}`;
-  return `${either} .lg-${f}{stroke-opacity:.45}${ribbon}
-svg:has(.lg-${f}:hover) .cell:not(.${f}){opacity:.3}svg:has(.lg-${f}:hover) .lg:not(.lg-${f}){fill-opacity:.45}`;
-}).join("\n");
-// Slow auto-highlight: each field's ribbons brighten in turn, so the static README <img> (which
-// never receives the mouse) still shows how the fields travel between rows. Pointing at the
-// image stops it so the hover links take over; without scripts the stop cannot persist, so it
-// resumes when the pointer leaves. Reduced-motion users get the still image.
+// Field hover, per the rulings above: pointing at a legend item or a piece focuses the same way.
+// A piece's hit area (`.hit`) carries the class of every field the piece holds. Hovering it, or
+// f's legend item, fades every cell and legend item, then restores f's cells, legend item, glow
+// (`.lgg-f`, the blurred legend copy) and ribbons. Fade-all-then-restore makes a piece holding
+// two fields keep both: per-field "fade the others" rules would fade each other's cells.
+// Pieces add outlines on top (linkRules). Every lit state sets transition-delay 0 so it appears
+// at once; base styles delay the return, so crossing a gap never flashes the image.
+const LIT_NOW = "transition-delay:0s";
+// Lit legend glow; tspans take no `opacity`, so the glow fades through fill and stroke opacity.
+// Strength per field (--g) evens out the colours' brightness: at one opacity the yellow and
+// cyan glows drown their white labels while the dark blue one barely shows.
+const GLOW = "fill-opacity:var(--g);stroke-opacity:var(--g)";
+const GLOW_STRENGTH: Record<Field, number> = {
+  time: 0.45,
+  version: 0.6,
+  variant: 0.85,
+  payload: 0.3,
+  masked: 0.5,
+  pad: 0.55,
+};
+const FIELD_HOVER = `svg:has(.hit:hover,.lg:hover) .cell{opacity:.3;${LIT_NOW}}svg:has(.hit:hover,.lg:hover) .lg{fill-opacity:.45;${LIT_NOW}}
+${LEGEND.map(([f]) => {
+  const either = `svg:has(.lg-${f}:hover,.${f}.hit:hover)`;
+  const ribbon =
+    f === "pad" ? "" : `${either} .ghost.${f}{fill-opacity:.22;stroke-opacity:.7;${LIT_NOW}}`;
+  return `${either} .cell.${f}{opacity:1}${either} .lg.lg-${f}{fill-opacity:1}${either} .lgg-${f}{${GLOW};${LIT_NOW}}${ribbon}`;
+}).join("\n")}`;
+// Slow auto-highlight: each field's ribbons and legend glow brighten in turn, so the static
+// README <img> (which never receives the mouse) still shows how the fields travel between rows.
+// Hovering a piece or legend item stops it (STILL) so the hover focus is the only one lit; a
+// pointer merely resting on the image does not, or the raw view, where the pointer is almost
+// always over the image, would never move.
 const AUTO_FIELDS = ["time", "version", "variant", "payload", "masked"] as const;
 // Each field gets a 4 s turn of the 20 s cycle: ~2 s ease-in, a short hold, then a ~2.5 s
 // ease-out that overlaps the next field's rise, so the light hands over instead of blinking.
 const AUTO_STEP_S = 4;
-// The legend item glows on the same clock as its ribbons, so the reader can name the moving colour.
+// The legend glow follows the same clock as its ribbons, so the reader can name the moving colour.
 const AUTO_HIGHLIGHT = `@keyframes glow{0%,30%,100%{fill-opacity:.035;stroke-opacity:.1}10%,18%{fill-opacity:.14;stroke-opacity:.42}}
-@keyframes lgglow{0%,30%,100%{stroke-opacity:0}10%,18%{stroke-opacity:.45}}
+@keyframes lgglow{0%,30%,100%{fill-opacity:0;stroke-opacity:0}10%,18%{${GLOW}}}
 ${AUTO_FIELDS.map((f, i) => {
   const timing = `${AUTO_FIELDS.length * AUTO_STEP_S}s ease-in-out ${i * AUTO_STEP_S}s infinite both`;
-  return `.ghost.${f}{animation:glow ${timing}}.lg-${f}{animation:lgglow ${timing}}`;
+  return `.ghost.${f}{animation:glow ${timing}}.lgg-${f}{animation:lgglow ${timing}}`;
 }).join("")}`;
-// Avalanche motion. The drawing marks every moving part with an `av` class (see the avalanche
-// block below); each variant here is only CSS over those parts. Static styles are the finished
-// state (changed bytes white, After slug shown), which STILL falls back to.
-// Per-part custom properties: --r is a fixed shuffled position in [0, 1) (spread), so scattered
-// timing looks random yet every build emits the same SVG; --k is the left-to-right position;
-// --d is the distance from the mask box.
-// TEMPORARY: ten variants for the maintainer to compare (DIAGRAM_AV=<name>); keep the chosen one
-// and delete the rest.
+// Avalanche motion: one constant 6 s loop, never paused by hover, because nothing hovers there and
+// a reader must see it move without waiting. On that clock: the input bit flips; dashes stream
+// down the wires all the time and surge as the bit flips; the changed bytes and After characters
+// turn over in shuffled order, hold, then turn back the same way. The drawing marks moving parts
+// with `av` classes (see the avalanche block). Each part's --r is a fixed shuffled position in
+// [0, 1) (spread), so the order looks random yet every build emits the same SVG.
+// Static styles are the finished state (bit flipped, bytes white, After slug shown), which
+// reduced-motion users see. Every loop starts 3 s in, inside its hold: a snapshot at time 0
+// (thumbnail, preview, print) must show the change that the text below states.
 const DIM = "#24344D",
   LIT = "#F5F7FC",
   DARK = "#08111F";
-// Every loop starts 4 s in, inside its finished hold phase: a snapshot of the image at time 0
-// (thumbnail, preview, print) must show the flipped bit and the changed output that the text
-// below states, never the reset state.
-const loop = (name: string, extra = "") =>
-  `animation:${name} 8s ease-in-out infinite both${extra};animation-delay:-4s`;
-const flipIn = `@keyframes avin{0%,4%{fill:${DIM}}10%,86%{fill:${LIT}}94%,100%{fill:${DIM}}}
-@keyframes avint{0%,4%{fill:${LIT}}10%,86%{fill:${DARK}}94%,100%{fill:${LIT}}}
-.av.in{${loop("avin")}}.av.int{${loop("avint")}}`;
-// Output byte turns white at `on`% and back at 86–94%.
-const byteFlip = (on: number) =>
-  `@keyframes avo{0%,${on}%{fill:${DIM}}${on + 6}%,86%{fill:${LIT}}94%,100%{fill:${DIM}}}`;
-// Changed After characters crossfade from the Before character (overlay layer `.b`) to their own.
-const charSwap = (
-  on: number,
-) => `@keyframes avc{0%,${on}%{fill-opacity:0}${on + 6}%,86%{fill-opacity:1}94%,100%{fill-opacity:0}}
-@keyframes avb{0%,${on}%{fill-opacity:1}${on + 6}%,86%{fill-opacity:0}94%,100%{fill-opacity:1}}`;
-const AV_VARIANTS: Record<string, string> = {
-  // Changed bytes and characters turn over one by one in shuffled order.
-  scatter: `${flipIn}${byteFlip(16)}${charSwap(22)}
-.av.o{${loop("avo")};animation-delay:calc(var(--r) * 1.6s - 4s)}
-.av.c{${loop("avc")};animation-delay:calc(var(--r) * 1.6s - 4s)}.av.b{${loop("avb")};animation-delay:calc(var(--r) * 1.6s - 4s)}`,
-  // A bright dash runs down all 16 wires together; every changed byte flips as it lands.
-  comet: `${flipIn}${byteFlip(22)}
-@keyframes avcm{0%,8%{stroke-dashoffset:112;opacity:0}10%{opacity:1}22%{stroke-dashoffset:-12;opacity:1}26%,100%{stroke-dashoffset:-12;opacity:0}}
-.av.cm{stroke-dasharray:12 100;${loop("avcm", ";animation-timing-function:linear")}}.av.o{${loop("avo")}}`,
-  // A ring spreads from the mask box; bytes flip as it passes them.
-  ripple: `${flipIn}${byteFlip(14)}
-@keyframes avring{0%,10%{r:0;opacity:0}12%{opacity:.9}40%,100%{r:230px;opacity:0}}
-.av.ring{${loop("avring", ";animation-timing-function:ease-out")}}.av.o{${loop("avo")};animation-delay:calc(var(--d) * 1.8s - 4s)}`,
-  // Each byte shown as its 8 bits; the bits that change light up in shuffled order.
-  bits: `${flipIn}${byteFlip(16)}
-.av.bit{${loop("avo")};animation-delay:calc(var(--r) * 2.4s - 4s)}`,
-  // Changed bytes turn over like cards, one after another.
-  card: `${flipIn}
-@keyframes avcard{0%,14%{transform:scaleX(1);fill:${DIM}}18%{transform:scaleX(0);fill:${DIM}}18.1%{fill:${LIT}}22%,84%{transform:scaleX(1);fill:${LIT}}88%{transform:scaleX(0);fill:${LIT}}88.1%{fill:${DIM}}92%,100%{transform:scaleX(1);fill:${DIM}}}
-.av.o{transform-box:fill-box;transform-origin:center;${loop("avcard")};animation-delay:calc(var(--k) * 1.5s - 4s)}`,
-  // The Before slug's changed characters dissolve into the After ones in place.
-  morph: `${flipIn}${charSwap(14)}${byteFlip(14)}
-.av.o{${loop("avo")};animation-delay:calc(var(--r) * 2s - 4s)}
-.av.c{${loop("avc")};animation-delay:calc(var(--r) * 2s - 4s)}.av.b{${loop("avb")};animation-delay:calc(var(--r) * 2s - 4s)}`,
-  // Changed characters spin through three random glyphs, then stop on the real one.
-  slot: `${flipIn}${byteFlip(14)}
-.av.o{${loop("avo")};animation-delay:calc(var(--r) * 1.2s - 4s)}
-@keyframes avb{0%,14%{fill-opacity:1}14.5%,100%{fill-opacity:0}}
-@keyframes avs1{0%,14%{fill-opacity:0}14.5%,17%{fill-opacity:1}17.5%,100%{fill-opacity:0}}
-@keyframes avs2{0%,17%{fill-opacity:0}17.5%,20%{fill-opacity:1}20.5%,100%{fill-opacity:0}}
-@keyframes avs3{0%,20%{fill-opacity:0}20.5%,23%{fill-opacity:1}23.5%,100%{fill-opacity:0}}
-@keyframes avc{0%,23%{fill-opacity:0}23.5%,90%{fill-opacity:1}96%,100%{fill-opacity:0}}
-${["b", "s1", "s2", "s3", "c"].map((k) => `.av.${k}{${loop(`av${k}`, ";animation-timing-function:linear")};animation-delay:calc(var(--r) * 1.2s - 4s)}`).join("")}`,
-  // The input bit switches back and forth; bytes and the slug follow it exactly.
-  toggle: `@keyframes avin{0%,44%{fill:${DIM}}50%,94%{fill:${LIT}}100%{fill:${DIM}}}
-@keyframes avint{0%,44%{fill:${LIT}}50%,94%{fill:${DARK}}100%{fill:${LIT}}}
-@keyframes avo{0%,46%{fill:${DIM}}52%,94%{fill:${LIT}}100%{fill:${DIM}}}
-@keyframes avc{0%,46%{fill-opacity:0}52%,94%{fill-opacity:1}100%{fill-opacity:0}}
-@keyframes avb{0%,46%{fill-opacity:1}52%,94%{fill-opacity:0}100%{fill-opacity:1}}
-${["in", "int", "o", "c", "b"].map((k) => `.av.${k}{${loop(`av${k}`)}}`).join("")}`,
-  // Dashes stream steadily down every wire: every input feeds every output, all the time.
-  flow: `@keyframes avflow{to{stroke-dashoffset:-10}}
-.av.cm{stroke-dasharray:3 7;opacity:.9;animation:avflow 1.2s linear infinite}`,
-  // Changed bytes shimmer at uneven rates, like noise.
-  twinkle: `@keyframes avtw{0%,100%{fill-opacity:1}50%{fill-opacity:.35}}
-.av.o{animation:avtw calc(1.4s + var(--r) * 2.2s) ease-in-out infinite;animation-delay:calc(var(--r) * -3s)}`,
-};
-const AV_NAME = process.env["DIAGRAM_AV"] ?? "scatter";
-const AVALANCHE = AV_VARIANTS[AV_NAME];
-if (AVALANCHE === undefined) throw new Error(`DIAGRAM_AV: unknown variant ${AV_NAME}`);
+const AV_S = 6;
+const AV_START = `-${AV_S / 2}s`;
+// Shuffled parts start up to 20% of the loop apart, so the turnover reads as a spreading wave.
+const AV_SPREAD = `calc(var(--r) * ${AV_S * 0.2}s - ${AV_S / 2}s)`;
+const AVALANCHE = `@keyframes avin{0%,6%{fill:${DIM}}10%,76%{fill:${LIT}}80%,100%{fill:${DIM}}}
+@keyframes avint{0%,6%{fill:${LIT}}10%,76%{fill:${DARK}}80%,100%{fill:${LIT}}}
+@keyframes avo{0%,14%{fill:${DIM}}20%,76%{fill:${LIT}}82%,100%{fill:${DIM}}}
+@keyframes avc{0%,16%{fill-opacity:0}22%,76%{fill-opacity:1}82%,100%{fill-opacity:0}}
+@keyframes avb{0%,16%{fill-opacity:1}22%,76%{fill-opacity:0}82%,100%{fill-opacity:1}}
+@keyframes avflow{to{stroke-dashoffset:-20}}
+@keyframes avsurge{0%,6%{opacity:.4}12%{opacity:1}26%,100%{opacity:.4}}
+.av.in{animation:avin ${AV_S}s ease-in-out ${AV_START} infinite both}
+.av.int{animation:avint ${AV_S}s ease-in-out ${AV_START} infinite both}
+.av.o{animation:avo ${AV_S}s ease-in-out infinite both;animation-delay:${AV_SPREAD}}
+.av.c{animation:avc ${AV_S}s ease-in-out infinite both;animation-delay:${AV_SPREAD}}
+.av.b{animation:avb ${AV_S}s ease-in-out infinite both;animation-delay:${AV_SPREAD}}
+.av.cm{animation:avflow linear infinite,avsurge ${AV_S}s ease-in-out infinite both;animation-duration:calc(.8s + var(--r) * 1.4s),${AV_S}s;animation-delay:0s,${AV_START}}`;
+// Dash patterns for the wires, one per wire in turn. Each period divides avflow's 20-unit shift
+// (wires use pathLength 100), so every wire loops without a jump; mixed patterns and speeds keep
+// the streams from marching in step.
+const WIRE_DASHES = ["2 8", "4 6", "1 4 3 2", "6 14", "3 7", "1 9", "5 5", "2 3 1 4"];
 // Fixed shuffle of 0..n-1 scaled to [0, 1): 37 is prime and divides none of the part counts.
 const spread = (i: number, n: number) => ((i * 37 + 11) % n) / n;
-// One stop rule for every idle motion (field cycle and avalanche), so no animation fights a hover
-// state. Stopped elements fall back to their static styles, which show the finished picture.
-const STILL = `svg:hover :is(.ghost,.lg,.av){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.lg,.av){animation:none}}`;
+// Hovering a piece or legend item stops the field cycle so the hover focus is the only one lit.
+// The avalanche keeps running: no hover state touches it.
+const STILL = `svg:has(.hit:hover,.lg:hover) :is(.ghost,.gl){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.gl,.av){animation:none}}`;
+// Highlights wait this long before fading, so a pointer crossing a gap or moving to the next piece
+// never drops them for a frame. Lit states override it with LIT_NOW.
+const UNLIT_AFTER = ".12s";
+// Only hit areas (`.hit`) and legend items (`.lg`) take the pointer: any other shape drawn later
+// (a hyphen bar, a byte box) would sit on top of a hit area and open a dead zone.
 const STYLE = `
 .bg{fill:#0B1423}.ink{fill:#F5F7FC}.muted{fill:#C6D0E1}.box{fill:#15243A}.same{fill:#24344D}.chg{fill:#F5F7FC}
 .pkg{fill:#F5F7FC;fill-opacity:.6}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
 .time{color:#00C8FF}.version{color:#FF49CD}.variant{color:#4D50FF}.payload{color:#FFE83F}
 .masked{color:#FF921C}.pad{color:#8C9DB6}.f{fill:currentColor}.fg{fill:#08111F}.fw{fill:#FFFFFF}
 .sans{font-family:${SANS}}.mono{font-family:${MONO};font-variant-ligatures:none}
-.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1}.lead{color:#C6D0E1}
-text,.hl,.ghost{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0}
-.lg{pointer-events:auto;stroke:currentColor;stroke-width:6px;stroke-opacity:0;stroke-linejoin:round;paint-order:stroke;transition:stroke-opacity .15s,fill-opacity .15s}
-.cell{transition:opacity .15s}
-.x,.av.b,.av.s1,.av.s2,.av.s3{fill-opacity:0}.av.cm,.av.ring{opacity:0}
+.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1;transition:fill-opacity .2s ease ${UNLIT_AFTER},stroke-opacity .2s ease ${UNLIT_AFTER}}.lead{color:#C6D0E1}
+text,rect,path{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0;transition:opacity .12s ease ${UNLIT_AFTER}}
+.hit{fill:none;pointer-events:all}.lg{pointer-events:auto;transition:fill-opacity .2s ease ${UNLIT_AFTER}}.cell{transition:opacity .2s ease ${UNLIT_AFTER}}
+${LEGEND.map(([f]) => `.lgg-${f}{--g:${GLOW_STRENGTH[f]}}`).join("")}
+.gl{fill:currentColor;stroke:currentColor;stroke-width:12px;stroke-linejoin:round;fill-opacity:0;stroke-opacity:0;transition:fill-opacity .2s ease ${UNLIT_AFTER},stroke-opacity .2s ease ${UNLIT_AFTER}}
+.x,.av.b{fill-opacity:0}.av.cm{opacity:0}
 ${FIELD_HOVER}
 ${AUTO_HIGHLIGHT}
 ${AVALANCHE}
@@ -467,10 +453,19 @@ const linkRules = () =>
       const hits = links.filter(
         (b) => a.space === b.space && a.start < b.start + b.bits && b.start < a.start + a.bits,
       );
-      return `svg:has(#g${a.id}:hover) :is(${hits.map((b) => `#o${b.id}`).join(",")}){opacity:1}`;
+      return `svg:has(#g${a.id}:hover) :is(${hits.map((b) => `#o${b.id}`).join(",")}){opacity:1;${LIT_NOW}}`;
     })
     .join("\n");
 
+// A piece's invisible hover area. It reaches halfway to each neighbour (so half of a hyphen or
+// gap belongs to each side) and GAP/2 above and below (so the UUID text and byte rows meet):
+// moving the pointer along or between rows never crosses a dead zone that would drop the
+// highlight. It carries every field the piece holds, which is what field hover keys on.
+const pieceHit = (x0: number, x1: number, y: number, h: number, fields: Field[]) =>
+  rect(x0, y - GAP / 2, x1 - x0, h + GAP, `hit ${fields.join(" ")}`);
+const fieldsOf = (field: (b: number) => Field, start: number, bits: number) => [
+  ...new Set(Array.from({ length: bits }, (_, i) => field(start + i))),
+];
 let clipId = 0;
 const drawSpecimen = (
   f: Form,
@@ -481,12 +476,16 @@ const drawSpecimen = (
   linkKey?: string,
 ) => {
   const baseline = y + h / 2 + size * 0.35;
+  const pieces = cells.filter((c) => c.bits);
   let index = 0;
   for (const c of cells) {
     if (!c.bits) {
       rect(c.x + 2, y + h / 2 - 1.5, c.w - 4, 3, "muted");
       continue;
     }
+    const k = pieces.indexOf(c),
+      prev = pieces[k - 1],
+      next = pieces[k + 1];
     const close = linkKey
       ? linked(
           `${linkKey}${index++}`,
@@ -500,6 +499,13 @@ const drawSpecimen = (
         )
       : undefined;
     drawGlyph(f, c, y, h, size, baseline);
+    pieceHit(
+      prev ? (prev.x + prev.w + c.x) / 2 : c.x,
+      next ? (c.x + c.w + next.x) / 2 : c.x + c.w,
+      y,
+      h,
+      fieldsOf(f.field, c.start, c.bits),
+    );
     close?.();
   }
 };
@@ -613,13 +619,26 @@ text(M, 82, COPY.subtitle, FS.sub, { cls: "muted" });
 {
   // One text run, so the viewer's own font spaces the items evenly; separate elements would need
   // width estimates, which drift with each system font. Swatches are glyphs (▨ for padding, to
-  // echo the hatch), and each item is a hover target for the field view.
-  const items = LEGEND.map(
-    ([f, label], i) =>
-      `<tspan class="lg lg-${f} ${f}"${i ? ' dx="22"' : ""}><tspan class="${f} f">${f === "pad" ? "▨" : "■"}</tspan> ${esc(label)}</tspan>`,
-  );
+  // echo the hatch), and each item is a hover target for the field view. The gap between items
+  // is spaces inside the items (half on each side), not dx, so it has a hover target and the
+  // pointer never falls between two items.
+  const HALF_GAP = "\u2002\u2009"; // en space + thin space: about 11 px each side at 16 px
+  const run = (cls: (f: Field) => string, swatch: (f: Field) => string, glow = false) =>
+    `<text x="${M}" y="117" class="ink sans" font-size="${FS.small}" font-weight="500"${glow ? ' filter="url(#legend-glow)"' : ""}>${LEGEND.map(
+      ([f, label], i) =>
+        `<tspan class="${cls(f)}">${i ? HALF_GAP : ""}${swatch(f)} ${esc(label)}${i < LEGEND.length - 1 ? HALF_GAP : ""}</tspan>`,
+    ).join("")}</text>`;
+  const glyph = (f: Field) => (f === "pad" ? "▨" : "■");
+  // The glow is a blurred copy of the same run: identical text lays out identically, so each
+  // item's glow sits exactly behind it without measuring. A thick round stroke turns the copy's
+  // glyphs into one blob per item, and the blur softens it into a capsule.
+  const glowCls = (f: Field) => `gl lgg-${f} ${f}`;
+  out.push(run(glowCls, glyph, true));
   out.push(
-    `<text x="${M}" y="117" class="ink sans" font-size="${FS.small}" font-weight="500">${items.join("")}</text>`,
+    run(
+      (f) => `lg lg-${f} ${f}`,
+      (f) => `<tspan class="${f} f">${glyph(f)}</tspan>`,
+    ),
   );
   text(W - M, 117, COPY.urlSafe, FS.small, { cls: "muted", anchor: "end" });
 }
@@ -659,6 +678,15 @@ for (let i = 0; i < 16; i++) {
       6,
       `${plainField(i * 8 + k)} f cell`,
     );
+  const before = digitCells[i * 2 - 1],
+    after = digitCells[i * 2 + 2];
+  pieceHit(
+    before ? (before.x + before.w + a.x) / 2 : a.x,
+    after ? (a.x + w + after.x) / 2 : a.x + w,
+    y,
+    BYTES_H,
+    fieldsOf(plainField, i * 8, 8),
+  );
   close();
 }
 y += BYTES_H + GAP / 2;
@@ -720,6 +748,7 @@ for (const [id, idx, label] of [
     const field = f.field(c.start + i),
       bx = SIDE_X + bs + 10 + i * (bs * 0.78 + 1.5);
     rect(bx, top + 10, bs * 0.78, bs, `${field} f cell`);
+    pieceHit(bx, bx + bs * 0.78 + 1.5, top + 10, bs, [field]);
     text(bx + bs * 0.39, top + 10 + bs * 0.75, value[i]!, FS.small - 1, {
       cls: inkFor(field),
       anchor: "middle",
@@ -797,43 +826,25 @@ for (const id of ["m64", "m32"] as const) {
     ow = 13,
     og = (SIDE_W - 16 * ow) / 15,
     oh = 22;
-  // Hidden at rest; ripple variant grows it from the box's lower edge.
-  out.push(
-    `<circle class="av ring" cx="${r1(mid)}" cy="${r1(ay + boxH)}" r="0" fill="none" stroke="#FF921C" stroke-width="2"/>`,
-  );
   for (let i = 0; i < 16; i++) {
     const ox = x0 + i * (ow + og) + ow / 2,
       wire = `M${r1(mid)} ${ay + boxH}C${r1(mid)} ${ay + boxH + 30} ${r1(ox)} ${outY - 26} ${r1(ox)} ${outY - 2}`;
     path(wire, "masked", 1.6);
-    // Overlay wire for the comet and flow variants; invisible at rest.
+    // Dash stream over the wire; invisible at rest (reduced motion). Its own pattern and speed
+    // (--r) keep the 16 streams out of step.
+    const r = ` style="--r:${spread(i, 16)}"`;
     out.push(
-      `<path d="${wire}" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>`,
+      `<path d="${wire}" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="${WIRE_DASHES[i % WIRE_DASHES.length]}"${r}/>`,
     );
-    const vars = ` style="--r:${spread(i, 16)};--k:${i / 15};--d:${r1(Math.abs(ox - mid) / (SIDE_W / 2))}"`,
-      tx = x0 + i * (ow + og);
-    if (AV_NAME === "bits") {
-      // Each byte as 8 stacked bits, so the reader sees which bits flip, not only which bytes.
-      for (let j = 0; j < 8; j++) {
-        const b = i * 8 + j,
-          flips = OUT_BITS[b] !== OUT_AFTER[b];
-        rect(
-          tx,
-          outY + (j * oh) / 8,
-          ow,
-          oh / 8 - 0.5,
-          flips ? "chg av bit" : "same",
-          flips ? ` style="--r:${spread(b, 128)}"` : "",
-        );
-      }
-    } else
-      rect(
-        tx,
-        outY,
-        ow,
-        oh,
-        CHANGED_BYTES[i] ? "chg av o" : "same",
-        ` rx="2"${CHANGED_BYTES[i] ? vars : ""}`,
-      );
+    const changed = CHANGED_BYTES[i];
+    rect(
+      x0 + i * (ow + og),
+      outY,
+      ow,
+      oh,
+      changed ? "chg av o" : "same",
+      ` rx="2"${changed ? r : ""}`,
+    );
   }
   let ty = outY + 48;
   text(x0, ty, `${CHANGED_BYTES.filter(Boolean).length} of 16 masked bytes change`, FS.meta, {
@@ -847,9 +858,8 @@ for (const id of ["m64", "m32"] as const) {
   text(bx, ty + 76, M64, 15, { cls: "masked f", mono: true });
   text(x0, ty + 98, "After", FS.small, { cls: "muted" });
   // The After slug is a stack of same-position lines, one tspan per character; monospace keeps
-  // every line's characters aligned. Layers: the After slug itself (changed characters `.c`),
-  // the Before characters (`.b`) and three random glyph frames (`.s1`–`.s3`). Only changed
-  // positions get visible tspans in the extra layers; all extra layers are invisible at rest.
+  // every line's characters aligned. Layers: the After slug itself (changed characters `.c`) and
+  // the Before characters (`.b`, only changed positions visible), which is invisible at rest.
   const layer = (s: string, cls: string, onlyChanged: boolean) =>
     out.push(
       `<text x="${r1(bx)}" y="${r1(ty + 98)}" class="masked f mono" font-size="15">${s
@@ -861,14 +871,8 @@ for (const id of ["m64", "m32"] as const) {
         })
         .join("")}</text>`,
     );
-  // A random glyph per position and frame, from a fixed seed so builds stay identical.
-  const noise = (frame: number) =>
-    M64.split("")
-      .map((_, i) => ALPHA64[(i * 29 + frame * 17 + 5) % 64]!)
-      .join("");
   layer(M64_AFTER, "c", false);
   layer(M64, "b", true);
-  for (const frame of [1, 2, 3]) layer(noise(frame), `s${frame}`, true);
   text(x0, ty + 120, `${CHAR_FLIPS} of 22 characters differ`, FS.small - 1, { cls: "muted" });
   ty += 134;
   y = Math.max(y, ty);
@@ -911,7 +915,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
 <desc id="d">${esc(desc)}</desc>
 <style>${STYLE}
 ${linkRules()}</style>
-<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
+<defs><filter id="legend-glow" x="-5%" y="-100%" width="110%" height="300%"><feGaussianBlur stdDeviation="3.5"/></filter><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
 <rect width="100%" height="100%" class="bg"/>
 ${[...background, ...out].join("\n")}
 </svg>
