@@ -292,7 +292,7 @@ README is roughly 60% marketing and 40% usage. It MUST explain why the complete 
 adopting, make ordinary calls obvious, and explain what keeps stored IDs usable. Generation alone
 is not the pitch. State supported strengths with the author's confidence, never timid summaries
 of implementation. Bench readers need commands and reports, not package marketing or agent rules.
-Keep agent rules in `AGENTS.md`; engineering and measurement detail stays in its owning reference.
+Agent instructions live only in `AGENTS.md` files, never in public documents (README, `docs/`, `bench/` reports, `CONTRIBUTING.md`): public readers are people, and a rule there is noise to them. Engineering and measurement detail stays in its owning reference.
 
 - Write as one engineer telling another: short sentences in words the reader uses. Use established
   terms where they add precision; explain unfamiliar ones. Cut internal jargon and coined phrases

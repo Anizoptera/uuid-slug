@@ -18,11 +18,11 @@ High-performance UUIDv4/v7 generation and handling for TS, Rust, and WASM, short
 - **Benchmark-leading UUIDv7 text generation on Node, Bun, Deno and browsers!**
   - 6+ distinct UUID representations are supported!
 
-- **Leading performance**, low memory and resource allocation!
+- **[Leading performance](bench/PERFORMANCE.md)**, low memory and resource allocation!
   - Same API across Node, Bun, Deno, browsers and cloud workers. Native fast paths and portable fallbacks are used automatically.
   - _IDs can be generated or decoded [directly into your buffers](#work-with-uuid-bytes); failed validation leaves them unchanged._
 
-- **Zero runtime dependencies.** Small runtime-optimised bundles on Node, Bun, Deno and browsers.
+- **Zero runtime dependencies.** Small [runtime-optimised](#runtime) bundles on Node, Bun, Deno and browsers.
 
 - **One UUID for storage, URLs and files, each in its [most compact form](#representations)!**
   - 16-byte binary UUID for storage or transport.
@@ -35,8 +35,8 @@ High-performance UUIDv4/v7 generation and handling for TS, Rust, and WASM, short
 - **UUIDv4/v7 generation, conversion and inspection, configurable UUIDv7 masking, and plain conversion for any UUID!**
   - **Full control of UUIDv7 time and order:** [recorded times](#generate-at-a-recorded-time) or your own clock, clock-rollback policy, custom payload layout, [timestamp extraction](#use-the-uuid-as-the-timestamp-source) and [time-range queries](#ordering-and-key-distribution).
   - IDs and relationships can be [created offline](#assign-ids-before-saving-or-syncing), before saving or syncing, without a central allocator or worker number.
-  - Masking key rotation and format migration keep old IDs readable while new IDs use current settings.
-  - Async key derivation yields during long work and can be cancelled.
+  - Masking [key rotation and format migration](docs/api.md#changing-an-existing-id-format) keep old IDs readable while new IDs use current settings.
+  - [Async key derivation](docs/api.md#masking-codec-options) yields during long work and can be cancelled.
   - [Parse once](#parse-once-for-repeated-work): validate and decode an ID one time into the optimized UUID object, then reuse it for every conversion and inspection.
   - Optional [sentinel IDs](#sentinels): reserved values for tests, debugging and tracing that stay recognizable in logs, even after key rotation.
   - Optimal, **safe and most efficient defaults!**
@@ -44,7 +44,7 @@ High-performance UUIDv4/v7 generation and handling for TS, Rust, and WASM, short
 - **Intuitive, ergonomic, agent-friendly manually tailored API.**
   - Strict types, validation, typed errors, safe buffer writes and one-check composition to prevent integration mistakes.
   - Types catch UUID-version and plain/masked mix-ups before execution. Compatible conversions chain with one error check; failures have stable codes.
-  - **Named imports let supported bundlers remove unused features, including masking and key derivation.**
+  - **Named imports let supported bundlers [remove unused features](#guarantees), including masking and key derivation.**
 
 - TypeScript and Rust implementations that encode and decode the same formats, including masked IDs with matching key settings.
 
