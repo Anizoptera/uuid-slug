@@ -61,17 +61,11 @@ test("compatibility follows unexported types an export uses", async () => {
       ),
     ),
   ]);
-  // `generate` prints identically, yet `generate({})` stops compiling.
-  expect(required).toEqual({
-    breaking: "```diff\n@@ Options @@\n- at?: number;\n+ at: number;\n```",
-    changed: "",
-    added: "",
-  });
-  expect(extra).toEqual({
-    breaking: "",
-    changed: "",
-    added: "```diff\n+ Options: extra?: string;\n```",
-  });
+  // `generate` prints identically, yet `generate({})` stops compiling. Callers cannot import the
+  // unexported `Options`, so the export that uses it stands in for the change.
+  const generate = "```diff\n@@ generate @@\n  function generate(options: Options): string;\n```";
+  expect(required).toEqual({ breaking: generate, changed: "", added: "" });
+  expect(extra).toEqual({ breaking: "", changed: "", added: generate });
   // Assignability accepts a dropped optional parameter, yet `codec.encode(x, true)` stops compiling.
   expect([...dropped]).toEqual(["create"]);
   expect([...restored]).toEqual([]);

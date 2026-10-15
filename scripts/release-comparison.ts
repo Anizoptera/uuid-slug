@@ -325,7 +325,8 @@ function isApiRow({ text }: DeclarationRecord): boolean {
  */
 interface DiffGroup {
   roots: string[];
-  rows: (readonly ["- " | "+ ", string])[];
+  // "  " marks an unchanged export whose unexported dependency changed.
+  rows: (readonly ["- " | "+ " | "  ", string])[];
 }
 
 const removedRows = (texts: readonly string[]) => texts.map((text) => ["- ", text] as const);
@@ -348,7 +349,9 @@ function sectionDiff(groups: readonly DiffGroup[]): string {
       "u",
     );
     const header =
-      roots.length > 1 || (rows.length > 1 && rows.some(([, text]) => named.test(text)));
+      roots.length > 1 ||
+      rows.some(([prefix]) => prefix === "  ") ||
+      (rows.length > 1 && rows.some(([, text]) => named.test(text)));
     const name =
       roots.length > 1 ? `${roots.slice(0, -1).join(", ")} → ${roots.at(-1)}` : roots.join("");
     return {
@@ -381,8 +384,10 @@ function sectionDiff(groups: readonly DiffGroup[]): string {
 }
 
 /**
- * Sorts changed public declarations into the notes sections a caller acts on. Unexported types
- * appear only when an export uses them and they changed: they explain why the export broke.
+ * Sorts changed public declarations into the notes sections a caller acts on. Callers cannot
+ * import an unexported type, so its rows never appear; when one changes, the unchanged exports
+ * that use it appear instead, as context lines in that change's section, which keeps both the
+ * reader and the release level informed. The prose says what changed inside.
  * A wholly removed or added declaration shows only its own rows, not every member. `renames` maps
  * old top-level names to new ones as the changelog prose declares them; renames are never guessed,
  * because similar names and signatures pair the wrong declarations too often to publish.
@@ -409,14 +414,23 @@ export function typeScriptApiSections(
       .filter(({ refs }) => refs.some((name) => incompatible.has(name)))
       .map(({ root }) => root),
   ]);
+  // Public: exported directly, or named by an export statement (`export { a as b }`, `export default a`).
+  const exportedRoots = new Set<string>();
+  for (const { root, refs, text, visible } of [...previous, ...current]) {
+    if (!visible) continue;
+    exportedRoots.add(root);
+    if (/^export (?:\{|default\b)/.test(text)) for (const name of refs) exportedRoots.add(name);
+  }
   const sections = {
     breaking: [] as DiffGroup[],
     changed: [] as DiffGroup[],
     added: [] as DiffGroup[],
   };
+  const hidden: { root: string; target: DiffGroup[] }[] = [];
   for (const root of new Set([...previous, ...current].map((row) => row.root))) {
     if (!shown.has(root)) continue;
     // A new or removed unexported type is never named by callers; the exports using it show the change.
+    const exportedRoot = exportedRoots.has(root);
     const visibleRoot = [...previous, ...current].some((row) => row.root === root && row.visible);
     // An export shows only rows callers can reach: private brand members stay hidden.
     const rowsOf = (rows: readonly DeclarationRecord[]) =>
@@ -425,12 +439,12 @@ export function typeScriptApiSections(
     const now = rowsOf(current).map(({ text }) => text);
     if (JSON.stringify(old) === JSON.stringify(now)) continue;
     if (!old.length) {
-      if (visibleRoot)
+      if (exportedRoot)
         sections.added.push({ roots: [root], rows: addedRows(headerRows(current, root)) });
       continue;
     }
     if (!now.length) {
-      if (visibleRoot)
+      if (exportedRoot)
         sections.breaking.push({ roots: [root], rows: removedRows(headerRows(previous, root)) });
       continue;
     }
@@ -464,8 +478,21 @@ export function typeScriptApiSections(
         : rows.some(([prefix]) => prefix === "- ")
           ? sections.changed
           : sections.added;
-    target.push({ roots: [root], rows });
+    if (exportedRoots.has(root)) target.push({ roots: [root], rows });
+    else hidden.push({ root, target });
   }
+  for (const target of [sections.breaking, sections.changed, sections.added])
+    for (const { root } of hidden.filter((change) => change.target === target))
+      for (const user of exportedRoots) {
+        const listed = Object.values(sections).some((groups) =>
+          groups.some(({ roots }) => roots.includes(user)),
+        );
+        if (listed || !reachable(current, [user]).has(root)) continue;
+        target.push({
+          roots: [user],
+          rows: headerRows(current, user).map((text) => ["  ", text] as const),
+        });
+      }
   // A declared rename joins the old declaration's removal and the new one's addition into one
   // breaking group; several old names may merge into one new name.
   for (const [from, to] of renames) {
