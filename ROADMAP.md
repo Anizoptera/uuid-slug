@@ -1,11 +1,5 @@
 # Remaining work
 
-## README diagram and badges
-
-Items not marked "maintainer request" are leads that agents wrote, not requirements: check each against AGENTS.md §Writing public documentation before acting, and delete it if it fails. They do not authorize README edits or new measurements.
-
-- [ ] Runtime badges: one consistent two-part style like the Node badge (logo label, version value); colours readable on light and dark GitHub; Cloudflare Workers labelled "cloud | workers" with the Cloudflare logo; Bun and Deno show measured version floors.
-
 ## Runtime support
 
 Published 0.4.0 does not load in Deno: its `deno` condition selects TypeScript, which Deno refuses inside npm packages. Development now routes Deno to compiled output; Deno users need the next release.
