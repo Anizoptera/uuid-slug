@@ -16,7 +16,8 @@
 //   masked base64url → masked base32hex (one band: the same 132 masked bits).
 // - Hover, every piece the same way:
 //   - a legend item and a piece focus the same way: their fields' cells, ribbons and legend
-//     items light up and every other field fades; a piece holding two fields keeps both;
+//     items light up and every other field fades; a piece holding two fields lights only the
+//     smaller one (version, variant or padding);
 //   - a character, byte or bit also outlines the same bits in every other row of its kind;
 //   - masked rows too: both masked spellings carry the same 132 bits, so a masked character
 //     outlines its bits in the other masked row and lights the Masked legend item;
@@ -173,7 +174,7 @@ const FORMS = {
     masked: false,
     facts: "",
     sort: "by time¹",
-    caseRule: "any accepted",
+    caseRule: "insensitive",
     job: "For UUID columns and UUID-only APIs.",
     detail: "The standard form: every database and UUID library accepts it.",
   },
@@ -195,9 +196,9 @@ const FORMS = {
     bitsPerChar: 6,
     field: plainField,
     masked: false,
-    facts: "22 chars · A–Z a–z 0–9 - _",
+    facts: 'default · 22 chars · A–Z a–z 0–9 "-" "_"',
     sort: "roughly by time²",
-    caseRule: "must match",
+    caseRule: "sensitive",
     job: "For short URLs, logs and JSON.",
     win: shorter(P64),
     detail: "Any base64url decoder returns its 16 UUID bytes.",
@@ -210,7 +211,7 @@ const FORMS = {
     masked: false,
     facts: "26 chars · 0–9 a–v · lowercase",
     sort: "by time¹",
-    caseRule: "any accepted",
+    caseRule: "insensitive",
     job: "For case-insensitive filenames and text keys.",
     detail: `${shorter(P32)}; time-range queries work on the ID itself.`,
   },
@@ -220,9 +221,9 @@ const FORMS = {
     bitsPerChar: 6,
     field: maskedField,
     masked: true,
-    facts: "22 chars · A–Z a–z 0–9 - _",
-    sort: "none: decode first",
-    caseRule: "must match",
+    facts: 'default · 22 chars · A–Z a–z 0–9 "-" "_"',
+    sort: "none",
+    caseRule: "sensitive",
     job: "For public IDs that hide the UUID's time and fields.",
     win: shorter(M64),
     detail: `Decoding needs the key that made it: keep old keys, or old links break.`,
@@ -234,8 +235,8 @@ const FORMS = {
     field: maskedField,
     masked: true,
     facts: "27 chars · 0–9 a–v · lowercase",
-    sort: "none: decode first",
-    caseRule: "any accepted",
+    sort: "none",
+    caseRule: "insensitive",
     job: "For masked IDs in case-insensitive filenames.",
     detail: `${shorter(M32)}. Same UUID + same key = same slug. One codec decodes both masked forms.`,
   },
@@ -270,10 +271,9 @@ const LEGEND: [Field, string][] = [
 const SANS = `-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif`;
 const MONO = `ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace`;
 // Field hover, per the rulings above: pointing at a legend item or a piece focuses the same way.
-// A piece's hit area (`.hit`) carries the class of every field the piece holds. Hovering it, or
-// f's legend item, fades every cell and legend item, then restores f's cells, legend item, glow
-// (`.chip-f`, the pill behind the legend item) and ribbons. Fade-all-then-restore makes a piece holding
-// two fields keep both: per-field "fade the others" rules would fade each other's cells.
+// A piece's hit area (`.hit`) carries the class of the field it lights (fieldsOf). Hovering it,
+// or f's legend item, fades every cell and legend item, then restores f's cells, legend item,
+// glow (`.chip-f`, the pill behind the legend item) and ribbons.
 // Pieces add outlines on top (linkRules). Every lit state sets transition-delay 0 so it appears
 // at once; base styles delay the return, so crossing a gap never flashes the image.
 const LIT_NOW = "transition-delay:0s";
@@ -521,11 +521,15 @@ const linkRules = () =>
 // A piece's invisible hover area. It reaches halfway to each neighbour (so half of a hyphen or
 // gap belongs to each side) and GAP/2 above and below (so the UUID text and byte rows meet):
 // moving the pointer along or between rows never crosses a dead zone that would drop the
-// highlight. It carries every field the piece holds, which is what field hover keys on.
+// highlight. It carries the field that field hover lights for it.
 const pieceHit = (x0: number, x1: number, y: number, h: number, fields: Field[]) =>
   rect(x0, y - GAP / 2, x1 - x0, h + GAP, `hit ${fields.join(" ")}`);
+// Smallest field first. A piece holding two fields lights only the smaller one (version,
+// variant or padding): the large neighbour is everywhere already, so lighting it too hides the
+// small field the reader pointed at.
+const BY_SIZE: Field[] = ["pad", "variant", "version", "time", "masked", "payload"];
 const fieldsOf = (field: (b: number) => Field, start: number, bits: number) => [
-  ...new Set(Array.from({ length: bits }, (_, i) => field(start + i))),
+  BY_SIZE.find((f) => Array.from({ length: bits }, (_, i) => field(start + i)).includes(f))!,
 ];
 let clipId = 0;
 const drawSpecimen = (
@@ -887,7 +891,7 @@ for (const l of wrap(COPY.masking, W - 2 * M, FS.meta)) {
 }
 y += GAP / 2;
 for (const l of wrap(COPY.overlap, W - 2 * M, FS.meta)) {
-  text(M, y + 10, l, FS.meta, { weight: 700 });
+  text(M, y + 10, l, FS.meta, { weight: 500 });
   y += LINE;
 }
 y += GAP;

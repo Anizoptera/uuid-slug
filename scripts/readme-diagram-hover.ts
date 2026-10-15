@@ -38,14 +38,14 @@ const CHECKS: { ruling: string; point: Point; probes: Probe[] }[] = [
     ],
   },
   {
-    ruling: "a piece holding two fields keeps both lit",
+    ruling: "a piece holding two fields lights only the smaller one",
     // Byte 6 holds 4 version bits and 4 payload bits.
     point: { sel: "#gb6 .hit" },
     probes: [
       [".chip-version", "fill-opacity", ">0.05"],
-      [".chip-payload", "fill-opacity", ">0.05"],
+      [".chip-payload", "fill-opacity", "0"],
       [".version.cell", "opacity", "1"],
-      [".payload.cell", "opacity", "1"],
+      [".payload.cell", "opacity", "0.3"],
       [".time.cell", "opacity", "0.3"],
     ],
   },

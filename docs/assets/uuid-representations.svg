@@ -341,7 +341,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <clipPath id="k2"><rect x="392.2" y="216" width="9" height="44"/></clipPath><g clip-path="url(#k2)">
 <text x="392.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
 </g>
-<rect x="376.5" y="210" width="25.4" height="56" class="hit variant payload"/>
+<rect x="376.5" y="210" width="25.4" height="56" class="hit variant"/>
 <rect id="ou16" class="hl" x="382.5" y="214" width="19.4" height="48" rx="2"/></g>
 <g id="gu17">
 <rect x="402.6" y="216" width="17.9" height="44" class="payload f cell"/>
@@ -510,7 +510,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect x="316.9" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="321.5" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="326.1" y="306" width="4.6" height="6" class="payload f cell"/>
-<rect x="286.8" y="266" width="44.8" height="52" class="hit version payload"/>
+<rect x="286.8" y="266" width="44.8" height="52" class="hit version"/>
 <rect id="ob6" class="hl" x="292.9" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb7">
 <rect x="332.7" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -536,7 +536,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect x="406.5" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="411.1" y="306" width="4.6" height="6" class="payload f cell"/>
 <rect x="415.7" y="306" width="4.6" height="6" class="payload f cell"/>
-<rect x="376.5" y="266" width="44.8" height="52" class="hit variant payload"/>
+<rect x="376.5" y="266" width="44.8" height="52" class="hit variant"/>
 <rect id="ob8" class="hl" x="382.5" y="270" width="38.8" height="44" rx="2"/></g>
 <g id="gb9">
 <rect x="422.3" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -635,7 +635,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="116" y="374" class="key sans" font-size="16">Sort</text>
 <text x="158" y="374" class="ink sans" font-size="17" font-weight="600">by time¹</text>
 <text x="446" y="374" class="key sans" font-size="16">Case</text>
-<text x="492" y="374" class="ink sans" font-size="17" font-weight="600">any accepted</text>
+<text x="492" y="374" class="ink sans" font-size="17" font-weight="600">insensitive</text>
 <text x="116" y="398" class="ink sans" font-size="17" font-weight="400">For UUID columns and UUID-only APIs.</text>
 <text x="116" y="422" class="muted sans" font-size="17">The standard form: every database and UUID library accepts it.</text>
 <text x="52" y="458" class="accent sans" font-size="17" font-weight="700">Bytes</text>
@@ -648,7 +648,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="36" y="564" class="accent sans" font-size="16" font-weight="700">PLAIN SLUGS · any UUID · no key · the same 128 bits in fewer characters</text>
 <text x="790" y="602" class="accent sans" font-size="17" font-weight="700">One character, two fields</text>
 <text x="36" y="602" class="ink sans" font-size="24" font-weight="600">Plain base64url</text>
-<text x="286" y="602" class="muted sans" font-size="16">22 chars · A–Z a–z 0–9 - _</text>
+<text x="286" y="602" class="muted sans" font-size="16">default · 22 chars · A–Z a–z 0–9 "-" "_"</text>
 <g id="gp0">
 <rect x="36.8" y="616" width="17.9" height="44" class="time f cell"/>
 <text x="45.7" y="648.5" class="fg mono" font-size="30" text-anchor="middle">A</text>
@@ -693,7 +693,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect x="192" y="616" width="11.9" height="44" class="version f cell"/>
 <rect x="203.9" y="616" width="6" height="44" class="payload f cell"/>
 <text x="200.9" y="648.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
-<rect x="191.2" y="610" width="19.4" height="56" class="hit version payload"/>
+<rect x="191.2" y="610" width="19.4" height="56" class="hit version"/>
 <rect id="op8" class="hl" x="191.2" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp9">
 <rect x="211.4" y="616" width="17.9" height="44" class="payload f cell"/>
@@ -709,7 +709,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <clipPath id="k4"><rect x="242.7" y="616" width="6" height="44"/></clipPath><g clip-path="url(#k4)">
 <text x="239.7" y="648.5" class="fw mono" font-size="30" text-anchor="middle">y</text>
 </g>
-<rect x="230" y="610" width="19.4" height="56" class="hit payload variant"/>
+<rect x="230" y="610" width="19.4" height="56" class="hit variant"/>
 <rect id="op10" class="hl" x="230" y="614" width="19.4" height="48" rx="2"/></g>
 <g id="gp11">
 <rect x="250.2" y="616" width="17.9" height="44" class="payload f cell"/>
@@ -766,7 +766,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect x="450.1" y="616" width="11.9" height="44" class="pad f cell"/>
 <rect x="450.1" y="616" width="11.9" height="44" class="" fill="url(#hatch)"/>
 <text x="453.1" y="648.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
-<rect x="443.4" y="610" width="19.4" height="56" class="hit payload pad"/>
+<rect x="443.4" y="610" width="19.4" height="56" class="hit pad"/>
 <rect id="op21" class="hl" x="443.4" y="614" width="19.4" height="48" rx="2"/></g>
 <rect x="230" y="613" width="19.4" height="50" class="" fill="none" stroke="#C6D0E1" stroke-width="1.4" rx="2"/>
 <path d="M239.7 663V668H776V636H786" class="lead" fill="none" stroke="currentColor" stroke-width="1.4"/>
@@ -794,7 +794,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="52" y="690" class="key sans" font-size="16">Sort</text>
 <text x="94" y="690" class="ink sans" font-size="17" font-weight="600">roughly by time²</text>
 <text x="446" y="690" class="key sans" font-size="16">Case</text>
-<text x="492" y="690" class="ink sans" font-size="17" font-weight="600">must match</text>
+<text x="492" y="690" class="ink sans" font-size="17" font-weight="600">sensitive</text>
 <text x="52" y="714" class="ink sans" font-size="17" font-weight="400">For short URLs, logs and JSON.</text>
 <rect x="47" y="725" width="236.1" height="18" class="win" rx="4"/>
 <text x="52" y="738" class="ink sans" font-size="17" font-weight="700" textLength="226.1" lengthAdjust="spacing">39% shorter than UUID text</text>
@@ -850,13 +850,13 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect x="211.4" y="804" width="10.7" height="44" class="time f cell"/>
 <rect x="222.1" y="804" width="7.2" height="44" class="version f cell"/>
 <text x="220.3" y="836.5" class="fg mono" font-size="30" text-anchor="middle">h</text>
-<rect x="210.6" y="798" width="19.4" height="56" class="hit time version"/>
+<rect x="210.6" y="798" width="19.4" height="56" class="hit version"/>
 <rect id="oq9" class="hl" x="210.6" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq10">
 <rect x="230.8" y="804" width="7.2" height="44" class="version f cell"/>
 <rect x="237.9" y="804" width="10.7" height="44" class="payload f cell"/>
 <text x="239.7" y="836.5" class="fg mono" font-size="30" text-anchor="middle">t</text>
-<rect x="230" y="798" width="19.4" height="56" class="hit version payload"/>
+<rect x="230" y="798" width="19.4" height="56" class="hit version"/>
 <rect id="oq10" class="hl" x="230" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq11">
 <rect x="250.2" y="804" width="17.9" height="44" class="payload f cell"/>
@@ -872,7 +872,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <clipPath id="k6"><rect x="283.9" y="804" width="3.6" height="44"/></clipPath><g clip-path="url(#k6)">
 <text x="278.5" y="836.5" class="fw mono" font-size="30" text-anchor="middle">p</text>
 </g>
-<rect x="268.8" y="798" width="19.4" height="56" class="hit payload variant"/>
+<rect x="268.8" y="798" width="19.4" height="56" class="hit variant"/>
 <rect id="oq12" class="hl" x="268.8" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq13">
 <rect x="289" y="804" width="3.6" height="44" class="variant f cell"/>
@@ -883,7 +883,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <clipPath id="k8"><rect x="292.5" y="804" width="14.3" height="44"/></clipPath><g clip-path="url(#k8)">
 <text x="297.9" y="836.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
 </g>
-<rect x="288.2" y="798" width="19.4" height="56" class="hit variant payload"/>
+<rect x="288.2" y="798" width="19.4" height="56" class="hit variant"/>
 <rect id="oq13" class="hl" x="288.2" y="802" width="19.4" height="48" rx="2"/></g>
 <g id="gq14">
 <rect x="308.3" y="804" width="17.9" height="44" class="payload f cell"/>
@@ -945,7 +945,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect x="532.5" y="804" width="7.2" height="44" class="pad f cell"/>
 <rect x="532.5" y="804" width="7.2" height="44" class="" fill="url(#hatch)"/>
 <text x="530.7" y="836.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
-<rect x="521" y="798" width="19.4" height="56" class="hit payload pad"/>
+<rect x="521" y="798" width="19.4" height="56" class="hit pad"/>
 <rect id="oq25" class="hl" x="521" y="802" width="19.4" height="48" rx="2"/></g>
 <rect x="210.6" y="801" width="19.4" height="50" class="" fill="none" stroke="#C6D0E1" stroke-width="1.4" rx="2"/>
 <path d="M220.3 851V856H776V824H786" class="lead" fill="none" stroke="currentColor" stroke-width="1.4"/>
@@ -970,16 +970,16 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="52" y="878" class="key sans" font-size="16">Sort</text>
 <text x="94" y="878" class="ink sans" font-size="17" font-weight="600">by time¹</text>
 <text x="446" y="878" class="key sans" font-size="16">Case</text>
-<text x="492" y="878" class="ink sans" font-size="17" font-weight="600">any accepted</text>
+<text x="492" y="878" class="ink sans" font-size="17" font-weight="600">insensitive</text>
 <text x="52" y="902" class="ink sans" font-size="17" font-weight="400">For case-insensitive filenames and text keys.</text>
 <text x="52" y="926" class="muted sans" font-size="17">28% shorter than UUID text; time-range queries work on the ID itself.</text>
 <text x="36" y="984" class="masked f sans" font-size="16" font-weight="700">MASKED SLUGS · UUIDv7 only · need the matching key</text>
 <text x="1064" y="984" class="muted sans" font-size="15" text-anchor="end">Examples use the public demo key</text>
 <text x="36" y="1006" class="muted sans" font-size="17">Your key scrambles all UUID bits, so the slug shows no time or fields.  The key turns it back into the same UUID. </text>
 <text x="36" y="1030" class="muted sans" font-size="17">Inside: 42-bit time since your start date (~139 years) + 74 payload bits + 16-bit check.</text>
-<text x="36" y="1064" class="ink sans" font-size="17" font-weight="700">Plain and masked base64url look alike.  Decode each with the function for the form you issued.</text>
+<text x="36" y="1064" class="ink sans" font-size="17" font-weight="500">Plain and masked base64url look alike.  Decode each with the function for the form you issued.</text>
 <text x="36" y="1112" class="masked f sans" font-size="24" font-weight="600">Masked base64url</text>
-<text x="286" y="1112" class="muted sans" font-size="16">22 chars · A–Z a–z 0–9 - _</text>
+<text x="286" y="1112" class="muted sans" font-size="16">default · 22 chars · A–Z a–z 0–9 "-" "_"</text>
 <g id="gm0">
 <rect x="36.8" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="45.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
@@ -1091,9 +1091,9 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect x="443.4" y="1120" width="19.4" height="56" class="hit masked"/>
 <rect id="om21" class="hl" x="443.4" y="1124" width="19.4" height="48" rx="2"/></g>
 <text x="52" y="1200" class="key sans" font-size="16">Sort</text>
-<text x="94" y="1200" class="ink sans" font-size="17" font-weight="600">none: decode first</text>
+<text x="94" y="1200" class="ink sans" font-size="17" font-weight="600">none</text>
 <text x="446" y="1200" class="key sans" font-size="16">Case</text>
-<text x="492" y="1200" class="ink sans" font-size="17" font-weight="600">must match</text>
+<text x="492" y="1200" class="ink sans" font-size="17" font-weight="600">sensitive</text>
 <text x="52" y="1224" class="ink sans" font-size="17" font-weight="400">For public IDs that hide the UUID's time and fields.</text>
 <rect x="47" y="1235" width="236.1" height="18" class="win" rx="4"/>
 <text x="52" y="1248" class="ink sans" font-size="17" font-weight="700" textLength="226.1" lengthAdjust="spacing">39% shorter than UUID text</text>
@@ -1236,12 +1236,12 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <rect x="548.3" y="1338" width="10.7" height="44" class="pad f cell"/>
 <rect x="548.3" y="1338" width="10.7" height="44" class="" fill="url(#hatch)"/>
 <text x="550.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">o</text>
-<rect x="540.4" y="1332" width="19.4" height="56" class="hit masked pad"/>
+<rect x="540.4" y="1332" width="19.4" height="56" class="hit pad"/>
 <rect id="on26" class="hl" x="540.4" y="1336" width="19.4" height="48" rx="2"/></g>
 <text x="52" y="1412" class="key sans" font-size="16">Sort</text>
-<text x="94" y="1412" class="ink sans" font-size="17" font-weight="600">none: decode first</text>
+<text x="94" y="1412" class="ink sans" font-size="17" font-weight="600">none</text>
 <text x="446" y="1412" class="key sans" font-size="16">Case</text>
-<text x="492" y="1412" class="ink sans" font-size="17" font-weight="600">any accepted</text>
+<text x="492" y="1412" class="ink sans" font-size="17" font-weight="600">insensitive</text>
 <text x="52" y="1436" class="ink sans" font-size="17" font-weight="400">For masked IDs in case-insensitive filenames.</text>
 <text x="52" y="1460" class="muted sans" font-size="17">25% shorter than UUID text.  Same UUID + same key = same slug. </text>
 <text x="52" y="1484" class="muted sans" font-size="17">One codec decodes both masked forms.</text>
