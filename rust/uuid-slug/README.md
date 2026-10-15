@@ -95,18 +95,22 @@ system's sub-millisecond clock; WebAssembly's built-in clock uses millisecond `D
 fractional reading to `generate_uuid_v7_with_random_fill` when that precision matters.
 When the clock stalls or moves backward, the generator advances this logical fraction and then
 the millisecond timestamp when needed; extracted fractions can be later than the clock reading.
-Successful calls on one generator strictly increase in UUID byte order under the default preserve
-policy. Reset-policy calls after their tolerance are outside that sequence.
+Successful calls on one generator strictly increase in UUID byte order under the default
+clock-rollback policy, which preserves order. Calls under the reset policy, after its tolerance, are outside that sequence.
 Use `UuidV7MaskingCodec::extract_masked_uuid_v7_payload` for masked slugs. Masking rejects timestamps outside the codec's
-configured range instead of truncating them. Same-millisecond ordering depends on the generator.
+configured range instead of truncating them. Same-millisecond ordering depends on the generator
+and is not a cross-language guarantee.
 `uuid_v7_bounds(start, end)` returns the inclusive lowest and highest UUIDv7 search keys; pass
 `None` for one millisecond. Use the bounds only with comparison in UUID wire-byte order.
 Preserve-order clock rollback is the default. Use `with_clock_rollback_policy` to reset or return
 `InvalidTimestamp` after a chosen total-skew tolerance.
-`generate_uuid_v4()` creates random IDs. Failures return `Error`, retaining the underlying cause. Match `Error::code()` against
+`generate_uuid_v4()` creates random IDs.
+
+## Errors
+
+Failures return `Error`, retaining the underlying cause. Match `Error::code()` against
 `ErrorCode`; use `ErrorCode::as_str()` only when a text protocol needs the shared TypeScript
-spelling. Use `Display` for the case-specific diagnostic; do not parse its text. Within-millisecond
-ordering is not a cross-language guarantee.
+spelling. Use `Display` for the case-specific diagnostic; do not parse its text.
 
 ## Features
 

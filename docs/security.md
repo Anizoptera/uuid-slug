@@ -6,7 +6,7 @@ Built-in generation draws from platform cryptographic randomness. TypeScript use
 methods when available, otherwise Node crypto or Web Crypto. Rust uses fallible `getrandom`;
 browser generation requires `wasm-js`. Neither implementation substitutes non-cryptographic
 randomness when the secure source fails. TypeScript generation with no arguments or only a
-text-case argument (lowercase or uppercase) throws `UuidSlugError` with code `rng_unavailable` in that case; every other
+text-case or alphabet argument throws `UuidSlugError` with code `rng_unavailable` in that case; every other
 generation call returns it, and Rust returns `Err` on every path. Separately named custom-entropy
 calls accept a synchronous fill callback for controlled runtimes and deterministic work. The caller
 must fill every requested byte securely or return `UuidSlugError`; a successful weak or partial

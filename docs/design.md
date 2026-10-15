@@ -1,7 +1,5 @@
 # How masking works
 
-Preserve the wire layout when changing masking so previously issued slugs remain decodable.
-
 Read [README.md](../README.md) for the consumer contract. This document explains the byte layout,
 key schedule, and limits needed to audit or reimplement the built-in scheme.
 
@@ -28,9 +26,9 @@ use them for random data, counters, sub-millisecond time, or a combination. Mask
 bits as opaque data and restores them unchanged.
 
 Payload inspection happens after decoding and does not change this wire format. The caller supplies
-the number of leading Method 3 fraction bits and following Method 1 counter bits. The remaining low
-bits stay uninterpreted. The UUID cannot identify the layout or distinguish random data from a
-counter, so the API must not infer either one.
+the number of leading sub-millisecond fraction bits and following counter bits (RFC 9562 §6.2
+Methods 3 and 1). The remaining low bits stay uninterpreted. The UUID cannot identify the layout or
+distinguish random data from a counter, so the API never infers either one.
 
 The masked payload is fixed: 22 base64url characters hold 132 bits, leaving `132 - 116 = 16`
 check bits. Twelve replace the constant bits inside the 128-bit block; four occupy the encoding's
@@ -72,11 +70,10 @@ cannot hide inside one uninterrupted hash. The driver yields to host tasks when 
 expires and checks cancellation before continuing. Tiny derivations avoid scheduling altogether.
 The synchronous entry keeps an unlimited absorption budget and allocates no continuation.
 
-Capture scalar options and copy byte seeds before suspension. Strings are immutable and can be
-UTF-8 encoded in pieces; keep surrogate pairs together across piece boundaries. Memory copying,
-allocation and runtime pauses remain outside the work-slice target. A new size restriction or
-changed seed transformation would alter accepted inputs or keys and must not be introduced as a
-performance repair.
+Scalar options are read and byte seeds copied before the first suspension, so changing them after
+the call does not change the key. String seeds are immutable and are UTF-8 encoded in pieces that
+never split a surrogate pair. Memory copying, allocation and runtime pauses are not counted
+against the work slice.
 
 ## Mixing the block
 
@@ -108,8 +105,10 @@ the full domain, so the caller remains responsible for that property.
 
 1. Subtract the configured range start from the timestamp. Reject a non-v7 UUID or an offset
    outside zero through 2^42 - 1.
-2. Fold `mix32` over the four big-endian words of the original UUID bytes and take the top 16
-   bits as the tag.
+2. Start with `acc = 0`; for each of the four big-endian 32-bit words of the original UUID bytes,
+   set `acc = mix32(acc ^ word)`. The tag is the top 16 bits of `acc`. `mix32` is the "lowbias32"
+   integer hash: `x ^= x >>> 16; x *= 0x7feb352d; x ^= x >>> 15; x *= 0x846ca68b; x ^= x >>> 16`,
+   all unsigned 32-bit.
 3. Store the tag's upper 12 bits in the block: four in byte 6's high nibble, two in byte 8's top
    bits, and six in byte 0's top bits.
 4. Mix the 16-byte block and append the remaining four tag bits. Encode these 132 bits as
@@ -127,7 +126,7 @@ An incorrect key can therefore return a UUID instead of an error, including an e
 No marker identifies the producing mask or range start. Decode with the current pair first, then
 each `previousMasks` entry in caller order, returning the first candidate whose check passes. More
 masks create more opportunities for false acceptance; the combined rate is bounded by the sum
-of their individual rates. The codec must not append masks on the caller's behalf.
+of their individual rates. The codec never adds masks on the caller's behalf.
 
 Masked-source decoding always accepts both alphabets, sentinels, and current or previous mask
 outputs. Migration adds only the old formats the caller enables. Other forms are invalid.
@@ -153,4 +152,4 @@ base64url spelling, because converting a safe payload back must not change its i
 New masked output uses only the layout above. `codec.createUuidSlugMigrationDecoder` can separately read the original
 fixed permutation/XOR layout when enabled; its four-bit check cannot establish identity either.
 The format published in 0.2.0 remains unsupported. See the [migration reference](api.md#reading-original-slugs-during-migration)
-for format selection and record lookup; do not add an old layout to ordinary decoding.
+for format selection and record lookup. Ordinary decoding never reads old layouts.

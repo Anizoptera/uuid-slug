@@ -29,7 +29,7 @@ their TypeScript type permits only formats enabled when the reader was created.
 | `UuidText`, `UuidV4Text`, `UuidV7Text` | Valid UUID text in any accepted spelling; the version is known where the name says so. |
 | `UuidString`, `UuidV4String`, `UuidV7String` | Canonical UUID text; the version is known where the name says so. |
 | `UppercaseUuidString`, `UppercaseUuidV4String`, `UppercaseUuidV7String` | Uppercase UUID text; the version is known where the name says so. |
-| `UuidTextCase`, `UuidStringFor`, `UuidV4StringFor`, `UuidV7StringFor` | A preset choice and the UUID text type selected by it. |
+| `UuidTextCase`, `UuidStringFor`, `UuidV4StringFor`, `UuidV7StringFor` | A text-case choice (lowercase or uppercase) and the UUID text type it selects. |
 | `UuidVersion` | The complete four-bit version field: `0` through `15`. |
 | `PlainUuidSlug`, `PlainUuidV4Slug`, `PlainUuidV7Slug` | A plain slug in either alphabet; the version is known where the name says so. |
 | `MaskedUuidV7Slug` | A masked UUIDv7 slug; its check bits require masking-codec decoding. |
@@ -70,7 +70,7 @@ See [masking security](../README.md#masking-security) for incorrect-key decoding
 ## API
 
 Generation, conversion, and validation return the result below or `UuidSlugError`. Generation with
-no arguments or only a spelling preset returns its result directly; it throws `UuidSlugError` with
+no arguments or only a text-case or alphabet argument returns its result directly; it throws `UuidSlugError` with
 code `rng_unavailable` when generation cannot obtain secure randomness. When you supply
 an output array, the exact array and its type are preserved; otherwise byte outputs are new plain
 `Uint8Array` values. Invalid input leaves caller storage unchanged.
@@ -118,8 +118,8 @@ Without `readUnixMs`, this mode uses the runtime's high-resolution clock when av
 back to `Date.now()`. The selected width states the UUID layout, not the clock's real accuracy.
 If another reading lands in the same fraction bucket, the generator increments the counter. If the
 counter fills, it advances the logical fraction and then the millisecond timestamp. The default
-preserve policy applies the same rule when the clock moves backward, so extracted time can be later
-than the supplied instant. A reset policy may move backward after its tolerance. Explicit `at`
+`clockRollback` policy, `"preserve"`, applies the same rule when the clock moves backward, so extracted time can be later
+than the supplied instant. The `"reset"` policy may move backward after its tolerance. Explicit `at`
 calls on the generator join this sequence; module-level `at` calls use independent randomness.
 
 With the default preserve policy, successful current-time calls on one generator strictly increase
@@ -172,7 +172,9 @@ Use `parseUuid` when one UUID needs several operations. It validates and copies 
 Serialization returns canonical UUID text and intentionally drops the codec and payload layout.
 Mixed-version parsed values support text, byte, plain-slug and inspection calls without narrowing.
 When only some values retain a codec or payload layout, pass that configuration explicitly.
-Each preset is independent; binding its method to the UUID preserves the corresponding default.
+The retained codec and payload layout are independent. Unlike generator and codec methods, `Uuid`
+methods need their UUID as `this`: to pass one as a callback, bind it
+(`uuid.toMaskedSlug.bind(uuid)`); the bound method keeps the UUID's retained codec and layout.
 
 ```ts
 import { isUuidSlugError, parseUuid } from "@anizoptera/uuid-slug";
@@ -333,7 +335,7 @@ Also exported from the package root:
   custom-entropy paths. Their callback owns entropy quality and must fill every requested byte or
   return `UuidSlugError`; weak or partial successful fills cannot be detected.
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness;
-  generation with no arguments or only a spelling preset throws that error instead of returning it.
+  generation with no arguments or only a text-case or alphabet argument throws that error instead of returning it.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
   JavaScript realms and duplicate package copies.
 - `BASE64URL` and `BASE32HEX` select slug output without copying string literals.
@@ -558,7 +560,7 @@ Enable an old format before selecting it. Recognized sentinels always return the
 including old trailing-bit aliases when reading original or plain slugs.
 With literal options, TypeScript offers only `SEEDED_MASK_FORMAT` and the formats enabled with `true`;
 options whose values are dynamic remain selectable because they may be enabled at runtime.
-Pass a UUID text-case preset after the slug when the format is unknown, or after the format when it
+Pass a UUID text case (`UUID_TEXT_UPPERCASE` or `UUID_TEXT_LOWERCASE`) after the slug when the format is unknown, or after the format when it
 is known. Candidate arrays use the same selected case; lowercase remains the default.
 
 For unknown formats, use `uuidSlugToUuidStringCandidates` to find the matching record without guessing:

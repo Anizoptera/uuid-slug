@@ -205,7 +205,7 @@ Limits: profile timings include instrumentation and do not replace packed ratios
 
 ## Method
 
-Packed comparisons: `bun bench/compare.ts <baseline>` (also `bun run bench:compare`), filtered with `UUID_SLUG_PROFILE_FILTER=<ops>`; pick Node through `UUID_SLUG_COMPARE_NODE_EXECUTABLE`. Source comparisons build both revisions separately and point `UUID_SLUG_PROFILE_MODULE` at the built file on Node or `src/index.ts` on Bun, with an identical driver. See [the benchmark guide](README.md#run-a-comparison).
+Packed comparisons: `bun bench/compare.ts <baseline>` (also `bun run bench:compare`), filtered with `UUID_SLUG_PROFILE_FILTER=<ops>`; pick Node through `UUID_SLUG_COMPARE_NODE_EXECUTABLE`. Source comparisons build both revisions separately and point `UUID_SLUG_PROFILE_MODULE` at the built file on Node or `src/index.ts` on Bun, with an identical driver. See [source experiments](methods.md#source-experiments).
 
 Decisions rest on paired candidate/baseline median ratios from alternating fresh processes, repeated in at least two independent replays; a result counts only when its 95% interval excludes 1 in both. What the instruments cannot show:
 

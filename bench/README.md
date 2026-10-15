@@ -1,6 +1,6 @@
 # Benchmarks
 
-Read the [performance results](decisions.md), browse [generated reports](results/), or rerun the comparisons below.
+Read the [performance decisions](decisions.md) (what each call keeps, why, and what lost), browse [generated reports](results/), or rerun the comparisons below.
 
 ## Run a comparison
 
@@ -37,9 +37,7 @@ UUID_SLUG_PROFILE_FILTER=plain.encode bun run bench:profile:native
 Comparisons show each call's runtime, fastest library and native reference, relative speed and uncertainty.
 Profiles show timing, CPU and memory costs. Allocation profiles estimate allocation; heap snapshots show retention.
 
-- [Tracked reports](results/) contain throughput and randomness results.
-- `bench/reports/` holds raw measurements, profiles and captured inputs; Git ignores it.
-- [Performance results](decisions.md) explain the findings.
+Raw measurements, profiles and captured inputs go to `bench/reports/`. Git ignores that folder, so its files exist only on the machine that ran them.
 
 ## More controls
 
