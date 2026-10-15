@@ -239,6 +239,9 @@ for (const target of ["runner", "SIGINT", "SIGTERM", "deadline"] as const) {
   });
 }
 
+// The child's kill only prevents a leaked process after a hang; it shares the test's budget so it
+// never fails a run that is merely slow under a loaded full suite (the build alone can exceed 3 s).
+const generationBudgetMs = process.env.CI ? 30000 : 5000;
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   test(
     `generation benchmark ${signal} removes its built scratch`,
@@ -254,7 +257,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
         },
         stdout: "pipe",
         stderr: "ignore",
-        timeout: process.env.CI ? 30000 : 3000,
+        timeout: generationBudgetMs,
       });
       try {
         const reader = child.stdout.getReader();
@@ -276,7 +279,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
         await rm(scratch, { recursive: true, force: true });
       }
     },
-    process.env.CI ? 30000 : 5000,
+    generationBudgetMs,
   );
 }
 
