@@ -8,11 +8,11 @@ READ the owner before changing its subject; these references hold the detailed r
 
 | Work | Owner |
 | --- | --- |
-| Public interfaces, types, errors or declaration comments | `docs/public-api.md` in full |
+| ANY public TypeScript or Rust interface, type, error or declaration comment | `docs/public-api.md` in full |
 | Masking, keys, sentinels or identifier formats | `docs/design.md` and `docs/security.md` |
-| Rust, shared formats, package entries or bundling | `docs/cross-language.md` |
-| Experiments, profiles, evidence cleanup or performance gates | `bench/AGENTS.md`, then `bench/README.md` |
-| Versions, packaging, release tooling or publication | `docs/release.md` in full |
+| Rust, TS/Rust parity, shared formats, filesystem-safe output, package entries, runtime floors or bundling | `docs/cross-language.md` |
+| Experiments, profiles, drivers, evidence cleanup or performance gates, even from `src/` | `bench/AGENTS.md` (priorities, gates), then `bench/README.md` (commands, reports) |
+| Versions, packaging, release tooling or workflows, publication, recovery, assets, notes or finalization | `docs/release.md` in full |
 | Consumer copy or generation guarantees | §Writing public documentation, then README opening, affected section and reference |
 
 ## Work scope
@@ -69,8 +69,6 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 
 ## Public TypeScript interface protocol
 
-- Before ANY public TypeScript or Rust interface work, read `docs/public-api.md` in full. It owns
-  naming, shape, types, literals, defaults, errors, effects, compatibility, comments, and proof.
 - Start from executable consumer calls; `docs/public-api.md` §Rules and §Types and validation own
   runtime acceptance, TypeScript inference, defaults, constants and option-key checks. A declaration
   baseline proves signatures only.
@@ -91,39 +89,30 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 
 - The externally visible API is reserved. Put any proposed public export, option, behavior, or
   feature change and its consumer consequences in the same pull request. Merging is the maintainer
-  decision; no separate acceptance step exists.
+  decision; no separate acceptance step exists. Only released behavior has consumers: if
+  `git tag --contains <introducing commit>` is empty, changing it breaks no consumer; decide from evidence.
 - Keep public types that name a documented value or distinction consumers use in storage,
   parameters, return values, narrowing, or configuration. A package signature need not mention the
   type. Remove it only when no documented value or operation needs its distinction. Apply this rule
   separately to TypeScript and Rust, document the consumer effect, and verify each packaged surface.
-- Plans track work, never contracts or lasting conclusions. Durable code and docs must not reference
-  plans, phases or task IDs. Put consumer contracts in README, wire design in `docs/design.md`, security boundaries in
-  `docs/security.md`, cross-language and distribution decisions in `docs/cross-language.md`, and
-  measured conclusions in `bench/PERFORMANCE.md`.
+- Write each maintainer ruling into the file that owns its subject when it is made: consumer
+  contracts in README, wire design in `docs/design.md`, security boundaries in `docs/security.md`,
+  cross-language and distribution decisions in `docs/cross-language.md`, measured conclusions in
+  `bench/PERFORMANCE.md`. Plans, agent memory and session notes track progress only; a ruling kept
+  there is lost. Durable code and docs must not reference plans, phases or task IDs.
 - Keep execution decisions and unfinished atomic work as Markdown tasks in the one live plan.
   Replace superseded state in place; retain completed facts only when later work needs them.
   Never create shadow, staging, renamed or temporary plans.
-- Write each maintainer ruling into the repository file that owns its subject when it is made.
-  Plan files, agent memory, and session notes outside this repository track progress only; a ruling
-  kept there is lost to the next session.
-- Read README §Guarantees before changing generation or tests; it owns the consumer guarantees.
-  Before rejecting a faster implementation, name the published promise or explicit maintainer
-  requirement it violates. An unanswered proposal, existing test, or agent-derived plan constraint
-  is not a new guarantee. Fix conflicting contract text and the roadmap before implementation.
-  Before choosing default or configured generation guarantees, read `docs/public-api.md`
-  §Generation and codecs. Proper native guarantees are the default ceiling; trust their output
-  without extra validation or repair. Stronger guarantees require configuration. Correct conflicting
-  specifications and tests before implementation; that correction is authorized, while caller-input
-  validation and wire formats remain protected. Identify each rival's actual guarantees; agent-added
-  guarantees cannot disqualify it.
-  New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
-  is explicitly not guaranteed: do not gate it or reject a native generator for lacking it. The
-  exemption covers order only. Before adopting a native or alternative generator, compare every
-  field it encodes with the package generator, including timestamps against the clock during
-  sustained same-millisecond bursts, because counter overflow can move them ahead.
-  Measure implementation differences in `bench/`, where results inform rather than gate.
-- Read `docs/design.md` before changing masking, mask derivation, or sentinels. Preserve its wire layout:
-  masked payloads are UUIDv7-only, with a 16-bit check and a 42-bit timestamp offset from the configured start.
+- Before changing generation, its guarantees or tests, read README §Guarantees (consumer promises)
+  and `docs/public-api.md` §Generation and codecs. Proper native guarantees are the default ceiling;
+  stronger ones need configuration and a maintainer ruling before code or tests impose them.
+  Before rejecting a faster implementation, name the published promise or maintainer requirement it
+  breaks; proposals, existing tests and agent-derived constraints are not guarantees.
+  Intra-millisecond ordering is NOT guaranteed: never gate it or reject a native generator for
+  lacking it; the exemption covers order only. Before adopting a generator, compare every field it
+  encodes with the package's, including timestamps against the clock during sustained
+  same-millisecond bursts: counter overflow can push them ahead.
+- Preserve the `docs/design.md` wire layout: masked payloads are UUIDv7-only, with a 16-bit check and a 42-bit timestamp offset from the configured start.
   Preserve both their 22-character base64url and lossless 27-character base32hex spellings.
   Reject overflow rather than truncate. Base64url helpers accept exactly one 16-byte UUID payload
   or its canonical 22-character spelling; reject every other length. Preserve plain-slug padding rejection.
@@ -139,8 +128,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   durable docs, tests, generated declarations, or packaged consumer examples, except where text
   explicitly rejects that old term. Search all owners, rebuild declarations, and compile and run
   packed consumers before committing.
-- Read `docs/cross-language.md` before Rust work or changes shared with TypeScript. It owns
-  parity, approved filesystem-safe output and distribution boundaries. Keep base64url defaults;
+- Keep base64url defaults;
   select filesystem-safe masked output independently from the plain-slug alphabet.
   Preserve length-based alphabet inference for plain decoding.
 - Masked slugs and sentinels are core functionality. Sentinels use precomputed plain slugs per
@@ -184,7 +172,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   source selection and direct compiled execution separately because one does not prove the other.
 - Read `docs/public-api.md` §Package entries before changing exports or bundling. Keep each export
   path aligned with its owning source and built module. Use a facade only to hide internal exports
-  or join owners. Retain a subpath only while packed measurements show lower consumer work.
+  or join owners.
 - Check tree shaking from named root imports for each consumer job. Execute each bundle,
   exclude unrelated heavy code and compare independent optimizers. Subpaths serve direct ESM,
   never replace removable root imports. Compare decoder-only bundles before adding writers to
@@ -236,9 +224,6 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 ## Runtime boundaries and evidence
 
 - Cross-runtime probes replay recorded inputs and results. Test local generators separately.
-
-- Before performance work, driver changes or evidence cleanup, READ `bench/AGENTS.md` even when
-  working in `src/`. It owns priorities, experiments and gates; `bench/README.md` owns commands and reports.
 - Read repaired guidance and its dependents before proceeding. Enforce mechanically decidable
   failures in the existing harness, not a prose checker; public-document authorization still applies.
 - Use the `typescript` package for project checking; TypeScript 7 is the main compiler.
@@ -250,12 +235,9 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   caller inputs, results, failures, effects, guarantees and choices, never internal reasoning.
   Non-public TSDoc may explain constraints when editor help is useful. Keep versions, numbers,
   workloads and statistical limits in `bench/PERFORMANCE.md`; link it rather than copy them.
-  After behavior or dispatch changes, read every affected comment and repair stale reasoning.
 - Verify runtime behavior changes through owning correctness tests and existing regression checks
   for each affected runtime, output, capability and success or fallback branch. An aggregate result
   cannot prove a branch it does not exercise. Extend the nearest injectable harness when necessary.
-  Fresh benchmark, resource and profile experiments require the explicit scope in §Work scope;
-  a correctness repair alone does not authorize them.
 - Before adding test infrastructure, search `__test__/`, `bench/` and `scripts/` by capability and
   failure; inspect callers and package commands. Extend the nearest owner; split only for a different
   oracle, runtime, isolation or feedback boundary.
@@ -364,8 +346,6 @@ Keep agent rules in `AGENTS.md`; engineering and measurement detail stays in its
 - Preserve declaration names, visibility and ownership from the compiler AST; do not infer them from printed signatures, which can hide valid quoted, computed or Unicode names.
 - Trace referenced types before reporting no public API change; unchanged exported signatures can hide newly required arguments or changed results.
 
-- MUST read `docs/release.md` in full before changing versions, release tooling or workflows,
-  packaging, publication, recovery, assets, notes, or finalization.
 - Let the pre-commit hook run `bun run check` before Git creates the commit unless the maintainer selects narrower intermediate checks.
   Do not repeat that command manually for the same unchanged tree unless a failure or changed evidence requires another run.
   Track failed checks with unfinished work; a failed complete check prevents final delivery.
