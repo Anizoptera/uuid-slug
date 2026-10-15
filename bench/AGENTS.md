@@ -83,7 +83,9 @@ and `decisions.md` for measured conclusions.
   Extract executable baselines outside the repository; Git ignores do not exclude compiler or tests.
   Source captures must be text or archives, never executable `.ts` files. Never bypass artifact checks
   or suppress source-capture compiler errors.
-  Durable claims cite retained reports, never `/tmp` evidence.
+  `bench/reports/` is git-ignored and exists only on the machine that ran it, so a report path is
+  NOT evidence for anyone else. A durable claim states its own evidence: the deciding numbers,
+  runtime versions and measurement date.
 - Scope cleanup before setup. Preserve real failure evidence and its reproduction command until
   diagnosis; expected rejection fixtures archive inside their cleanup scope. Remove successful
   bundles, resolved failures and temporary checkouts. Before committing, inspect creator-owned paths
