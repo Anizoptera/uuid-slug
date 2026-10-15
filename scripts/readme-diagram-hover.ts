@@ -11,16 +11,16 @@ import { browserEngines } from "./browser-engines.ts";
 // are tuned per field (glow strength), so the check asserts "lit" rather than one tuning.
 type Probe = [string, string, string];
 // Where to put the pointer: the centre of an element, or just inside its right edge, which for
-// a hit area is the gap or half-hyphen it covers and for a legend item is its trailing space.
+// a hit area is the gap or half-hyphen it covers and for a legend item is the half gap after it.
 type Point = { sel: string; edge?: boolean };
 const CHECKS: { ruling: string; point: Point; probes: Probe[] }[] = [
   {
     ruling: "a legend item lights itself and its field everywhere and fades every other field",
     point: { sel: ".lg-time" },
     probes: [
-      [".lgg-time", "fill-opacity", ">0.2"],
-      [".lg-time", "fill-opacity", "1"],
-      [".lg-payload", "fill-opacity", "0.45"],
+      [".chip-time", "fill-opacity", ">0.05"],
+      [".lg-time", "opacity", "1"],
+      [".lg-payload", "opacity", "0.45"],
       [".ghost.time", "fill-opacity", "0.22"],
       [".time.cell", "opacity", "1"],
       [".payload.cell", "opacity", "0.3"],
@@ -30,7 +30,7 @@ const CHECKS: { ruling: string; point: Point; probes: Probe[] }[] = [
     ruling: "a piece focuses like a legend item and outlines the same bits in other rows",
     point: { sel: "#gu0 .hit" },
     probes: [
-      [".lgg-time", "fill-opacity", ">0.2"],
+      [".chip-time", "fill-opacity", ">0.05"],
       [".ghost.time", "fill-opacity", "0.22"],
       [".payload.cell", "opacity", "0.3"],
       ["#ob0", "opacity", "1"],
@@ -42,8 +42,8 @@ const CHECKS: { ruling: string; point: Point; probes: Probe[] }[] = [
     // Byte 6 holds 4 version bits and 4 payload bits.
     point: { sel: "#gb6 .hit" },
     probes: [
-      [".lgg-version", "fill-opacity", ">0.2"],
-      [".lgg-payload", "fill-opacity", ">0.2"],
+      [".chip-version", "fill-opacity", ">0.05"],
+      [".chip-payload", "fill-opacity", ">0.05"],
       [".version.cell", "opacity", "1"],
       [".payload.cell", "opacity", "1"],
       [".time.cell", "opacity", "0.3"],
@@ -60,19 +60,19 @@ const CHECKS: { ruling: string; point: Point; probes: Probe[] }[] = [
     point: { sel: "#gu7 .hit", edge: true },
     probes: [
       ["#ou7", "opacity", "1"],
-      [".lgg-time", "fill-opacity", ">0.2"],
+      [".chip-time", "fill-opacity", ">0.05"],
     ],
   },
   {
-    ruling: "no dead zones: the space after a legend item still hovers it",
+    ruling: "no dead zones: the gap after a legend item still hovers it",
     point: { sel: ".lg-time", edge: true },
-    probes: [[".lgg-time", "fill-opacity", ">0.2"]],
+    probes: [[".chip-time", "fill-opacity", ">0.05"]],
   },
   {
     ruling: "the Masked legend item lights masked rows and their ribbon",
     point: { sel: ".lg-masked" },
     probes: [
-      [".lgg-masked", "fill-opacity", ">0.2"],
+      [".chip-masked", "fill-opacity", ">0.05"],
       [".ghost.masked", "fill-opacity", "0.22"],
       [".time.cell", "opacity", "0.3"],
       [".masked.cell", "opacity", "1"],
@@ -83,7 +83,7 @@ const CHECKS: { ruling: string; point: Point; probes: Probe[] }[] = [
       "a masked character outlines its bits in the other masked row only, and lights Masked and its ribbon",
     point: { sel: "#gm0 .hit" },
     probes: [
-      [".lgg-masked", "fill-opacity", ">0.2"],
+      [".chip-masked", "fill-opacity", ">0.05"],
       [".ghost.masked", "fill-opacity", "0.22"],
       // Masked bits 0–5 lie in base32hex characters 0 (bits 0–4) and 1 (bits 5–9).
       ["#on0", "opacity", "1"],

@@ -18,8 +18,8 @@
 //     outlines its bits in the other masked row and lights the Masked legend item;
 //   - no dead zones: moving along a row never drops the highlight, so gaps and hyphens belong
 //     to the nearest piece, and leaving a piece waits a moment before un-highlighting;
-//   - a lit legend item gets a soft glow in its field colour behind the label, readable for
-//     every field colour.
+//   - a lit legend item shows as a crisp chip: a rounded pill with a faint field-colour fill
+//     and border behind its white label (a blurred glow read as tacky neon).
 // - Idle motion, slow and gentle: fields light in turn (with their legend items). It stops while
 //   a piece or legend item is hovered (real interaction), not merely while the pointer rests on
 //   the image, and resumes after.
@@ -51,6 +51,7 @@ import {
   UUID_V7_TEST_MASK,
   uuidStringToPlainSlug,
 } from "../src/index.ts";
+import { browserEngines } from "./browser-engines.ts";
 import { checkDiagramHover } from "./readme-diagram-hover.ts";
 
 const OUT = new URL("../docs/assets/uuid-representations.svg", import.meta.url);
@@ -250,29 +251,20 @@ const MONO = `ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monos
 // Field hover, per the rulings above: pointing at a legend item or a piece focuses the same way.
 // A piece's hit area (`.hit`) carries the class of every field the piece holds. Hovering it, or
 // f's legend item, fades every cell and legend item, then restores f's cells, legend item, glow
-// (`.lgg-f`, the blurred legend copy) and ribbons. Fade-all-then-restore makes a piece holding
+// (`.chip-f`, the pill behind the legend item) and ribbons. Fade-all-then-restore makes a piece holding
 // two fields keep both: per-field "fade the others" rules would fade each other's cells.
 // Pieces add outlines on top (linkRules). Every lit state sets transition-delay 0 so it appears
 // at once; base styles delay the return, so crossing a gap never flashes the image.
 const LIT_NOW = "transition-delay:0s";
-// Lit legend glow; tspans take no `opacity`, so the glow fades through fill and stroke opacity.
-// Strength per field (--g) evens out the colours' brightness: at one opacity the yellow and
-// cyan glows drown their white labels while the dark blue one barely shows.
-const GLOW = "fill-opacity:var(--g);stroke-opacity:var(--g)";
-const GLOW_STRENGTH: Record<Field, number> = {
-  time: 0.45,
-  version: 0.6,
-  variant: 0.85,
-  payload: 0.3,
-  masked: 0.5,
-  pad: 0.55,
-};
-const FIELD_HOVER = `svg:has(.hit:hover,.lg:hover) .cell{opacity:.3;${LIT_NOW}}svg:has(.hit:hover,.lg:hover) .lg{fill-opacity:.45;${LIT_NOW}}
+// A lit legend chip: faint enough that the white label keeps full contrast on every field
+// colour, with a firmer border that draws the pill.
+const CHIP = "fill-opacity:.16;stroke-opacity:.75";
+const FIELD_HOVER = `svg:has(.hit:hover,.lg:hover) .cell{opacity:.3;${LIT_NOW}}svg:has(.hit:hover,.lg:hover) .lg{opacity:.45;${LIT_NOW}}
 ${LEGEND.map(([f]) => {
   const either = `svg:has(.lg-${f}:hover,.${f}.hit:hover)`;
   const ribbon =
     f === "pad" ? "" : `${either} .ghost.${f}{fill-opacity:.22;stroke-opacity:.7;${LIT_NOW}}`;
-  return `${either} .cell.${f}{opacity:1}${either} .lg.lg-${f}{fill-opacity:1}${either} .lgg-${f}{${GLOW};${LIT_NOW}}${ribbon}`;
+  return `${either} .cell.${f}{opacity:1}${either} .lg.lg-${f}{opacity:1}${either} .chip-${f}{${CHIP};${LIT_NOW}}${ribbon}`;
 }).join("\n")}`;
 // Slow auto-highlight: each field's ribbons and legend glow brighten in turn, so the static
 // README <img> (which never receives the mouse) still shows how the fields travel between rows.
@@ -285,10 +277,10 @@ const AUTO_FIELDS = ["time", "version", "variant", "payload", "masked"] as const
 const AUTO_STEP_S = 4;
 // The legend glow follows the same clock as its ribbons, so the reader can name the moving colour.
 const AUTO_HIGHLIGHT = `@keyframes glow{0%,30%,100%{fill-opacity:.035;stroke-opacity:.1}10%,18%{fill-opacity:.14;stroke-opacity:.42}}
-@keyframes lgglow{0%,30%,100%{fill-opacity:0;stroke-opacity:0}10%,18%{${GLOW}}}
+@keyframes chiplit{0%,30%,100%{fill-opacity:0;stroke-opacity:0}10%,18%{${CHIP}}}
 ${AUTO_FIELDS.map((f, i) => {
   const timing = `${AUTO_FIELDS.length * AUTO_STEP_S}s ease-in-out ${i * AUTO_STEP_S}s infinite both`;
-  return `.ghost.${f}{animation:glow ${timing}}.lgg-${f}{animation:lgglow ${timing}}`;
+  return `.ghost.${f}{animation:glow ${timing}}.chip-${f}{animation:chiplit ${timing}}`;
 }).join("")}`;
 // Avalanche motion: one constant 6 s loop, never paused by hover, because nothing hovers there and
 // a reader must see it move without waiting. On that clock: the input bit flips; dashes stream
@@ -327,7 +319,7 @@ const WIRE_DASHES = ["2 8", "4 6", "1 4 3 2", "6 14", "3 7", "1 9", "5 5", "2 3 
 const spread = (i: number, n: number) => ((i * 37 + 11) % n) / n;
 // Hovering a piece or legend item stops the field cycle so the hover focus is the only one lit.
 // The avalanche keeps running: no hover state touches it.
-const STILL = `svg:has(.hit:hover,.lg:hover) :is(.ghost,.gl){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.gl,.av){animation:none}}`;
+const STILL = `svg:has(.hit:hover,.lg:hover) :is(.ghost,.chip){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.chip,.av){animation:none}}`;
 // Highlights wait this long before fading, so a pointer crossing a gap or moving to the next piece
 // never drops them for a frame. Lit states override it with LIT_NOW.
 const UNLIT_AFTER = ".12s";
@@ -341,9 +333,8 @@ const STYLE = `
 .sans{font-family:${SANS}}.mono{font-family:${MONO};font-variant-ligatures:none}
 .ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1;transition:fill-opacity .2s ease ${UNLIT_AFTER},stroke-opacity .2s ease ${UNLIT_AFTER}}.lead{color:#C6D0E1}
 text,rect,path{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0;transition:opacity .12s ease ${UNLIT_AFTER}}
-.hit{fill:none;pointer-events:all}.lg{pointer-events:auto;transition:fill-opacity .2s ease ${UNLIT_AFTER}}.cell{transition:opacity .2s ease ${UNLIT_AFTER}}
-${LEGEND.map(([f]) => `.lgg-${f}{--g:${GLOW_STRENGTH[f]}}`).join("")}
-.gl{fill:currentColor;stroke:currentColor;stroke-width:12px;stroke-linejoin:round;fill-opacity:0;stroke-opacity:0;transition:fill-opacity .2s ease ${UNLIT_AFTER},stroke-opacity .2s ease ${UNLIT_AFTER}}
+.hit{fill:none;pointer-events:all}.lg{transition:opacity .2s ease ${UNLIT_AFTER}}.lghit{fill:none;pointer-events:all}.cell{transition:opacity .2s ease ${UNLIT_AFTER}}
+.chip{fill:currentColor;stroke:currentColor;stroke-width:1.2;fill-opacity:0;stroke-opacity:0;transition:fill-opacity .2s ease ${UNLIT_AFTER},stroke-opacity .2s ease ${UNLIT_AFTER}}
 .x,.av.b{fill-opacity:0}.av.cm{opacity:0}
 ${FIELD_HOVER}
 ${AUTO_HIGHLIGHT}
@@ -351,7 +342,28 @@ ${AVALANCHE}
 ${STILL}`;
 const esc = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
 const r1 = (n: number) => Math.round(n * 10) / 10;
-// System fonts differ, so widths are estimates; layouts keep slack instead of measuring.
+// Real widths of sans text, measured in Chromium at build time. Used where a shape must fit text
+// exactly (legend chips); the text then gets this width through `textLength`, so viewers with
+// another system font keep the same width and only letter spacing adjusts.
+const measureSans = async (strings: string[], size: number, weight: number) => {
+  const browser = await browserEngines.chromium.launch();
+  try {
+    const page = await browser.newPage();
+    await page.setContent(
+      `<svg xmlns="http://www.w3.org/2000/svg">${strings.map((s, i) => `<text id="m${i}" font-family='${SANS}' font-size="${size}" font-weight="${weight}">${esc(s)}</text>`).join("")}</svg>`,
+    );
+    return await page.evaluate(
+      (n) =>
+        Array.from({ length: n }, (_, i) =>
+          (document.getElementById(`m${i}`) as unknown as SVGTextElement).getComputedTextLength(),
+        ),
+      strings.length,
+    );
+  } finally {
+    await browser.close();
+  }
+};
+// Elsewhere system fonts differ, so widths are estimates; layouts keep slack instead of measuring.
 const textWidth = (s: string, size: number, bold = false) => s.length * size * (bold ? 0.58 : 0.52);
 const wrap = (s: string, maxW: number, size: number): string[] => {
   const lines: string[] = [];
@@ -617,30 +629,46 @@ text(M, 50, COPY.title, FS.title, { weight: 600 });
 text(W - M, 50, COPY.pkg, 20, { cls: "pkg", weight: 600, anchor: "end" });
 text(M, 82, COPY.subtitle, FS.sub, { cls: "muted" });
 {
-  // One text run, so the viewer's own font spaces the items evenly; separate elements would need
-  // width estimates, which drift with each system font. Swatches are glyphs (▨ for padding, to
-  // echo the hatch), and each item is a hover target for the field view. The gap between items
-  // is spaces inside the items (half on each side), not dx, so it has a hover target and the
-  // pointer never falls between two items.
-  const HALF_GAP = "\u2002\u2009"; // en space + thin space: about 11 px each side at 16 px
-  const run = (cls: (f: Field) => string, swatch: (f: Field) => string, glow = false) =>
-    `<text x="${M}" y="117" class="ink sans" font-size="${FS.small}" font-weight="500"${glow ? ' filter="url(#legend-glow)"' : ""}>${LEGEND.map(
-      ([f, label], i) =>
-        `<tspan class="${cls(f)}">${i ? HALF_GAP : ""}${swatch(f)} ${esc(label)}${i < LEGEND.length - 1 ? HALF_GAP : ""}</tspan>`,
-    ).join("")}</text>`;
-  const glyph = (f: Field) => (f === "pad" ? "▨" : "■");
-  // The glow is a blurred copy of the same run: identical text lays out identically, so each
-  // item's glow sits exactly behind it without measuring. A thick round stroke turns the copy's
-  // glyphs into one blob per item, and the blur softens it into a capsule.
-  const glowCls = (f: Field) => `gl lgg-${f} ${f}`;
-  out.push(run(glowCls, glyph, true));
-  out.push(
-    run(
-      (f) => `lg lg-${f} ${f}`,
-      (f) => `<tspan class="${f} f">${glyph(f)}</tspan>`,
-    ),
+  // Each item is a group: its chip (hidden until lit), a square swatch and its label, laid out
+  // from measured widths (measureSans) so the chip fits the label exactly in every font. Its
+  // hover area (`.lghit`) spans the chip plus half the gap on each side, so the pointer never
+  // falls between two items.
+  const BASE = 117,
+    CHIP_TOP = BASE - 17,
+    CHIP_H = 24,
+    PAD_L = 7,
+    SWATCH = 11,
+    SWATCH_GAP = 6,
+    PAD_R = 9,
+    ITEM_GAP = 4;
+  const [urlSafeW, ...labelW] = await measureSans(
+    [COPY.urlSafe, ...LEGEND.map(([, label]) => label)],
+    FS.small,
+    500,
   );
-  text(W - M, 117, COPY.urlSafe, FS.small, { cls: "muted", anchor: "end" });
+  let x = M;
+  LEGEND.forEach(([f, label], i) => {
+    const w = labelW[i]!,
+      chipW = PAD_L + SWATCH + SWATCH_GAP + w + PAD_R,
+      left = i ? x - ITEM_GAP / 2 : x,
+      right = i < LEGEND.length - 1 ? x + chipW + ITEM_GAP / 2 : x + chipW;
+    out.push(`<g class="lg lg-${f} ${f}">`);
+    rect(x, CHIP_TOP, chipW, CHIP_H, `chip chip-${f}`, ` rx="${CHIP_H / 2}"`);
+    // Centred on the label's x-height band, about 5.5 px above the baseline at 16 px.
+    const sy = BASE - 5.5 - SWATCH / 2;
+    rect(x + PAD_L, sy, SWATCH, SWATCH, `${f} f`, ` rx="2"`);
+    if (f === "pad") rect(x + PAD_L, sy, SWATCH, SWATCH, "", ` fill="url(#hatch)" rx="2"`);
+    out.push(
+      `<text x="${r1(x + PAD_L + SWATCH + SWATCH_GAP)}" y="${BASE}" class="ink sans" font-size="${FS.small}" font-weight="500" textLength="${r1(w)}" lengthAdjust="spacing">${esc(label)}</text>`,
+    );
+    rect(left, CHIP_TOP - 4, right - left, CHIP_H + 8, "lghit");
+    out.push("</g>");
+    x += chipW + ITEM_GAP;
+  });
+  // The legend and the URL-safe note share one line; fail the build rather than overlap them.
+  if (x > W - M - urlSafeW! - 16)
+    throw new Error(`legend (${r1(x)} px) runs into the URL-safe note; shorten a label`);
+  text(W - M, BASE, COPY.urlSafe, FS.small, { cls: "muted", anchor: "end" });
 }
 y = 136;
 
@@ -915,7 +943,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
 <desc id="d">${esc(desc)}</desc>
 <style>${STYLE}
 ${linkRules()}</style>
-<defs><filter id="legend-glow" x="-5%" y="-100%" width="110%" height="300%"><feGaussianBlur stdDeviation="3.5"/></filter><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
+<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
 <rect width="100%" height="100%" class="bg"/>
 ${[...background, ...out].join("\n")}
 </svg>

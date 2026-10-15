@@ -10,20 +10,19 @@
 .sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-variant-ligatures:none}
 .ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1;transition:fill-opacity .2s ease .12s,stroke-opacity .2s ease .12s}.lead{color:#C6D0E1}
 text,rect,path{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0;transition:opacity .12s ease .12s}
-.hit{fill:none;pointer-events:all}.lg{pointer-events:auto;transition:fill-opacity .2s ease .12s}.cell{transition:opacity .2s ease .12s}
-.lgg-time{--g:0.45}.lgg-version{--g:0.6}.lgg-variant{--g:0.85}.lgg-payload{--g:0.3}.lgg-masked{--g:0.5}.lgg-pad{--g:0.55}
-.gl{fill:currentColor;stroke:currentColor;stroke-width:12px;stroke-linejoin:round;fill-opacity:0;stroke-opacity:0;transition:fill-opacity .2s ease .12s,stroke-opacity .2s ease .12s}
+.hit{fill:none;pointer-events:all}.lg{transition:opacity .2s ease .12s}.lghit{fill:none;pointer-events:all}.cell{transition:opacity .2s ease .12s}
+.chip{fill:currentColor;stroke:currentColor;stroke-width:1.2;fill-opacity:0;stroke-opacity:0;transition:fill-opacity .2s ease .12s,stroke-opacity .2s ease .12s}
 .x,.av.b{fill-opacity:0}.av.cm{opacity:0}
-svg:has(.hit:hover,.lg:hover) .cell{opacity:.3;transition-delay:0s}svg:has(.hit:hover,.lg:hover) .lg{fill-opacity:.45;transition-delay:0s}
-svg:has(.lg-time:hover,.time.hit:hover) .cell.time{opacity:1}svg:has(.lg-time:hover,.time.hit:hover) .lg.lg-time{fill-opacity:1}svg:has(.lg-time:hover,.time.hit:hover) .lgg-time{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}svg:has(.lg-time:hover,.time.hit:hover) .ghost.time{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
-svg:has(.lg-version:hover,.version.hit:hover) .cell.version{opacity:1}svg:has(.lg-version:hover,.version.hit:hover) .lg.lg-version{fill-opacity:1}svg:has(.lg-version:hover,.version.hit:hover) .lgg-version{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}svg:has(.lg-version:hover,.version.hit:hover) .ghost.version{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
-svg:has(.lg-variant:hover,.variant.hit:hover) .cell.variant{opacity:1}svg:has(.lg-variant:hover,.variant.hit:hover) .lg.lg-variant{fill-opacity:1}svg:has(.lg-variant:hover,.variant.hit:hover) .lgg-variant{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}svg:has(.lg-variant:hover,.variant.hit:hover) .ghost.variant{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
-svg:has(.lg-payload:hover,.payload.hit:hover) .cell.payload{opacity:1}svg:has(.lg-payload:hover,.payload.hit:hover) .lg.lg-payload{fill-opacity:1}svg:has(.lg-payload:hover,.payload.hit:hover) .lgg-payload{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}svg:has(.lg-payload:hover,.payload.hit:hover) .ghost.payload{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
-svg:has(.lg-masked:hover,.masked.hit:hover) .cell.masked{opacity:1}svg:has(.lg-masked:hover,.masked.hit:hover) .lg.lg-masked{fill-opacity:1}svg:has(.lg-masked:hover,.masked.hit:hover) .lgg-masked{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}svg:has(.lg-masked:hover,.masked.hit:hover) .ghost.masked{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
-svg:has(.lg-pad:hover,.pad.hit:hover) .cell.pad{opacity:1}svg:has(.lg-pad:hover,.pad.hit:hover) .lg.lg-pad{fill-opacity:1}svg:has(.lg-pad:hover,.pad.hit:hover) .lgg-pad{fill-opacity:var(--g);stroke-opacity:var(--g);transition-delay:0s}
+svg:has(.hit:hover,.lg:hover) .cell{opacity:.3;transition-delay:0s}svg:has(.hit:hover,.lg:hover) .lg{opacity:.45;transition-delay:0s}
+svg:has(.lg-time:hover,.time.hit:hover) .cell.time{opacity:1}svg:has(.lg-time:hover,.time.hit:hover) .lg.lg-time{opacity:1}svg:has(.lg-time:hover,.time.hit:hover) .chip-time{fill-opacity:.16;stroke-opacity:.75;transition-delay:0s}svg:has(.lg-time:hover,.time.hit:hover) .ghost.time{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
+svg:has(.lg-version:hover,.version.hit:hover) .cell.version{opacity:1}svg:has(.lg-version:hover,.version.hit:hover) .lg.lg-version{opacity:1}svg:has(.lg-version:hover,.version.hit:hover) .chip-version{fill-opacity:.16;stroke-opacity:.75;transition-delay:0s}svg:has(.lg-version:hover,.version.hit:hover) .ghost.version{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
+svg:has(.lg-variant:hover,.variant.hit:hover) .cell.variant{opacity:1}svg:has(.lg-variant:hover,.variant.hit:hover) .lg.lg-variant{opacity:1}svg:has(.lg-variant:hover,.variant.hit:hover) .chip-variant{fill-opacity:.16;stroke-opacity:.75;transition-delay:0s}svg:has(.lg-variant:hover,.variant.hit:hover) .ghost.variant{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
+svg:has(.lg-payload:hover,.payload.hit:hover) .cell.payload{opacity:1}svg:has(.lg-payload:hover,.payload.hit:hover) .lg.lg-payload{opacity:1}svg:has(.lg-payload:hover,.payload.hit:hover) .chip-payload{fill-opacity:.16;stroke-opacity:.75;transition-delay:0s}svg:has(.lg-payload:hover,.payload.hit:hover) .ghost.payload{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
+svg:has(.lg-masked:hover,.masked.hit:hover) .cell.masked{opacity:1}svg:has(.lg-masked:hover,.masked.hit:hover) .lg.lg-masked{opacity:1}svg:has(.lg-masked:hover,.masked.hit:hover) .chip-masked{fill-opacity:.16;stroke-opacity:.75;transition-delay:0s}svg:has(.lg-masked:hover,.masked.hit:hover) .ghost.masked{fill-opacity:.22;stroke-opacity:.7;transition-delay:0s}
+svg:has(.lg-pad:hover,.pad.hit:hover) .cell.pad{opacity:1}svg:has(.lg-pad:hover,.pad.hit:hover) .lg.lg-pad{opacity:1}svg:has(.lg-pad:hover,.pad.hit:hover) .chip-pad{fill-opacity:.16;stroke-opacity:.75;transition-delay:0s}
 @keyframes glow{0%,30%,100%{fill-opacity:.035;stroke-opacity:.1}10%,18%{fill-opacity:.14;stroke-opacity:.42}}
-@keyframes lgglow{0%,30%,100%{fill-opacity:0;stroke-opacity:0}10%,18%{fill-opacity:var(--g);stroke-opacity:var(--g)}}
-.ghost.time{animation:glow 20s ease-in-out 0s infinite both}.lgg-time{animation:lgglow 20s ease-in-out 0s infinite both}.ghost.version{animation:glow 20s ease-in-out 4s infinite both}.lgg-version{animation:lgglow 20s ease-in-out 4s infinite both}.ghost.variant{animation:glow 20s ease-in-out 8s infinite both}.lgg-variant{animation:lgglow 20s ease-in-out 8s infinite both}.ghost.payload{animation:glow 20s ease-in-out 12s infinite both}.lgg-payload{animation:lgglow 20s ease-in-out 12s infinite both}.ghost.masked{animation:glow 20s ease-in-out 16s infinite both}.lgg-masked{animation:lgglow 20s ease-in-out 16s infinite both}
+@keyframes chiplit{0%,30%,100%{fill-opacity:0;stroke-opacity:0}10%,18%{fill-opacity:.16;stroke-opacity:.75}}
+.ghost.time{animation:glow 20s ease-in-out 0s infinite both}.chip-time{animation:chiplit 20s ease-in-out 0s infinite both}.ghost.version{animation:glow 20s ease-in-out 4s infinite both}.chip-version{animation:chiplit 20s ease-in-out 4s infinite both}.ghost.variant{animation:glow 20s ease-in-out 8s infinite both}.chip-variant{animation:chiplit 20s ease-in-out 8s infinite both}.ghost.payload{animation:glow 20s ease-in-out 12s infinite both}.chip-payload{animation:chiplit 20s ease-in-out 12s infinite both}.ghost.masked{animation:glow 20s ease-in-out 16s infinite both}.chip-masked{animation:chiplit 20s ease-in-out 16s infinite both}
 @keyframes avin{0%,6%{fill:#24344D}10%,76%{fill:#F5F7FC}80%,100%{fill:#24344D}}
 @keyframes avint{0%,6%{fill:#F5F7FC}10%,76%{fill:#08111F}80%,100%{fill:#F5F7FC}}
 @keyframes avo{0%,14%{fill:#24344D}20%,76%{fill:#F5F7FC}82%,100%{fill:#24344D}}
@@ -37,7 +36,7 @@ svg:has(.lg-pad:hover,.pad.hit:hover) .cell.pad{opacity:1}svg:has(.lg-pad:hover,
 .av.c{animation:avc 6s ease-in-out infinite both;animation-delay:calc(var(--r) * 1.2000000000000002s - 3s)}
 .av.b{animation:avb 6s ease-in-out infinite both;animation-delay:calc(var(--r) * 1.2000000000000002s - 3s)}
 .av.cm{animation:avflow linear infinite,avsurge 6s ease-in-out infinite both;animation-duration:calc(.8s + var(--r) * 1.4s),6s;animation-delay:0s,-3s}
-svg:has(.hit:hover,.lg:hover) :is(.ghost,.gl){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.gl,.av){animation:none}}
+svg:has(.hit:hover,.lg:hover) :is(.ghost,.chip){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.chip,.av){animation:none}}
 svg:has(#gu0:hover) :is(#ou0,#ob0,#op0,#oq0){opacity:1;transition-delay:0s}
 svg:has(#gu1:hover) :is(#ou1,#ob0,#op0,#op1,#oq0,#oq1){opacity:1;transition-delay:0s}
 svg:has(#gu2:hover) :is(#ou2,#ob1,#op1,#oq1,#oq2){opacity:1;transition-delay:0s}
@@ -183,7 +182,7 @@ svg:has(#gn23:hover) :is(#om19,#on23){opacity:1;transition-delay:0s}
 svg:has(#gn24:hover) :is(#om20,#on24){opacity:1;transition-delay:0s}
 svg:has(#gn25:hover) :is(#om20,#om21,#on25){opacity:1;transition-delay:0s}
 svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
-<defs><filter id="legend-glow" x="-5%" y="-100%" width="110%" height="300%"><feGaussianBlur stdDeviation="3.5"/></filter><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
+<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
 <rect width="100%" height="100%" class="bg"/>
 <path class="ghost time" d="M36 260C36 266 36 266 36 272L280.8 272C280.8 266 280.8 266 280.8 260Z"/>
 <path class="ghost version" d="M280.8 260C280.8 266 280.8 266 280.8 272L312.3 272C312.3 266 312.3 266 312.3 260Z"/>
@@ -204,8 +203,43 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="36" y="50" class="ink sans" font-size="34" font-weight="600">One UUIDv7, six representations</text>
 <text x="1064" y="50" class="pkg sans" font-size="20" font-weight="600" text-anchor="end">@anizoptera/uuid-slug</text>
 <text x="36" y="82" class="muted sans" font-size="18">Store one UUID. Every form below converts back to it losslessly (masked ones with your key). No mapping table.</text>
-<text x="36" y="117" class="ink sans" font-size="16" font-weight="500" filter="url(#legend-glow)"><tspan class="gl lgg-time time">■ Timestamp  </tspan><tspan class="gl lgg-version version">  ■ Version  </tspan><tspan class="gl lgg-variant variant">  ■ Variant  </tspan><tspan class="gl lgg-payload payload">  ■ Payload (random or counter)  </tspan><tspan class="gl lgg-masked masked">  ■ Masked  </tspan><tspan class="gl lgg-pad pad">  ▨ Padding (zeros)</tspan></text>
-<text x="36" y="117" class="ink sans" font-size="16" font-weight="500"><tspan class="lg lg-time time"><tspan class="time f">■</tspan> Timestamp  </tspan><tspan class="lg lg-version version">  <tspan class="version f">■</tspan> Version  </tspan><tspan class="lg lg-variant variant">  <tspan class="variant f">■</tspan> Variant  </tspan><tspan class="lg lg-payload payload">  <tspan class="payload f">■</tspan> Payload (random or counter)  </tspan><tspan class="lg lg-masked masked">  <tspan class="masked f">■</tspan> Masked  </tspan><tspan class="lg lg-pad pad">  <tspan class="pad f">▨</tspan> Padding (zeros)</tspan></text>
+<g class="lg lg-time time">
+<rect x="36" y="100" width="115.9" height="24" class="chip chip-time" rx="12"/>
+<rect x="43" y="106" width="11" height="11" class="time f" rx="2"/>
+<text x="60" y="117" class="ink sans" font-size="16" font-weight="500" textLength="82.9" lengthAdjust="spacing">Timestamp</text>
+<rect x="36" y="96" width="117.9" height="32" class="lghit"/>
+</g>
+<g class="lg lg-version version">
+<rect x="155.9" y="100" width="88.5" height="24" class="chip chip-version" rx="12"/>
+<rect x="162.9" y="106" width="11" height="11" class="version f" rx="2"/>
+<text x="179.9" y="117" class="ink sans" font-size="16" font-weight="500" textLength="55.5" lengthAdjust="spacing">Version</text>
+<rect x="153.9" y="96" width="92.5" height="32" class="lghit"/>
+</g>
+<g class="lg lg-variant variant">
+<rect x="248.4" y="100" width="85.3" height="24" class="chip chip-variant" rx="12"/>
+<rect x="255.4" y="106" width="11" height="11" class="variant f" rx="2"/>
+<text x="272.4" y="117" class="ink sans" font-size="16" font-weight="500" textLength="52.3" lengthAdjust="spacing">Variant</text>
+<rect x="246.4" y="96" width="89.3" height="32" class="lghit"/>
+</g>
+<g class="lg lg-payload payload">
+<rect x="337.6" y="100" width="245.5" height="24" class="chip chip-payload" rx="12"/>
+<rect x="344.6" y="106" width="11" height="11" class="payload f" rx="2"/>
+<text x="361.6" y="117" class="ink sans" font-size="16" font-weight="500" textLength="212.5" lengthAdjust="spacing">Payload (random or counter)</text>
+<rect x="335.6" y="96" width="249.5" height="32" class="lghit"/>
+</g>
+<g class="lg lg-masked masked">
+<rect x="587.1" y="100" width="90.8" height="24" class="chip chip-masked" rx="12"/>
+<rect x="594.1" y="106" width="11" height="11" class="masked f" rx="2"/>
+<text x="611.1" y="117" class="ink sans" font-size="16" font-weight="500" textLength="57.8" lengthAdjust="spacing">Masked</text>
+<rect x="585.1" y="96" width="94.8" height="32" class="lghit"/>
+</g>
+<g class="lg lg-pad pad">
+<rect x="681.9" y="100" width="150.5" height="24" class="chip chip-pad" rx="12"/>
+<rect x="688.9" y="106" width="11" height="11" class="pad f" rx="2"/>
+<rect x="688.9" y="106" width="11" height="11" class="" fill="url(#hatch)" rx="2"/>
+<text x="705.9" y="117" class="ink sans" font-size="16" font-weight="500" textLength="117.5" lengthAdjust="spacing">Padding (zeros)</text>
+<rect x="679.9" y="96" width="152.5" height="32" class="lghit"/>
+</g>
 <text x="1064" y="117" class="muted sans" font-size="16" text-anchor="end">All text forms are URL-safe.</text>
 <path d="M36 136H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1.2"/>
 <text x="36" y="164" class="accent sans" font-size="16" font-weight="700">THE UUID · any version · 128 bits</text>
