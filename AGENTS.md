@@ -24,6 +24,7 @@ require final explicit maintainer authorization for each operation; plans, crede
 grant no permission. Other remote writes (pushes, pull requests, settings) also need explicit authorization.
 
 Fix wrong, missing or unreachable instructions first, then the plan, then implementation.
+Anything in this project that surprises you (a rule, tool, check or behavior that contradicts what you expected) MUST be reported to the user at once and written into the `AGENTS.md` that the next agent would load at that moment, so nobody hits it twice.
 Put the trigger and required action in visible `AGENTS.md`; unread rules cannot prevent mistakes.
 
 Standalone benchmarks, profiles, screens, calibration and optimization need an explicit request naming the consumer call.
