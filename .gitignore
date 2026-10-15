@@ -6,3 +6,4 @@ release-artifacts/
 *.tgz
 .DS_Store
 rust/target/
+.omc/
