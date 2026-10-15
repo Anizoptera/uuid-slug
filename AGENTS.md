@@ -320,6 +320,10 @@ Keep agent rules in `AGENTS.md`; engineering and measurement detail stays in its
 - `ROADMAP.md` README items are leads that agents wrote, not maintainer requirements. Before
   acting on one, check it against these rules and the current README; delete it if it asks for
   copy readers do not need, and never ask the maintainer to supply content for it.
+- A consistency defect is two places that tell the reader different facts, so the reader would
+  act differently. Different wording for the same fact ("almost time-ordered", "mostly by time")
+  and a rounded summary beside the exact value (badge "Bun >=1.0", Runtime "1.0.8") are not
+  defects; leave them.
 - Examples MUST stand alone. After building, run `bun scripts/check-readme.ts` for README links and TS examples.
   Construct and check reusable codecs once. Show direct calls; no forwarding wrappers, redundant
   returned inputs or unneeded conversions. Comments cannot excuse extra work.

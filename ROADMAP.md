@@ -5,7 +5,7 @@
 These items are leads that agents wrote, not requirements: check each against AGENTS.md §Writing public documentation before acting, and delete it if it fails. They do not authorize README edits or new measurements.
 
 - [ ] Link opening benefits to working examples and details. Connect related sections where the next question concerns representations, types/errors, buffers, ordering, masking, rotation, migration or recovery; use descriptive link text and avoid repeated links that add no navigation value.
-- [ ] Reconcile the opening, examples, representation/API tables and guarantees with each other and their owning contracts. Fix inconsistent names, accepted forms, results, runtime requirements, package availability and upgrade/recovery guidance; preserve distinct benefits and supported claims.
+- [ ] Reconcile the opening, examples, representation/API tables and guarantees with each other and their owning contracts (what counts as a mismatch: AGENTS.md §Writing public documentation). Fix inconsistent names, accepted forms, results, runtime requirements, package availability and upgrade/recovery guidance; preserve distinct benefits and supported claims.
 - [ ] Proofread the complete README for typos, grammar, ambiguous references and formatting after those repairs; preserve approved tone and sound wording. Compile changed examples independently and recheck affected links after heading edits.
 
 ## README diagram and badges
