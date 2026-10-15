@@ -3,6 +3,7 @@ import { isBuiltin } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { command } from "./command";
+import { typeScriptCheckers } from "./typescript-compilers";
 import { archiveAndRemoveScratch } from "./archive-scratch";
 import { formatConsumerGraph, inspectConsumerGraph } from "./consumer-graph";
 
@@ -341,13 +342,7 @@ export async function inspectArtifact(
       'import * as api from "./package/dist/index.js";\nimport { probeConsumer } from "./probe.mjs";\nawait probeConsumer(api);\n',
     );
     const consumers = await Promise.allSettled([
-      command(
-        "node",
-        [path.join(project, "node_modules/typescript-floor/bin/tsc"), "-p", root],
-        project,
-      ),
-      command("node", [path.join(project, "node_modules/typescript/bin/tsc"), "-p", root], project),
-      command("bun", ["check"], root),
+      ...typeScriptCheckers.map(([checker, ...args]) => command(checker, args, root)),
       command("node", [runner], root),
       command("bun", [runner], root),
       command("bun", [builtRunner], root),

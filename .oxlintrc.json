@@ -15,21 +15,21 @@
     // so `[...bytes.slice(a, b)]` is a conversion to a plain array, not a redundant copy — and
     // its auto-fix silently removed one, turning a passing assertion into a failing one.
     "unicorn/no-useless-spread": "off",
-    // TypeScript 5.0 cannot parse this source or read current library types, and the compiler API
-    // reports that as diagnostics a tool rarely reads, so a script on it walks damaged trees.
+    // TypeScript 5.9 types this source differently (it reports errors the project compiler does not),
+    // and the compiler API reports that as diagnostics a tool rarely reads, so a script on it reads wrong types.
     "no-restricted-imports": [
       "error",
       {
         "paths": [
           {
             "name": "typescript-floor",
-            "message": "typescript-floor is TypeScript 5.0, kept only to compile packed consumers on the oldest supported compiler. It cannot parse this source (import attributes) or read current library types (Uint8Array<ArrayBuffer>), so a tool built on it silently reads damaged trees. Import typescript-checker, the last in-process TypeScript, instead."
+            "message": "typescript-floor is the oldest supported TypeScript (5.9), run only as a command (scripts/typescript-compilers.ts) to check consumer code. It types this source differently from the project compiler, so a tool built on it silently reads wrong types. Import typescript-checker, the last in-process TypeScript, instead."
           }
         ],
         "patterns": [
           {
             "group": ["typescript-floor/**", "**/typescript-floor/**"],
-            "message": "Subpaths of typescript-floor (TypeScript 5.0) are restricted for the same reason as the package: import typescript-checker instead."
+            "message": "Subpaths of typescript-floor (the oldest supported TypeScript) are restricted for the same reason as the package: import typescript-checker instead."
           }
         ]
       }

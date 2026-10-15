@@ -479,7 +479,7 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
               const api = typeScriptApiSections(
                 previousTypeScript.declarations,
                 currentDeclaration.declarations,
-                incompatibleExports(previousTypeScript.source, currentDeclaration.source),
+                await incompatibleExports(previousTypeScript.source, currentDeclaration.source),
               );
               const metadata = npmSurfaceDifference(
                 previousTypeScript.package,

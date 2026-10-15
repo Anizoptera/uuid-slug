@@ -57,7 +57,8 @@ prose can say what to change.
 
 Breaking means old caller code stops compiling. TypeScript compatibility comes from the compiler:
 each export reaching a changed declaration, including unexported types it uses, must accept old
-calls (assignability plus argument count). Text comparison cannot decide this, and TypeScript never
+calls (assignability plus argument count) under every supported compiler; a change any one of them
+rejects is breaking. Text comparison cannot decide this, and TypeScript never
 relates deferred conditional types across two files, so unchanged exports are compatible by
 definition and only changed ones are checked; a false failure can only call a change breaking.
 Rust compatibility comes from cargo-semver-checks.

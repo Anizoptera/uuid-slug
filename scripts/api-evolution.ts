@@ -269,7 +269,7 @@ export function selectReleaseTag(tags: string, currentTag: string): string | und
   return latest && Bun.semver.order(latest.slice(1), "0.4.0") >= 0 ? latest : undefined;
 }
 
-export function verifyEvolution(
+export async function verifyEvolution(
   previousVersion: string,
   currentVersion: string,
   before: ApiReports,
@@ -277,7 +277,7 @@ export function verifyEvolution(
   packageLevels: readonly ReleaseLevel[] = [],
   tagged = true,
   pendingReleaseVersion?: string,
-): void {
+): Promise<void> {
   const oldRust = sections(before.rust);
   const newRust = sections(after.rust);
   const oldTsSource = before.typescript;
@@ -313,7 +313,7 @@ export function verifyEvolution(
       typeScriptApiSections(
         oldTsNormalized,
         newTsNormalized,
-        incompatibleExports(oldTsSource, newTsSource),
+        await incompatibleExports(oldTsSource, newTsSource),
       ),
     ),
     apiChangeLevel([...oldRustEntries].join("\n"), [...newRustEntries].join("\n")),
@@ -374,7 +374,7 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
       cargoManifestSurface(currentCargoText, currentCargoPackageText),
     ).level,
   ];
-  verifyEvolution(
+  await verifyEvolution(
     tag.slice(1),
     manifest.version,
     { typescript, rust },

@@ -169,12 +169,13 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Read repaired guidance and its dependents before proceeding. Enforce mechanically decidable
   failures in the existing harness, not a prose checker; public-document authorization still applies.
 - Use the `typescript` package for project checking; TypeScript 7 is the main compiler.
-  TypeScript 7 has no in-process API, so every script that uses the compiler as a library (parser,
-  printer, type checker, language service) imports `typescript-checker`, the last in-process
-  release. `typescript-floor` (5.0) only compiles packed consumers to prove the oldest supported
-  compiler; never import it. It cannot parse this source (import attributes) or read current
-  library types (`Uint8Array<ArrayBuffer>`), and a tool built on it reads damaged trees without
-  failing. Lint rejects the import.
+  Every check that judges consumer code (packed consumers, API compatibility) runs every checker in
+  `scripts/typescript-compilers.ts` and fails if any one rejects: checking rules and bundled
+  libraries change between releases, so no single compiler speaks for the others. Scripts that
+  use the compiler as a library (parser, printer, type checker, language service) import
+  `typescript-checker`: TypeScript 7 exposes only `typescript/unstable/*`, whose synchronous client
+  reads Node internals Bun lacks. `typescript-floor` (the oldest supported release, 5.9) runs only
+  as a command; it types this source differently, so lint rejects importing it.
 - Run Bun's built-in project checker as a separate lane beside TypeScript, not a replacement. Inventory both `Bun.build` calls and Bun CLI argument arrays; every bundler check uses `check: true` or CLI `--check`. Use `bun --check` for the project because its `check` package script otherwise takes precedence.
 - Verify runtime behavior changes through owning correctness tests and existing regression checks
   for each affected runtime, output, capability and success or fallback branch. An aggregate result

@@ -155,7 +155,7 @@
     "tsdown": "^0.23.1",
     "typescript": "^7.0.2",
     "typescript-checker": "npm:typescript@6.0.3",
-    "typescript-floor": "npm:typescript@5.0.4",
+    "typescript-floor": "npm:typescript@5.9.3",
     "uniku": "0.6.0",
     "uuid": "^14.0.3",
     "uuid-random": "1.3.2",

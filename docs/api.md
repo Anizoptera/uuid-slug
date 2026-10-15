@@ -10,7 +10,7 @@ This reference covers types, call signatures, codec configuration and migration.
 Branded types distinguish values this library has validated or produced. Plain strings and byte
 arrays are not assignable to them; pass raw input directly to package operations or use a guard when
 you need to retain the narrowed type.
-JavaScript consumers do not need TypeScript. The shipped declarations compile with TypeScript 5.0
+JavaScript consumers do not need TypeScript. The shipped declarations compile with TypeScript 5.9
 and newer.
 
 Public identifier, configuration, and selector string inputs accept primitive JavaScript strings

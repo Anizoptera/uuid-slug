@@ -69,21 +69,23 @@ function reports(ts: string, rust: string, rustDeprecated = "(none)", minimalRus
   };
 }
 
-test("released API rejects removal without prior deprecation", () => {
+test("released API rejects removal without prior deprecation", async () => {
   const before = reports("export declare function old(): void;", "pub fn uuid_slug::old()");
   const after = reports("", "");
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).toThrow(
+  await rejects(
+    verifyEvolution("0.4.0", "0.5.0", before, after),
     /TypeScript removes API.*Restore the listed API/s,
   );
 });
 
-test("same-cycle deprecation cannot authorize removal", () => {
+test("same-cycle deprecation cannot authorize removal", async () => {
   const before = reports("/** @deprecated */ export declare function old(): void;", "");
   const after = reports("", "");
-  expect(() => verifyEvolution("0.4.0", "0.4.1", before, after)).toThrow(
+  await rejects(
+    verifyEvolution("0.4.0", "0.4.1", before, after),
     /requires the next major release.*Option 1: keep the API.*Option 2:.*version:set.*recreate the release/s,
   );
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).not.toThrow();
+  await verifyEvolution("0.4.0", "0.5.0", before, after);
 });
 
 test("TypeScript declarations retain only deprecation documentation", () => {
@@ -93,36 +95,37 @@ test("TypeScript declarations retain only deprecation documentation", () => {
   );
 });
 
-test("inline deprecation stays bound to a TypeScript member", () => {
+test("inline deprecation stays bound to a TypeScript member", async () => {
   const before = reports(
     "export interface Options {\n/** @deprecated */\nold?: boolean;\ncurrent?: boolean;\n}",
     "",
   );
   const after = reports("export interface Options { current?: boolean; }", "");
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).not.toThrow();
+  await verifyEvolution("0.4.0", "0.5.0", before, after);
 });
 
-test("deprecating a TypeScript container covers its owned members", () => {
+test("deprecating a TypeScript container covers its owned members", async () => {
   const before = reports("/** @deprecated */ export interface Legacy { value(): void; }", "");
   const after = reports("", "");
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).not.toThrow();
+  await verifyEvolution("0.4.0", "0.5.0", before, after);
 });
 
-test("Rust removal requires the exact released item to be deprecated", () => {
+test("Rust removal requires the exact released item to be deprecated", async () => {
   const before = reports("", "pub fn uuid_slug::old()\n#[deprecated] pub fn uuid_slug::other()");
   const after = reports("", "");
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).toThrow(
-    "Rust removes API that was not deprecated",
+  await rejects(
+    verifyEvolution("0.4.0", "0.5.0", before, after),
+    /Rust removes API that was not deprecated/,
   );
 });
 
-test("inline Rust deprecation authorizes only a later removal", () => {
+test("inline Rust deprecation authorizes only a later removal", async () => {
   const before = reports("", "#[deprecated] pub fn uuid_slug::old()");
   const after = reports("", "");
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).not.toThrow();
+  await verifyEvolution("0.4.0", "0.5.0", before, after);
 });
 
-test("inline Rust deprecation authorizes only its feature surface and declaration", () => {
+test("inline Rust deprecation authorizes only its feature surface and declaration", async () => {
   const before = reports(
     "",
     "#[deprecated] pub type uuid_slug::Same = u8\npub fn uuid_slug::Same()",
@@ -130,63 +133,67 @@ test("inline Rust deprecation authorizes only its feature surface and declaratio
     "pub fn uuid_slug::Same()",
   );
   const after = reports("", "#[deprecated] pub type uuid_slug::Same = u8");
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).toThrow(
-    "Rust removes API that was not deprecated",
+  await rejects(
+    verifyEvolution("0.4.0", "0.5.0", before, after),
+    /Rust removes API that was not deprecated/,
   );
 });
 
-test("Rust feature-surface removal remains visible", () => {
+test("Rust feature-surface removal remains visible", async () => {
   const item = "pub fn uuid_slug::decode()";
   const before = reports("", item, "(none)", item);
   const after = reports("", item, "(none)", "");
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).toThrow(
-    "Rust removes API that was not deprecated",
+  await rejects(
+    verifyEvolution("0.4.0", "0.5.0", before, after),
+    /Rust removes API that was not deprecated/,
   );
 });
 
-test("removal boundaries stay exact beyond safe integers", () => {
+test("removal boundaries stay exact beyond safe integers", async () => {
   const before = reports("/** @deprecated */ export declare function old(): void;", "");
   const after = reports("", "");
-  expect(() =>
-    verifyEvolution("9007199254740992.0.0", "9007199254740993.0.0", before, after),
-  ).not.toThrow();
+  await verifyEvolution("9007199254740992.0.0", "9007199254740993.0.0", before, after);
 });
 
-test("public additions require a minor version", () => {
+test("public additions require a minor version", async () => {
   const before = reports("", "");
   const after = reports("export declare function added(): void;", "");
-  expect(() => verifyEvolution("0.4.0", "0.4.1", before, after)).toThrow(
+  await rejects(
+    verifyEvolution("0.4.0", "0.4.1", before, after),
     /does not satisfy the minor API change.*Option 1: restore the public surface.*Option 2:.*version:set.*recreate the release/s,
   );
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).not.toThrow();
-  expect(() => verifyEvolution("0.4.0", "0.4.1-dev", before, after, [], false)).toThrow(
+  await verifyEvolution("0.4.0", "0.5.0", before, after);
+  await rejects(
+    verifyEvolution("0.4.0", "0.4.1-dev", before, after, [], false),
     /does not satisfy the minor API change.*Option 1: restore the public surface.*Option 2:.*bun run version:set/s,
   );
-  expect(() => verifyEvolution("0.4.0", "0.5.0-dev", before, after, [], false)).not.toThrow();
+  await verifyEvolution("0.4.0", "0.5.0-dev", before, after, [], false);
 });
 
-test("an added interface member is not misclassified as a removal", () => {
+test("an added interface member is not misclassified as a removal", async () => {
   const before = reports("export interface Options { current?: boolean; }", "");
   const after = reports("export interface Options { current?: boolean; added?: boolean; }", "");
-  expect(() => verifyEvolution("0.4.0", "0.4.1", before, after)).toThrow(
-    "does not satisfy the minor API change",
+  await rejects(
+    verifyEvolution("0.4.0", "0.4.1", before, after),
+    /does not satisfy the minor API change/,
   );
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).not.toThrow();
-  expect(() => verifyEvolution("1.0.0", "1.1.0", before, after)).not.toThrow();
+  await verifyEvolution("0.4.0", "0.5.0", before, after);
+  await verifyEvolution("1.0.0", "1.1.0", before, after);
 });
 
-test("member removals remain bound to their owner", () => {
+test("member removals remain bound to their owner", async () => {
   const before = reports(
     "export interface First { value(): void; } export interface Second { value(): void; }",
     "",
   );
   const after = reports("export interface Second { value(): void; }", "");
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).toThrow(
-    "TypeScript removes API that was not deprecated",
+  await rejects(
+    verifyEvolution("0.4.0", "0.5.0", before, after),
+    /TypeScript removes API that was not deprecated/,
   );
 });
 
-test("routine compatibility detects declaration shape and overload order", () => {
+test("routine compatibility detects declaration shape and overload order", async () => {
   const changedHeritage = reports("export interface Value extends First { current(): void; }", "");
   const changedOverloads = reports(
     "export declare function value(input: string): string; export declare function value(input: unknown): unknown;",
@@ -197,38 +204,34 @@ test("routine compatibility detects declaration shape and overload order", () =>
     "export declare function value(input: unknown): unknown; export declare function value(input: string): string;",
     "",
   );
-  expect(() => verifyEvolution("1.0.0", "1.1.0", before, changedHeritage)).toThrow(
-    "major API change",
-  );
-  expect(() => verifyEvolution("1.0.0", "1.1.0", overloads, changedOverloads)).toThrow(
-    "major API change",
-  );
+  await rejects(verifyEvolution("1.0.0", "1.1.0", before, changedHeritage), /major API change/);
+  await rejects(verifyEvolution("1.0.0", "1.1.0", overloads, changedOverloads), /major API change/);
 });
 
-test("Rust additions require a minor version", () => {
+test("Rust additions require a minor version", async () => {
   const before = reports("", "");
   const after = reports("", "pub fn uuid_slug::added()");
-  expect(() => verifyEvolution("0.4.0", "0.4.1", before, after)).toThrow(
-    "does not satisfy the minor API change",
+  await rejects(
+    verifyEvolution("0.4.0", "0.4.1", before, after),
+    /does not satisfy the minor API change/,
   );
-  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).not.toThrow();
+  await verifyEvolution("0.4.0", "0.5.0", before, after);
 });
 
-test("development and release versions use distinct forms", () => {
+test("development and release versions use distinct forms", async () => {
   const unchanged = reports("", "");
-  expect(() =>
-    verifyEvolution("0.4.0", "0.4.1-dev", unchanged, unchanged, [], false),
-  ).not.toThrow();
-  expect(() => verifyEvolution("0.4.0", "0.4.1", unchanged, unchanged, [], false)).toThrow(
-    "must use X.Y.Z-dev",
+  await verifyEvolution("0.4.0", "0.4.1-dev", unchanged, unchanged, [], false);
+  await rejects(
+    verifyEvolution("0.4.0", "0.4.1", unchanged, unchanged, [], false),
+    /must use X\.Y\.Z-dev/,
   );
-  expect(() =>
-    verifyEvolution("0.4.0", "0.4.1", unchanged, unchanged, [], false, "0.4.1"),
-  ).not.toThrow();
-  expect(() =>
+  await verifyEvolution("0.4.0", "0.4.1", unchanged, unchanged, [], false, "0.4.1");
+  await rejects(
     verifyEvolution("0.4.0", "0.4.1", unchanged, unchanged, ["minor"], false, "0.4.1"),
-  ).toThrow("does not satisfy the minor API change");
-  expect(() => verifyEvolution("0.4.0", "0.4.1-dev", unchanged, unchanged)).toThrow(
+    /does not satisfy the minor API change/,
+  );
+  await rejects(
+    verifyEvolution("0.4.0", "0.4.1-dev", unchanged, unchanged),
     /must use stable.*bun run release/s,
   );
 });

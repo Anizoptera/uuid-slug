@@ -1,8 +1,26 @@
-// Compiler-backed API compatibility: builds programs over two declaration versions and asks the
-// type checker whether old caller code still compiles, which declaration text cannot decide.
+// Compiler-backed API compatibility: writes old caller code against two declaration versions and
+// asks every supported TypeScript checker whether it still compiles, which text cannot decide.
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import ts from "typescript-checker";
 import { exported, normalizeDeclarations, reachable, records } from "./release-comparison";
 import type { DeclarationRecord } from "./release-comparison";
+import { typeScriptCheckers } from "./typescript-compilers";
+
+// One configuration for the in-process program and every checker command. Default libraries ship
+// with each compiler and are not re-checked; checking them dominates every command's run time.
+const compilerOptions = {
+  strict: true,
+  noEmit: true,
+  target: "ESNext",
+  module: "ESNext",
+  moduleResolution: "Bundler",
+  // The API names web globals such as `AbortSignal`, which only the DOM library declares.
+  lib: ["ESNext", "DOM"],
+  types: [],
+  skipDefaultLibCheck: true,
+};
 
 // Every compatibility check builds two programs over the same standard library; parsing `lib.dom`
 // dominates their cost, and those files never change while the process runs.
@@ -49,17 +67,7 @@ function rootTexts(rows: readonly DeclarationRecord[], root: string): string {
  * a compiler assignability check. Text comparison cannot decide this: `generate(options: Options)`
  * prints identically after the unexported `Options.at` becomes required, yet `generate({})` breaks.
  */
-export function incompatibleExports(before: string, after: string): Set<string> {
-  const options: ts.CompilerOptions = {
-    strict: true,
-    noEmit: true,
-    target: ts.ScriptTarget.ESNext,
-    module: ts.ModuleKind.ESNext,
-    moduleResolution: ts.ModuleResolutionKind.Bundler,
-    // The API names web globals such as `AbortSignal`, which only the DOM library declares.
-    lib: ["lib.esnext.d.ts", "lib.dom.d.ts"],
-    types: [],
-  };
+export async function incompatibleExports(before: string, after: string): Promise<Set<string>> {
   // Each file's `unique symbol` would be a distinct type, making every branded type look
   // unrelated across versions. A caller has one version installed, so a brand keeps its identity
   // by name: both versions import each such symbol from one shared module.
@@ -85,43 +93,45 @@ export function incompatibleExports(before: string, after: string): Set<string> 
     // A file without exports is a global script with no API; `export {}` keeps it importable.
     return `${text}${source.slice(copied)}\nexport {};\n`;
   };
-  const sources = new Map([
-    ["/api/old.d.ts", shareSymbols(before)],
-    ["/api/new.d.ts", shareSymbols(after)],
+  const directory = await mkdtemp(join(tmpdir(), "uuid-slug-api-compatibility-"));
+  try {
+    return await checkDirectory(directory, before, after, symbols, {
+      "old.d.ts": shareSymbols(before),
+      "new.d.ts": shareSymbols(after),
+    });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}
+
+async function checkDirectory(
+  directory: string,
+  before: string,
+  after: string,
+  symbols: ReadonlySet<string>,
+  versions: Readonly<Record<"old.d.ts" | "new.d.ts", string>>,
+): Promise<Set<string>> {
+  const oldFile = join(directory, "old.d.ts");
+  await Promise.all([
+    ...Object.entries(versions).map(([name, text]) => writeFile(join(directory, name), text)),
+    writeFile(
+      join(directory, "symbols.d.ts"),
+      [...symbols].map((name) => `export declare const ${name}: unique symbol;`).join("\n"),
+    ),
   ]);
-  sources.set(
-    "/api/symbols.d.ts",
-    [...symbols].map((name) => `export declare const ${name}: unique symbol;`).join("\n"),
-  );
-  const compile = () => {
-    // The disk host still serves the standard library; the API files exist only in memory.
-    const disk = ts.createCompilerHost(options);
-    const host: ts.CompilerHost = {
-      ...disk,
-      getSourceFile: (name, version) => {
-        const text = sources.get(name);
-        return text === undefined
-          ? libraryFile(disk, name, version)
-          : ts.createSourceFile(name, text, version, true);
-      },
-      fileExists: (name) => sources.has(name) || disk.fileExists(name),
-      // Resolution checks the importing directory first, and `/api` exists nowhere on disk.
-      directoryExists: (name) => name === "/api" || ts.sys.directoryExists(name),
-      readFile: (name) => sources.get(name) ?? disk.readFile(name),
-    };
-    return ts.createProgram([...sources.keys()], options, host);
-  };
-  const program = compile();
-  const checker = program.getTypeChecker();
-  // Unresolved names become error types, which are assignable to anything, so a declaration file
-  // that does not type-check cannot prove compatibility: every changed export counts as breaking.
-  // Released rollups come from API Extractor and compile cleanly, so they keep the precise result.
-  const unchecked = ["/api/old.d.ts", "/api/new.d.ts"].some((name) => {
-    const file = program.getSourceFile(name);
-    return !file || program.getSemanticDiagnostics(file).length > 0;
+  // The in-process program only finds exports and argument counts; checker commands give the verdict.
+  const { options } = ts.convertCompilerOptionsFromJson(compilerOptions, directory);
+  const disk = ts.createCompilerHost(options);
+  const program = ts.createProgram([oldFile, join(directory, "new.d.ts")], options, {
+    ...disk,
+    getSourceFile: (name, version) =>
+      name.startsWith(directory)
+        ? disk.getSourceFile(name, version)
+        : libraryFile(disk, name, version),
   });
+  const checker = program.getTypeChecker();
   const exportsOf = (name: string) => {
-    const file = program.getSourceFile(name);
+    const file = program.getSourceFile(join(directory, name));
     const module = file && checker.getSymbolAtLocation(file);
     return new Map(
       (module ? checker.getExportsOfModule(module) : []).map((symbol) => [
@@ -160,13 +170,13 @@ export function incompatibleExports(before: string, after: string): Set<string> 
       const counterpart = checker.getPropertyOfType(newType, property.name);
       return (
         !counterpart ||
-        !property.declarations?.some((node) => node.getSourceFile().fileName === "/api/old.d.ts") ||
+        !property.declarations?.some((node) => node.getSourceFile().fileName === oldFile) ||
         arityKept(checker.getTypeOfSymbol(property), checker.getTypeOfSymbol(counterpart), seen)
       );
     });
   };
-  const previous = exportsOf("/api/old.d.ts");
-  const current = exportsOf("/api/new.d.ts");
+  const previous = exportsOf("old.d.ts");
+  const current = exportsOf("new.d.ts");
   // TypeScript never relates deferred conditional types declared in different files, so even an
   // identical export can fail the check. An export whose declarations and the types they use are
   // unchanged is compatible by definition; only exports reaching a changed declaration are
@@ -187,10 +197,6 @@ export function incompatibleExports(before: string, after: string): Set<string> 
   for (const [name, old] of previous) {
     const now = current.get(name);
     if (now && !touchesChange(old.name) && !touchesChange(now.name)) continue;
-    if (unchecked) {
-      incompatible.add(name);
-      continue;
-    }
     // Quoted export names cannot be written as `O.name`; treat their changes as breaking.
     if (!now || !/^[\p{ID_Start}$_][\p{ID_Continue}$\u200c\u200d]*$/u.test(name)) {
       incompatible.add(name);
@@ -220,23 +226,48 @@ export function incompatibleExports(before: string, after: string): Set<string> 
     }
   }
   const header = ['import type * as O from "./old";', 'import type * as N from "./new";'];
-  sources.set("/api/check.ts", [...header, ...checks.map(({ line }) => line)].join("\n"));
-  const checked = compile();
-  const file = checked.getSourceFile("/api/check.ts");
-  if (!file) throw new Error("The compatibility check file did not compile.");
-  for (const diagnostic of [
-    ...checked.getSyntacticDiagnostics(file),
-    ...checked.getSemanticDiagnostics(file),
-  ]) {
-    const check =
-      diagnostic.start === undefined
-        ? undefined
-        : checks[file.getLineAndCharacterOfPosition(diagnostic.start).line - header.length];
-    if (!check)
-      throw new Error(
-        `Compatibility check failed outside an export: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n")}`,
-      );
-    incompatible.add(check.name);
+  // Every export not given a check line is already decided.
+  if (!checks.length) return incompatible;
+  await Promise.all([
+    writeFile(
+      join(directory, "check.ts"),
+      [...header, ...checks.map(({ line }) => line)].join("\n"),
+    ),
+    writeFile(
+      join(directory, "tsconfig.json"),
+      JSON.stringify({ compilerOptions, files: ["check.ts"] }),
+    ),
+  ]);
+  const runs = await Promise.all(
+    typeScriptCheckers.map(async (command) => {
+      const child = Bun.spawn(command, { cwd: directory, stdout: "pipe", stderr: "pipe" });
+      const [stdout, stderr, code] = await Promise.all([
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+        child.exited,
+      ]);
+      return { command: command.join(" "), output: stdout + stderr, code };
+    }),
+  );
+  for (const { command, output, code } of runs) {
+    const errors = [...output.matchAll(/^(.+?)\((\d+),\d+\): error (TS\d+: .*)$/gm)];
+    // A failed run without diagnostics crashed or could not start; its silence proves nothing.
+    if (code !== 0 && !errors.length)
+      throw new Error(`${command} failed without a diagnostic:\n${output}`);
+    for (const [, file, line, message] of errors) {
+      // Unresolved names in a declaration file become error types that accept anything, so a
+      // version some supported compiler cannot check proves no export compatible under it.
+      if (file !== "check.ts") {
+        for (const { name } of checks) incompatible.add(name);
+        continue;
+      }
+      const check = checks[Number(line) - 1 - header.length];
+      if (!check)
+        throw new Error(
+          `Compatibility check failed outside an export under ${command}: ${message}`,
+        );
+      incompatible.add(check.name);
+    }
   }
   return incompatible;
 }

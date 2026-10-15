@@ -29,21 +29,21 @@ const codecApi = (method: string) =>
 
 const notesSections = (breaking: string, added: string) => ({ breaking, changed: "", added });
 
-test("compatibility follows unexported types an export uses", () => {
+test("compatibility follows unexported types an export uses", async () => {
   const before = optionsApi("at?: number;");
-  const sections = (after: string) =>
+  const sections = async (after: string) =>
     typeScriptApiSections(
       normalizeDeclarations(before),
       normalizeDeclarations(after),
-      incompatibleExports(before, after),
+      await incompatibleExports(before, after),
     );
   // `generate` prints identically, yet `generate({})` stops compiling.
-  expect(sections(optionsApi("at: number;"))).toEqual({
+  expect(await sections(optionsApi("at: number;"))).toEqual({
     breaking: "```diff\n- Options: at?: number;\n+ Options: at: number;\n```",
     changed: "",
     added: "",
   });
-  expect(sections(optionsApi("at?: number; extra?: string;"))).toEqual({
+  expect(await sections(optionsApi("at?: number; extra?: string;"))).toEqual({
     breaking: "",
     changed: "",
     added: "```diff\n+ Options: extra?: string;\n```",
@@ -51,26 +51,26 @@ test("compatibility follows unexported types an export uses", () => {
   // Assignability accepts a dropped optional parameter, yet `codec.encode(x, true)` stops compiling.
   const wide = codecApi("encode(value: string, strict?: boolean): string;");
   const narrow = codecApi("encode(value: string): string;");
-  expect([...incompatibleExports(wide, narrow)]).toEqual(["create"]);
-  expect([...incompatibleExports(narrow, wide)]).toEqual([]);
+  expect([...(await incompatibleExports(wide, narrow))]).toEqual(["create"]);
+  expect([...(await incompatibleExports(narrow, wide))]).toEqual([]);
   // An unresolved name is an error type that accepts anything, so it cannot prove compatibility.
   expect([
-    ...incompatibleExports(
+    ...(await incompatibleExports(
       "export declare function wait(signal: Missing): void;",
       "export declare function wait(signal: string): void;",
-    ),
+    )),
   ]).toEqual(["wait"]);
   // Released declarations use current library types; a compiler that cannot read them would turn
   // every compatible change into a breaking one.
   expect([
-    ...incompatibleExports(
+    ...(await incompatibleExports(
       "export declare function read(bytes: Uint8Array<ArrayBuffer>): void;",
       "export declare function read(bytes: Uint8Array<ArrayBuffer>, offset?: number): void;",
-    ),
+    )),
   ]).toEqual([]);
   // A removed export shows its own row, never its members or private helpers it used.
   expect(
-    sections(
+    await sections(
       optionsApi("at?: number;").replace(
         "export declare function generate",
         "export declare function create",
@@ -92,7 +92,7 @@ test("a compatible change to a branded export stays compatible", async () => {
     "export declare function isUuidString(value: unknown, strict?: boolean): value is UuidString;",
   );
   expect(widened).not.toBe(source);
-  expect([...incompatibleExports(source, widened)]).toEqual([]);
+  expect([...(await incompatibleExports(source, widened))]).toEqual([]);
 });
 
 test("release API diff exposes removals and additions without restating unchanged lines", () => {
