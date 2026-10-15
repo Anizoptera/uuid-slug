@@ -1,5 +1,3 @@
-Choose each runtime's writer from repeated consumer-call measurements, including mixed workloads and isolated calls.
-
 # Performance study
 
 ## Primary TypeScript call review

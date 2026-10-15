@@ -18,7 +18,7 @@ High-performance UUIDv4/v7 generation and handling for TS, Rust, and WASM, short
 - **Benchmark-leading UUIDv7 text generation on Node, Bun, Deno and browsers!**
   - 6+ distinct UUID representations are supported!
 
-- **[Leading performance](bench/PERFORMANCE.md)**, low memory and resource allocation!
+- **[Leading performance](bench/results/competitors.md)**, low memory and resource allocation!
   - Same API across Node, Bun, Deno, browsers and cloud workers. Native fast paths and portable fallbacks are used automatically.
   - _IDs can be generated or decoded [directly into your buffers](#work-with-uuid-bytes); failed validation leaves them unchanged._
 
@@ -49,7 +49,7 @@ High-performance UUIDv4/v7 generation and handling for TS, Rust, and WASM, short
 - TypeScript and Rust implementations that encode and decode the same formats, including masked IDs with matching key settings.
 
 
-[Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](bench/PERFORMANCE.md)
+[Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](bench/results/competitors.md)
 
 
 ## Install
@@ -85,7 +85,7 @@ Default generation returns the ID and throws `rng_unavailable` only without secu
 
 ## Contents
 
-- [Performance](bench/PERFORMANCE.md) · [Install](#install) · [Quick start](#quick-start)
+- [Performance](bench/results/competitors.md) · [Install](#install) · [Quick start](#quick-start)
 - [Convert existing IDs](#keep-your-existing-uuids) · [Representations](#representations)
 - [Plain slugs](#plain-slugs) · [Masking](#masked-slugs) · [Sentinels](#sentinels) · [Bytes](#work-with-uuid-bytes)
 - [Parse once](#parse-once-for-repeated-work) · [Offline IDs](#assign-ids-before-saving-or-syncing)
