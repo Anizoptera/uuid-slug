@@ -89,6 +89,10 @@ function reason(error: unknown): string {
     .join("\n");
 }
 
+// Deno 1.x loads its Node compatibility layer from deno.land/std at run time, so a deno.land
+// server error fails the lane without saying anything about the package or the floor.
+const denoLandOutage = (error: unknown) => /deno\.land\/std\S*' failed: 5\d\d/.test(reason(error));
+
 const root = await mkdtemp(path.join(tmpdir(), "uuid-slug-floors-"));
 let failed = false;
 try {
@@ -155,14 +159,18 @@ try {
   const results = await Promise.allSettled(
     lanes.map(async ([runtime, version]) => {
       const exe = await fetchRuntime(root, runtime, version);
-      const output =
+      const run = () =>
         runtime === "deno"
-          ? await command(exe, ["run", "-A", "probe.mjs"], denoDir, {
+          ? command(exe, ["run", "-A", "probe.mjs"], denoDir, {
               NPM_CONFIG_REGISTRY: `http://localhost:${registry.port}/`,
               DENO_DIR: path.join(denoDir, `cache-${version}`),
               NO_COLOR: "1",
             })
-          : await command(exe, ["probe.mjs"], consumer, { NO_COLOR: "1" });
+          : command(exe, ["probe.mjs"], consumer, { NO_COLOR: "1" });
+      // One retry rides out a short outage; the warm DENO_DIR refetches only what failed.
+      const output = await run().catch((error: unknown) =>
+        denoLandOutage(error) ? run() : Promise.reject(error),
+      );
       if (!output.includes("floor probe passed"))
         throw new Error(`${runtime} ${version} exited without the probe's success line.`);
       return `${runtime} ${version}`;
@@ -175,7 +183,11 @@ try {
   if (failures.length) {
     failed = true;
     throw new Error(
-      `Runtime floor probe failed:\n${failures.join("\n\n")}\n\nA declared floor no longer runs the package. Fix the package, or raise the floor in package.json engines and record the reason in dev/cross-language.md §Runtime floors.`,
+      `Runtime floor probe failed:\n${failures.join("\n\n")}\n\n${
+        results.some((result) => result.status === "rejected" && denoLandOutage(result.reason))
+          ? "deno.land returned a server error twice: an upstream outage, not a floor failure. Rerun the job later; do not change engines."
+          : "A declared floor no longer runs the package. Fix the package, or raise the floor in package.json engines and record the reason in dev/cross-language.md §Runtime floors."
+      }`,
     );
   }
   console.log(
