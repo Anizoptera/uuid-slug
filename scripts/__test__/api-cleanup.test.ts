@@ -53,6 +53,10 @@ test.each(vitestHosts)(
         expect(
           (await readdir(files, { recursive: true })).some((file) => file.endsWith("probe.mjs")),
         ).toBe(true);
+        // Under Deno, Vitest's own SIGTERM handler logs an unhandled
+        // `RangeError: The value of "code" is out of range ... Received NaN`: it falls back to
+        // `Number(signal)` when no signal number arrives, and Deno's `process` passes none. The
+        // noise is expected here; the launcher still exits nonzero, which is asserted below.
         child.kill("SIGTERM");
         while (!(await reader.read()).done) {
           /* Drain inherited worker output through termination. */

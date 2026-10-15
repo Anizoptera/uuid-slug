@@ -275,13 +275,6 @@ export function apiDifference(before: string, after: string, language: string): 
   };
 }
 
-export const apiDiff = (before: string, after: string): string =>
-  apiDifference(
-    normalizeDeclarations(before),
-    normalizeDeclarations(after),
-    "TypeScript declaration",
-  ).report;
-
 export function records(source: string): DeclarationRecord[] {
   return source
     .split("\n")
@@ -310,6 +303,11 @@ function headerRows(rows: readonly DeclarationRecord[], root: string): string[] 
     .map(({ text }) =>
       text.startsWith(`${root}: `) ? text.slice(root.length + 2).replace(/\{\n\}$/, "{ … }") : text,
     );
+}
+
+// Rows of `list` that `other` also has, in `list`'s order and count, comparable as one string.
+function shared(list: readonly string[], other: readonly string[]): string {
+  return JSON.stringify(list.filter((text) => other.includes(text)));
 }
 
 // `export {}` only marks the file as a module; it is no API.
@@ -370,29 +368,38 @@ export function typeScriptApiSections(
       if (visibleRoot) sections.breaking.removed.push(...headerRows(previous, root));
       continue;
     }
-    const removed = old.filter((text) => !now.includes(text));
-    const added = now.filter((text) => !old.includes(text));
-    // Same rows in another order still change overload resolution: show each reordered overload
-    // family whole, because the order is the change.
     const family = (rows: readonly DeclarationRecord[], name: string) =>
       rowsOf(rows)
         .filter((row) => row.family === name)
         .map(({ text }) => text);
-    const reordered = [...new Set(rowsOf(previous).map((row) => row.family))].filter((name) => {
+    const removed: string[] = [];
+    const added: string[] = [];
+    let reordered = false;
+    for (const name of new Set(
+      [...rowsOf(previous), ...rowsOf(current)].map((row) => row.family),
+    )) {
       const was = family(previous, name);
-      const kept = family(current, name).filter((text) => was.includes(text));
-      return JSON.stringify(was.filter((text) => kept.includes(text))) !== JSON.stringify(kept);
-    });
+      const is = family(current, name);
+      if (JSON.stringify(was) === JSON.stringify(is)) continue;
+      // Kept overloads in another order or count change overload resolution; only the whole
+      // family before and after shows that, since a row-by-row diff of identical text is empty.
+      if (shared(was, is) !== shared(is, was)) {
+        reordered = true;
+        removed.push(...was);
+        added.push(...is);
+      } else {
+        removed.push(...was.filter((text) => !is.includes(text)));
+        added.push(...is.filter((text) => !was.includes(text)));
+      }
+    }
     const target =
-      reordered.length || breakingRoots.has(root)
+      reordered || breakingRoots.has(root)
         ? sections.breaking
         : removed.length
           ? sections.changed
           : sections.added;
-    const moved = (rows: readonly DeclarationRecord[]) =>
-      reordered.flatMap((name) => family(rows, name));
-    target.removed.push(...new Set([...moved(previous), ...removed]));
-    target.added.push(...new Set([...moved(current), ...added]));
+    target.removed.push(...removed);
+    target.added.push(...added);
   }
   return {
     breaking: sectionDiff(sections.breaking),

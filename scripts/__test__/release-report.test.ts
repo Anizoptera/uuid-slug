@@ -2,7 +2,6 @@ import { expect, test } from "bun:test";
 import { rejects } from "node:assert/strict";
 import { fromMarkdown } from "mdast-util-from-markdown";
 import {
-  apiDiff,
   minimumRelease,
   normalizeDeclarations,
   binarySize,
@@ -18,6 +17,8 @@ const shownRows = (before: string, after: string) =>
   Object.values(typeScriptApiSections(before, after, new Set()))
     .filter(Boolean)
     .join("\n");
+const apiDiff = (before: string, after: string) =>
+  shownRows(normalizeDeclarations(before), normalizeDeclarations(after));
 
 // `generate` uses the unexported `Options`, so a change there reaches callers only through it.
 const optionsApi = (field: string) =>
@@ -100,9 +101,9 @@ test("release API diff exposes removals and additions without restating unchange
       "export declare function old(): void;\nexport declare function shared(): void;",
       "export declare function shared(): void;\nexport type New = 1;\n",
     ),
-  ).toBe("```diff\n- export declare function old(): void;\n+ export type New = 1;\n```");
-  const stable = "export declare const stable: number;";
-  expect(apiDiff(stable, stable)).toBe("No packaged TypeScript declaration changes.");
+  ).toBe(
+    "```diff\n- export declare function old(): void;\n```\n```diff\n+ export type New = 1;\n```",
+  );
 });
 
 test("public release diff omits private helpers while retaining changed exported members", () => {
