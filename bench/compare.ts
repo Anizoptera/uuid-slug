@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 import { chromium, firefox, webkit } from "playwright";
 import type { Page } from "playwright";
 
-import { command } from "../scripts/command";
+import { command, PACK_TIMEOUT_MS } from "../scripts/command";
 import { archiveAndRemoveScratch, deduplicateCapturedPackage } from "../scripts/archive-scratch";
 import { compareArtifacts } from "./identical-artifacts";
 import { describeSamples, medianConfidence, medianConfidence95 } from "./statistics";
@@ -133,6 +133,8 @@ async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet>
       root,
     ],
     project,
+    undefined,
+    { timeoutMs: PACK_TIMEOUT_MS },
   );
   const archives = (await readdir(outdir)).filter((name) => name.endsWith(".tgz"));
   if (archives.length !== 1)

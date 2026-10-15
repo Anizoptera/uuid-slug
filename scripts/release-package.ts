@@ -1,6 +1,6 @@
 import { mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { command } from "./command";
+import { command, PACK_TIMEOUT_MS } from "./command";
 import { preflightRelease } from "./release-notes";
 import { registryIntegrity, verifyIntegrity } from "./registry-integrity";
 
@@ -45,8 +45,7 @@ async function pack(
     ],
     cwd,
     request.mode === PUBLISH ? { UUID_SLUG_EXPECTED_ARCHIVE: request.reviewedArchive } : undefined,
-    // Packing includes the artifact hook; allow the release job's bounded CI budget.
-    { timeoutMs: 240_000 },
+    { timeoutMs: PACK_TIMEOUT_MS },
   );
   return archive(directory);
 }

@@ -24,6 +24,10 @@ const GIT_LOCAL_ENVIRONMENT = new Set([
   "GIT_WORK_TREE",
 ]);
 
+// publish-clean builds a pnpm pack and runs the artifact hook; under CI load that exceeds the
+// default budget even when it succeeds, so every pack call shares this one bound.
+export const PACK_TIMEOUT_MS = 240_000;
+
 /** Run an argv vector without a shell, draining both pipes and bounding a hung tool. */
 export async function command(
   executable: string,
