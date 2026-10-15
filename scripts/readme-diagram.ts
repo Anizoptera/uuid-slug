@@ -5,6 +5,25 @@
 // cannot drift from what the code produces, and a layout change edits a few constants instead
 // of hundreds of hand-placed coordinates.
 //
+// Maintainer rulings. Keep each one unless the maintainer drops it, and record new ones here
+// when made: a ruling kept only in a chat is lost, and the next edit deletes it.
+// - UUID text and bytes must look different: 36 characters as text, 16 bytes in binary.
+// - Faint field ribbons run under the rows: UUID text → bytes → base64url → base32hex, and
+//   masked base64url → masked base32hex (one band: the same 132 masked bits).
+// - Hover, every piece the same way:
+//   - a character, byte or bit outlines the same bits in every other row of its kind, brightens
+//     its field's ribbons and lights its field's legend item;
+//   - a legend item lights itself and its field everywhere and fades every other field;
+//   - masked rows too: both masked spellings carry the same 132 bits, so a masked character
+//     outlines its bits in the other masked row and lights the Masked legend item.
+// - Idle motion, slow and gentle: fields light in turn (with their legend items), and the
+//   avalanche gently animates how one flipped input bit randomises the masked output. It shows
+//   what the static README <img> cannot: how fields travel and how masking mixes bits.
+//   All motion stops while the pointer is on the image, and for reduced-motion users.
+// - The avalanche is drawn, not only counted: flipped input bit → mask → 16 output bytes.
+// - README: the image links to the raw SVG, and a text link under it says the raw view is
+//   interactive.
+//
 // Layout constraints:
 // - GitHub shows README images about 880 CSS px wide. Text renders at its SVG size × 880 / W,
 //   so W = 1100 keeps the smallest text (15) near 12 px. A wider canvas shrinks everything.
@@ -25,6 +44,7 @@ import {
   UUID_V7_TEST_MASK,
   uuidStringToPlainSlug,
 } from "../src/index.ts";
+import { checkDiagramHover } from "./readme-diagram-hover.ts";
 
 const OUT = new URL("../docs/assets/uuid-representations.svg", import.meta.url);
 
@@ -220,29 +240,110 @@ const LEGEND: [Field, string][] = [
 // ---------- drawing primitives ----------
 const SANS = `-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif`;
 const MONO = `ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace`;
-// Two hover gestures, one question each:
-// - a legend item asks "where is this field?": every other field's cells fade and the field's
-//   ribbons brighten;
-// - a character or byte asks "where do these bits go?" (see linkRules).
-// Cells themselves do not trigger the field view, so the two gestures never fire together.
+// Field hover, per the rulings above. Pointing at a coloured piece (a `.cell` of field f) or at
+// f's legend item lights that legend item and f's ribbons; only the legend item also fades the
+// other fields. Pieces skip the fade on purpose: sweeping the pointer along a row would flash the
+// whole image on every character, and the outlines from linkRules already answer "where do
+// these bits go?".
 const FIELD_HOVER = LEGEND.map(([f]) => {
-  const ribbon =
-    f === "masked" || f === "pad"
-      ? ""
-      : ` svg:has(.lg-${f}:hover) .ghost.${f}{fill-opacity:.22;stroke-opacity:.7}`;
-  return `svg:has(.lg-${f}:hover) .cell:not(.${f}){opacity:.3}${ribbon}`;
+  const either = `svg:has(.lg-${f}:hover,.${f}.cell:hover)`;
+  const ribbon = f === "pad" ? "" : `${either} .ghost.${f}{fill-opacity:.22;stroke-opacity:.7}`;
+  return `${either} .lg-${f}{stroke-opacity:.45}${ribbon}
+svg:has(.lg-${f}:hover) .cell:not(.${f}){opacity:.3}svg:has(.lg-${f}:hover) .lg:not(.lg-${f}){fill-opacity:.45}`;
 }).join("\n");
 // Slow auto-highlight: each field's ribbons brighten in turn, so the static README <img> (which
 // never receives the mouse) still shows how the fields travel between rows. Pointing at the
 // image stops it so the hover links take over; without scripts the stop cannot persist, so it
 // resumes when the pointer leaves. Reduced-motion users get the still image.
-const AUTO_FIELDS = ["time", "version", "variant", "payload"] as const;
-// Each field gets a 4 s turn of the 16 s cycle: ~2 s ease-in, a short hold, then a ~2.5 s
+const AUTO_FIELDS = ["time", "version", "variant", "payload", "masked"] as const;
+// Each field gets a 4 s turn of the 20 s cycle: ~2 s ease-in, a short hold, then a ~2.5 s
 // ease-out that overlaps the next field's rise, so the light hands over instead of blinking.
 const AUTO_STEP_S = 4;
-const AUTO_HIGHLIGHT = `@keyframes glow{0%,38%,100%{fill-opacity:.035;stroke-opacity:.1}12%,22%{fill-opacity:.14;stroke-opacity:.42}}
-${AUTO_FIELDS.map((f, i) => `.ghost.${f}{animation:glow ${AUTO_FIELDS.length * AUTO_STEP_S}s ease-in-out ${i * AUTO_STEP_S}s infinite both}`).join("")}
-svg:hover .ghost{animation:none}@media (prefers-reduced-motion:reduce){.ghost{animation:none}}`;
+// The legend item glows on the same clock as its ribbons, so the reader can name the moving colour.
+const AUTO_HIGHLIGHT = `@keyframes glow{0%,30%,100%{fill-opacity:.035;stroke-opacity:.1}10%,18%{fill-opacity:.14;stroke-opacity:.42}}
+@keyframes lgglow{0%,30%,100%{stroke-opacity:0}10%,18%{stroke-opacity:.45}}
+${AUTO_FIELDS.map((f, i) => {
+  const timing = `${AUTO_FIELDS.length * AUTO_STEP_S}s ease-in-out ${i * AUTO_STEP_S}s infinite both`;
+  return `.ghost.${f}{animation:glow ${timing}}.lg-${f}{animation:lgglow ${timing}}`;
+}).join("")}`;
+// Avalanche motion. The drawing marks every moving part with an `av` class (see the avalanche
+// block below); each variant here is only CSS over those parts. Static styles are the finished
+// state (changed bytes white, After slug shown), which STILL falls back to.
+// Per-part custom properties: --r is a fixed shuffled position in [0, 1) (spread), so scattered
+// timing looks random yet every build emits the same SVG; --k is the left-to-right position;
+// --d is the distance from the mask box.
+// TEMPORARY: ten variants for the maintainer to compare (DIAGRAM_AV=<name>); keep the chosen one
+// and delete the rest.
+const DIM = "#24344D",
+  LIT = "#F5F7FC",
+  DARK = "#08111F";
+const loop = (name: string, extra = "") => `animation:${name} 8s ease-in-out infinite both${extra}`;
+const flipIn = `@keyframes avin{0%,4%{fill:${DIM}}10%,86%{fill:${LIT}}94%,100%{fill:${DIM}}}
+@keyframes avint{0%,4%{fill:${LIT}}10%,86%{fill:${DARK}}94%,100%{fill:${LIT}}}
+.av.in{${loop("avin")}}.av.int{${loop("avint")}}`;
+// Output byte turns white at `on`% and back at 86–94%.
+const byteFlip = (on: number) =>
+  `@keyframes avo{0%,${on}%{fill:${DIM}}${on + 6}%,86%{fill:${LIT}}94%,100%{fill:${DIM}}}`;
+// Changed After characters crossfade from the Before character (overlay layer `.b`) to their own.
+const charSwap = (
+  on: number,
+) => `@keyframes avc{0%,${on}%{fill-opacity:0}${on + 6}%,86%{fill-opacity:1}94%,100%{fill-opacity:0}}
+@keyframes avb{0%,${on}%{fill-opacity:1}${on + 6}%,86%{fill-opacity:0}94%,100%{fill-opacity:1}}`;
+const AV_VARIANTS: Record<string, string> = {
+  // Changed bytes and characters turn over one by one in shuffled order.
+  scatter: `${flipIn}${byteFlip(16)}${charSwap(22)}
+.av.o{${loop("avo")};animation-delay:calc(var(--r) * 1.6s)}
+.av.c{${loop("avc")};animation-delay:calc(var(--r) * 1.6s)}.av.b{${loop("avb")};animation-delay:calc(var(--r) * 1.6s)}`,
+  // A bright dash runs down all 16 wires together; every changed byte flips as it lands.
+  comet: `${flipIn}${byteFlip(22)}
+@keyframes avcm{0%,8%{stroke-dashoffset:112;opacity:0}10%{opacity:1}22%{stroke-dashoffset:-12;opacity:1}26%,100%{stroke-dashoffset:-12;opacity:0}}
+.av.cm{stroke-dasharray:12 100;${loop("avcm", ";animation-timing-function:linear")}}.av.o{${loop("avo")}}`,
+  // A ring spreads from the mask box; bytes flip as it passes them.
+  ripple: `${flipIn}${byteFlip(14)}
+@keyframes avring{0%,10%{r:0;opacity:0}12%{opacity:.9}40%,100%{r:230px;opacity:0}}
+.av.ring{${loop("avring", ";animation-timing-function:ease-out")}}.av.o{${loop("avo")};animation-delay:calc(var(--d) * 1.8s)}`,
+  // Each byte shown as its 8 bits; the bits that change light up in shuffled order.
+  bits: `${flipIn}${byteFlip(16)}
+.av.bit{${loop("avo")};animation-delay:calc(var(--r) * 2.4s)}`,
+  // Changed bytes turn over like cards, one after another.
+  card: `${flipIn}
+@keyframes avcard{0%,14%{transform:scaleX(1);fill:${DIM}}18%{transform:scaleX(0);fill:${DIM}}18.1%{fill:${LIT}}22%,84%{transform:scaleX(1);fill:${LIT}}88%{transform:scaleX(0);fill:${LIT}}88.1%{fill:${DIM}}92%,100%{transform:scaleX(1);fill:${DIM}}}
+.av.o{transform-box:fill-box;transform-origin:center;${loop("avcard")};animation-delay:calc(var(--k) * 1.5s)}`,
+  // The Before slug's changed characters dissolve into the After ones in place.
+  morph: `${flipIn}${charSwap(14)}${byteFlip(14)}
+.av.o{${loop("avo")};animation-delay:calc(var(--r) * 2s)}
+.av.c{${loop("avc")};animation-delay:calc(var(--r) * 2s)}.av.b{${loop("avb")};animation-delay:calc(var(--r) * 2s)}`,
+  // Changed characters spin through three random glyphs, then stop on the real one.
+  slot: `${flipIn}${byteFlip(14)}
+.av.o{${loop("avo")};animation-delay:calc(var(--r) * 1.2s)}
+@keyframes avb{0%,14%{fill-opacity:1}14.5%,100%{fill-opacity:0}}
+@keyframes avs1{0%,14%{fill-opacity:0}14.5%,17%{fill-opacity:1}17.5%,100%{fill-opacity:0}}
+@keyframes avs2{0%,17%{fill-opacity:0}17.5%,20%{fill-opacity:1}20.5%,100%{fill-opacity:0}}
+@keyframes avs3{0%,20%{fill-opacity:0}20.5%,23%{fill-opacity:1}23.5%,100%{fill-opacity:0}}
+@keyframes avc{0%,23%{fill-opacity:0}23.5%,90%{fill-opacity:1}96%,100%{fill-opacity:0}}
+${["b", "s1", "s2", "s3", "c"].map((k) => `.av.${k}{${loop(`av${k}`, ";animation-timing-function:linear")};animation-delay:calc(var(--r) * 1.2s)}`).join("")}`,
+  // The input bit switches back and forth; bytes and the slug follow it exactly.
+  toggle: `@keyframes avin{0%,44%{fill:${DIM}}50%,94%{fill:${LIT}}100%{fill:${DIM}}}
+@keyframes avint{0%,44%{fill:${LIT}}50%,94%{fill:${DARK}}100%{fill:${LIT}}}
+@keyframes avo{0%,46%{fill:${DIM}}52%,94%{fill:${LIT}}100%{fill:${DIM}}}
+@keyframes avc{0%,46%{fill-opacity:0}52%,94%{fill-opacity:1}100%{fill-opacity:0}}
+@keyframes avb{0%,46%{fill-opacity:1}52%,94%{fill-opacity:0}100%{fill-opacity:1}}
+${["in", "int", "o", "c", "b"].map((k) => `.av.${k}{${loop(`av${k}`)}}`).join("")}`,
+  // Dashes stream steadily down every wire: every input feeds every output, all the time.
+  flow: `@keyframes avflow{to{stroke-dashoffset:-10}}
+.av.cm{stroke-dasharray:3 7;opacity:.9;animation:avflow 1.2s linear infinite}`,
+  // Changed bytes shimmer at uneven rates, like noise.
+  twinkle: `@keyframes avtw{0%,100%{fill-opacity:1}50%{fill-opacity:.35}}
+.av.o{animation:avtw calc(1.4s + var(--r) * 2.2s) ease-in-out infinite;animation-delay:calc(var(--r) * -3s)}`,
+};
+const AV_NAME = process.env["DIAGRAM_AV"] ?? "scatter";
+const AVALANCHE = AV_VARIANTS[AV_NAME];
+if (AVALANCHE === undefined) throw new Error(`DIAGRAM_AV: unknown variant ${AV_NAME}`);
+// Fixed shuffle of 0..n-1 scaled to [0, 1): 37 is prime and divides none of the part counts.
+const spread = (i: number, n: number) => ((i * 37 + 11) % n) / n;
+// One stop rule for every idle motion (field cycle and avalanche), so no animation fights a hover
+// state. Stopped elements fall back to their static styles, which show the finished picture.
+const STILL = `svg:hover :is(.ghost,.lg,.av){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.lg,.av){animation:none}}`;
 const STYLE = `
 .bg{fill:#0B1423}.ink{fill:#F5F7FC}.muted{fill:#C6D0E1}.box{fill:#15243A}.same{fill:#24344D}.chg{fill:#F5F7FC}
 .pkg{fill:#F5F7FC;fill-opacity:.6}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
@@ -251,9 +352,13 @@ const STYLE = `
 .sans{font-family:${SANS}}.mono{font-family:${MONO};font-variant-ligatures:none}
 .ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1}.lead{color:#C6D0E1}
 text,.hl,.ghost{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0}
-.lg{pointer-events:auto}.cell{transition:opacity .15s}
+.lg{pointer-events:auto;stroke:currentColor;stroke-width:6px;stroke-opacity:0;stroke-linejoin:round;paint-order:stroke;transition:stroke-opacity .15s,fill-opacity .15s}
+.cell{transition:opacity .15s}
+.x,.av.b,.av.s1,.av.s2,.av.s3{fill-opacity:0}.av.cm,.av.ring{opacity:0}
 ${FIELD_HOVER}
-${AUTO_HIGHLIGHT}`;
+${AUTO_HIGHLIGHT}
+${AVALANCHE}
+${STILL}`;
 const esc = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
 const r1 = (n: number) => Math.round(n * 10) / 10;
 // System fonts differ, so widths are estimates; layouts keep slack instead of measuring.
@@ -323,18 +428,21 @@ const bitX = (cells: Cell[], bit: number) => {
 // Only the dark variant blue needs white ink.
 const inkFor = (f: Field) => (f === "variant" ? "fw" : "fg");
 
-// Hover linking for the raw view (GitHub's README <img> is static). Each plain character or byte
+// Hover linking for the raw view (GitHub's README <img> is static). Each character or byte
 // records its bit range; hovering it reveals the outline of every linked piece holding any of
-// those bits. Masked rows are left out on purpose: masking scrambles bit positions, so no
-// masked character corresponds to particular UUID bits.
+// those bits. Bit numbers mean different things in two spaces, so links never cross them:
+// "uuid" bits are the UUID's own, "masked" bits are the 132 masked bits that both masked
+// spellings carry. Masking scrambles positions, so no masked bit maps to a UUID bit.
 interface Link {
   id: string;
+  space: "uuid" | "masked";
   start: number;
   bits: number;
 }
 const links: Link[] = [];
 const linked = (
   id: string,
+  space: Link["space"],
   start: number,
   bits: number,
   x: number,
@@ -342,7 +450,7 @@ const linked = (
   w: number,
   h: number,
 ) => {
-  links.push({ id, start, bits });
+  links.push({ id, space, start, bits });
   out.push(`<g id="g${id}">`);
   return () =>
     out.push(
@@ -352,7 +460,9 @@ const linked = (
 const linkRules = () =>
   links
     .map((a) => {
-      const hits = links.filter((b) => a.start < b.start + b.bits && b.start < a.start + a.bits);
+      const hits = links.filter(
+        (b) => a.space === b.space && a.start < b.start + b.bits && b.start < a.start + a.bits,
+      );
       return `svg:has(#g${a.id}:hover) :is(${hits.map((b) => `#o${b.id}`).join(",")}){opacity:1}`;
     })
     .join("\n");
@@ -374,7 +484,16 @@ const drawSpecimen = (
       continue;
     }
     const close = linkKey
-      ? linked(`${linkKey}${index++}`, c.start, c.bits, c.x, y, c.w, h)
+      ? linked(
+          `${linkKey}${index++}`,
+          f.masked ? "masked" : "uuid",
+          c.start,
+          c.bits,
+          c.x,
+          y,
+          c.w,
+          h,
+        )
       : undefined;
     drawGlyph(f, c, y, h, size, baseline);
     close?.();
@@ -414,9 +533,15 @@ const drawGlyph = (f: Form, c: Cell, y: number, h: number, size: number, baselin
 };
 
 // Faint field ribbons that run under the text between rows, so the eye can follow each field's bits.
-const ribbons = (upper: Cell[], yTop: number, lower: Cell[], yBottom: number) => {
+const ribbons = (
+  upper: Cell[],
+  yTop: number,
+  lower: Cell[],
+  yBottom: number,
+  segments = SEGMENTS,
+) => {
   const ym = r1((yTop + yBottom) / 2);
-  return SEGMENTS.map(([a, b, f]) => {
+  return segments.map(([a, b, f]) => {
     const ua = r1(bitX(upper, a)),
       ub = r1(bitX(upper, b)),
       la = r1(bitX(lower, a)),
@@ -487,7 +612,7 @@ text(M, 82, COPY.subtitle, FS.sub, { cls: "muted" });
   // echo the hatch), and each item is a hover target for the field view.
   const items = LEGEND.map(
     ([f, label], i) =>
-      `<tspan class="lg lg-${f}"${i ? ' dx="22"' : ""}><tspan class="${f} f">${f === "pad" ? "▨" : "■"}</tspan> ${esc(label)}</tspan>`,
+      `<tspan class="lg lg-${f} ${f}"${i ? ' dx="22"' : ""}><tspan class="${f} f">${f === "pad" ? "▨" : "■"}</tspan> ${esc(label)}</tspan>`,
   );
   out.push(
     `<text x="${M}" y="117" class="ink sans" font-size="${FS.small}" font-weight="500">${items.join("")}</text>`,
@@ -516,7 +641,7 @@ for (let i = 0; i < 16; i++) {
   const a = digitCells[i * 2]!,
     b = digitCells[i * 2 + 1]!,
     w = b.x + b.w - a.x;
-  const close = linked(`b${i}`, i * 8, 8, a.x, y, w, BYTES_H);
+  const close = linked(`b${i}`, "uuid", i * 8, 8, a.x, y, w, BYTES_H);
   rect(a.x + 1, y, w - 2, BYTES_H, "box", ` stroke="#667D99" stroke-width="1.2" rx="3"`);
   text(a.x + w / 2, y + BYTES_H / 2 + 6, HEX.slice(i * 2, i * 2 + 2), 21, {
     anchor: "middle",
@@ -620,10 +745,13 @@ for (const l of wrap(COPY.overlap, W - 2 * M, FS.meta)) {
 }
 y += GAP;
 const maskedTop = y;
+const maskedRows: { cells: Cell[]; top: number }[] = [];
 for (const id of ["m64", "m32"] as const) {
   const f = FORMS[id];
   head(f.name, f.facts, true);
-  drawSpecimen(f, cellsOf(f, M, CW), y, CELL_H, MONO_SIZE);
+  const cells = cellsOf(f, M, CW);
+  maskedRows.push({ cells, top: y });
+  drawSpecimen(f, cells, y, CELL_H, MONO_SIZE, id === "m64" ? "m" : "n");
   y += CELL_H + GAP;
   meta(f);
   y += ROW;
@@ -643,9 +771,9 @@ for (const id of ["m64", "m32"] as const) {
     text(x0, ry + bs * 0.7, row ? "After" : "Before", FS.small, { cls: "muted" });
     bits.split("").forEach((b, i) => {
       const changed = row === 1 && b !== lastByte[0][i];
-      rect(bx + i * (bs + 2), ry, bs, bs, changed ? "chg" : "same", ` rx="2"`);
+      rect(bx + i * (bs + 2), ry, bs, bs, changed ? "chg av in" : "same", ` rx="2"`);
       text(bx + i * (bs + 2) + bs / 2, ry + bs * 0.72, b, FS.small, {
-        cls: changed ? "fg" : "ink",
+        cls: changed ? "fg av int" : "ink",
         anchor: "middle",
         mono: true,
       });
@@ -663,15 +791,45 @@ for (const id of ["m64", "m32"] as const) {
   text(mid, ay + 40, "same key and settings", FS.small - 1, { cls: "muted", anchor: "middle" });
   const outY = ay + boxH + 54,
     ow = 13,
-    og = (SIDE_W - 16 * ow) / 15;
+    og = (SIDE_W - 16 * ow) / 15,
+    oh = 22;
+  // Hidden at rest; ripple variant grows it from the box's lower edge.
+  out.push(
+    `<circle class="av ring" cx="${r1(mid)}" cy="${r1(ay + boxH)}" r="0" fill="none" stroke="#FF921C" stroke-width="2"/>`,
+  );
   for (let i = 0; i < 16; i++) {
-    const ox = x0 + i * (ow + og) + ow / 2;
-    path(
-      `M${r1(mid)} ${ay + boxH}C${r1(mid)} ${ay + boxH + 30} ${r1(ox)} ${outY - 26} ${r1(ox)} ${outY - 2}`,
-      "masked",
-      1.6,
+    const ox = x0 + i * (ow + og) + ow / 2,
+      wire = `M${r1(mid)} ${ay + boxH}C${r1(mid)} ${ay + boxH + 30} ${r1(ox)} ${outY - 26} ${r1(ox)} ${outY - 2}`;
+    path(wire, "masked", 1.6);
+    // Overlay wire for the comet and flow variants; invisible at rest.
+    out.push(
+      `<path d="${wire}" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>`,
     );
-    rect(x0 + i * (ow + og), outY, ow, 22, CHANGED_BYTES[i] ? "chg" : "same", ` rx="2"`);
+    const vars = ` style="--r:${spread(i, 16)};--k:${i / 15};--d:${r1(Math.abs(ox - mid) / (SIDE_W / 2))}"`,
+      tx = x0 + i * (ow + og);
+    if (AV_NAME === "bits") {
+      // Each byte as 8 stacked bits, so the reader sees which bits flip, not only which bytes.
+      for (let j = 0; j < 8; j++) {
+        const b = i * 8 + j,
+          flips = OUT_BITS[b] !== OUT_AFTER[b];
+        rect(
+          tx,
+          outY + (j * oh) / 8,
+          ow,
+          oh / 8 - 0.5,
+          flips ? "chg av bit" : "same",
+          flips ? ` style="--r:${spread(b, 128)}"` : "",
+        );
+      }
+    } else
+      rect(
+        tx,
+        outY,
+        ow,
+        oh,
+        CHANGED_BYTES[i] ? "chg av o" : "same",
+        ` rx="2"${CHANGED_BYTES[i] ? vars : ""}`,
+      );
   }
   let ty = outY + 48;
   text(x0, ty, `${CHANGED_BYTES.filter(Boolean).length} of 16 masked bytes change`, FS.meta, {
@@ -684,7 +842,29 @@ for (const id of ["m64", "m32"] as const) {
   text(x0, ty + 76, "Before", FS.small, { cls: "muted" });
   text(bx, ty + 76, M64, 15, { cls: "masked f", mono: true });
   text(x0, ty + 98, "After", FS.small, { cls: "muted" });
-  text(bx, ty + 98, M64_AFTER, 15, { cls: "masked f", mono: true });
+  // The After slug is a stack of same-position lines, one tspan per character; monospace keeps
+  // every line's characters aligned. Layers: the After slug itself (changed characters `.c`),
+  // the Before characters (`.b`) and three random glyph frames (`.s1`–`.s3`). Only changed
+  // positions get visible tspans in the extra layers; all extra layers are invisible at rest.
+  const layer = (s: string, cls: string, onlyChanged: boolean) =>
+    out.push(
+      `<text x="${r1(bx)}" y="${r1(ty + 98)}" class="masked f mono" font-size="15">${s
+        .split("")
+        .map((ch, i) => {
+          if (M64_AFTER[i] !== M64[i])
+            return `<tspan class="av ${cls}" style="--r:${spread(i, 22)}">${esc(ch)}</tspan>`;
+          return onlyChanged ? `<tspan class="x">${esc(ch)}</tspan>` : `<tspan>${esc(ch)}</tspan>`;
+        })
+        .join("")}</text>`,
+    );
+  // A random glyph per position and frame, from a fixed seed so builds stay identical.
+  const noise = (frame: number) =>
+    M64.split("")
+      .map((_, i) => ALPHA64[(i * 29 + frame * 17 + 5) % 64]!)
+      .join("");
+  layer(M64_AFTER, "c", false);
+  layer(M64, "b", true);
+  for (const frame of [1, 2, 3]) layer(noise(frame), `s${frame}`, true);
   text(x0, ty + 120, `${CHAR_FLIPS} of 22 characters differ`, FS.small - 1, { cls: "muted" });
   ty += 134;
   y = Math.max(y, ty);
@@ -701,7 +881,8 @@ for (const n of COPY.notes) {
 }
 const H = Math.ceil(y + 18);
 
-// Ribbons go behind everything: UUID text → bytes → base64url → base32hex.
+// Ribbons go behind everything: UUID text → bytes → base64url → base32hex, then masked base64url →
+// masked base32hex.
 const background = [
   ...ribbons(uuidCells, textTop + CELL_H, digitCells, bytesTop),
   ...ribbons(digitCells, bytesTop + BYTES_H, plainRows.p64.cells, plainRows.p64.top),
@@ -710,6 +891,13 @@ const background = [
     plainRows.p64.top + CELL_H,
     plainRows.p32.cells,
     plainRows.p32.top,
+  ),
+  ...ribbons(
+    maskedRows[0]!.cells,
+    maskedRows[0]!.top + CELL_H,
+    maskedRows[1]!.cells,
+    maskedRows[1]!.top,
+    [[0, 132, "masked"]],
   ),
 ];
 const desc = `The UUIDv7 ${UUID} as UUID text, 16 bytes, plain base64url ${P64}, plain base32hex ${P32}, masked base64url ${M64} and masked base32hex ${M32}, with what each form is for, how it sorts and whether case matters. Flipping the last UUID bit changes ${CHAR_FLIPS} of 22 masked base64url characters (${M64_AFTER}).`;
@@ -726,3 +914,9 @@ ${[...background, ...out].join("\n")}
 `;
 await Bun.write(OUT, svg);
 console.log(`${OUT.pathname}: ${W}x${H}, ${svg.length} bytes`);
+// Prove the hover and motion rulings in a real browser on every build.
+const broken = await checkDiagramHover(OUT.pathname);
+if (broken.length)
+  throw new Error(
+    `Diagram breaks maintainer rulings (see this file's header):\n${broken.join("\n")}`,
+  );

@@ -10,16 +10,31 @@
 .sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-variant-ligatures:none}
 .ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1}.lead{color:#C6D0E1}
 text,.hl,.ghost{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0}
-.lg{pointer-events:auto}.cell{transition:opacity .15s}
-svg:has(.lg-time:hover) .cell:not(.time){opacity:.3} svg:has(.lg-time:hover) .ghost.time{fill-opacity:.22;stroke-opacity:.7}
-svg:has(.lg-version:hover) .cell:not(.version){opacity:.3} svg:has(.lg-version:hover) .ghost.version{fill-opacity:.22;stroke-opacity:.7}
-svg:has(.lg-variant:hover) .cell:not(.variant){opacity:.3} svg:has(.lg-variant:hover) .ghost.variant{fill-opacity:.22;stroke-opacity:.7}
-svg:has(.lg-payload:hover) .cell:not(.payload){opacity:.3} svg:has(.lg-payload:hover) .ghost.payload{fill-opacity:.22;stroke-opacity:.7}
-svg:has(.lg-masked:hover) .cell:not(.masked){opacity:.3}
-svg:has(.lg-pad:hover) .cell:not(.pad){opacity:.3}
-@keyframes glow{0%,38%,100%{fill-opacity:.035;stroke-opacity:.1}12%,22%{fill-opacity:.14;stroke-opacity:.42}}
-.ghost.time{animation:glow 16s ease-in-out 0s infinite both}.ghost.version{animation:glow 16s ease-in-out 4s infinite both}.ghost.variant{animation:glow 16s ease-in-out 8s infinite both}.ghost.payload{animation:glow 16s ease-in-out 12s infinite both}
-svg:hover .ghost{animation:none}@media (prefers-reduced-motion:reduce){.ghost{animation:none}}
+.lg{pointer-events:auto;stroke:currentColor;stroke-width:6px;stroke-opacity:0;stroke-linejoin:round;paint-order:stroke;transition:stroke-opacity .15s,fill-opacity .15s}
+.cell{transition:opacity .15s}
+.x,.av.b,.av.s1,.av.s2,.av.s3{fill-opacity:0}.av.cm,.av.ring{opacity:0}
+svg:has(.lg-time:hover,.time.cell:hover) .lg-time{stroke-opacity:.45}svg:has(.lg-time:hover,.time.cell:hover) .ghost.time{fill-opacity:.22;stroke-opacity:.7}
+svg:has(.lg-time:hover) .cell:not(.time){opacity:.3}svg:has(.lg-time:hover) .lg:not(.lg-time){fill-opacity:.45}
+svg:has(.lg-version:hover,.version.cell:hover) .lg-version{stroke-opacity:.45}svg:has(.lg-version:hover,.version.cell:hover) .ghost.version{fill-opacity:.22;stroke-opacity:.7}
+svg:has(.lg-version:hover) .cell:not(.version){opacity:.3}svg:has(.lg-version:hover) .lg:not(.lg-version){fill-opacity:.45}
+svg:has(.lg-variant:hover,.variant.cell:hover) .lg-variant{stroke-opacity:.45}svg:has(.lg-variant:hover,.variant.cell:hover) .ghost.variant{fill-opacity:.22;stroke-opacity:.7}
+svg:has(.lg-variant:hover) .cell:not(.variant){opacity:.3}svg:has(.lg-variant:hover) .lg:not(.lg-variant){fill-opacity:.45}
+svg:has(.lg-payload:hover,.payload.cell:hover) .lg-payload{stroke-opacity:.45}svg:has(.lg-payload:hover,.payload.cell:hover) .ghost.payload{fill-opacity:.22;stroke-opacity:.7}
+svg:has(.lg-payload:hover) .cell:not(.payload){opacity:.3}svg:has(.lg-payload:hover) .lg:not(.lg-payload){fill-opacity:.45}
+svg:has(.lg-masked:hover,.masked.cell:hover) .lg-masked{stroke-opacity:.45}svg:has(.lg-masked:hover,.masked.cell:hover) .ghost.masked{fill-opacity:.22;stroke-opacity:.7}
+svg:has(.lg-masked:hover) .cell:not(.masked){opacity:.3}svg:has(.lg-masked:hover) .lg:not(.lg-masked){fill-opacity:.45}
+svg:has(.lg-pad:hover,.pad.cell:hover) .lg-pad{stroke-opacity:.45}
+svg:has(.lg-pad:hover) .cell:not(.pad){opacity:.3}svg:has(.lg-pad:hover) .lg:not(.lg-pad){fill-opacity:.45}
+@keyframes glow{0%,30%,100%{fill-opacity:.035;stroke-opacity:.1}10%,18%{fill-opacity:.14;stroke-opacity:.42}}
+@keyframes lgglow{0%,30%,100%{stroke-opacity:0}10%,18%{stroke-opacity:.45}}
+.ghost.time{animation:glow 20s ease-in-out 0s infinite both}.lg-time{animation:lgglow 20s ease-in-out 0s infinite both}.ghost.version{animation:glow 20s ease-in-out 4s infinite both}.lg-version{animation:lgglow 20s ease-in-out 4s infinite both}.ghost.variant{animation:glow 20s ease-in-out 8s infinite both}.lg-variant{animation:lgglow 20s ease-in-out 8s infinite both}.ghost.payload{animation:glow 20s ease-in-out 12s infinite both}.lg-payload{animation:lgglow 20s ease-in-out 12s infinite both}.ghost.masked{animation:glow 20s ease-in-out 16s infinite both}.lg-masked{animation:lgglow 20s ease-in-out 16s infinite both}
+@keyframes avin{0%,4%{fill:#24344D}10%,86%{fill:#F5F7FC}94%,100%{fill:#24344D}}
+@keyframes avint{0%,4%{fill:#F5F7FC}10%,86%{fill:#08111F}94%,100%{fill:#F5F7FC}}
+.av.in{animation:avin 8s ease-in-out infinite both}.av.int{animation:avint 8s ease-in-out infinite both}@keyframes avo{0%,16%{fill:#24344D}22%,86%{fill:#F5F7FC}94%,100%{fill:#24344D}}@keyframes avc{0%,22%{fill-opacity:0}28%,86%{fill-opacity:1}94%,100%{fill-opacity:0}}
+@keyframes avb{0%,22%{fill-opacity:1}28%,86%{fill-opacity:0}94%,100%{fill-opacity:1}}
+.av.o{animation:avo 8s ease-in-out infinite both;animation-delay:calc(var(--r) * 1.6s)}
+.av.c{animation:avc 8s ease-in-out infinite both;animation-delay:calc(var(--r) * 1.6s)}.av.b{animation:avb 8s ease-in-out infinite both;animation-delay:calc(var(--r) * 1.6s)}
+svg:hover :is(.ghost,.lg,.av){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.lg,.av){animation:none}}
 svg:has(#gu0:hover) :is(#ou0,#ob0,#op0,#oq0){opacity:1}
 svg:has(#gu1:hover) :is(#ou1,#ob0,#op0,#op1,#oq0,#oq1){opacity:1}
 svg:has(#gu2:hover) :is(#ou2,#ob1,#op1,#oq1,#oq2){opacity:1}
@@ -115,7 +130,56 @@ svg:has(#gq21:hover) :is(#ou26,#ou27,#ob13,#op17,#op18,#oq21){opacity:1}
 svg:has(#gq22:hover) :is(#ou27,#ou28,#ob13,#ob14,#op18,#op19,#oq22){opacity:1}
 svg:has(#gq23:hover) :is(#ou28,#ou29,#ob14,#op19,#oq23){opacity:1}
 svg:has(#gq24:hover) :is(#ou30,#ou31,#ob15,#op20,#oq24){opacity:1}
-svg:has(#gq25:hover) :is(#ou31,#ob15,#op20,#op21,#oq25){opacity:1}</style>
+svg:has(#gq25:hover) :is(#ou31,#ob15,#op20,#op21,#oq25){opacity:1}
+svg:has(#gm0:hover) :is(#om0,#on0,#on1){opacity:1}
+svg:has(#gm1:hover) :is(#om1,#on1,#on2){opacity:1}
+svg:has(#gm2:hover) :is(#om2,#on2,#on3){opacity:1}
+svg:has(#gm3:hover) :is(#om3,#on3,#on4){opacity:1}
+svg:has(#gm4:hover) :is(#om4,#on4,#on5){opacity:1}
+svg:has(#gm5:hover) :is(#om5,#on6,#on7){opacity:1}
+svg:has(#gm6:hover) :is(#om6,#on7,#on8){opacity:1}
+svg:has(#gm7:hover) :is(#om7,#on8,#on9){opacity:1}
+svg:has(#gm8:hover) :is(#om8,#on9,#on10){opacity:1}
+svg:has(#gm9:hover) :is(#om9,#on10,#on11){opacity:1}
+svg:has(#gm10:hover) :is(#om10,#on12,#on13){opacity:1}
+svg:has(#gm11:hover) :is(#om11,#on13,#on14){opacity:1}
+svg:has(#gm12:hover) :is(#om12,#on14,#on15){opacity:1}
+svg:has(#gm13:hover) :is(#om13,#on15,#on16){opacity:1}
+svg:has(#gm14:hover) :is(#om14,#on16,#on17){opacity:1}
+svg:has(#gm15:hover) :is(#om15,#on18,#on19){opacity:1}
+svg:has(#gm16:hover) :is(#om16,#on19,#on20){opacity:1}
+svg:has(#gm17:hover) :is(#om17,#on20,#on21){opacity:1}
+svg:has(#gm18:hover) :is(#om18,#on21,#on22){opacity:1}
+svg:has(#gm19:hover) :is(#om19,#on22,#on23){opacity:1}
+svg:has(#gm20:hover) :is(#om20,#on24,#on25){opacity:1}
+svg:has(#gm21:hover) :is(#om21,#on25,#on26){opacity:1}
+svg:has(#gn0:hover) :is(#om0,#on0){opacity:1}
+svg:has(#gn1:hover) :is(#om0,#om1,#on1){opacity:1}
+svg:has(#gn2:hover) :is(#om1,#om2,#on2){opacity:1}
+svg:has(#gn3:hover) :is(#om2,#om3,#on3){opacity:1}
+svg:has(#gn4:hover) :is(#om3,#om4,#on4){opacity:1}
+svg:has(#gn5:hover) :is(#om4,#on5){opacity:1}
+svg:has(#gn6:hover) :is(#om5,#on6){opacity:1}
+svg:has(#gn7:hover) :is(#om5,#om6,#on7){opacity:1}
+svg:has(#gn8:hover) :is(#om6,#om7,#on8){opacity:1}
+svg:has(#gn9:hover) :is(#om7,#om8,#on9){opacity:1}
+svg:has(#gn10:hover) :is(#om8,#om9,#on10){opacity:1}
+svg:has(#gn11:hover) :is(#om9,#on11){opacity:1}
+svg:has(#gn12:hover) :is(#om10,#on12){opacity:1}
+svg:has(#gn13:hover) :is(#om10,#om11,#on13){opacity:1}
+svg:has(#gn14:hover) :is(#om11,#om12,#on14){opacity:1}
+svg:has(#gn15:hover) :is(#om12,#om13,#on15){opacity:1}
+svg:has(#gn16:hover) :is(#om13,#om14,#on16){opacity:1}
+svg:has(#gn17:hover) :is(#om14,#on17){opacity:1}
+svg:has(#gn18:hover) :is(#om15,#on18){opacity:1}
+svg:has(#gn19:hover) :is(#om15,#om16,#on19){opacity:1}
+svg:has(#gn20:hover) :is(#om16,#om17,#on20){opacity:1}
+svg:has(#gn21:hover) :is(#om17,#om18,#on21){opacity:1}
+svg:has(#gn22:hover) :is(#om18,#om19,#on22){opacity:1}
+svg:has(#gn23:hover) :is(#om19,#on23){opacity:1}
+svg:has(#gn24:hover) :is(#om20,#on24){opacity:1}
+svg:has(#gn25:hover) :is(#om20,#om21,#on25){opacity:1}
+svg:has(#gn26:hover) :is(#om21,#on26){opacity:1}</style>
 <defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
 <rect width="100%" height="100%" class="bg"/>
 <path class="ghost time" d="M36 260C36 266 36 266 36 272L280.8 272C280.8 266 280.8 266 280.8 260Z"/>
@@ -133,10 +197,11 @@ svg:has(#gq25:hover) :is(#ou31,#ob15,#op20,#op21,#oq25){opacity:1}</style>
 <path class="ghost payload" d="M204.1 660C204.1 732 237.8 732 237.8 804L284.3 804C284.3 732 242.9 732 242.9 660Z"/>
 <path class="ghost variant" d="M242.9 660C242.9 732 284.3 732 284.3 804L292.1 804C292.1 732 249.4 732 249.4 660Z"/>
 <path class="ghost payload" d="M249.4 660C249.4 732 292.1 732 292.1 804L532.6 804C532.6 732 449.9 732 449.9 660Z"/>
+<path class="ghost masked" d="M36 1170C36 1254 36 1254 36 1338L548.2 1338C548.2 1254 462.8 1254 462.8 1170Z"/>
 <text x="36" y="50" class="ink sans" font-size="34" font-weight="600">One UUIDv7, six representations</text>
 <text x="1064" y="50" class="pkg sans" font-size="20" font-weight="600" text-anchor="end">@anizoptera/uuid-slug</text>
 <text x="36" y="82" class="muted sans" font-size="18">Store one UUID. Every form below converts back to it losslessly (masked ones with your key). No mapping table.</text>
-<text x="36" y="117" class="ink sans" font-size="16" font-weight="500"><tspan class="lg lg-time"><tspan class="time f">■</tspan> Timestamp</tspan><tspan class="lg lg-version" dx="22"><tspan class="version f">■</tspan> Version</tspan><tspan class="lg lg-variant" dx="22"><tspan class="variant f">■</tspan> Variant</tspan><tspan class="lg lg-payload" dx="22"><tspan class="payload f">■</tspan> Payload (random or counter)</tspan><tspan class="lg lg-masked" dx="22"><tspan class="masked f">■</tspan> Masked</tspan><tspan class="lg lg-pad" dx="22"><tspan class="pad f">▨</tspan> Padding (zeros)</tspan></text>
+<text x="36" y="117" class="ink sans" font-size="16" font-weight="500"><tspan class="lg lg-time time"><tspan class="time f">■</tspan> Timestamp</tspan><tspan class="lg lg-version version" dx="22"><tspan class="version f">■</tspan> Version</tspan><tspan class="lg lg-variant variant" dx="22"><tspan class="variant f">■</tspan> Variant</tspan><tspan class="lg lg-payload payload" dx="22"><tspan class="payload f">■</tspan> Payload (random or counter)</tspan><tspan class="lg lg-masked masked" dx="22"><tspan class="masked f">■</tspan> Masked</tspan><tspan class="lg lg-pad pad" dx="22"><tspan class="pad f">▨</tspan> Padding (zeros)</tspan></text>
 <text x="1064" y="117" class="muted sans" font-size="16" text-anchor="end">All text forms are URL-safe.</text>
 <path d="M36 136H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1.2"/>
 <text x="36" y="164" class="accent sans" font-size="16" font-weight="700">THE UUID · any version · 128 bits</text>
@@ -766,50 +831,94 @@ svg:has(#gq25:hover) :is(#ou31,#ob15,#op20,#op21,#oq25){opacity:1}</style>
 <text x="36" y="1064" class="ink sans" font-size="17" font-weight="700">Plain and masked base64url can look identical. Choose the reader for the format you issued.</text>
 <text x="36" y="1112" class="masked f sans" font-size="24" font-weight="600">Masked base64url</text>
 <text x="286" y="1112" class="muted sans" font-size="16">22 chars · A–Z a–z 0–9 - _ · 6 bits each</text>
+<g id="gm0">
 <rect x="36.8" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="45.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect id="om0" class="hl" x="36" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm1">
 <rect x="56.2" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="65.1" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">p</text>
+<rect id="om1" class="hl" x="55.4" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm2">
 <rect x="75.6" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="84.5" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect id="om2" class="hl" x="74.8" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm3">
 <rect x="94.9" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="103.9" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect id="om3" class="hl" x="94.2" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm4">
 <rect x="114.4" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="123.3" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect id="om4" class="hl" x="113.6" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm5">
 <rect x="133.8" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="142.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">Q</text>
+<rect id="om5" class="hl" x="133" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm6">
 <rect x="153.2" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="162.1" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect id="om6" class="hl" x="152.4" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm7">
 <rect x="172.6" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="181.5" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">_</text>
+<rect id="om7" class="hl" x="171.8" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm8">
 <rect x="192" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="200.9" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">y</text>
+<rect id="om8" class="hl" x="191.2" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm9">
 <rect x="211.4" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="220.3" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect id="om9" class="hl" x="210.6" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm10">
 <rect x="230.8" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="239.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
+<rect id="om10" class="hl" x="230" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm11">
 <rect x="250.2" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="259.1" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">N</text>
+<rect id="om11" class="hl" x="249.4" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm12">
 <rect x="269.6" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="278.5" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect id="om12" class="hl" x="268.8" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm13">
 <rect x="289" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="297.9" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">L</text>
+<rect id="om13" class="hl" x="288.2" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm14">
 <rect x="308.3" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="317.3" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">Q</text>
+<rect id="om14" class="hl" x="307.6" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm15">
 <rect x="327.7" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="336.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">C</text>
+<rect id="om15" class="hl" x="327" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm16">
 <rect x="347.1" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="356.1" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">J</text>
+<rect id="om16" class="hl" x="346.4" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm17">
 <rect x="366.5" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="375.5" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">g</text>
+<rect id="om17" class="hl" x="365.8" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm18">
 <rect x="385.9" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="394.9" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
+<rect id="om18" class="hl" x="385.2" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm19">
 <rect x="405.3" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="414.3" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">H</text>
+<rect id="om19" class="hl" x="404.6" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm20">
 <rect x="424.7" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="433.7" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect id="om20" class="hl" x="424" y="1124" width="19.4" height="48" rx="2"/></g>
+<g id="gm21">
 <rect x="444.1" y="1126" width="17.9" height="44" class="masked f cell"/>
 <text x="453.1" y="1158.5" class="fg mono" font-size="30" text-anchor="middle">z</text>
+<rect id="om21" class="hl" x="443.4" y="1124" width="19.4" height="48" rx="2"/></g>
 <text x="36" y="1200" class="ink sans" font-size="17" font-weight="600"><tspan>For public IDs that hide the UUID's time and fields.</tspan></text>
 <text x="36" y="1224" class="key sans" font-size="16">Sort</text>
 <text x="78" y="1224" class="ink sans" font-size="17" font-weight="600">none: decode first</text>
@@ -819,62 +928,116 @@ svg:has(#gq25:hover) :is(#ou31,#ob15,#op20,#op21,#oq25){opacity:1}</style>
 <text x="36" y="1272" class="muted sans" font-size="17">old keys for old links.</text>
 <text x="36" y="1324" class="masked f sans" font-size="24" font-weight="600">Masked base32hex</text>
 <text x="286" y="1324" class="muted sans" font-size="16">27 chars · 0–9 a–v · 5 bits each · lowercase</text>
+<g id="gn0">
 <rect x="36.8" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="45.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect id="on0" class="hl" x="36" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn1">
 <rect x="56.2" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="65.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect id="on1" class="hl" x="55.4" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn2">
 <rect x="75.6" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="84.5" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect id="on2" class="hl" x="74.8" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn3">
 <rect x="94.9" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="103.9" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">r</text>
+<rect id="on3" class="hl" x="94.2" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn4">
 <rect x="114.4" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="123.3" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect id="on4" class="hl" x="113.6" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn5">
 <rect x="133.8" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="142.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">p</text>
+<rect id="on5" class="hl" x="133" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn6">
 <rect x="153.2" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="162.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect id="on6" class="hl" x="152.4" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn7">
 <rect x="172.6" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="181.5" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect id="on7" class="hl" x="171.8" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn8">
 <rect x="192" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="200.9" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">n</text>
+<rect id="on8" class="hl" x="191.2" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn9">
 <rect x="211.4" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="220.3" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">v</text>
+<rect id="on9" class="hl" x="210.6" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn10">
 <rect x="230.8" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="239.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect id="on10" class="hl" x="230" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn11">
 <rect x="250.2" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="259.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">q</text>
+<rect id="on11" class="hl" x="249.4" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn12">
 <rect x="269.6" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="278.5" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">o</text>
+<rect id="on12" class="hl" x="268.8" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn13">
 <rect x="289" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="297.9" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect id="on13" class="hl" x="288.2" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn14">
 <rect x="308.3" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="317.3" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect id="on14" class="hl" x="307.6" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn15">
 <rect x="327.7" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="336.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect id="on15" class="hl" x="327" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn16">
 <rect x="347.1" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="356.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">m</text>
+<rect id="on16" class="hl" x="346.4" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn17">
 <rect x="366.5" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="375.5" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">g</text>
+<rect id="on17" class="hl" x="365.8" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn18">
 <rect x="385.9" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="394.9" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect id="on18" class="hl" x="385.2" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn19">
 <rect x="405.3" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="414.3" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect id="on19" class="hl" x="404.6" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn20">
 <rect x="424.7" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="433.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect id="on20" class="hl" x="424" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn21">
 <rect x="444.1" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="453.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect id="on21" class="hl" x="443.4" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn22">
 <rect x="463.5" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="472.5" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect id="on22" class="hl" x="462.8" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn23">
 <rect x="482.9" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="491.9" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect id="on23" class="hl" x="482.2" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn24">
 <rect x="502.3" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="511.3" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">q</text>
+<rect id="on24" class="hl" x="501.6" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn25">
 <rect x="521.7" y="1338" width="17.9" height="44" class="masked f cell"/>
 <text x="530.7" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect id="on25" class="hl" x="521" y="1336" width="19.4" height="48" rx="2"/></g>
+<g id="gn26">
 <rect x="541.1" y="1338" width="7.2" height="44" class="masked f cell"/>
 <rect x="548.3" y="1338" width="10.7" height="44" class="pad f cell"/>
 <rect x="548.3" y="1338" width="10.7" height="44" class="" fill="url(#hatch)"/>
 <text x="550.1" y="1370.5" class="fg mono" font-size="30" text-anchor="middle">o</text>
+<rect id="on26" class="hl" x="540.4" y="1336" width="19.4" height="48" rx="2"/></g>
 <text x="36" y="1412" class="ink sans" font-size="17" font-weight="600"><tspan>For masked IDs in case-insensitive filenames.</tspan></text>
 <text x="36" y="1436" class="key sans" font-size="16">Sort</text>
 <text x="78" y="1436" class="ink sans" font-size="17" font-weight="600">none: decode first</text>
@@ -916,51 +1079,72 @@ svg:has(#gq25:hover) :is(#ou31,#ob15,#op20,#op21,#oq25){opacity:1}</style>
 <text x="990" y="1197.3" class="ink mono" font-size="16" text-anchor="middle">0</text>
 <rect x="1004" y="1180" width="24" height="24" class="same" rx="2"/>
 <text x="1016" y="1197.3" class="ink mono" font-size="16" text-anchor="middle">1</text>
-<rect x="1030" y="1180" width="24" height="24" class="chg" rx="2"/>
-<text x="1042" y="1197.3" class="fg mono" font-size="16" text-anchor="middle">0</text>
+<rect x="1030" y="1180" width="24" height="24" class="chg av in" rx="2"/>
+<text x="1042" y="1197.3" class="fg av int mono" font-size="16" text-anchor="middle">0</text>
 <path d="M1042 1210V1222H927V1232" class="masked" fill="none" stroke="currentColor" stroke-width="2"/>
 <rect x="817" y="1232" width="220" height="48" class="box" stroke="#FF921C" stroke-width="2" rx="4"/>
 <text x="927" y="1253" class="ink sans" font-size="17" font-weight="700" text-anchor="middle">Mask</text>
 <text x="927" y="1272" class="muted sans" font-size="15" text-anchor="middle">same key and settings</text>
+<circle class="av ring" cx="927" cy="1280" r="0" fill="none" stroke="#FF921C" stroke-width="2"/>
 <path d="M927 1280C927 1310 796.5 1308 796.5 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="790" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 796.5 1308 796.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="790" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.6875;--k:0;--d:1"/>
 <path d="M927 1280C927 1310 813.9 1308 813.9 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="807.4" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 813.9 1308 813.9 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="807.4" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0;--k:0.06666666666666667;--d:0.8"/>
 <path d="M927 1280C927 1310 831.3 1308 831.3 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="824.8" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 831.3 1308 831.3 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="824.8" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.3125;--k:0.13333333333333333;--d:0.7"/>
 <path d="M927 1280C927 1310 848.7 1308 848.7 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="842.2" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 848.7 1308 848.7 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="842.2" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.625;--k:0.2;--d:0.6"/>
 <path d="M927 1280C927 1310 866.1 1308 866.1 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="859.6" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 866.1 1308 866.1 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="859.6" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.9375;--k:0.26666666666666666;--d:0.4"/>
 <path d="M927 1280C927 1310 883.5 1308 883.5 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="877" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 883.5 1308 883.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="877" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.25;--k:0.3333333333333333;--d:0.3"/>
 <path d="M927 1280C927 1310 900.9 1308 900.9 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="894.4" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 900.9 1308 900.9 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="894.4" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.5625;--k:0.4;--d:0.2"/>
 <path d="M927 1280C927 1310 918.3 1308 918.3 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="911.8" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 918.3 1308 918.3 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="911.8" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.875;--k:0.4666666666666667;--d:0.1"/>
 <path d="M927 1280C927 1310 935.7 1308 935.7 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="929.2" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 935.7 1308 935.7 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="929.2" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.1875;--k:0.5333333333333333;--d:0.1"/>
 <path d="M927 1280C927 1310 953.1 1308 953.1 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="946.6" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 953.1 1308 953.1 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="946.6" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.5;--k:0.6;--d:0.2"/>
 <path d="M927 1280C927 1310 970.5 1308 970.5 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="964" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 970.5 1308 970.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="964" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.8125;--k:0.6666666666666666;--d:0.3"/>
 <path d="M927 1280C927 1310 987.9 1308 987.9 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="981.4" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 987.9 1308 987.9 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="981.4" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.125;--k:0.7333333333333333;--d:0.4"/>
 <path d="M927 1280C927 1310 1005.3 1308 1005.3 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="998.8" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 1005.3 1308 1005.3 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="998.8" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.4375;--k:0.8;--d:0.6"/>
 <path d="M927 1280C927 1310 1022.7 1308 1022.7 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="1016.2" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 1022.7 1308 1022.7 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="1016.2" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.75;--k:0.8666666666666667;--d:0.7"/>
 <path d="M927 1280C927 1310 1040.1 1308 1040.1 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="1033.6" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 1040.1 1308 1040.1 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="1033.6" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.0625;--k:0.9333333333333333;--d:0.8"/>
 <path d="M927 1280C927 1310 1057.5 1308 1057.5 1332" class="masked" fill="none" stroke="currentColor" stroke-width="1.6"/>
-<rect x="1051" y="1334" width="13" height="22" class="chg" rx="2"/>
+<path d="M927 1280C927 1310 1057.5 1308 1057.5 1332" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100"/>
+<rect x="1051" y="1334" width="13" height="22" class="chg av o" rx="2" style="--r:0.375;--k:1;--d:1"/>
 <text x="790" y="1382" class="ink sans" font-size="17" font-weight="700">16 of 16 masked bytes change</text>
 <text x="790" y="1404" class="muted sans" font-size="15">62 of 128 bits flip (this example)</text>
 <text x="790" y="1428" class="ink sans" font-size="16" font-weight="600">Similar UUIDs, unrelated slugs</text>
 <text x="790" y="1458" class="muted sans" font-size="16">Before</text>
 <text x="848" y="1458" class="masked f mono" font-size="15">ap225Qa_y6wN5LQCJgwH0z</text>
 <text x="790" y="1480" class="muted sans" font-size="16">After</text>
-<text x="848" y="1480" class="masked f mono" font-size="15">hAHeRPmJFqjOuXUQnhljgb</text>
+<text x="848" y="1480" class="masked f mono" font-size="15"><tspan class="av c" style="--r:0.5">h</tspan><tspan class="av c" style="--r:0.18181818181818182">A</tspan><tspan class="av c" style="--r:0.8636363636363636">H</tspan><tspan class="av c" style="--r:0.5454545454545454">e</tspan><tspan class="av c" style="--r:0.22727272727272727">R</tspan><tspan class="av c" style="--r:0.9090909090909091">P</tspan><tspan class="av c" style="--r:0.5909090909090909">m</tspan><tspan class="av c" style="--r:0.2727272727272727">J</tspan><tspan class="av c" style="--r:0.9545454545454546">F</tspan><tspan class="av c" style="--r:0.6363636363636364">q</tspan><tspan class="av c" style="--r:0.3181818181818182">j</tspan><tspan class="av c" style="--r:0">O</tspan><tspan class="av c" style="--r:0.6818181818181818">u</tspan><tspan class="av c" style="--r:0.36363636363636365">X</tspan><tspan class="av c" style="--r:0.045454545454545456">U</tspan><tspan class="av c" style="--r:0.7272727272727273">Q</tspan><tspan class="av c" style="--r:0.4090909090909091">n</tspan><tspan class="av c" style="--r:0.09090909090909091">h</tspan><tspan class="av c" style="--r:0.7727272727272727">l</tspan><tspan class="av c" style="--r:0.45454545454545453">j</tspan><tspan class="av c" style="--r:0.13636363636363635">g</tspan><tspan class="av c" style="--r:0.8181818181818182">b</tspan></text>
+<text x="848" y="1480" class="masked f mono" font-size="15"><tspan class="av b" style="--r:0.5">a</tspan><tspan class="av b" style="--r:0.18181818181818182">p</tspan><tspan class="av b" style="--r:0.8636363636363636">2</tspan><tspan class="av b" style="--r:0.5454545454545454">2</tspan><tspan class="av b" style="--r:0.22727272727272727">5</tspan><tspan class="av b" style="--r:0.9090909090909091">Q</tspan><tspan class="av b" style="--r:0.5909090909090909">a</tspan><tspan class="av b" style="--r:0.2727272727272727">_</tspan><tspan class="av b" style="--r:0.9545454545454546">y</tspan><tspan class="av b" style="--r:0.6363636363636364">6</tspan><tspan class="av b" style="--r:0.3181818181818182">w</tspan><tspan class="av b" style="--r:0">N</tspan><tspan class="av b" style="--r:0.6818181818181818">5</tspan><tspan class="av b" style="--r:0.36363636363636365">L</tspan><tspan class="av b" style="--r:0.045454545454545456">Q</tspan><tspan class="av b" style="--r:0.7272727272727273">C</tspan><tspan class="av b" style="--r:0.4090909090909091">J</tspan><tspan class="av b" style="--r:0.09090909090909091">g</tspan><tspan class="av b" style="--r:0.7727272727272727">w</tspan><tspan class="av b" style="--r:0.45454545454545453">H</tspan><tspan class="av b" style="--r:0.13636363636363635">0</tspan><tspan class="av b" style="--r:0.8181818181818182">z</tspan></text>
+<text x="848" y="1480" class="masked f mono" font-size="15"><tspan class="av s1" style="--r:0.5">W</tspan><tspan class="av s1" style="--r:0.18181818181818182">z</tspan><tspan class="av s1" style="--r:0.8636363636363636">Q</tspan><tspan class="av s1" style="--r:0.5454545454545454">t</tspan><tspan class="av s1" style="--r:0.22727272727272727">K</tspan><tspan class="av s1" style="--r:0.9090909090909091">n</tspan><tspan class="av s1" style="--r:0.5909090909090909">E</tspan><tspan class="av s1" style="--r:0.2727272727272727">h</tspan><tspan class="av s1" style="--r:0.9545454545454546">-</tspan><tspan class="av s1" style="--r:0.6363636363636364">b</tspan><tspan class="av s1" style="--r:0.3181818181818182">4</tspan><tspan class="av s1" style="--r:0">V</tspan><tspan class="av s1" style="--r:0.6818181818181818">y</tspan><tspan class="av s1" style="--r:0.36363636363636365">P</tspan><tspan class="av s1" style="--r:0.045454545454545456">s</tspan><tspan class="av s1" style="--r:0.7272727272727273">J</tspan><tspan class="av s1" style="--r:0.4090909090909091">m</tspan><tspan class="av s1" style="--r:0.09090909090909091">D</tspan><tspan class="av s1" style="--r:0.7727272727272727">g</tspan><tspan class="av s1" style="--r:0.45454545454545453">9</tspan><tspan class="av s1" style="--r:0.13636363636363635">a</tspan><tspan class="av s1" style="--r:0.8181818181818182">3</tspan></text>
+<text x="848" y="1480" class="masked f mono" font-size="15"><tspan class="av s2" style="--r:0.5">n</tspan><tspan class="av s2" style="--r:0.18181818181818182">E</tspan><tspan class="av s2" style="--r:0.8636363636363636">h</tspan><tspan class="av s2" style="--r:0.5454545454545454">-</tspan><tspan class="av s2" style="--r:0.22727272727272727">b</tspan><tspan class="av s2" style="--r:0.9090909090909091">4</tspan><tspan class="av s2" style="--r:0.5909090909090909">V</tspan><tspan class="av s2" style="--r:0.2727272727272727">y</tspan><tspan class="av s2" style="--r:0.9545454545454546">P</tspan><tspan class="av s2" style="--r:0.6363636363636364">s</tspan><tspan class="av s2" style="--r:0.3181818181818182">J</tspan><tspan class="av s2" style="--r:0">m</tspan><tspan class="av s2" style="--r:0.6818181818181818">D</tspan><tspan class="av s2" style="--r:0.36363636363636365">g</tspan><tspan class="av s2" style="--r:0.045454545454545456">9</tspan><tspan class="av s2" style="--r:0.7272727272727273">a</tspan><tspan class="av s2" style="--r:0.4090909090909091">3</tspan><tspan class="av s2" style="--r:0.09090909090909091">U</tspan><tspan class="av s2" style="--r:0.7727272727272727">x</tspan><tspan class="av s2" style="--r:0.45454545454545453">O</tspan><tspan class="av s2" style="--r:0.13636363636363635">r</tspan><tspan class="av s2" style="--r:0.8181818181818182">I</tspan></text>
+<text x="848" y="1480" class="masked f mono" font-size="15"><tspan class="av s3" style="--r:0.5">4</tspan><tspan class="av s3" style="--r:0.18181818181818182">V</tspan><tspan class="av s3" style="--r:0.8636363636363636">y</tspan><tspan class="av s3" style="--r:0.5454545454545454">P</tspan><tspan class="av s3" style="--r:0.22727272727272727">s</tspan><tspan class="av s3" style="--r:0.9090909090909091">J</tspan><tspan class="av s3" style="--r:0.5909090909090909">m</tspan><tspan class="av s3" style="--r:0.2727272727272727">D</tspan><tspan class="av s3" style="--r:0.9545454545454546">g</tspan><tspan class="av s3" style="--r:0.6363636363636364">9</tspan><tspan class="av s3" style="--r:0.3181818181818182">a</tspan><tspan class="av s3" style="--r:0">3</tspan><tspan class="av s3" style="--r:0.6818181818181818">U</tspan><tspan class="av s3" style="--r:0.36363636363636365">x</tspan><tspan class="av s3" style="--r:0.045454545454545456">O</tspan><tspan class="av s3" style="--r:0.7272727272727273">r</tspan><tspan class="av s3" style="--r:0.4090909090909091">I</tspan><tspan class="av s3" style="--r:0.09090909090909091">l</tspan><tspan class="av s3" style="--r:0.7727272727272727">C</tspan><tspan class="av s3" style="--r:0.45454545454545453">f</tspan><tspan class="av s3" style="--r:0.13636363636363635">8</tspan><tspan class="av s3" style="--r:0.8181818181818182">Z</tspan></text>
 <text x="790" y="1502" class="muted sans" font-size="15">22 of 22 characters differ</text>
 <path d="M36 1516H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1"/>
 <text x="36" y="1546" class="muted sans" font-size="15">¹ UUIDv7: sorts by creation millisecond if all IDs share one case and alphabet; not event order within a millisecond.</text>
