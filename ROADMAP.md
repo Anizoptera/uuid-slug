@@ -32,7 +32,6 @@ Published 0.4.0 does not load in Deno: its `deno` condition selects TypeScript, 
 Floors, their reasons and the measuring method live in `docs/cross-language.md` §Runtime floors.
 
 - [ ] Decide later whether to also publish to JSR, where Deno can load the TypeScript source; it needs a ruling against the one-npm-package rule in `docs/cross-language.md`, a condition-free Deno entry and slow-types checks.
-- [ ] Decouple the CI floor probe from rival libraries: `__test__/rust-conform-probe.ts` imports `bench/candidates`, so `scripts/runtime-probe.ts` fails on Node 18 (`uniku` needs global `crypto`), Bun ≤1.2.0 (`@kripod/uuidv7`) and Deno ≤2.0 (harness `process` and `Buffer` globals) before reaching the package.
 - [ ] Propose the Aponte agent-gotcha rule (packed-consumer checks must match real install layout) and write it only with approval.
 
 ## Release notes
