@@ -55,6 +55,13 @@ splits the same change in two places. A missing `### Added` or `### Changed` hea
 missing `### Breaking changes` heading stops the release while the API breaks callers, because only
 prose can say what to change.
 
+The diff shows each changed declaration as one group: its old lines directly above its new ones,
+under an `@@ name @@` header. Write each rename in the prose as `` `old` → `new` ``, or as two lists
+of the same length (`` `A` and `B` → `X` and `Y` ``); the diff then shows the old and new declarations
+as one `@@ old → new @@` group under Breaking changes instead of a removal there and an addition
+under Added. Renames are never guessed: name and signature similarity paired two in five 0.4.0
+renames wrongly, and a wrong pair in published notes misleads callers.
+
 Breaking means old caller code stops compiling. TypeScript compatibility comes from the compiler:
 each export reaching a changed declaration, including unexported types it uses, must accept old
 calls (assignability plus argument count) under every supported compiler; a change any one of them

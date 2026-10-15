@@ -43,6 +43,42 @@ export function releaseNotes(markdown: string, version: string): string {
   return markdown.slice(start, end);
 }
 
+/**
+ * Renames the notes declare as `` `old` → `new` ``, or as lists of the same length
+ * (`` `A`, `B` and `C` → `X`, `Y` and `Z` ``), by leading identifier: `` `uuidV7At(timestamp)` ``
+ * names `uuidV7At`. The release diff pairs exactly these declarations; it never guesses renames.
+ * A code span that does not start with an identifier, such as `` `codec.migration` ``, pairs nothing.
+ */
+export function declaredRenames(markdown: string): Map<string, string> {
+  const renames = new Map<string, string>();
+  const walk = (node: TextNode): void => {
+    // `run` collects adjacent code spans; after an arrow, `left` waits for a run as long as itself.
+    let run: (string | undefined)[] = [];
+    let left: (string | undefined)[] | undefined;
+    for (const child of node.children ?? []) {
+      if (child.type === "inlineCode") {
+        run.push(/^([A-Za-z_$][\w$]*)(?:$|[(<])/.exec(child.value ?? "")?.[1]);
+        if (left?.length !== run.length) continue;
+        left.forEach((from, index) => {
+          const to = run[index];
+          if (from && to) renames.set(from, to);
+        });
+        left = undefined;
+        run = [];
+      } else if (child.type === "text" && child.value?.trim() === "→" && run.length) {
+        left = run;
+        run = [];
+      } else if (child.type !== "text" || !/^\s*(,|,? and)?\s*$/.test(child.value ?? "")) {
+        run = [];
+        left = undefined;
+        walk(child);
+      }
+    }
+  };
+  walk(fromMarkdown(markdown));
+  return renames;
+}
+
 /** Tag agreement and notes are checked before any registry or GitHub write. */
 export async function preflightRelease(
   cwd: string,

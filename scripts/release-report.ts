@@ -17,7 +17,7 @@ import { incompatibleExports } from "./api-compatibility";
 import type { ApiDifference, ApiSections, ReleaseLevel } from "./release-comparison";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
-import { preflightRelease } from "./release-notes";
+import { declaredRenames, preflightRelease } from "./release-notes";
 import { taggedVersionGuidance } from "./release-version";
 import { releaseSelection } from "./release-selection";
 import type { ReleaseSelection } from "./release-selection";
@@ -480,6 +480,7 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
                 previousTypeScript.declarations,
                 currentDeclaration.declarations,
                 await incompatibleExports(previousTypeScript.source, currentDeclaration.source),
+                declaredRenames(notes),
               );
               const metadata = npmSurfaceDifference(
                 previousTypeScript.package,

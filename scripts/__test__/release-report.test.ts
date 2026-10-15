@@ -10,6 +10,7 @@ import {
 } from "../release-comparison";
 import { incompatibleExports } from "../api-compatibility";
 import { consumerReleaseNotes, verifyCrateIdentity, verifyNpmIdentity } from "../release-report";
+import { declaredRenames } from "../release-notes";
 import type { ReleaseReport } from "../release-report";
 
 // Every row the notes would show, whatever its section.
@@ -37,49 +38,53 @@ test("compatibility follows unexported types an export uses", async () => {
       normalizeDeclarations(after),
       await incompatibleExports(before, after),
     );
-  // `generate` prints identically, yet `generate({})` stops compiling.
-  expect(await sections(optionsApi("at: number;"))).toEqual({
-    breaking: "```diff\n- Options: at?: number;\n+ Options: at: number;\n```",
-    changed: "",
-    added: "",
-  });
-  expect(await sections(optionsApi("at?: number; extra?: string;"))).toEqual({
-    breaking: "",
-    changed: "",
-    added: "```diff\n+ Options: extra?: string;\n```",
-  });
-  // Assignability accepts a dropped optional parameter, yet `codec.encode(x, true)` stops compiling.
   const wide = codecApi("encode(value: string, strict?: boolean): string;");
   const narrow = codecApi("encode(value: string): string;");
-  expect([...(await incompatibleExports(wide, narrow))]).toEqual(["create"]);
-  expect([...(await incompatibleExports(narrow, wide))]).toEqual([]);
-  // An unresolved name is an error type that accepts anything, so it cannot prove compatibility.
-  expect([
-    ...(await incompatibleExports(
+  // Each verdict starts every supported compiler; independent verdicts run together.
+  const [required, extra, dropped, restored, unresolved, library, removed] = await Promise.all([
+    sections(optionsApi("at: number;")),
+    sections(optionsApi("at?: number; extra?: string;")),
+    incompatibleExports(wide, narrow),
+    incompatibleExports(narrow, wide),
+    incompatibleExports(
       "export declare function wait(signal: Missing): void;",
       "export declare function wait(signal: string): void;",
-    )),
-  ]).toEqual(["wait"]);
-  // Released declarations use current library types; a compiler that cannot read them would turn
-  // every compatible change into a breaking one.
-  expect([
-    ...(await incompatibleExports(
+    ),
+    incompatibleExports(
       "export declare function read(bytes: Uint8Array<ArrayBuffer>): void;",
       "export declare function read(bytes: Uint8Array<ArrayBuffer>, offset?: number): void;",
-    )),
-  ]).toEqual([]);
-  // A removed export shows its own row, never its members or private helpers it used.
-  expect(
-    await sections(
+    ),
+    sections(
       optionsApi("at?: number;").replace(
         "export declare function generate",
         "export declare function create",
       ),
     ),
-  ).toEqual({
-    breaking: "```diff\n- export declare function generate(options: Options): string;\n```",
+  ]);
+  // `generate` prints identically, yet `generate({})` stops compiling.
+  expect(required).toEqual({
+    breaking: "```diff\n@@ Options @@\n- at?: number;\n+ at: number;\n```",
     changed: "",
-    added: "```diff\n+ export declare function create(options: Options): string;\n```",
+    added: "",
+  });
+  expect(extra).toEqual({
+    breaking: "",
+    changed: "",
+    added: "```diff\n+ Options: extra?: string;\n```",
+  });
+  // Assignability accepts a dropped optional parameter, yet `codec.encode(x, true)` stops compiling.
+  expect([...dropped]).toEqual(["create"]);
+  expect([...restored]).toEqual([]);
+  // An unresolved name is an error type that accepts anything, so it cannot prove compatibility.
+  expect([...unresolved]).toEqual(["wait"]);
+  // Released declarations use current library types; a compiler that cannot read them would turn
+  // every compatible change into a breaking one.
+  expect([...library]).toEqual([]);
+  // A removed export shows its own row, never its members or private helpers it used.
+  expect(removed).toEqual({
+    breaking: "```diff\n- function generate(options: Options): string;\n```",
+    changed: "",
+    added: "```diff\n+ function create(options: Options): string;\n```",
   });
 });
 
@@ -95,15 +100,54 @@ test("a compatible change to a branded export stays compatible", async () => {
   expect([...(await incompatibleExports(source, widened))]).toEqual([]);
 });
 
+test("a declared rename shows the old declarations above the new one under breaking changes", () => {
+  const sections = typeScriptApiSections(
+    normalizeDeclarations(
+      "export declare function uuidV7(): string; export declare function uuidV7At(at: number): string; export declare function kept(): 1;",
+    ),
+    normalizeDeclarations(
+      "export declare function generateUuidV7(options?: { at?: number }): string; export declare function kept(): 2; export declare function fresh(): void;",
+    ),
+    new Set(["uuidV7", "uuidV7At", "kept"]),
+    // `kept` still exists, so it was changed, not renamed; `missing` names nothing.
+    new Map([
+      ["uuidV7", "generateUuidV7"],
+      ["uuidV7At", "generateUuidV7"],
+      ["kept", "fresh"],
+      ["missing", "fresh"],
+    ]),
+  );
+  expect(sections).toEqual({
+    breaking:
+      "```diff\n@@ uuidV7, uuidV7At → generateUuidV7 @@\n- function uuidV7(): string;\n- function uuidV7At(at: number): string;\n+ function generateUuidV7(options?: {\n+     at?: number;\n+ }): string;\n@@ kept @@\n- function kept(): 1;\n+ function kept(): 2;\n```",
+    changed: "",
+    added: "```diff\n+ function fresh(): void;\n```",
+  });
+});
+
+test("renames come only from arrows between adjacent code spans of equal-length lists", () => {
+  expect(
+    declaredRenames(
+      "- Renamed: `a()` → `b()`, `c` → `d<T>`.\n- Types: `E`, `F` and `G` → `X`, `Y` and `Z`.\n- `codec.migration` → `codec.decoder`; `H` and `I` → `J`; plain a → b; `K` → **`L`**.\n",
+    ),
+  ).toEqual(
+    new Map([
+      ["a", "b"],
+      ["c", "d"],
+      ["E", "X"],
+      ["F", "Y"],
+      ["G", "Z"],
+    ]),
+  );
+});
+
 test("release API diff exposes removals and additions without restating unchanged lines", () => {
   expect(
     apiDiff(
       "export declare function old(): void;\nexport declare function shared(): void;",
       "export declare function shared(): void;\nexport type New = 1;\n",
     ),
-  ).toBe(
-    "```diff\n- export declare function old(): void;\n```\n```diff\n+ export type New = 1;\n```",
-  );
+  ).toBe("```diff\n- function old(): void;\n```\n```diff\n+ type New = 1;\n```");
 });
 
 test("public release diff omits private helpers while retaining changed exported members", () => {
@@ -113,23 +157,19 @@ test("public release diff omits private helpers while retaining changed exported
   const after = normalizeDeclarations(
     "declare type Helper = 2; declare const brand: unique symbol; export interface Value { x: number; unchanged: boolean; readonly [brand]: 2; readonly [Symbol.toStringTag]: 'after'; }",
   );
-  const report = shownRows(before, after);
-  expect(report).toContain("- Value: x: string;");
-  expect(report).toContain("+ Value: x: number;");
-  expect(report).not.toContain("Helper");
-  expect(report).not.toContain("unchanged");
-  expect(report).not.toContain("[brand]");
-  expect(report).toContain("- Value: readonly [Symbol.toStringTag]: 'before';");
-  expect(report).toContain("+ Value: readonly [Symbol.toStringTag]: 'after';");
+  // Each member's old form sits directly above its new one, under its owner's name.
+  expect(shownRows(before, after)).toBe(
+    "```diff\n@@ Value @@\n- x: string;\n+ x: number;\n- readonly [Symbol.toStringTag]: 'before';\n+ readonly [Symbol.toStringTag]: 'after';\n```",
+  );
   expect(shownRows(before, before)).toBe("");
 });
 
 test.each(["Value$", "Ω"])("public changes retain compiler-valid owner %s", (name) => {
   const before = normalizeDeclarations(`export interface ${name} { x: string; }`);
   const after = normalizeDeclarations(`export interface ${name} { x: number; }`);
-  const report = shownRows(before, after);
-  expect(report).toContain(`- ${name}: x: string;`);
-  expect(report).toContain(`+ ${name}: x: number;`);
+  expect(shownRows(before, after)).toBe(
+    `\`\`\`diff\n@@ ${name} @@\n- x: string;\n+ x: number;\n\`\`\``,
+  );
 });
 
 test("named exports retain alias changes and callable symbol members", () => {
@@ -139,11 +179,11 @@ test("named exports retain alias changes and callable symbol members", () => {
   const after = normalizeDeclarations(
     "declare const key: unique symbol; declare interface Value { [key](): number; } export { key, Value as Renamed };",
   );
-  const report = shownRows(before, after);
-  expect(report).toContain("- export { key, Value as Public };");
-  expect(report).toContain("+ export { key, Value as Renamed };");
-  expect(report).toContain("- Value: [key](): string;");
-  expect(report).toContain("+ Value: [key](): number;");
+  // A nameless statement gets no header (its key is a syntax kind) and so comes first: below the
+  // `Value` header it would read as a member of `Value`.
+  expect(shownRows(before, after)).toBe(
+    "```diff\n- export { key, Value as Public };\n+ export { key, Value as Renamed };\n@@ Value @@\n- [key](): string;\n+ [key](): number;\n```",
+  );
 });
 
 test("public diffs isolate named variables and retain default exports", () => {
@@ -180,10 +220,9 @@ test.each(['"read value"', "[Symbol.iterator]", "read$"])(
     const after = normalizeDeclarations(
       `export interface Value { ${second} ${first} stable: boolean; }`,
     );
-    const report = shownRows(before, after);
-    expect(report).toContain("- Value: " + first);
-    expect(report).toContain("+ Value: " + second);
-    expect(report).not.toContain("stable");
+    expect(shownRows(before, after)).toBe(
+      `\`\`\`diff\n@@ Value @@\n- ${first}\n- ${second}\n+ ${second}\n+ ${first}\n\`\`\``,
+    );
   },
 );
 
@@ -265,30 +304,30 @@ test("multiline declaration diffs preserve content and cannot close their own fe
   expect(block?.type).toBe("code");
   if (block?.type === "code") {
     expect(block.lang).toBe("diff");
-    expect(block.value).toContain("- export type Text = `old`;");
-    expect(block.value).toContain('+ Text: value: "```";');
-    for (const line of block.value.split("\n")) expect(line).toMatch(/^[+-] /);
+    expect(block.value).toBe(
+      '@@ Text @@\n- type Text = `old`;\n+ interface Text { … }\n+ value: "```";',
+    );
   }
 });
 
 test("API comparison detects moved members and changed overload priority", () => {
   const before = "export interface A {\n x: string;\n}\nexport interface B {\n y: number;\n}";
   const after = "export interface A {\n y: number;\n}\nexport interface B {\n x: string;\n}";
-  const movedMembers = apiDiff(before, after);
-  expect(movedMembers).toContain("- A: x: string;");
-  expect(movedMembers).toContain("+ B: x: string;");
-  expect(movedMembers).toContain("- B: y: number;");
-  expect(movedMembers).toContain("+ A: y: number;");
-  const narrow = "export declare function f(x: string): 1;";
-  const broad = "export declare function f(x: unknown): 2;";
-  const unchanged = "export declare function unrelated(): boolean;";
-  const moved = apiDiff(`${narrow}\n${broad}\n${unchanged}`, `${broad}\n${narrow}\n${unchanged}`);
-  expect(moved).toContain("- " + narrow);
-  expect(moved).toContain("+ " + broad);
-  expect(moved).not.toContain("unrelated");
-  const repeated = apiDiff(`${narrow}\n${narrow}`, narrow);
-  expect(repeated.split("- " + narrow)).toHaveLength(3);
-  expect(repeated.split("+ " + narrow)).toHaveLength(2);
+  expect(apiDiff(before, after)).toBe(
+    "```diff\n@@ A @@\n- x: string;\n+ y: number;\n@@ B @@\n- y: number;\n+ x: string;\n```",
+  );
+  const narrow = "function f(x: string): 1;";
+  const broad = "function f(x: unknown): 2;";
+  const unchanged = "export function unrelated(): boolean;";
+  expect(
+    apiDiff(
+      `export ${narrow}\nexport ${broad}\n${unchanged}`,
+      `export ${broad}\nexport ${narrow}\n${unchanged}`,
+    ),
+  ).toBe(`\`\`\`diff\n@@ f @@\n- ${narrow}\n- ${broad}\n+ ${broad}\n+ ${narrow}\n\`\`\``);
+  expect(apiDiff(`export ${narrow}\nexport ${narrow}`, `export ${narrow}`)).toBe(
+    `\`\`\`diff\n@@ f @@\n- ${narrow}\n- ${narrow}\n+ ${narrow}\n\`\`\``,
+  );
 });
 
 test("hyphens in build metadata do not waive stable compatibility", () => {

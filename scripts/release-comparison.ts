@@ -198,7 +198,11 @@ function declarationLines(values: readonly string[], prefix: string): string[] {
 }
 
 function declarationDiff(removed: readonly string[], added: readonly string[]): string {
-  const body = [...declarationLines(removed, "- "), ...declarationLines(added, "+ ")].join("\n");
+  return fencedDiff([...declarationLines(removed, "- "), ...declarationLines(added, "+ ")]);
+}
+
+function fencedDiff(lines: readonly string[]): string {
+  const body = lines.join("\n");
   const fence = "`".repeat(
     Math.max(3, ...[...body.matchAll(/`+/g)].map(([run]) => run.length + 1)),
   );
@@ -315,28 +319,88 @@ function isApiRow({ text }: DeclarationRecord): boolean {
   return text !== "export {};";
 }
 
-function sectionDiff({ removed, added }: { removed: string[]; added: string[] }): string {
-  return removed.length || added.length ? declarationDiff(removed, added) : "";
+/**
+ * One declaration's change, or a rename's: `roots` are its old and new top-level names. Rows keep
+ * each member's old form directly above its new one.
+ */
+interface DiffGroup {
+  roots: string[];
+  rows: (readonly ["- " | "+ ", string])[];
+}
+
+const removedRows = (texts: readonly string[]) => texts.map((text) => ["- ", text] as const);
+const addedRows = (texts: readonly string[]) => texts.map((text) => ["+ ", text] as const);
+
+/**
+ * A reader upgrading code looks up one declaration and needs its old and new forms side by side,
+ * so each group prints its removed rows directly above its added ones. GitHub colours only whole
+ * diff lines; the `@@ old → new @@` hunk header names what changed in words. A group of one row
+ * needs no header: the row names itself. Under a header, member rows drop their `Owner: ` prefix
+ * and declarations drop the `export declare` every exported row shares.
+ */
+function sectionDiff(groups: readonly DiffGroup[]): string {
+  if (!groups.length) return "";
+  const rendered = groups.map(({ roots, rows }) => {
+    // A nameless statement such as `export { a as b }` is keyed by its syntax kind, which no
+    // reader knows; its rows describe themselves, so only a name the rows declare gets a header.
+    const named = new RegExp(
+      `(?<![\\p{ID_Continue}$])${RegExp.escape(roots[0] ?? "")}(?![\\p{ID_Continue}$])`,
+      "u",
+    );
+    const header =
+      roots.length > 1 || (rows.length > 1 && rows.some(([, text]) => named.test(text)));
+    const name =
+      roots.length > 1 ? `${roots.slice(0, -1).join(", ")} → ${roots.at(-1)}` : roots.join("");
+    return {
+      header,
+      lines: [
+        ...(header ? [`@@ ${name} @@`] : []),
+        ...rows.flatMap(([prefix, text]) => {
+          const owner = header ? roots.find((root) => text.startsWith(`${root}: `)) : undefined;
+          // `export default …` and `export { … }` keep `export`: without it they say nothing.
+          // A container's own row holds no members (they are rows of their own): `{ … }` says so.
+          const shown = (owner ? text.slice(owner.length + 2) : text)
+            .replace(
+              /^export (?:declare )?(?=(?:abstract )?(?:class|const|enum|function|interface|let|namespace|type|var)\b)/,
+              "",
+            )
+            .replace(/\{\n\}$/, "{ … }");
+          // Not declarationLines: a stripped member such as `"a-b": string;` is not a JSON row.
+          return shown.split("\n").map((line) => prefix + line);
+        }),
+      ],
+    };
+  });
+  // A row below a header reads as part of that group, so rows without a header come first.
+  return fencedDiff(
+    [
+      ...rendered.filter(({ header }) => !header),
+      ...rendered.filter(({ header }) => header),
+    ].flatMap(({ lines }) => lines),
+  );
 }
 
 /**
  * Sorts changed public declarations into the notes sections a caller acts on. Unexported types
  * appear only when an export uses them and they changed: they explain why the export broke.
- * A wholly removed or added declaration shows only its own rows, not every member.
+ * A wholly removed or added declaration shows only its own rows, not every member. `renames` maps
+ * old top-level names to new ones as the changelog prose declares them; renames are never guessed,
+ * because similar names and signatures pair the wrong declarations too often to publish.
  */
 export function typeScriptApiSections(
   before: string,
   after: string,
   incompatible: ReadonlySet<string>,
+  renames: ReadonlyMap<string, string> = new Map(),
 ): ApiSections {
   const previous = records(before);
   const current = records(after);
-  const roots = (rows: readonly DeclarationRecord[]) =>
+  const publicRoots = (rows: readonly DeclarationRecord[]) =>
     reachable(
       rows,
       rows.filter(({ visible }) => visible).map(({ root }) => root),
     );
-  const shown = new Set([...roots(previous), ...roots(current)]);
+  const shown = new Set([...publicRoots(previous), ...publicRoots(current)]);
   // Breaking: an incompatible export, the types it uses, or a row naming it (`export { a as b }`).
   const breakingRoots = new Set([
     ...reachable(previous, incompatible),
@@ -346,9 +410,9 @@ export function typeScriptApiSections(
       .map(({ root }) => root),
   ]);
   const sections = {
-    breaking: { removed: [] as string[], added: [] as string[] },
-    changed: { removed: [] as string[], added: [] as string[] },
-    added: { removed: [] as string[], added: [] as string[] },
+    breaking: [] as DiffGroup[],
+    changed: [] as DiffGroup[],
+    added: [] as DiffGroup[],
   };
   for (const root of new Set([...previous, ...current].map((row) => row.root))) {
     if (!shown.has(root)) continue;
@@ -361,19 +425,20 @@ export function typeScriptApiSections(
     const now = rowsOf(current).map(({ text }) => text);
     if (JSON.stringify(old) === JSON.stringify(now)) continue;
     if (!old.length) {
-      if (visibleRoot) sections.added.added.push(...headerRows(current, root));
+      if (visibleRoot)
+        sections.added.push({ roots: [root], rows: addedRows(headerRows(current, root)) });
       continue;
     }
     if (!now.length) {
-      if (visibleRoot) sections.breaking.removed.push(...headerRows(previous, root));
+      if (visibleRoot)
+        sections.breaking.push({ roots: [root], rows: removedRows(headerRows(previous, root)) });
       continue;
     }
     const family = (rows: readonly DeclarationRecord[], name: string) =>
       rowsOf(rows)
         .filter((row) => row.family === name)
         .map(({ text }) => text);
-    const removed: string[] = [];
-    const added: string[] = [];
+    const rows: DiffGroup["rows"] = [];
     let reordered = false;
     for (const name of new Set(
       [...rowsOf(previous), ...rowsOf(current)].map((row) => row.family),
@@ -385,21 +450,46 @@ export function typeScriptApiSections(
       // family before and after shows that, since a row-by-row diff of identical text is empty.
       if (shared(was, is) !== shared(is, was)) {
         reordered = true;
-        removed.push(...was);
-        added.push(...is);
+        rows.push(...removedRows(was), ...addedRows(is));
       } else {
-        removed.push(...was.filter((text) => !is.includes(text)));
-        added.push(...is.filter((text) => !was.includes(text)));
+        rows.push(
+          ...removedRows(was.filter((text) => !is.includes(text))),
+          ...addedRows(is.filter((text) => !was.includes(text))),
+        );
       }
     }
     const target =
       reordered || breakingRoots.has(root)
         ? sections.breaking
-        : removed.length
+        : rows.some(([prefix]) => prefix === "- ")
           ? sections.changed
           : sections.added;
-    target.removed.push(...removed);
-    target.added.push(...added);
+    target.push({ roots: [root], rows });
+  }
+  // A declared rename joins the old declaration's removal and the new one's addition into one
+  // breaking group; several old names may merge into one new name.
+  for (const [from, to] of renames) {
+    const removal = sections.breaking.find(
+      ({ roots, rows }) => roots[0] === from && rows.every(([prefix]) => prefix === "- "),
+    );
+    if (!removal) continue;
+    const merged = sections.breaking.find(({ roots }) => roots.length > 1 && roots.at(-1) === to);
+    if (merged) {
+      merged.roots.splice(-1, 0, from);
+      merged.rows.splice(
+        merged.rows.findIndex(([prefix]) => prefix === "+ "),
+        0,
+        ...removal.rows,
+      );
+      sections.breaking.splice(sections.breaking.indexOf(removal), 1);
+      continue;
+    }
+    const index = sections.added.findIndex(({ roots }) => roots[0] === to);
+    const addition = sections.added[index];
+    if (!addition || addition.rows.some(([prefix]) => prefix === "- ")) continue;
+    sections.added.splice(index, 1);
+    removal.roots.push(to);
+    removal.rows.push(...addition.rows);
   }
   return {
     breaking: sectionDiff(sections.breaking),
