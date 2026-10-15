@@ -15,6 +15,7 @@ const FORBIDDEN_PATHS = new Set([
   ".github",
   "scripts",
   "AGENTS.md",
+  "CLAUDE.md",
   "NOTICE",
 ]);
 // Exact spellings distinguish source-owned promises from annotations the optimizer may add itself.
