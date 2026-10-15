@@ -104,6 +104,12 @@ export const checkDiagramHover = async (svgPath: string): Promise<string[]> => {
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 1800 } });
     await page.goto(`file://${svgPath}`);
+    // Malformed XML still renders, inside Chromium's parse-error page, which shifts every
+    // coordinate and makes the hover checks fail with misleading messages. Stop here instead.
+    const parseError = await page.evaluate(
+      () => document.querySelector("parsererror")?.textContent ?? "",
+    );
+    if (parseError) return [`the SVG is not well-formed XML: ${parseError}`];
     const running = (sel: string) =>
       page.evaluate(
         (s) =>
@@ -112,7 +118,7 @@ export const checkDiagramHover = async (svgPath: string): Promise<string[]> => {
         sel,
       );
     const { rest, blank } = await page.evaluate(() => {
-      const r = document.querySelector("svg")!.getBoundingClientRect();
+      const r = document.querySelector(".bg")!.getBoundingClientRect();
       // Off the image, below it; and on the image but on no piece (bottom-right corner).
       return {
         rest: { x: r.left + 4, y: r.bottom + 40 },

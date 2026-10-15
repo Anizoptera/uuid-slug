@@ -59,8 +59,10 @@
 // - Hover works only where the SVG is a document, such as the raw file the README image links
 //   to. GitHub's raw host allows inline CSS but no scripts, so hover is pure CSS `:has()`.
 //   The README <img> itself is static, so nothing may depend on hover.
-// - Dark background in both GitHub themes: an <img> SVG follows the browser's colour scheme,
-//   not GitHub's theme toggle, so a single dark design is the predictable choice.
+// - One SVG for both colour schemes: every colour is a CSS variable, dark by default, light under
+//   `prefers-color-scheme: light`. An <img> SVG follows the browser's scheme, not GitHub's theme
+//   toggle, so a light-OS reader on GitHub's dark theme sees the light version; separate files
+//   in a <picture> would follow GitHub's toggle, but the maintainer chose one adaptive file.
 import {
   BASE32HEX,
   createUuidV7MaskingCodec,
@@ -71,12 +73,66 @@ import {
 import { browserEngines } from "./browser-engines.ts";
 import { checkDiagramHover } from "./readme-diagram-hover.ts";
 
-const OUT = new URL("../docs/assets/uuid-representations.svg", import.meta.url);
+// DIAGRAM_OUT redirects preview builds (another theme or layout) away from the README asset.
+const OUT = process.env["DIAGRAM_OUT"]
+  ? new URL(`file://${process.env["DIAGRAM_OUT"]}`)
+  : new URL("../docs/assets/uuid-representations.svg", import.meta.url);
 // TEMPORARY switches that rebuild earlier layouts for comparison (DIAGRAM_LAYOUT=a,b): "rules"
 // separates sections with rules instead of panels, "jobfirst" puts what a form is for first,
 // "nocall" drops the one-character callout leaders and the avalanche slug lines. Delete them
 // once the maintainer has no further use for the comparison.
 const LAYOUT = new Set((process.env["DIAGRAM_LAYOUT"] ?? "").split(","));
+// Theme palettes: dark by default, light under prefers-color-scheme (see Layout constraints).
+// Field colours stay the same in both: they fill cells under dark
+// glyphs, which read on either background. Field-coloured text is darkened on light
+// (fieldText), because bright cyan or orange text on white is hard to read.
+const DARK_PALETTE = {
+  bg: "#0B1423",
+  panel: "#0F1B2D",
+  maskedPanel: "#17140F",
+  ink: "#F5F7FC",
+  onInk: "#08111F",
+  muted: "#C6D0E1",
+  key: "#8797AE",
+  accent: "#7ED8B3",
+  rule: "#34465F",
+  box: "#15243A",
+  boxEdge: "#667D99",
+  same: "#24344D",
+  wire: "#FFD9A8",
+  win: "#A78BFA",
+  winOpacity: ".42",
+  fieldText: "",
+};
+const LIGHT_PALETTE: typeof DARK_PALETTE = {
+  bg: "#FFFFFF",
+  panel: "#F3F6FA",
+  maskedPanel: "#FFF5EA",
+  ink: "#1F2328",
+  onInk: "#FFFFFF",
+  muted: "#4F5B6B",
+  key: "#6B7788",
+  accent: "#1A7F5A",
+  rule: "#D0D7DE",
+  box: "#FFFFFF",
+  boxEdge: "#8C99AA",
+  same: "#DCE2EA",
+  wire: "#E07A10",
+  win: "#8B5CF6",
+  winOpacity: ".22",
+  fieldText: "text.f{fill:color-mix(in srgb,currentColor 68%,#000)}",
+};
+// Every colour is a CSS variable, so one SVG serves both schemes.
+const P = Object.fromEntries(Object.keys(DARK_PALETTE).map((k) => [k, `var(--${k})`])) as Record<
+  keyof typeof DARK_PALETTE,
+  string
+>;
+const vars = (pal: typeof DARK_PALETTE) =>
+  Object.entries(pal)
+    .filter(([k]) => k !== "fieldText")
+    .map(([k, v]) => `--${k}:${v}`)
+    .join(";");
+const THEME = `svg{${vars(DARK_PALETTE)}}@media (prefers-color-scheme:light){svg{${vars(LIGHT_PALETTE)}}${LIGHT_PALETTE.fieldText}}`;
 const panels: [number, string][] = [];
 
 // ---------- data, all derived from the library ----------
@@ -319,9 +375,9 @@ ${AUTO_FIELDS.map((f, i) => {
 // Static styles are the finished state (bit flipped, bytes white, After slug shown), which
 // reduced-motion users see. Every loop starts 3 s in, inside its hold: a snapshot at time 0
 // (thumbnail, preview, print) must show the change that the text below states.
-const DIM = "#24344D",
-  LIT = "#F5F7FC",
-  DARK = "#08111F";
+const DIM = P.same,
+  LIT = P.ink,
+  DARK = P.onInk;
 const AV_S = 6;
 const AV_START = `-${AV_S / 2}s`;
 // Shuffled parts start up to 20% of the loop apart, so the turnover reads as a spreading wave.
@@ -358,13 +414,14 @@ const UNLIT_AFTER = ".12s";
 // Only hit areas (`.hit`) and legend items (`.lg`) take the pointer: any other shape drawn later
 // (a hyphen bar, a byte box) would sit on top of a hit area and open a dead zone.
 const STYLE = `
-.bg{fill:#0B1423;pointer-events:all}.ink{fill:#F5F7FC}.muted{fill:#C6D0E1}.box{fill:#15243A}.same{fill:#24344D}.chg{fill:#F5F7FC}
-.pkg{fill:#F5F7FC;fill-opacity:.6}.win{fill:#A78BFA;fill-opacity:.42}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
+${THEME}
+.bg{fill:${P.bg};pointer-events:all}.ink{fill:${P.ink}}.muted{fill:${P.muted}}.box{fill:${P.box}}.same{fill:${P.same}}.chg{fill:${P.ink}}
+.pkg{fill:${P.ink};fill-opacity:.6}.win{fill:${P.win};fill-opacity:${P.winOpacity}}.accent{fill:${P.accent}}.key{fill:${P.key}}.rule{stroke:${P.rule};fill:none}
 .time{color:#00C8FF}.version{color:#FF49CD}.variant{color:#4D50FF}.payload{color:#FFE83F}
 .masked{color:#FF921C}.pad{color:#8C9DB6}.f{fill:currentColor}.fg{fill:#08111F}.fw{fill:#FFFFFF}
 .sans{font-family:${SANS}}.mono{font-family:${MONO};font-variant-ligatures:none}
-.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1;transition:fill-opacity .2s ease ${UNLIT_AFTER},stroke-opacity .2s ease ${UNLIT_AFTER}}.lead{color:#C6D0E1}
-text,rect,path{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0;transition:opacity .12s ease ${UNLIT_AFTER}}
+.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1;transition:fill-opacity .2s ease ${UNLIT_AFTER},stroke-opacity .2s ease ${UNLIT_AFTER}}.lead{color:${P.muted}}
+text,rect,path{pointer-events:none}.hl{fill:none;stroke:${P.ink};stroke-width:2.5;opacity:0;transition:opacity .12s ease ${UNLIT_AFTER}}
 .hit{fill:none;pointer-events:all}.lg{transition:opacity .2s ease ${UNLIT_AFTER}}.lghit{fill:none;pointer-events:all}.cell{transition:opacity .2s ease ${UNLIT_AFTER}}
 .chip{fill:currentColor;stroke:currentColor;stroke-width:1.2;fill-opacity:0;stroke-opacity:0;transition:fill-opacity .2s ease ${UNLIT_AFTER},stroke-opacity .2s ease ${UNLIT_AFTER}}
 .x,.av.b{fill-opacity:0}.av.cm{opacity:0}
@@ -788,7 +845,7 @@ for (let i = 0; i < 16; i++) {
     b = digitCells[i * 2 + 1]!,
     w = b.x + b.w - a.x;
   const close = linked(`b${i}`, "uuid", i * 8, 8, a.x, y, w, BYTES_H);
-  rect(a.x + 1, y, w - 2, BYTES_H, "box", ` stroke="#667D99" stroke-width="1.2" rx="3"`);
+  rect(a.x + 1, y, w - 2, BYTES_H, "box", ` style="stroke:${P.boxEdge}" stroke-width="1.2" rx="3"`);
   text(a.x + w / 2, y + BYTES_H / 2 + 6, HEX.slice(i * 2, i * 2 + 2), 21, {
     anchor: "middle",
     mono: true,
@@ -853,7 +910,7 @@ for (const [id, idx, label] of [
       c.w,
       CELL_H + 6,
       "",
-      ` fill="none" stroke="#C6D0E1" stroke-width="1.4" rx="2"`,
+      ` fill="none" style="stroke:${P.muted}" stroke-width="1.4" rx="2"`,
     );
     path(
       `M${r1(c.x + c.w / 2)} ${top + CELL_H + 3}V${top + CELL_H + 8}H${SIDE_X - 14}V${top + 20}H${SIDE_X - 4}`,
@@ -867,7 +924,7 @@ for (const [id, idx, label] of [
       .indexOf(c.ch)
       .toString(2)
       .padStart(c.bits, "0");
-  rect(SIDE_X, top + 10, bs, bs, "box", ` stroke="#C6D0E1" stroke-width="1.2"`);
+  rect(SIDE_X, top + 10, bs, bs, "box", ` style="stroke:${P.muted}" stroke-width="1.2"`);
   text(SIDE_X + bs / 2, top + 10 + bs * 0.78, c.ch, FS.meta, { anchor: "middle", mono: true });
   for (let i = 0; i < c.bits; i++) {
     const field = f.field(c.start + i),
@@ -959,7 +1016,7 @@ for (const id of ["m64", "m32"] as const) {
     // (--r) keep the 16 streams out of step.
     const r = ` style="--r:${spread(i, 16)}"`;
     out.push(
-      `<path d="${wire}" class="av cm" fill="none" stroke="#FFD9A8" stroke-width="2.4" pathLength="100" stroke-dasharray="${WIRE_DASHES[i % WIRE_DASHES.length]}"${r}/>`,
+      `<path d="${wire}" class="av cm" fill="none" style="stroke:${P.wire};--r:${spread(i, 16)}" stroke-width="2.4" pathLength="100" stroke-dasharray="${WIRE_DASHES[i % WIRE_DASHES.length]}"/>`,
     );
     const changed = CHANGED_BYTES[i];
     rect(
@@ -1024,8 +1081,8 @@ const H = Math.ceil(y + 18);
 // masked base32hex.
 const panelRects = panels.map(([top, cls], i) => {
   const bottom = (panels[i + 1]?.[0] ?? footY) - 8;
-  const fill = cls.includes("masked") ? "#17140F" : "#0F1B2D";
-  return `<rect x="${M - 14}" y="${top + 2}" width="${W - 2 * M + 28}" height="${bottom - top}" rx="10" fill="${fill}"/>`;
+  const fill = cls.includes("masked") ? P.maskedPanel : P.panel;
+  return `<rect x="${M - 14}" y="${top + 2}" width="${W - 2 * M + 28}" height="${bottom - top}" rx="10" style="fill:${fill}"/>`;
 });
 const background = [
   ...panelRects,
