@@ -68,6 +68,19 @@ function rootTexts(rows: readonly DeclarationRecord[], root: string): string {
  * prints identically after the unexported `Options.at` becomes required, yet `generate({})` breaks.
  */
 export async function incompatibleExports(before: string, after: string): Promise<Set<string>> {
+  const directory = await mkdtemp(join(tmpdir(), "uuid-slug-api-compatibility-"));
+  try {
+    return await checkDirectory(directory, before, after);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}
+
+async function checkDirectory(
+  directory: string,
+  before: string,
+  after: string,
+): Promise<Set<string>> {
   // Each file's `unique symbol` would be a distinct type, making every branded type look
   // unrelated across versions. A caller has one version installed, so a brand keeps its identity
   // by name: both versions import each such symbol from one shared module.
@@ -93,27 +106,11 @@ export async function incompatibleExports(before: string, after: string): Promis
     // A file without exports is a global script with no API; `export {}` keeps it importable.
     return `${text}${source.slice(copied)}\nexport {};\n`;
   };
-  const directory = await mkdtemp(join(tmpdir(), "uuid-slug-api-compatibility-"));
-  try {
-    return await checkDirectory(directory, before, after, symbols, {
-      "old.d.ts": shareSymbols(before),
-      "new.d.ts": shareSymbols(after),
-    });
-  } finally {
-    await rm(directory, { recursive: true, force: true });
-  }
-}
-
-async function checkDirectory(
-  directory: string,
-  before: string,
-  after: string,
-  symbols: ReadonlySet<string>,
-  versions: Readonly<Record<"old.d.ts" | "new.d.ts", string>>,
-): Promise<Set<string>> {
   const oldFile = join(directory, "old.d.ts");
+  // Array elements evaluate in order: both versions fill `symbols` before its module is written.
   await Promise.all([
-    ...Object.entries(versions).map(([name, text]) => writeFile(join(directory, name), text)),
+    writeFile(oldFile, shareSymbols(before)),
+    writeFile(join(directory, "new.d.ts"), shareSymbols(after)),
     writeFile(
       join(directory, "symbols.d.ts"),
       [...symbols].map((name) => `export declare const ${name}: unique symbol;`).join("\n"),

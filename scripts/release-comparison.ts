@@ -485,18 +485,22 @@ export function typeScriptApiSections(
     if (exportedRoots.has(root)) target.push({ roots: [root], rows });
     else hidden.push({ root, target });
   }
-  for (const target of [sections.breaking, sections.changed, sections.added])
-    for (const { root } of hidden.filter((change) => change.target === target))
-      for (const user of exportedRoots) {
-        const listed = Object.values(sections).some((groups) =>
-          groups.some(({ roots }) => roots.includes(user)),
-        );
-        if (listed || !reachable(current, [user]).has(root)) continue;
-        target.push({
-          roots: [user],
-          rows: headerRows(current, user).map((text) => ["  ", text] as const),
-        });
-      }
+  // An unchanged export lands in the most severe section among the hidden changes it uses.
+  const listed = new Set(
+    Object.values(sections).flatMap((groups) => groups.map(({ roots }) => roots[0])),
+  );
+  if (hidden.length)
+    for (const user of exportedRoots) {
+      if (listed.has(user)) continue;
+      const uses = reachable(current, [user]);
+      const target = [sections.breaking, sections.changed, sections.added].find((section) =>
+        hidden.some((change) => change.target === section && uses.has(change.root)),
+      );
+      target?.push({
+        roots: [user],
+        rows: headerRows(current, user).map((text) => ["  ", text] as const),
+      });
+    }
   // A declared rename joins the old declaration's removal and the new one's addition into one
   // breaking group; several old names may merge into one new name.
   for (const [from, to] of renames) {
