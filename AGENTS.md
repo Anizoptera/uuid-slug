@@ -8,7 +8,7 @@ READ the owner before changing its subject; these references hold the detailed r
 
 | Work | Owner |
 | --- | --- |
-| ANY public TypeScript or Rust interface, type, error or declaration comment | `docs/public-api.md` in full |
+| ANY public TypeScript or Rust interface, type, error or declaration comment | `dev/interface.md` in full |
 | Masking, keys, sentinels or identifier formats | `docs/design.md` and `docs/security.md` |
 | Rust, TS/Rust parity, shared formats, filesystem-safe output, package entries, runtime floors or bundling | `docs/cross-language.md` |
 | Experiments, profiles, drivers, evidence cleanup or performance gates, even from `src/` | `bench/AGENTS.md` (priorities, gates), then `bench/README.md` (commands, reports) |
@@ -43,7 +43,7 @@ Audit findings need the failing call, trigger, consequence and normal-call contr
 Separate observed from possible harm; misuse alone does not prove ordinary-call harm or release impact.
 
 Keep adversarial hardening off default paths; ordinary calls must not pay for it.
-Extra hardening requires an explicit request and a non-default path; read `docs/public-api.md` §Capabilities and runtime work.
+Extra hardening requires an explicit request and a non-default path; read `dev/interface.md` §Capabilities and runtime work.
 Preserve input validation, secure randomness, caller ownership and wire integrity.
 JavaScript may accept calls TypeScript rejects; that alone justifies neither wider types nor a release blocker.
 
@@ -70,7 +70,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 
 ## Public TypeScript interface protocol
 
-- Start from executable consumer calls; `docs/public-api.md` §Rules and §Types and validation own
+- Start from executable consumer calls; `dev/interface.md` §Rules and §Types and validation own
   runtime acceptance, TypeScript inference, defaults, constants and option-key checks. A declaration
   baseline proves signatures only.
 - Check omitted arguments with explicit generics and reusable typed options before publishing
@@ -105,7 +105,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   Replace superseded state in place; retain completed facts only when later work needs them.
   Never create shadow, staging, renamed or temporary plans.
 - Before changing generation, its guarantees or tests, read README §Guarantees (consumer promises)
-  and `docs/public-api.md` §Generation and codecs. Proper native guarantees are the default ceiling;
+  and `dev/interface.md` §Generation and codecs. Proper native guarantees are the default ceiling;
   stronger ones need configuration and a maintainer ruling before code or tests impose them.
   Before rejecting a faster implementation, name the published promise or maintainer requirement it
   breaks; proposals, existing tests and agent-derived constraints are not guarantees.
@@ -122,7 +122,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Representation guidance must distinguish keyless root conversions from keyed codec conversions,
   state that 22-character plain and masked base64url forms overlap, and never imply that a paired
   generator computes every spelling.
-- Before editing any public symbol, apply `docs/public-api.md` §UUID slug vocabulary and §Shape to
+- Before editing any public symbol, apply `dev/interface.md` §UUID slug vocabulary and §Shape to
   its name, parameters, accepted forms, result, and detached use. That document owns the rules and
   terms. Fix dependents after a rename; never restore an unclear name to satisfy the compiler.
 - A public terminology change is incomplete while an old public term remains in source, README,
@@ -138,7 +138,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   incorrect keys can pass by chance. Do not reject multiple matches or append fallback masks.
 - Every decoder must accept every value that a supported matching encoder can produce. Options
   may add accepted forms; they must not remove existing ones. Reject forms no encoder produces.
-- Before changing accepted UUID forms, normalization or text-case presets, read `docs/public-api.md`
+- Before changing accepted UUID forms, normalization or text-case presets, read `dev/interface.md`
   §Rules and §UUID text and bytes; preserve its input equivalence, output spelling and inferred types.
 - Keyed operations belong only on the UUIDv7 masking codec holding the key, including masked timestamp
   validation. Do not add top-level masked shortcuts. Masking-codec construction requires an explicit
@@ -171,7 +171,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Keep compiled public JavaScript executable under Bun even though Bun normally selects source.
   Its `#runtime` import MUST still select the Bun TypeScript adapter and native primitives; test
   source selection and direct compiled execution separately because one does not prove the other.
-- Read `docs/public-api.md` §Package entries before changing exports or bundling. Keep each export
+- Read `dev/interface.md` §Package entries before changing exports or bundling. Keep each export
   path aligned with its owning source and built module. Use a facade only to hide internal exports
   or join owners.
 - Check tree shaking from named root imports for each consumer job. Execute each bundle,
@@ -198,16 +198,16 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   does not need them at runtime; README links do not require shipping their targets.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Never add a throwing
   convenience API; the one ruled throw is `rng_unavailable` from argument-free or preset-only
-  generation, whose declarations carry no union (`docs/public-api.md` §Failures and effects).
+  generation, whose declarations carry no union (`dev/interface.md` §Failures and effects).
   Package-owned interfaces carry failures as values; adapt and contain exception-based
   dependencies at their boundary.
 - Before changing composition, propagation, markers, recognition or result types, read
-  `docs/public-api.md` §Failures and effects; before selecting checks or fallback order, read
+  `dev/interface.md` §Failures and effects; before selecting checks or fallback order, read
   §Capabilities and runtime work. These owners distinguish local results from foreign inputs.
-- Before writing declaration comments, read `docs/public-api.md` §Declaration comments; it owns
+- Before writing declaration comments, read `dev/interface.md` §Declaration comments; it owns
   JSDoc coverage, caller-facing facts, equivalent wording and useful editor help.
 - Audit public TypeScript with executable source and packed calls covering overloads, defaults,
-  option combinations, detached methods, brands, caller output and failures. Apply `docs/public-api.md`
+  option combinations, detached methods, brands, caller output and failures. Apply `dev/interface.md`
   §Proof; `api/typescript.api.d.ts` records signatures only.
 - Update affected public JSDoc with its source, never later. Before committing, build declarations,
   query changed symbols through the TypeScript language service and read each changed `.d.ts` as a
@@ -278,7 +278,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   skip parsing, allocation and initialization that the selected capability does not need.
 - Cast probes to narrow optional capability shapes, not intersections with ambient types that
   may already declare the method required.
-- Before changing brands, string wrappers or input validation, read `docs/public-api.md`
+- Before changing brands, string wrappers or input validation, read `dev/interface.md`
   §Types and validation; preserve ergonomic raw inputs and every distinction validation proves.
 - Return owned bytes as plain `Uint8Array`, not `Buffer`; verify constructors in Node and Bun.
   Adapt at the runtime boundary and preserve caller buffers; apply §Work scope before adding defenses.
@@ -286,7 +286,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 ## Writing public documentation
 
 These rules cover every text a consumer reads: README, its diagram (`scripts/readme-diagram.ts`),
-package description and release notes. Declaration comments follow `docs/public-api.md` instead.
+package description and release notes. Declaration comments follow `dev/interface.md` instead.
 
 README is roughly 60% marketing and 40% usage. It MUST explain why the complete library is worth
 adopting, make ordinary calls obvious, and explain what keeps stored IDs usable. Generation alone

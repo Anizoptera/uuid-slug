@@ -13,7 +13,7 @@ Install the pinned Rust extractor with `cargo install cargo-public-api --version
 The TypeScript baseline is a declaration file containing everything reachable from the built public entry, including overloads and strict brands. The Rust baseline records separate all-feature and no-default-feature surfaces because Cargo features can change the public API. Blanket implementations are omitted because they obscure the crate-owned surface; derived and auto-trait implementations remain visible.
 
 Consumer checks compile packed TypeScript declarations and retained Rust APIs;
-signature comparisons alone do not check supported calls. See the [interface proof requirements](../docs/public-api.md#proof).
+signature comparisons alone do not check supported calls. See the [interface proof requirements](../dev/interface.md#proof).
 
 The reports retain deprecation annotations and omit other comments, so documentation edits do not
 appear as API changes. Package metadata and runtime behavior have separate checks.

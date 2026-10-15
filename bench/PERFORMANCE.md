@@ -489,7 +489,7 @@ Bun default text reads 73.61/72.31 ns across the matrices, against native Bun UU
 47.02/46.12 ns: the remaining package/native ratio is about 1.57 in both. The fastest qualified
 measured library, `uniku`, reads 188.38/184.48 ns; `fastv7` reads 125.45/123.16 ns.
 Timestamp drift alone does not disqualify default generation under the generation policy in
-`docs/public-api.md`. The package leads these measured libraries on this workload;
+`dev/interface.md`. The package leads these measured libraries on this workload;
 that does not close the native gap or establish resource parity. Native UUIDv4 repair costs
 173.26/161.54 ns using hexadecimal slicing and 112.69/106.61 ns using fixed character prefixes.
 Both lose before adding package validation or native-failure fallback. Node and Deno also favor
@@ -2093,7 +2093,7 @@ and rejected 99.8% of them. Bun's `node:crypto.randomUUIDv7` ran 429 ms ahead af
 The measured portable UUIDv7 text and slug calls cost
 about 36 ns and 23 ns above the native floor. In these bursts, that gap accompanies timestamps
 that stay at the clock; it does not establish an unavoidable validation or dispatch cost.
-Art's default-generation policy in `docs/public-api.md` supersedes rejection solely for timestamp
+Art's default-generation policy in `dev/interface.md` supersedes rejection solely for timestamp
 advancement. The measurements remain evidence of the trade-off, not a never-ahead contract.
 
 Node 26.8.2's `crypto.randomUUIDv7` draws its 12 bits after the timestamp randomly on every call
@@ -2101,7 +2101,7 @@ and encoded no timestamp ahead of the clock during a burst of 2 million calls, b
 the package generator.
 
 Default native output needs neither result validation nor identity tracking; stronger guarantees
-belong only to explicit configurable paths under `docs/public-api.md`. Validating every native
+belong only to explicit configurable paths under `dev/interface.md`. Validating every native
 UUIDv7 value cost 61–63 ns against a 41–43 ns floor on Bun, while trusting a validated function reached the floor. A shared trust helper
 added a call Bun did not inline, costing 38–40 ns for UUIDv4 text against 31–33 ns with the trusted
 call at each call site. These measurements do not justify preserving a trust step on defaults.

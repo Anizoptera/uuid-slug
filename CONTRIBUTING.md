@@ -9,7 +9,7 @@ Use the repository's pinned tools. Run `bun install`, install the `cargo-public-
 
 ## Changes
 
-Read `docs/public-api.md` before changing any public interface or observable behavior.
+Read `dev/interface.md` before changing any public interface or observable behavior.
 
 Keep release preparation focused on correctness, compatibility, packaging and recovery. Standalone
 performance experiments require an explicit request for the affected consumer call; a correctness
