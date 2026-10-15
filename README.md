@@ -13,7 +13,7 @@ High-performance UUIDv4/v7 generation and handling for TS, Rust, and WASM, short
 
 [![One UUIDv7 shown as UUID text, 16 bytes, plain base64url and base32hex slugs, and masked base64url and base32hex slugs, with colours tracing timestamp, version, variant and payload bits](docs/assets/uuid-representations.svg)](https://raw.githubusercontent.com/Anizoptera/uuid-slug/main/docs/assets/uuid-representations.svg)
 
-[Open the interactive infographic: hover any field to trace it through every form.](https://raw.githubusercontent.com/Anizoptera/uuid-slug/main/docs/assets/uuid-representations.svg)
+<p align="center"><sub><em>Open the <a href="https://raw.githubusercontent.com/Anizoptera/uuid-slug/main/docs/assets/uuid-representations.svg">interactive infographic</a>: hover any field to trace it through every form.</em></sub></p>
 
 - **Benchmark-leading UUIDv7 text generation on Node, Bun, Deno and browsers!**
   - 6+ distinct UUID representations are supported!
