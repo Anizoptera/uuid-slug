@@ -1,10 +1,12 @@
 # Security boundaries
 
+## Randomness
+
 Built-in generation draws from platform cryptographic randomness. TypeScript uses native UUID
 methods when available, otherwise Node crypto or Web Crypto. Rust uses fallible `getrandom`;
 browser generation requires `wasm-js`. Neither implementation substitutes non-cryptographic
 randomness when the secure source fails. TypeScript generation with no arguments or only a
-spelling preset throws `UuidSlugError` with code `rng_unavailable` in that case; every other
+text-case argument (lowercase or uppercase) throws `UuidSlugError` with code `rng_unavailable` in that case; every other
 generation call returns it, and Rust returns `Err` on every path. Separately named custom-entropy
 calls accept a synchronous fill callback for controlled runtimes and deterministic work. The caller
 must fill every requested byte securely or return `UuidSlugError`; a successful weak or partial
@@ -18,10 +20,11 @@ random starting value and generates 32 new random bits for each UUID. A UUID doe
 method produced its payload, so the package does not report those bits as random or predictable.
 Collisions remain possible.
 
-Generation selects secure sources separately for text and byte output:
+Generation selects secure sources separately for text and byte output. "Pooled" means random
+bytes are drawn in batches into an internal buffer; see [Memory](#memory-and-unsafe-code).
 
-- Node uses `crypto.randomUUID()` for UUIDv4 text without JIT compilation and pooled
-  `crypto.randomFillSync()` for other output.
+- Node uses `crypto.randomUUID()` for UUIDv4 text and pooled `crypto.randomFillSync()` for other
+  output.
 - Bun uses Node-compatible `randomUUID()` for UUIDv4 text, with Web Crypto as fallback, and
   `Bun.randomUUIDv7()` for default UUIDv7 text and base64url slugs. Other output and configured
   generators use pooled `getRandomValues()`.
@@ -34,14 +37,17 @@ secure randomness or report failure.
 The platform source choices are documented by [Node](https://nodejs.org/api/crypto.html#cryptorandomfillsyncbuffer-offset-size),
 [Web Crypto](https://www.w3.org/TR/webcrypto/#Crypto-method-getRandomValues),
 [Bun](https://bun.sh/docs/runtime/utils#bunrandomuuidv7) and
-[getrandom](https://docs.rs/getrandom/latest/getrandom/#supported-targets). Review the selected
-backend when changing a runtime, target or dependency.
+[getrandom](https://docs.rs/getrandom/latest/getrandom/#supported-targets).
 System entropy can block during early boot while the OS initializes its RNG. Applications with
 strict response deadlines must keep that draw off their event loop; never substitute weaker bytes
 to meet a deadline. See [getrandom's early-boot limits](https://docs.rs/getrandom/latest/getrandom/#early-boot).
 
+## What a UUID reveals
+
 Within one millisecond, the portable generator increments its visible 42-bit counter and draws 32
 new random bits. Observing one UUID reveals the next counter value in that millisecond.
+
+## Masking
 
 Every UUID version exposes standardized fields. This package masks UUIDv7, replacing its layout,
 including timestamp, version, and variant positions, with a keyed reversible payload. Its cryptographic
@@ -73,18 +79,24 @@ async function findAuthorizedRecord<Record>(
 }
 ```
 
+## Failures
+
 Generator entropy failures report `rng_unavailable`; caller buffers and sequence state remain unchanged.
 Rust retains the entropy provider's error. In browsers, `getrandom` reports its Web Crypto error
 code rather than retaining the original JavaScript exception. TypeScript retains that exception.
 This diagnostic difference does not permit a failed draw to produce an identifier.
 
-The default preserve policy continues sequence state when the clock moves backward. Callers can
-instead select reset or failure beyond an inclusive skew tolerance. Reset can emit a UUID timestamp
+## Clock rollback and ordering
+
+By default (`clockRollback` action `"preserve"`), a generator keeps its sequence moving forward when
+the clock moves backward. Callers can instead select `"reset"` or `"error"` beyond an inclusive skew tolerance. Reset can emit a UUID timestamp
 below a previous result; failure emits no identifier and leaves generator state unchanged. This
 ordering guarantee applies to successful current-time calls on one explicitly created generator.
 Explicit-time calls on that generator share its sequence state. Module-level helpers do not
 provide ordering across calls; independent generators, package copies, workers and processes
 do not share sequence state.
+
+## Caller buffers
 
 UUID slug formatting and parsing encode and decode one 16-byte payload. TypeScript byte-offset
 overloads select that payload from a larger array; other payload sizes and malformed UUID text are
@@ -97,22 +109,15 @@ External masking codecs receive an isolated copy; their decoded bytes are valida
 before retention. Callback exceptions remain available as `cause`; valid-shaped results do not prove
 correct masking or decoding.
 
+## Memory and unsafe code
+
 TypeScript pools platform randomness without expanding it. Refills become usable only after the
 source returns successfully; a partial write followed by failure must be retried, never consumed.
 Consumed pool bytes are erased. Rust draws into private generator buffers before copying output;
 the low-level `fill_os_random_bytes` function itself does not promise an unchanged buffer on failure.
 
-The Rust product crate forbids owned unsafe code; its dependencies still contain unsafe code.
-Development bridges are unpublished. Node and Bun load the same generated N-API boundary, while
-the browser loads the generated wasm-bindgen boundary. Panic handling cannot contain allocation
-aborts or WebAssembly traps. Keep real Node, Bun and browser transport checks alongside shared
-dispatcher tests.
+The Rust crate contains no unsafe code of its own; its dependencies do.
 
 No secure-erasure guarantee is provided. Do not clone a live generator or buffered entropy state
 through process-memory snapshots and then issue identifiers independently from both copies.
-
-Review changed entropy paths in each runtime that can execute them. Exercise the portable draw
-path separately from native delegation; test failure and retry, not only successful generation.
-Use shared wire vectors to constrain encoding and masking, and real host interception to check
-entropy selection. These checks do not certify operating-system RNGs or establish cryptographic
-strength for the masking design.
+The package's tests do not certify operating-system RNGs or the masking's cryptographic strength.

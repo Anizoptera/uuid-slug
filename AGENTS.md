@@ -204,6 +204,11 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   String generation can bypass `fillRandom`; inspect the selected path instead of assuming a
   method name identifies the code under test. Compare byte keys with `join(",")` or hex,
   never platform-dependent string coercion or UTF-8 decoding.
+  Changing a runtime, target or dependency changes the entropy backend: re-read that backend's docs
+  (linked from `docs/security.md`) and test every runtime that can execute the changed path,
+  including failure and retry, not only success. Check entropy selection by real host
+  interception; shared wire vectors constrain encoding and masking only. None of this certifies
+  OS RNGs or masking strength.
 - Preserve an unpinned newest-Node CI lane: pinned runtimes cannot expose newly added native APIs.
 
 ## Writing public documentation
