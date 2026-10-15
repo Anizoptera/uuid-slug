@@ -9,9 +9,13 @@
 // - GitHub shows README images about 880 CSS px wide. Text renders at its SVG size × 880 / W,
 //   so W = 1100 keeps the smallest text (15) near 12 px. A wider canvas shrinks everything.
 // - One column: each form's facts sit under its specimen, so no side table steals width.
-// - Colour means one thing: which UUIDv7 field a bit belongs to (plus orange for masked bits).
-//   Interface roles (labels, package name) use a separate mint/slate palette.
+// - Every colour has one meaning. Field colours mark which UUIDv7 field a bit belongs to, and
+//   orange marks masked bits. Mint marks headings and labels, slate marks "Sort"/"Case" keys,
+//   and the package name is dimmed title ink. White outlines appear only on hover matches.
 // - System fonts only: GitHub serves the SVG as an image, so web fonts and links do not load.
+// - Hover works only where the SVG is a document, such as the raw file the README image links
+//   to. GitHub's raw host allows inline CSS but no scripts, so hover is pure CSS `:has()`.
+//   The README <img> itself is static, so nothing may depend on hover.
 // - Dark background in both GitHub themes: an <img> SVG follows the browser's colour scheme,
 //   not GitHub's theme toggle, so a single dark design is the predictable choice.
 import {
@@ -218,11 +222,13 @@ const SANS = `-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-s
 const MONO = `ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace`;
 const STYLE = `
 .bg{fill:#0B1423}.ink{fill:#F5F7FC}.muted{fill:#C6D0E1}.box{fill:#15243A}.same{fill:#24344D}
-.pkg{fill:#8CCFB4}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
+.pkg{fill:#F5F7FC;fill-opacity:.6}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
 .time{color:#00C8FF}.version{color:#FF49CD}.variant{color:#4D50FF}.payload{color:#FFE83F}
 .masked{color:#FF921C}.pad{color:#8C9DB6}.f{fill:currentColor}.fg{fill:#08111F}.fw{fill:#FFFFFF}
 .sans{font-family:${SANS}}.mono{font-family:${MONO};font-variant-ligatures:none}
-.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1}.lead{color:#C6D0E1}`;
+.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1}.lead{color:#C6D0E1}
+text,.hl,.ghost{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0}
+${(["time", "version", "variant", "payload"] as const).map((f) => `svg:has(.${f}.f:hover) .ghost.${f}{fill-opacity:.22;stroke-opacity:.7}`).join("")}`;
 const esc = (s: string) => s.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
 const r1 = (n: number) => Math.round(n * 10) / 10;
 // System fonts differ, so widths are estimates; layouts keep slack instead of measuring.
@@ -292,44 +298,93 @@ const bitX = (cells: Cell[], bit: number) => {
 // Only the dark variant blue needs white ink.
 const inkFor = (f: Field) => (f === "variant" ? "fw" : "fg");
 
+// Hover linking for the raw view (GitHub's README <img> is static). Each plain character or byte
+// records its bit range; hovering it reveals the outline of every linked piece holding any of
+// those bits. Masked rows are left out on purpose: masking scrambles bit positions, so no
+// masked character corresponds to particular UUID bits.
+interface Link {
+  id: string;
+  start: number;
+  bits: number;
+}
+const links: Link[] = [];
+const linked = (
+  id: string,
+  start: number,
+  bits: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+) => {
+  links.push({ id, start, bits });
+  out.push(`<g id="g${id}">`);
+  return () =>
+    out.push(
+      `<rect id="o${id}" class="hl" x="${r1(x)}" y="${r1(y - 2)}" width="${r1(w)}" height="${r1(h + 4)}" rx="2"/></g>`,
+    );
+};
+const linkRules = () =>
+  links
+    .map((a) => {
+      const hits = links.filter((b) => a.start < b.start + b.bits && b.start < a.start + a.bits);
+      return `svg:has(#g${a.id}:hover) :is(${hits.map((b) => `#o${b.id}`).join(",")}){opacity:1}`;
+    })
+    .join("\n");
+
 let clipId = 0;
-const drawSpecimen = (f: Form, cells: Cell[], y: number, h: number, size: number) => {
+const drawSpecimen = (
+  f: Form,
+  cells: Cell[],
+  y: number,
+  h: number,
+  size: number,
+  linkKey?: string,
+) => {
   const baseline = y + h / 2 + size * 0.35;
+  let index = 0;
   for (const c of cells) {
     if (!c.bits) {
       rect(c.x + 2, y + h / 2 - 1.5, c.w - 4, 3, "muted");
       continue;
     }
-    // A character can hold bits of two fields; paint each share and keep its glyph legible on both.
-    const runs: [Field, number][] = [];
-    for (let b = c.start; b < c.start + c.bits; b++) {
-      const field = f.field(b),
-        last = runs.at(-1);
-      if (last && last[0] === field) last[1]++;
-      else runs.push([field, 1]);
-    }
-    let x = c.x + 0.75;
-    const parts: [string, number, number][] = [];
-    for (const [field, n] of runs) {
-      const w = (n / c.bits) * (c.w - 1.5);
-      rect(x, y, w, h, `${field} f`);
-      if (field === "pad") rect(x, y, w, h, "", ` fill="url(#hatch)"`);
-      parts.push([inkFor(field), x, w]);
-      x += w;
-    }
-    const gx = c.x + c.w / 2;
-    if (parts.every((p) => p[0] === parts[0]![0])) {
-      text(gx, baseline, c.ch, size, { cls: parts[0]![0], anchor: "middle", mono: true });
-      continue;
-    }
-    for (const [cls, px, pw] of parts) {
-      const id = `k${++clipId}`;
-      out.push(
-        `<clipPath id="${id}"><rect x="${r1(px)}" y="${r1(y)}" width="${r1(pw)}" height="${h}"/></clipPath><g clip-path="url(#${id})">`,
-      );
-      text(gx, baseline, c.ch, size, { cls, anchor: "middle", mono: true });
-      out.push("</g>");
-    }
+    const close = linkKey
+      ? linked(`${linkKey}${index++}`, c.start, c.bits, c.x, y, c.w, h)
+      : undefined;
+    drawGlyph(f, c, y, h, size, baseline);
+    close?.();
+  }
+};
+const drawGlyph = (f: Form, c: Cell, y: number, h: number, size: number, baseline: number) => {
+  // A character can hold bits of two fields; paint each share and keep its glyph legible on both.
+  const runs: [Field, number][] = [];
+  for (let b = c.start; b < c.start + c.bits; b++) {
+    const field = f.field(b),
+      last = runs.at(-1);
+    if (last && last[0] === field) last[1]++;
+    else runs.push([field, 1]);
+  }
+  let x = c.x + 0.75;
+  const parts: [string, number, number][] = [];
+  for (const [field, n] of runs) {
+    const w = (n / c.bits) * (c.w - 1.5);
+    rect(x, y, w, h, `${field} f`);
+    if (field === "pad") rect(x, y, w, h, "", ` fill="url(#hatch)"`);
+    parts.push([inkFor(field), x, w]);
+    x += w;
+  }
+  const gx = c.x + c.w / 2;
+  if (parts.every((p) => p[0] === parts[0]![0])) {
+    text(gx, baseline, c.ch, size, { cls: parts[0]![0], anchor: "middle", mono: true });
+    return;
+  }
+  for (const [cls, px, pw] of parts) {
+    const id = `k${++clipId}`;
+    out.push(
+      `<clipPath id="${id}"><rect x="${r1(px)}" y="${r1(y)}" width="${r1(pw)}" height="${h}"/></clipPath><g clip-path="url(#${id})">`,
+    );
+    text(gx, baseline, c.ch, size, { cls, anchor: "middle", mono: true });
+    out.push("</g>");
   }
 };
 
@@ -412,7 +467,7 @@ const digitCells = uuidCells.filter((c) => c.bits);
 text(SIDE_X, y + 18, "Text", FS.meta, { cls: "accent", weight: 700 });
 text(SIDE_X, y + 40, "36 chars · lowercase", FS.small, { cls: "muted" });
 const textTop = y;
-drawSpecimen(FORMS.uuid, uuidCells, y, CELL_H, MONO_SIZE);
+drawSpecimen(FORMS.uuid, uuidCells, y, CELL_H, MONO_SIZE, "u");
 y += CELL_H + 12;
 // Bytes sit under their own two hex digits: dark tiles, so they read as a different thing
 // than the text, with each bit's field shown only as a thin bar.
@@ -424,6 +479,7 @@ for (let i = 0; i < 16; i++) {
   const a = digitCells[i * 2]!,
     b = digitCells[i * 2 + 1]!,
     w = b.x + b.w - a.x;
+  const close = linked(`b${i}`, i * 8, 8, a.x, y, w, BYTES_H);
   rect(a.x + 1, y, w - 2, BYTES_H, "box", ` stroke="#667D99" stroke-width="1.2" rx="3"`);
   text(a.x + w / 2, y + BYTES_H / 2 + 6, HEX.slice(i * 2, i * 2 + 2), 21, {
     anchor: "middle",
@@ -437,6 +493,7 @@ for (let i = 0; i < 16; i++) {
       6,
       `${plainField(i * 8 + k)} f`,
     );
+  close();
 }
 y += BYTES_H + 6;
 {
@@ -468,9 +525,16 @@ for (const [id, idx, label] of [
   const cells = cellsOf(f, M, CW),
     top = y;
   plainRows[id] = { cells, top };
-  drawSpecimen(f, cells, top, CELL_H, MONO_SIZE);
+  drawSpecimen(f, cells, top, CELL_H, MONO_SIZE, id === "p64" ? "p" : "q");
   const c = cells[idx]!;
-  rect(c.x, top - 3, c.w, CELL_H + 6, "", ` fill="none" stroke="#F5F7FC" stroke-width="2" rx="2"`);
+  rect(
+    c.x,
+    top - 3,
+    c.w,
+    CELL_H + 6,
+    "",
+    ` fill="none" stroke="#C6D0E1" stroke-width="1.4" rx="2"`,
+  );
   path(
     `M${r1(c.x + c.w / 2)} ${top + CELL_H + 3}V${top + CELL_H + 8}H${SIDE_X - 14}V${top + 20}H${SIDE_X - 4}`,
     "lead",
@@ -612,7 +676,8 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
 <!-- Generated by scripts/readme-diagram.ts; edit that script, not this file. -->
 <title id="t">${esc(COPY.title)}</title>
 <desc id="d">${esc(desc)}</desc>
-<style>${STYLE}</style>
+<style>${STYLE}
+${linkRules()}</style>
 <defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
 <rect width="100%" height="100%" class="bg"/>
 ${[...background, ...out].join("\n")}

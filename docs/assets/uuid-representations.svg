@@ -4,11 +4,109 @@
 <desc id="d">The UUIDv7 0198abcd-1234-7abc-9def-0123456789ab as UUID text, 16 bytes, plain base64url AZirzRI0eryd7wEjRWeJqw, plain base32hex 06canj8i6htbp7ff04hkaps9lc, masked base64url ap225Qa_y6wN5LQCJgwH0z and masked base32hex daerdp86nv5qo3f4mg12c307qco, with what each form is for, how it sorts and whether case matters. Flipping the last UUID bit changes 22 of 22 masked base64url characters (hAHeRPmJFqjOuXUQnhljgb).</desc>
 <style>
 .bg{fill:#0B1423}.ink{fill:#F5F7FC}.muted{fill:#C6D0E1}.box{fill:#15243A}.same{fill:#24344D}
-.pkg{fill:#8CCFB4}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
+.pkg{fill:#F5F7FC;fill-opacity:.6}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
 .time{color:#00C8FF}.version{color:#FF49CD}.variant{color:#4D50FF}.payload{color:#FFE83F}
 .masked{color:#FF921C}.pad{color:#8C9DB6}.f{fill:currentColor}.fg{fill:#08111F}.fw{fill:#FFFFFF}
 .sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-variant-ligatures:none}
-.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1}.lead{color:#C6D0E1}</style>
+.ghost{fill:currentColor;fill-opacity:.035;stroke:currentColor;stroke-opacity:.1;stroke-width:1}.lead{color:#C6D0E1}
+text,.hl,.ghost{pointer-events:none}.hl{fill:none;stroke:#F5F7FC;stroke-width:2.5;opacity:0}
+svg:has(.time.f:hover) .ghost.time{fill-opacity:.22;stroke-opacity:.7}svg:has(.version.f:hover) .ghost.version{fill-opacity:.22;stroke-opacity:.7}svg:has(.variant.f:hover) .ghost.variant{fill-opacity:.22;stroke-opacity:.7}svg:has(.payload.f:hover) .ghost.payload{fill-opacity:.22;stroke-opacity:.7}
+svg:has(#gu0:hover) :is(#ou0,#ob0,#op0,#oq0){opacity:1}
+svg:has(#gu1:hover) :is(#ou1,#ob0,#op0,#op1,#oq0,#oq1){opacity:1}
+svg:has(#gu2:hover) :is(#ou2,#ob1,#op1,#oq1,#oq2){opacity:1}
+svg:has(#gu3:hover) :is(#ou3,#ob1,#op2,#oq2,#oq3){opacity:1}
+svg:has(#gu4:hover) :is(#ou4,#ob2,#op2,#op3,#oq3){opacity:1}
+svg:has(#gu5:hover) :is(#ou5,#ob2,#op3,#oq4){opacity:1}
+svg:has(#gu6:hover) :is(#ou6,#ob3,#op4,#oq4,#oq5){opacity:1}
+svg:has(#gu7:hover) :is(#ou7,#ob3,#op4,#op5,#oq5,#oq6){opacity:1}
+svg:has(#gu8:hover) :is(#ou8,#ob4,#op5,#oq6,#oq7){opacity:1}
+svg:has(#gu9:hover) :is(#ou9,#ob4,#op6,#oq7){opacity:1}
+svg:has(#gu10:hover) :is(#ou10,#ob5,#op6,#op7,#oq8){opacity:1}
+svg:has(#gu11:hover) :is(#ou11,#ob5,#op7,#oq8,#oq9){opacity:1}
+svg:has(#gu12:hover) :is(#ou12,#ob6,#op8,#oq9,#oq10){opacity:1}
+svg:has(#gu13:hover) :is(#ou13,#ob6,#op8,#op9,#oq10,#oq11){opacity:1}
+svg:has(#gu14:hover) :is(#ou14,#ob7,#op9,#oq11){opacity:1}
+svg:has(#gu15:hover) :is(#ou15,#ob7,#op10,#oq12){opacity:1}
+svg:has(#gu16:hover) :is(#ou16,#ob8,#op10,#op11,#oq12,#oq13){opacity:1}
+svg:has(#gu17:hover) :is(#ou17,#ob8,#op11,#oq13,#oq14){opacity:1}
+svg:has(#gu18:hover) :is(#ou18,#ob9,#op12,#oq14,#oq15){opacity:1}
+svg:has(#gu19:hover) :is(#ou19,#ob9,#op12,#op13,#oq15){opacity:1}
+svg:has(#gu20:hover) :is(#ou20,#ob10,#op13,#oq16){opacity:1}
+svg:has(#gu21:hover) :is(#ou21,#ob10,#op14,#oq16,#oq17){opacity:1}
+svg:has(#gu22:hover) :is(#ou22,#ob11,#op14,#op15,#oq17,#oq18){opacity:1}
+svg:has(#gu23:hover) :is(#ou23,#ob11,#op15,#oq18,#oq19){opacity:1}
+svg:has(#gu24:hover) :is(#ou24,#ob12,#op16,#oq19){opacity:1}
+svg:has(#gu25:hover) :is(#ou25,#ob12,#op16,#op17,#oq20){opacity:1}
+svg:has(#gu26:hover) :is(#ou26,#ob13,#op17,#oq20,#oq21){opacity:1}
+svg:has(#gu27:hover) :is(#ou27,#ob13,#op18,#oq21,#oq22){opacity:1}
+svg:has(#gu28:hover) :is(#ou28,#ob14,#op18,#op19,#oq22,#oq23){opacity:1}
+svg:has(#gu29:hover) :is(#ou29,#ob14,#op19,#oq23){opacity:1}
+svg:has(#gu30:hover) :is(#ou30,#ob15,#op20,#oq24){opacity:1}
+svg:has(#gu31:hover) :is(#ou31,#ob15,#op20,#op21,#oq24,#oq25){opacity:1}
+svg:has(#gb0:hover) :is(#ou0,#ou1,#ob0,#op0,#op1,#oq0,#oq1){opacity:1}
+svg:has(#gb1:hover) :is(#ou2,#ou3,#ob1,#op1,#op2,#oq1,#oq2,#oq3){opacity:1}
+svg:has(#gb2:hover) :is(#ou4,#ou5,#ob2,#op2,#op3,#oq3,#oq4){opacity:1}
+svg:has(#gb3:hover) :is(#ou6,#ou7,#ob3,#op4,#op5,#oq4,#oq5,#oq6){opacity:1}
+svg:has(#gb4:hover) :is(#ou8,#ou9,#ob4,#op5,#op6,#oq6,#oq7){opacity:1}
+svg:has(#gb5:hover) :is(#ou10,#ou11,#ob5,#op6,#op7,#oq8,#oq9){opacity:1}
+svg:has(#gb6:hover) :is(#ou12,#ou13,#ob6,#op8,#op9,#oq9,#oq10,#oq11){opacity:1}
+svg:has(#gb7:hover) :is(#ou14,#ou15,#ob7,#op9,#op10,#oq11,#oq12){opacity:1}
+svg:has(#gb8:hover) :is(#ou16,#ou17,#ob8,#op10,#op11,#oq12,#oq13,#oq14){opacity:1}
+svg:has(#gb9:hover) :is(#ou18,#ou19,#ob9,#op12,#op13,#oq14,#oq15){opacity:1}
+svg:has(#gb10:hover) :is(#ou20,#ou21,#ob10,#op13,#op14,#oq16,#oq17){opacity:1}
+svg:has(#gb11:hover) :is(#ou22,#ou23,#ob11,#op14,#op15,#oq17,#oq18,#oq19){opacity:1}
+svg:has(#gb12:hover) :is(#ou24,#ou25,#ob12,#op16,#op17,#oq19,#oq20){opacity:1}
+svg:has(#gb13:hover) :is(#ou26,#ou27,#ob13,#op17,#op18,#oq20,#oq21,#oq22){opacity:1}
+svg:has(#gb14:hover) :is(#ou28,#ou29,#ob14,#op18,#op19,#oq22,#oq23){opacity:1}
+svg:has(#gb15:hover) :is(#ou30,#ou31,#ob15,#op20,#op21,#oq24,#oq25){opacity:1}
+svg:has(#gp0:hover) :is(#ou0,#ou1,#ob0,#op0,#oq0,#oq1){opacity:1}
+svg:has(#gp1:hover) :is(#ou1,#ou2,#ob0,#ob1,#op1,#oq1,#oq2){opacity:1}
+svg:has(#gp2:hover) :is(#ou3,#ou4,#ob1,#ob2,#op2,#oq2,#oq3){opacity:1}
+svg:has(#gp3:hover) :is(#ou4,#ou5,#ob2,#op3,#oq3,#oq4){opacity:1}
+svg:has(#gp4:hover) :is(#ou6,#ou7,#ob3,#op4,#oq4,#oq5){opacity:1}
+svg:has(#gp5:hover) :is(#ou7,#ou8,#ob3,#ob4,#op5,#oq6,#oq7){opacity:1}
+svg:has(#gp6:hover) :is(#ou9,#ou10,#ob4,#ob5,#op6,#oq7,#oq8){opacity:1}
+svg:has(#gp7:hover) :is(#ou10,#ou11,#ob5,#op7,#oq8,#oq9){opacity:1}
+svg:has(#gp8:hover) :is(#ou12,#ou13,#ob6,#op8,#oq9,#oq10){opacity:1}
+svg:has(#gp9:hover) :is(#ou13,#ou14,#ob6,#ob7,#op9,#oq10,#oq11){opacity:1}
+svg:has(#gp10:hover) :is(#ou15,#ou16,#ob7,#ob8,#op10,#oq12,#oq13){opacity:1}
+svg:has(#gp11:hover) :is(#ou16,#ou17,#ob8,#op11,#oq13,#oq14){opacity:1}
+svg:has(#gp12:hover) :is(#ou18,#ou19,#ob9,#op12,#oq14,#oq15){opacity:1}
+svg:has(#gp13:hover) :is(#ou19,#ou20,#ob9,#ob10,#op13,#oq15,#oq16){opacity:1}
+svg:has(#gp14:hover) :is(#ou21,#ou22,#ob10,#ob11,#op14,#oq16,#oq17){opacity:1}
+svg:has(#gp15:hover) :is(#ou22,#ou23,#ob11,#op15,#oq18,#oq19){opacity:1}
+svg:has(#gp16:hover) :is(#ou24,#ou25,#ob12,#op16,#oq19,#oq20){opacity:1}
+svg:has(#gp17:hover) :is(#ou25,#ou26,#ob12,#ob13,#op17,#oq20,#oq21){opacity:1}
+svg:has(#gp18:hover) :is(#ou27,#ou28,#ob13,#ob14,#op18,#oq21,#oq22){opacity:1}
+svg:has(#gp19:hover) :is(#ou28,#ou29,#ob14,#op19,#oq22,#oq23){opacity:1}
+svg:has(#gp20:hover) :is(#ou30,#ou31,#ob15,#op20,#oq24,#oq25){opacity:1}
+svg:has(#gp21:hover) :is(#ou31,#ob15,#op21,#oq25){opacity:1}
+svg:has(#gq0:hover) :is(#ou0,#ou1,#ob0,#op0,#oq0){opacity:1}
+svg:has(#gq1:hover) :is(#ou1,#ou2,#ob0,#ob1,#op0,#op1,#oq1){opacity:1}
+svg:has(#gq2:hover) :is(#ou2,#ou3,#ob1,#op1,#op2,#oq2){opacity:1}
+svg:has(#gq3:hover) :is(#ou3,#ou4,#ob1,#ob2,#op2,#op3,#oq3){opacity:1}
+svg:has(#gq4:hover) :is(#ou5,#ou6,#ob2,#ob3,#op3,#op4,#oq4){opacity:1}
+svg:has(#gq5:hover) :is(#ou6,#ou7,#ob3,#op4,#oq5){opacity:1}
+svg:has(#gq6:hover) :is(#ou7,#ou8,#ob3,#ob4,#op5,#oq6){opacity:1}
+svg:has(#gq7:hover) :is(#ou8,#ou9,#ob4,#op5,#op6,#oq7){opacity:1}
+svg:has(#gq8:hover) :is(#ou10,#ou11,#ob5,#op6,#op7,#oq8){opacity:1}
+svg:has(#gq9:hover) :is(#ou11,#ou12,#ob5,#ob6,#op7,#op8,#oq9){opacity:1}
+svg:has(#gq10:hover) :is(#ou12,#ou13,#ob6,#op8,#op9,#oq10){opacity:1}
+svg:has(#gq11:hover) :is(#ou13,#ou14,#ob6,#ob7,#op9,#oq11){opacity:1}
+svg:has(#gq12:hover) :is(#ou15,#ou16,#ob7,#ob8,#op10,#oq12){opacity:1}
+svg:has(#gq13:hover) :is(#ou16,#ou17,#ob8,#op10,#op11,#oq13){opacity:1}
+svg:has(#gq14:hover) :is(#ou17,#ou18,#ob8,#ob9,#op11,#op12,#oq14){opacity:1}
+svg:has(#gq15:hover) :is(#ou18,#ou19,#ob9,#op12,#op13,#oq15){opacity:1}
+svg:has(#gq16:hover) :is(#ou20,#ou21,#ob10,#op13,#op14,#oq16){opacity:1}
+svg:has(#gq17:hover) :is(#ou21,#ou22,#ob10,#ob11,#op14,#oq17){opacity:1}
+svg:has(#gq18:hover) :is(#ou22,#ou23,#ob11,#op15,#oq18){opacity:1}
+svg:has(#gq19:hover) :is(#ou23,#ou24,#ob11,#ob12,#op15,#op16,#oq19){opacity:1}
+svg:has(#gq20:hover) :is(#ou25,#ou26,#ob12,#ob13,#op16,#op17,#oq20){opacity:1}
+svg:has(#gq21:hover) :is(#ou26,#ou27,#ob13,#op17,#op18,#oq21){opacity:1}
+svg:has(#gq22:hover) :is(#ou27,#ou28,#ob13,#ob14,#op18,#op19,#oq22){opacity:1}
+svg:has(#gq23:hover) :is(#ou28,#ou29,#ob14,#op19,#oq23){opacity:1}
+svg:has(#gq24:hover) :is(#ou30,#ou31,#ob15,#op20,#oq24){opacity:1}
+svg:has(#gq25:hover) :is(#ou31,#ob15,#op20,#op21,#oq25){opacity:1}</style>
 <defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 1L1-1M0 6L6 0M5 7L7 5" stroke="#08111F" opacity=".55"/></pattern></defs>
 <rect width="100%" height="100%" class="bg"/>
 <path class="ghost time" d="M36 260C36 266 36 266 36 272L280.8 272C280.8 266 280.8 266 280.8 260Z"/>
@@ -49,41 +147,74 @@
 <text x="286" y="202" class="muted sans" font-size="16">36 characters as text · 16 bytes in binary</text>
 <text x="790" y="234" class="accent sans" font-size="17" font-weight="700">Text</text>
 <text x="790" y="256" class="muted sans" font-size="16">36 chars · lowercase</text>
+<g id="gu0">
 <rect x="36.8" y="216" width="17.9" height="44" class="time f"/>
 <text x="45.7" y="248.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect id="ou0" class="hl" x="36" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu1">
 <rect x="56.2" y="216" width="17.9" height="44" class="time f"/>
 <text x="65.1" y="248.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect id="ou1" class="hl" x="55.4" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu2">
 <rect x="75.6" y="216" width="17.9" height="44" class="time f"/>
 <text x="84.5" y="248.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
+<rect id="ou2" class="hl" x="74.8" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu3">
 <rect x="94.9" y="216" width="17.9" height="44" class="time f"/>
 <text x="103.9" y="248.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect id="ou3" class="hl" x="94.2" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu4">
 <rect x="114.4" y="216" width="17.9" height="44" class="time f"/>
 <text x="123.3" y="248.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect id="ou4" class="hl" x="113.6" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu5">
 <rect x="133.8" y="216" width="17.9" height="44" class="time f"/>
 <text x="142.7" y="248.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<rect id="ou5" class="hl" x="133" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu6">
 <rect x="153.2" y="216" width="17.9" height="44" class="time f"/>
 <text x="162.1" y="248.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect id="ou6" class="hl" x="152.4" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu7">
 <rect x="172.6" y="216" width="17.9" height="44" class="time f"/>
 <text x="181.5" y="248.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect id="ou7" class="hl" x="171.8" y="214" width="19.4" height="48" rx="2"/></g>
 <rect x="193.2" y="236.5" width="8" height="3" class="muted"/>
+<g id="gu8">
 <rect x="204" y="216" width="17.9" height="44" class="time f"/>
 <text x="212.9" y="248.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect id="ou8" class="hl" x="203.2" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu9">
 <rect x="223.4" y="216" width="17.9" height="44" class="time f"/>
 <text x="232.3" y="248.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect id="ou9" class="hl" x="222.6" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu10">
 <rect x="242.8" y="216" width="17.9" height="44" class="time f"/>
 <text x="251.7" y="248.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect id="ou10" class="hl" x="242" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu11">
 <rect x="262.2" y="216" width="17.9" height="44" class="time f"/>
 <text x="271.1" y="248.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect id="ou11" class="hl" x="261.4" y="214" width="19.4" height="48" rx="2"/></g>
 <rect x="282.8" y="236.5" width="8" height="3" class="muted"/>
+<g id="gu12">
 <rect x="293.6" y="216" width="17.9" height="44" class="version f"/>
 <text x="302.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect id="ou12" class="hl" x="292.9" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu13">
 <rect x="313" y="216" width="17.9" height="44" class="payload f"/>
 <text x="322" y="248.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect id="ou13" class="hl" x="312.3" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu14">
 <rect x="332.4" y="216" width="17.9" height="44" class="payload f"/>
 <text x="341.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<rect id="ou14" class="hl" x="331.7" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu15">
 <rect x="351.8" y="216" width="17.9" height="44" class="payload f"/>
 <text x="360.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect id="ou15" class="hl" x="351.1" y="214" width="19.4" height="48" rx="2"/></g>
 <rect x="372.5" y="236.5" width="8" height="3" class="muted"/>
+<g id="gu16">
 <rect x="383.2" y="216" width="9" height="44" class="variant f"/>
 <rect x="392.2" y="216" width="9" height="44" class="payload f"/>
 <clipPath id="k1"><rect x="383.2" y="216" width="9" height="44"/></clipPath><g clip-path="url(#k1)">
@@ -92,39 +223,71 @@
 <clipPath id="k2"><rect x="392.2" y="216" width="9" height="44"/></clipPath><g clip-path="url(#k2)">
 <text x="392.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
 </g>
+<rect id="ou16" class="hl" x="382.5" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu17">
 <rect x="402.6" y="216" width="17.9" height="44" class="payload f"/>
 <text x="411.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect id="ou17" class="hl" x="401.9" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu18">
 <rect x="422" y="216" width="17.9" height="44" class="payload f"/>
 <text x="431" y="248.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect id="ou18" class="hl" x="421.3" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu19">
 <rect x="441.4" y="216" width="17.9" height="44" class="payload f"/>
 <text x="450.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect id="ou19" class="hl" x="440.7" y="214" width="19.4" height="48" rx="2"/></g>
 <rect x="462.1" y="236.5" width="8" height="3" class="muted"/>
+<g id="gu20">
 <rect x="472.9" y="216" width="17.9" height="44" class="payload f"/>
 <text x="481.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect id="ou20" class="hl" x="472.1" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu21">
 <rect x="492.3" y="216" width="17.9" height="44" class="payload f"/>
 <text x="501.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">1</text>
+<rect id="ou21" class="hl" x="491.5" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu22">
 <rect x="511.7" y="216" width="17.9" height="44" class="payload f"/>
 <text x="520.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">2</text>
+<rect id="ou22" class="hl" x="510.9" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu23">
 <rect x="531.1" y="216" width="17.9" height="44" class="payload f"/>
 <text x="540" y="248.5" class="fg mono" font-size="30" text-anchor="middle">3</text>
+<rect id="ou23" class="hl" x="530.3" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu24">
 <rect x="550.5" y="216" width="17.9" height="44" class="payload f"/>
 <text x="559.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect id="ou24" class="hl" x="549.7" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu25">
 <rect x="569.9" y="216" width="17.9" height="44" class="payload f"/>
 <text x="578.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">5</text>
+<rect id="ou25" class="hl" x="569.1" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu26">
 <rect x="589.3" y="216" width="17.9" height="44" class="payload f"/>
 <text x="598.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect id="ou26" class="hl" x="588.5" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu27">
 <rect x="608.7" y="216" width="17.9" height="44" class="payload f"/>
 <text x="617.6" y="248.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect id="ou27" class="hl" x="607.9" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu28">
 <rect x="628.1" y="216" width="17.9" height="44" class="payload f"/>
 <text x="637" y="248.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect id="ou28" class="hl" x="627.3" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu29">
 <rect x="647.5" y="216" width="17.9" height="44" class="payload f"/>
 <text x="656.4" y="248.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
+<rect id="ou29" class="hl" x="646.7" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu30">
 <rect x="666.9" y="216" width="17.9" height="44" class="payload f"/>
 <text x="675.8" y="248.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect id="ou30" class="hl" x="666.1" y="214" width="19.4" height="48" rx="2"/></g>
+<g id="gu31">
 <rect x="686.3" y="216" width="17.9" height="44" class="payload f"/>
 <text x="695.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<rect id="ou31" class="hl" x="685.5" y="214" width="19.4" height="48" rx="2"/></g>
 <text x="790" y="290" class="accent sans" font-size="17" font-weight="700">Bytes</text>
 <text x="790" y="312" class="muted sans" font-size="16">16 bytes, binary, same order</text>
+<g id="gb0">
 <rect x="37" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="55.4" y="298" class="ink mono" font-size="21" text-anchor="middle">01</text>
 <rect x="37" y="306" width="4.6" height="6" class="time f"/>
@@ -135,6 +298,8 @@
 <rect x="60" y="306" width="4.6" height="6" class="time f"/>
 <rect x="64.6" y="306" width="4.6" height="6" class="time f"/>
 <rect x="69.2" y="306" width="4.6" height="6" class="time f"/>
+<rect id="ob0" class="hl" x="36" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb1">
 <rect x="75.8" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="94.2" y="298" class="ink mono" font-size="21" text-anchor="middle">98</text>
 <rect x="75.8" y="306" width="4.6" height="6" class="time f"/>
@@ -145,6 +310,8 @@
 <rect x="98.8" y="306" width="4.6" height="6" class="time f"/>
 <rect x="103.4" y="306" width="4.6" height="6" class="time f"/>
 <rect x="108" y="306" width="4.6" height="6" class="time f"/>
+<rect id="ob1" class="hl" x="74.8" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb2">
 <rect x="114.6" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="133" y="298" class="ink mono" font-size="21" text-anchor="middle">ab</text>
 <rect x="114.6" y="306" width="4.6" height="6" class="time f"/>
@@ -155,6 +322,8 @@
 <rect x="137.6" y="306" width="4.6" height="6" class="time f"/>
 <rect x="142.2" y="306" width="4.6" height="6" class="time f"/>
 <rect x="146.8" y="306" width="4.6" height="6" class="time f"/>
+<rect id="ob2" class="hl" x="113.6" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb3">
 <rect x="153.4" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="171.8" y="298" class="ink mono" font-size="21" text-anchor="middle">cd</text>
 <rect x="153.4" y="306" width="4.6" height="6" class="time f"/>
@@ -165,6 +334,8 @@
 <rect x="176.4" y="306" width="4.6" height="6" class="time f"/>
 <rect x="181" y="306" width="4.6" height="6" class="time f"/>
 <rect x="185.6" y="306" width="4.6" height="6" class="time f"/>
+<rect id="ob3" class="hl" x="152.4" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb4">
 <rect x="204.2" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="222.6" y="298" class="ink mono" font-size="21" text-anchor="middle">12</text>
 <rect x="204.2" y="306" width="4.6" height="6" class="time f"/>
@@ -175,6 +346,8 @@
 <rect x="227.2" y="306" width="4.6" height="6" class="time f"/>
 <rect x="231.8" y="306" width="4.6" height="6" class="time f"/>
 <rect x="236.4" y="306" width="4.6" height="6" class="time f"/>
+<rect id="ob4" class="hl" x="203.2" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb5">
 <rect x="243" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="261.4" y="298" class="ink mono" font-size="21" text-anchor="middle">34</text>
 <rect x="243" y="306" width="4.6" height="6" class="time f"/>
@@ -185,6 +358,8 @@
 <rect x="266" y="306" width="4.6" height="6" class="time f"/>
 <rect x="270.6" y="306" width="4.6" height="6" class="time f"/>
 <rect x="275.2" y="306" width="4.6" height="6" class="time f"/>
+<rect id="ob5" class="hl" x="242" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb6">
 <rect x="293.9" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="312.3" y="298" class="ink mono" font-size="21" text-anchor="middle">7a</text>
 <rect x="293.9" y="306" width="4.6" height="6" class="version f"/>
@@ -195,6 +370,8 @@
 <rect x="316.9" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="321.5" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="326.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect id="ob6" class="hl" x="292.9" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb7">
 <rect x="332.7" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="351.1" y="298" class="ink mono" font-size="21" text-anchor="middle">bc</text>
 <rect x="332.7" y="306" width="4.6" height="6" class="payload f"/>
@@ -205,6 +382,8 @@
 <rect x="355.7" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="360.3" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="364.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect id="ob7" class="hl" x="331.7" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb8">
 <rect x="383.5" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="401.9" y="298" class="ink mono" font-size="21" text-anchor="middle">9d</text>
 <rect x="383.5" y="306" width="4.6" height="6" class="variant f"/>
@@ -215,6 +394,8 @@
 <rect x="406.5" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="411.1" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="415.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect id="ob8" class="hl" x="382.5" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb9">
 <rect x="422.3" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="440.7" y="298" class="ink mono" font-size="21" text-anchor="middle">ef</text>
 <rect x="422.3" y="306" width="4.6" height="6" class="payload f"/>
@@ -225,6 +406,8 @@
 <rect x="445.3" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="449.9" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="454.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect id="ob9" class="hl" x="421.3" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb10">
 <rect x="473.1" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="491.5" y="298" class="ink mono" font-size="21" text-anchor="middle">01</text>
 <rect x="473.1" y="306" width="4.6" height="6" class="payload f"/>
@@ -235,6 +418,8 @@
 <rect x="496.1" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="500.7" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="505.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect id="ob10" class="hl" x="472.1" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb11">
 <rect x="511.9" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="530.3" y="298" class="ink mono" font-size="21" text-anchor="middle">23</text>
 <rect x="511.9" y="306" width="4.6" height="6" class="payload f"/>
@@ -245,6 +430,8 @@
 <rect x="534.9" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="539.5" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="544.1" y="306" width="4.6" height="6" class="payload f"/>
+<rect id="ob11" class="hl" x="510.9" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb12">
 <rect x="550.7" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="569.1" y="298" class="ink mono" font-size="21" text-anchor="middle">45</text>
 <rect x="550.7" y="306" width="4.6" height="6" class="payload f"/>
@@ -255,6 +442,8 @@
 <rect x="573.7" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="578.3" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="582.9" y="306" width="4.6" height="6" class="payload f"/>
+<rect id="ob12" class="hl" x="549.7" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb13">
 <rect x="589.5" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="607.9" y="298" class="ink mono" font-size="21" text-anchor="middle">67</text>
 <rect x="589.5" y="306" width="4.6" height="6" class="payload f"/>
@@ -265,6 +454,8 @@
 <rect x="612.5" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="617.1" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="621.7" y="306" width="4.6" height="6" class="payload f"/>
+<rect id="ob13" class="hl" x="588.5" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb14">
 <rect x="628.3" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="646.7" y="298" class="ink mono" font-size="21" text-anchor="middle">89</text>
 <rect x="628.3" y="306" width="4.6" height="6" class="payload f"/>
@@ -275,6 +466,8 @@
 <rect x="651.3" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="655.9" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="660.5" y="306" width="4.6" height="6" class="payload f"/>
+<rect id="ob14" class="hl" x="627.3" y="270" width="38.8" height="44" rx="2"/></g>
+<g id="gb15">
 <rect x="667.1" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
 <text x="685.5" y="298" class="ink mono" font-size="21" text-anchor="middle">ab</text>
 <rect x="667.1" y="306" width="4.6" height="6" class="payload f"/>
@@ -285,6 +478,7 @@
 <rect x="690.1" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="694.7" y="306" width="4.6" height="6" class="payload f"/>
 <rect x="699.3" y="306" width="4.6" height="6" class="payload f"/>
+<rect id="ob15" class="hl" x="666.1" y="270" width="38.8" height="44" rx="2"/></g>
 <path d="M36 318v6H280.8v-6" class="time" fill="none" stroke="currentColor" stroke-width="2"/>
 <text x="36" y="344" class="time f sans" font-size="16" font-weight="600">UUIDv7 48-bit timestamp: 1755229000244 ms = 2025-08-15 03:36:40.244 UTC</text>
 <text x="36" y="372" class="accent sans" font-size="17" font-weight="700">Text</text>
@@ -306,27 +500,48 @@
 <text x="790" y="586" class="accent sans" font-size="17" font-weight="700">One character, two fields</text>
 <text x="36" y="586" class="ink sans" font-size="24" font-weight="600">Plain base64url</text>
 <text x="286" y="586" class="muted sans" font-size="16">22 chars · A–Z a–z 0–9 - _ · 6 bits each</text>
+<g id="gp0">
 <rect x="36.8" y="600" width="17.9" height="44" class="time f"/>
 <text x="45.7" y="632.5" class="fg mono" font-size="30" text-anchor="middle">A</text>
+<rect id="op0" class="hl" x="36" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp1">
 <rect x="56.2" y="600" width="17.9" height="44" class="time f"/>
 <text x="65.1" y="632.5" class="fg mono" font-size="30" text-anchor="middle">Z</text>
+<rect id="op1" class="hl" x="55.4" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp2">
 <rect x="75.6" y="600" width="17.9" height="44" class="time f"/>
 <text x="84.5" y="632.5" class="fg mono" font-size="30" text-anchor="middle">i</text>
+<rect id="op2" class="hl" x="74.8" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp3">
 <rect x="94.9" y="600" width="17.9" height="44" class="time f"/>
 <text x="103.9" y="632.5" class="fg mono" font-size="30" text-anchor="middle">r</text>
+<rect id="op3" class="hl" x="94.2" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp4">
 <rect x="114.4" y="600" width="17.9" height="44" class="time f"/>
 <text x="123.3" y="632.5" class="fg mono" font-size="30" text-anchor="middle">z</text>
+<rect id="op4" class="hl" x="113.6" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp5">
 <rect x="133.8" y="600" width="17.9" height="44" class="time f"/>
 <text x="142.7" y="632.5" class="fg mono" font-size="30" text-anchor="middle">R</text>
+<rect id="op5" class="hl" x="133" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp6">
 <rect x="153.2" y="600" width="17.9" height="44" class="time f"/>
 <text x="162.1" y="632.5" class="fg mono" font-size="30" text-anchor="middle">I</text>
+<rect id="op6" class="hl" x="152.4" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp7">
 <rect x="172.6" y="600" width="17.9" height="44" class="time f"/>
 <text x="181.5" y="632.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect id="op7" class="hl" x="171.8" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp8">
 <rect x="192" y="600" width="11.9" height="44" class="version f"/>
 <rect x="203.9" y="600" width="6" height="44" class="payload f"/>
 <text x="200.9" y="632.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect id="op8" class="hl" x="191.2" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp9">
 <rect x="211.4" y="600" width="17.9" height="44" class="payload f"/>
 <text x="220.3" y="632.5" class="fg mono" font-size="30" text-anchor="middle">r</text>
+<rect id="op9" class="hl" x="210.6" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp10">
 <rect x="230.8" y="600" width="11.9" height="44" class="payload f"/>
 <rect x="242.7" y="600" width="6" height="44" class="variant f"/>
 <clipPath id="k3"><rect x="230.8" y="600" width="11.9" height="44"/></clipPath><g clip-path="url(#k3)">
@@ -335,31 +550,54 @@
 <clipPath id="k4"><rect x="242.7" y="600" width="6" height="44"/></clipPath><g clip-path="url(#k4)">
 <text x="239.7" y="632.5" class="fw mono" font-size="30" text-anchor="middle">y</text>
 </g>
+<rect id="op10" class="hl" x="230" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp11">
 <rect x="250.2" y="600" width="17.9" height="44" class="payload f"/>
 <text x="259.1" y="632.5" class="fg mono" font-size="30" text-anchor="middle">d</text>
+<rect id="op11" class="hl" x="249.4" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp12">
 <rect x="269.6" y="600" width="17.9" height="44" class="payload f"/>
 <text x="278.5" y="632.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
+<rect id="op12" class="hl" x="268.8" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp13">
 <rect x="289" y="600" width="17.9" height="44" class="payload f"/>
 <text x="297.9" y="632.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
+<rect id="op13" class="hl" x="288.2" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp14">
 <rect x="308.3" y="600" width="17.9" height="44" class="payload f"/>
 <text x="317.3" y="632.5" class="fg mono" font-size="30" text-anchor="middle">E</text>
+<rect id="op14" class="hl" x="307.6" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp15">
 <rect x="327.7" y="600" width="17.9" height="44" class="payload f"/>
 <text x="336.7" y="632.5" class="fg mono" font-size="30" text-anchor="middle">j</text>
+<rect id="op15" class="hl" x="327" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp16">
 <rect x="347.1" y="600" width="17.9" height="44" class="payload f"/>
 <text x="356.1" y="632.5" class="fg mono" font-size="30" text-anchor="middle">R</text>
+<rect id="op16" class="hl" x="346.4" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp17">
 <rect x="366.5" y="600" width="17.9" height="44" class="payload f"/>
 <text x="375.5" y="632.5" class="fg mono" font-size="30" text-anchor="middle">W</text>
+<rect id="op17" class="hl" x="365.8" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp18">
 <rect x="385.9" y="600" width="17.9" height="44" class="payload f"/>
 <text x="394.9" y="632.5" class="fg mono" font-size="30" text-anchor="middle">e</text>
+<rect id="op18" class="hl" x="385.2" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp19">
 <rect x="405.3" y="600" width="17.9" height="44" class="payload f"/>
 <text x="414.3" y="632.5" class="fg mono" font-size="30" text-anchor="middle">J</text>
+<rect id="op19" class="hl" x="404.6" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp20">
 <rect x="424.7" y="600" width="17.9" height="44" class="payload f"/>
 <text x="433.7" y="632.5" class="fg mono" font-size="30" text-anchor="middle">q</text>
+<rect id="op20" class="hl" x="424" y="598" width="19.4" height="48" rx="2"/></g>
+<g id="gp21">
 <rect x="444.1" y="600" width="6" height="44" class="payload f"/>
 <rect x="450.1" y="600" width="11.9" height="44" class="pad f"/>
 <rect x="450.1" y="600" width="11.9" height="44" class="" fill="url(#hatch)"/>
 <text x="453.1" y="632.5" class="fg mono" font-size="30" text-anchor="middle">w</text>
-<rect x="230" y="597" width="19.4" height="50" class="" fill="none" stroke="#F5F7FC" stroke-width="2" rx="2"/>
+<rect id="op21" class="hl" x="443.4" y="598" width="19.4" height="48" rx="2"/></g>
+<rect x="230" y="597" width="19.4" height="50" class="" fill="none" stroke="#C6D0E1" stroke-width="1.4" rx="2"/>
 <path d="M239.7 647V652H776V620H786" class="lead" fill="none" stroke="currentColor" stroke-width="1.4"/>
 <rect x="790" y="610" width="21" height="21" class="box" stroke="#C6D0E1" stroke-width="1.2"/>
 <text x="800.5" y="626.4" class="ink mono" font-size="17" text-anchor="middle">y</text>
@@ -384,32 +622,57 @@
 <text x="36" y="722" class="muted sans" font-size="17">14 characters shorter than UUID text; standard base64url tools decode it.</text>
 <text x="36" y="771" class="ink sans" font-size="24" font-weight="600">Plain base32hex</text>
 <text x="286" y="771" class="muted sans" font-size="16">26 chars · 0–9 a–v · 5 bits each · lowercase</text>
+<g id="gq0">
 <rect x="36.8" y="785" width="17.9" height="44" class="time f"/>
 <text x="45.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect id="oq0" class="hl" x="36" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq1">
 <rect x="56.2" y="785" width="17.9" height="44" class="time f"/>
 <text x="65.1" y="817.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect id="oq1" class="hl" x="55.4" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq2">
 <rect x="75.6" y="785" width="17.9" height="44" class="time f"/>
 <text x="84.5" y="817.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
+<rect id="oq2" class="hl" x="74.8" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq3">
 <rect x="94.9" y="785" width="17.9" height="44" class="time f"/>
 <text x="103.9" y="817.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect id="oq3" class="hl" x="94.2" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq4">
 <rect x="114.4" y="785" width="17.9" height="44" class="time f"/>
 <text x="123.3" y="817.5" class="fg mono" font-size="30" text-anchor="middle">n</text>
+<rect id="oq4" class="hl" x="113.6" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq5">
 <rect x="133.8" y="785" width="17.9" height="44" class="time f"/>
 <text x="142.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">j</text>
+<rect id="oq5" class="hl" x="133" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq6">
 <rect x="153.2" y="785" width="17.9" height="44" class="time f"/>
 <text x="162.1" y="817.5" class="fg mono" font-size="30" text-anchor="middle">8</text>
+<rect id="oq6" class="hl" x="152.4" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq7">
 <rect x="172.6" y="785" width="17.9" height="44" class="time f"/>
 <text x="181.5" y="817.5" class="fg mono" font-size="30" text-anchor="middle">i</text>
+<rect id="oq7" class="hl" x="171.8" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq8">
 <rect x="192" y="785" width="17.9" height="44" class="time f"/>
 <text x="200.9" y="817.5" class="fg mono" font-size="30" text-anchor="middle">6</text>
+<rect id="oq8" class="hl" x="191.2" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq9">
 <rect x="211.4" y="785" width="10.7" height="44" class="time f"/>
 <rect x="222.1" y="785" width="7.2" height="44" class="version f"/>
 <text x="220.3" y="817.5" class="fg mono" font-size="30" text-anchor="middle">h</text>
+<rect id="oq9" class="hl" x="210.6" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq10">
 <rect x="230.8" y="785" width="7.2" height="44" class="version f"/>
 <rect x="237.9" y="785" width="10.7" height="44" class="payload f"/>
 <text x="239.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">t</text>
+<rect id="oq10" class="hl" x="230" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq11">
 <rect x="250.2" y="785" width="17.9" height="44" class="payload f"/>
 <text x="259.1" y="817.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
+<rect id="oq11" class="hl" x="249.4" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq12">
 <rect x="269.6" y="785" width="14.3" height="44" class="payload f"/>
 <rect x="283.9" y="785" width="3.6" height="44" class="variant f"/>
 <clipPath id="k5"><rect x="269.6" y="785" width="14.3" height="44"/></clipPath><g clip-path="url(#k5)">
@@ -418,6 +681,8 @@
 <clipPath id="k6"><rect x="283.9" y="785" width="3.6" height="44"/></clipPath><g clip-path="url(#k6)">
 <text x="278.5" y="817.5" class="fw mono" font-size="30" text-anchor="middle">p</text>
 </g>
+<rect id="oq12" class="hl" x="268.8" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq13">
 <rect x="289" y="785" width="3.6" height="44" class="variant f"/>
 <rect x="292.5" y="785" width="14.3" height="44" class="payload f"/>
 <clipPath id="k7"><rect x="289" y="785" width="3.6" height="44"/></clipPath><g clip-path="url(#k7)">
@@ -426,33 +691,58 @@
 <clipPath id="k8"><rect x="292.5" y="785" width="14.3" height="44"/></clipPath><g clip-path="url(#k8)">
 <text x="297.9" y="817.5" class="fg mono" font-size="30" text-anchor="middle">7</text>
 </g>
+<rect id="oq13" class="hl" x="288.2" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq14">
 <rect x="308.3" y="785" width="17.9" height="44" class="payload f"/>
 <text x="317.3" y="817.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect id="oq14" class="hl" x="307.6" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq15">
 <rect x="327.7" y="785" width="17.9" height="44" class="payload f"/>
 <text x="336.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">f</text>
+<rect id="oq15" class="hl" x="327" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq16">
 <rect x="347.1" y="785" width="17.9" height="44" class="payload f"/>
 <text x="356.1" y="817.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
+<rect id="oq16" class="hl" x="346.4" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq17">
 <rect x="366.5" y="785" width="17.9" height="44" class="payload f"/>
 <text x="375.5" y="817.5" class="fg mono" font-size="30" text-anchor="middle">4</text>
+<rect id="oq17" class="hl" x="365.8" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq18">
 <rect x="385.9" y="785" width="17.9" height="44" class="payload f"/>
 <text x="394.9" y="817.5" class="fg mono" font-size="30" text-anchor="middle">h</text>
+<rect id="oq18" class="hl" x="385.2" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq19">
 <rect x="405.3" y="785" width="17.9" height="44" class="payload f"/>
 <text x="414.3" y="817.5" class="fg mono" font-size="30" text-anchor="middle">k</text>
+<rect id="oq19" class="hl" x="404.6" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq20">
 <rect x="424.7" y="785" width="17.9" height="44" class="payload f"/>
 <text x="433.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">a</text>
+<rect id="oq20" class="hl" x="424" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq21">
 <rect x="444.1" y="785" width="17.9" height="44" class="payload f"/>
 <text x="453.1" y="817.5" class="fg mono" font-size="30" text-anchor="middle">p</text>
+<rect id="oq21" class="hl" x="443.4" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq22">
 <rect x="463.5" y="785" width="17.9" height="44" class="payload f"/>
 <text x="472.5" y="817.5" class="fg mono" font-size="30" text-anchor="middle">s</text>
+<rect id="oq22" class="hl" x="462.8" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq23">
 <rect x="482.9" y="785" width="17.9" height="44" class="payload f"/>
 <text x="491.9" y="817.5" class="fg mono" font-size="30" text-anchor="middle">9</text>
+<rect id="oq23" class="hl" x="482.2" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq24">
 <rect x="502.3" y="785" width="17.9" height="44" class="payload f"/>
 <text x="511.3" y="817.5" class="fg mono" font-size="30" text-anchor="middle">l</text>
+<rect id="oq24" class="hl" x="501.6" y="783" width="19.4" height="48" rx="2"/></g>
+<g id="gq25">
 <rect x="521.7" y="785" width="10.7" height="44" class="payload f"/>
 <rect x="532.5" y="785" width="7.2" height="44" class="pad f"/>
 <rect x="532.5" y="785" width="7.2" height="44" class="" fill="url(#hatch)"/>
 <text x="530.7" y="817.5" class="fg mono" font-size="30" text-anchor="middle">c</text>
-<rect x="210.6" y="782" width="19.4" height="50" class="" fill="none" stroke="#F5F7FC" stroke-width="2" rx="2"/>
+<rect id="oq25" class="hl" x="521" y="783" width="19.4" height="48" rx="2"/></g>
+<rect x="210.6" y="782" width="19.4" height="50" class="" fill="none" stroke="#C6D0E1" stroke-width="1.4" rx="2"/>
 <path d="M220.3 832V837H776V805H786" class="lead" fill="none" stroke="currentColor" stroke-width="1.4"/>
 <rect x="790" y="795" width="21" height="21" class="box" stroke="#C6D0E1" stroke-width="1.2"/>
 <text x="800.5" y="811.4" class="ink mono" font-size="17" text-anchor="middle">h</text>
