@@ -23,7 +23,7 @@ Floors, their reasons and the measuring method live in `dev/cross-language.md` Â
 ## Release notes
 
 Show consumers the minimal API changes from the latest release in Markdown diff blocks.
-Follow `docs/release.md`: include only selected packages, omit private helper types and inventories,
+Follow `dev/release.md`: include only selected packages, omit private helper types and inventories,
 and preserve internal compatibility checks, supported calls, identifier formats and caller data.
 Remote writes require explicit authorization; `AGENTS.md` Â§Work scope governs preparation.
 

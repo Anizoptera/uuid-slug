@@ -12,7 +12,7 @@ READ the owner before changing its subject; these references hold the detailed r
 | Masking, keys, sentinels or identifier formats | `docs/design.md` and `docs/security.md` |
 | Rust, TS/Rust parity, shared formats, filesystem-safe output, package entries, runtime floors or bundling | `dev/cross-language.md` |
 | Experiments, profiles, drivers, evidence cleanup or performance gates, even from `src/` | `bench/AGENTS.md` (priorities, gates), then `bench/README.md` (commands, reports) |
-| Versions, packaging, release tooling or workflows, publication, recovery, assets, notes or finalization | `docs/release.md` in full |
+| Versions, packaging, release tooling or workflows, publication, recovery, assets, notes or finalization | `dev/release.md` in full |
 | Consumer copy or generation guarantees | §Writing public documentation, then README opening, affected section and reference |
 | README diagram (`docs/assets/uuid-representations.svg`, generated) | Header of `scripts/readme-diagram.ts`: it holds every maintainer ruling on layout, colour, hover and motion. Write each new ruling there when made; keep each ruled behaviour unless the maintainer drops it. Every build checks the hover rulings in Chromium (`scripts/readme-diagram-hover.ts`); add a check with each new hover ruling. Its text is consumer copy: follow §Writing public documentation |
 

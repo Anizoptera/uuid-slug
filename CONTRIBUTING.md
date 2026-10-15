@@ -32,7 +32,7 @@ Declarations cannot expose every semantic change. Classify changed defaults, err
 inputs, output meaning, feature behavior, and guarantees from their consumer effect. A passing check
 does not approve a public change.
 
-Read `docs/release.md` before changing versions, public API, package metadata, or release tooling.
+Read `dev/release.md` before changing versions, public API, package metadata, or release tooling.
 
 ## Commits
 
