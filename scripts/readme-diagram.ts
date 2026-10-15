@@ -42,6 +42,10 @@
 // - Every colour has one meaning. Field colours mark which UUIDv7 field a bit belongs to, and
 //   orange marks masked bits. Mint marks headings and labels, slate marks "Sort"/"Case" keys,
 //   and the package name is dimmed title ink. White outlines appear only on hover matches.
+//   Violet marks top selling points only (maintainer ruling: the most important claims must
+//   stand out, first "39% shorter than UUID text"): bold white text on a violet highlighter band.
+//   Violet is the one free hue that no field uses; a solid fill was rejected because solid
+//   tiles with dark text already mean "a field's bits" (cells) and "a changed byte" (avalanche).
 // - System fonts only: GitHub serves the SVG as an image, so web fonts and links do not load.
 // - Hover works only where the SVG is a document, such as the raw file the README image links
 //   to. GitHub's raw host allows inline CSS but no scripts, so hover is pure CSS `:has()`.
@@ -155,6 +159,9 @@ interface Form {
   sort: string;
   caseRule: string;
   job: string;
+  // A top selling point, drawn highlighted at the start of the details. Reserved for the few
+  // claims that decide adoption; highlighting more dilutes it.
+  win?: string;
   detail: string;
 }
 const FORMS = {
@@ -192,7 +199,8 @@ const FORMS = {
     sort: "roughly by time²",
     caseRule: "must match",
     job: "For short URLs, logs and JSON.",
-    detail: `${shorter(P64)}; any base64url decoder returns its 16 UUID bytes.`,
+    win: shorter(P64),
+    detail: "Any base64url decoder returns its 16 UUID bytes.",
   },
   p32: {
     name: "Plain base32hex",
@@ -216,7 +224,8 @@ const FORMS = {
     sort: "none: decode first",
     caseRule: "must match",
     job: "For public IDs that hide the UUID's time and fields.",
-    detail: `${shorter(M64)}. Decoding needs the key that made it: keep old keys, or old links break.`,
+    win: shorter(M64),
+    detail: `Decoding needs the key that made it: keep old keys, or old links break.`,
   },
   m32: {
     name: "Masked base32hex",
@@ -339,7 +348,7 @@ const UNLIT_AFTER = ".12s";
 // (a hyphen bar, a byte box) would sit on top of a hit area and open a dead zone.
 const STYLE = `
 .bg{fill:#0B1423}.ink{fill:#F5F7FC}.muted{fill:#C6D0E1}.box{fill:#15243A}.same{fill:#24344D}.chg{fill:#F5F7FC}
-.pkg{fill:#F5F7FC;fill-opacity:.6}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
+.pkg{fill:#F5F7FC;fill-opacity:.6}.win{fill:#A78BFA;fill-opacity:.42}.accent{fill:#7ED8B3}.key{fill:#8797AE}.rule{stroke:#34465F;fill:none}
 .time{color:#00C8FF}.version{color:#FF49CD}.variant{color:#4D50FF}.payload{color:#FFE83F}
 .masked{color:#FF921C}.pad{color:#8C9DB6}.f{fill:currentColor}.fg{fill:#08111F}.fw{fill:#FFFFFF}
 .sans{font-family:${SANS}}.mono{font-family:${MONO};font-variant-ligatures:none}
@@ -377,12 +386,13 @@ const measureSans = async (strings: string[], size: number, weight: number) => {
 };
 // Elsewhere system fonts differ, so widths are estimates; layouts keep slack instead of measuring.
 const textWidth = (s: string, size: number, bold = false) => s.length * size * (bold ? 0.58 : 0.52);
-const wrap = (s: string, maxW: number, size: number): string[] => {
+// `firstW` narrows the first line when something (a highlighted claim) already starts it.
+const wrap = (s: string, maxW: number, size: number, firstW = maxW): string[] => {
   const lines: string[] = [];
   let cur = "";
   for (const word of s.split(" ")) {
     const next = cur ? `${cur} ${word}` : word;
-    if (cur && textWidth(next, size) > maxW) {
+    if (cur && textWidth(next, size) > (lines.length ? maxW : firstW)) {
       lines.push(cur);
       cur = word;
     } else cur = next;
@@ -617,6 +627,8 @@ const head = (name: string, facts: string, masked = false) => {
 };
 // Lines under a specimen start this far right of its left edge, where the ribbons draw a line.
 const INDENT = 16;
+const wins = [...new Set(Object.values(FORMS).flatMap((f: Form) => (f.win ? [f.win] : [])))];
+const WIN_W = new Map((await measureSans(wins, FS.meta, 700)).map((w, i) => [wins[i]!, w]));
 // Under each specimen: Sort and Case first (the facts a reader compares across forms), then what
 // the form is for in lighter ink, then the details. A prefix such as "Text" takes its own column
 // so the lines after it align.
@@ -633,10 +645,21 @@ const meta = (f: Form, prefix?: string) => {
     text(x, y + 18, f.job, FS.meta, { weight: 400 });
     y += LINE;
     // Lines may run up to the side column (SIDE_X), keeping a gap before it.
-    for (const l of wrap(f.detail, SIDE_X - 24 - x, FS.meta)) {
-      text(x, y + 18, l, FS.meta, { cls: "muted" });
-      y += LINE;
+    let lead = 0;
+    if (f.win) {
+      // Highlighter band over the lower part of the text, measured so it fits the claim exactly;
+      // `textLength` holds that width in viewers with another system font.
+      const w = WIN_W.get(f.win)!;
+      rect(x - 5, y + 18 - 13, w + 10, 18, "win", ` rx="4"`);
+      out.push(
+        `<text x="${x}" y="${y + 18}" class="ink sans" font-size="${FS.meta}" font-weight="700" textLength="${r1(w)}" lengthAdjust="spacing">${esc(f.win)}</text>`,
+      );
+      lead = w + 14;
     }
+    wrap(f.detail, SIDE_X - 24 - x, FS.meta, SIDE_X - 24 - x - lead).forEach((l, i) => {
+      text(x + (i ? 0 : lead), y + 18, l, FS.meta, { cls: "muted" });
+      y += LINE;
+    });
     return;
   }
   // Earlier layout, kept for comparison: what the form is for first, on the M edge.
