@@ -2,7 +2,7 @@
 
 ## README review
 
-These items track unresolved copy; they do not authorize README edits or new measurements.
+These items are leads that agents wrote, not requirements: check each against AGENTS.md §Writing public documentation before acting, and delete it if it fails. They do not authorize README edits or new measurements.
 
 - [ ] Link opening benefits to working examples and details. Connect related sections where the next question concerns representations, types/errors, buffers, ordering, masking, rotation, migration or recovery; use descriptive link text and avoid repeated links that add no navigation value.
 - [ ] Read each section as a direct entry point. Keep the definitions, types, defaults, units and limits needed to understand its claims and use its examples there; link shared detail instead of copying it. Merge repetition only when the section remains usable on its own.

@@ -312,8 +312,14 @@ Keep agent rules in `AGENTS.md`; engineering and measurement detail stays in its
   Example: base64url sorts "mostly by time", footnote "for exact time order, use base32hex".
   Hedges ("roughly", "partly"), "no" labels, statistics and coined terms ("clustered") bury the
   value. Verify a limit once before stating it; never let it lead.
+- Never headline what the package lacks ("no native addons, no WASM") or use slogan templates
+  ("mistakes fail at compile time, not in production"): readers take both as generated filler.
 - Before rewriting, identify each useful claim and where it survives. Change only named defects;
-  preserve approved copy exactly otherwise. Cut repetition, never capabilities, reasons or boundaries.
+  preserve approved copy exactly otherwise. A task to merge bullets does not license rewriting
+  their heading. Cut repetition, never capabilities, reasons or boundaries.
+- `ROADMAP.md` README items are leads that agents wrote, not maintainer requirements. Before
+  acting on one, check it against these rules and the current README; delete it if it asks for
+  copy readers do not need, and never ask the maintainer to supply content for it.
 - Examples MUST stand alone. After building, run `bun scripts/check-readme.ts` for README links and TS examples.
   Construct and check reusable codecs once. Show direct calls; no forwarding wrappers, redundant
   returned inputs or unneeded conversions. Comments cannot excuse extra work.
