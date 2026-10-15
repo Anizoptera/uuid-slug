@@ -1,6 +1,6 @@
 // Query editor documentation from source or emitted declarations; text searches cannot prove hover output.
 import { resolve } from "node:path";
-import ts from "typescript-floor";
+import ts from "typescript-checker";
 
 const [file, interfaceName, memberName] = process.argv.slice(2);
 if (!file || !interfaceName || !memberName)
@@ -10,17 +10,11 @@ if (!configPath) throw new Error("Run from the package directory containing tsco
 const config = ts.readConfigFile(configPath, (path) => ts.sys.readFile(path));
 if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, "\n"));
 const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, process.cwd());
-// The legacy service cannot interpret the newer emit-only rewrite option; all other config errors matter.
-const errors = parsed.errors.filter(
-  (error) =>
-    error.code !== 5023 ||
-    !ts
-      .flattenDiagnosticMessageText(error.messageText, "\n")
-      .includes("rewriteRelativeImportExtensions"),
-);
-if (errors.length)
+if (parsed.errors.length)
   throw new Error(
-    errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, "\n")).join("\n"),
+    parsed.errors
+      .map((error) => ts.flattenDiagnosticMessageText(error.messageText, "\n"))
+      .join("\n"),
   );
 const filename = resolve(file);
 const snapshots = new Map<string, ts.IScriptSnapshot>();

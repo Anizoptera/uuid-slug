@@ -1,4 +1,4 @@
-import ts from "typescript-floor";
+import ts from "typescript-checker";
 import { command } from "./command";
 import {
   apiChangeLevel,

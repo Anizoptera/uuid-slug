@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import ts from "typescript-floor";
+import ts from "typescript-checker";
 import { BASE32HEX_NAME, BASE64URL_NAME } from "../src/alphabet.ts";
 import { ERROR_CODES } from "../src/errors.ts";
 import { SEEDED_MASK_FORMAT, PLAIN_SLUG_FORMAT, FIXED_MASK_FORMAT } from "../src/types.ts";

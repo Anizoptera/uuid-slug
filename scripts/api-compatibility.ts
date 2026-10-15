@@ -1,10 +1,7 @@
-// Compiler-backed API compatibility. It needs the in-process type checker of a compiler that reads
-// current declarations: `typescript-floor` (5.0) rejects newer library types such as generic
-// `Uint8Array<ArrayBuffer>`, and TypeScript 7 has no in-process checker API. TypeScript versions
-// number their syntax kinds differently, so nodes from this compiler never meet the
-// `typescript-floor` helpers in `release-comparison.ts`; only printed text and records cross over.
+// Compiler-backed API compatibility: builds programs over two declaration versions and asks the
+// type checker whether old caller code still compiles, which declaration text cannot decide.
 import ts from "typescript-checker";
-import { normalizeDeclarations, reachable, records } from "./release-comparison";
+import { exported, normalizeDeclarations, reachable, records } from "./release-comparison";
 import type { DeclarationRecord } from "./release-comparison";
 
 // Every compatibility check builds two programs over the same standard library; parsing `lib.dom`
@@ -82,7 +79,7 @@ export function incompatibleExports(before: string, after: string): Set<string> 
       if (names.length !== statement.declarationList.declarations.length || !names.length) continue;
       for (const name of names) symbols.add(name);
       const list = names.join(", ");
-      text += `${source.slice(copied, statement.getStart(file))}import { ${list} } from "./symbols";${ts.getModifiers(statement)?.some(({ kind }) => kind === ts.SyntaxKind.ExportKeyword) ? ` export { ${list} };` : ""}`;
+      text += `${source.slice(copied, statement.getStart(file))}import { ${list} } from "./symbols";${exported(statement) ? ` export { ${list} };` : ""}`;
       copied = statement.end;
     }
     // A file without exports is a global script with no API; `export {}` keeps it importable.

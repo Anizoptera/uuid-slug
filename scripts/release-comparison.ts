@@ -1,5 +1,5 @@
 import { fromMarkdown } from "mdast-util-from-markdown";
-import ts from "typescript-floor";
+import ts from "typescript-checker";
 
 export type ReleaseLevel = "prerelease" | "patch" | "minor" | "major";
 
@@ -33,7 +33,7 @@ function declarationName(node: ts.Node, file: ts.SourceFile): string {
   return name?.getText(file) ?? ts.SyntaxKind[node.kind];
 }
 
-function exported(node: ts.Node): boolean {
+export function exported(node: ts.Node): boolean {
   return (
     ts.isExportDeclaration(node) ||
     ts.isExportAssignment(node) ||
