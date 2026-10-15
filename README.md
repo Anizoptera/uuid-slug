@@ -350,7 +350,7 @@ and [security limits](docs/security.md).
 
 An incorrect key can pass the 16-bit check and return the wrong UUID.
 Keep the rotation list short and confirm decoded IDs against your records;
-see the [record lookup example](docs/security.md).
+see the [record lookup example](docs/security.md#masking).
 
 A browser can use your service's masked IDs without the seed. Keep private masking and decoding
 on the service; client code exposes the seed. Plain generation and conversion need no seed.
@@ -410,7 +410,7 @@ Generator, masking-codec and migration methods need no `this` binding.
 ## Guarantees
 
 - Generated IDs have RFC 9562 version and variant bits.
-- Built-in generators use cryptographically secure runtime randomness without weaker fallbacks. If it is unavailable, argument-free or preset-only generation throws `UuidSlugError` with code `rng_unavailable`. Calls with explicit time, a generator, caller output or custom entropy return it.
+- Built-in generators use cryptographically secure runtime randomness without weaker fallbacks. If it is unavailable, generation with no arguments or only a text-case or alphabet argument throws `UuidSlugError` with code `rng_unavailable`. Calls with explicit time, a generator, caller output or custom entropy return it.
 - UUIDs **can** still collide even with a very low probability. Use a uniqueness constraint where duplicates could overwrite or misidentify critical data. On conflict creating a record, keep the existing record and generate a new ID.
 - Default calls retain the selected native generator's ordering and clock behavior.
   Use a created generator to control ordering and clock rollback. Native failures fall back to
@@ -418,8 +418,8 @@ Generator, masking-codec and migration methods need no `this` binding.
 - UUIDv7 starts with a 48-bit millisecond timestamp, so UUID strings sort by encoded time across
   different milliseconds. Backfills and clock adjustments can differ from generation order.
 - Successful current-time calls on one created generator strictly increase in UUID byte order
-  under the default preserve policy; `at` calls share its sequence state. Module-level generation
-  and reset-policy calls beyond their tolerance do not guarantee this order. Independent generators,
+  under the default `clockRollback` policy, `"preserve"`; `at` calls share its sequence state. Module-level
+  generation and `"reset"` calls beyond their tolerance do not guarantee this order. Independent generators,
   package copies, workers and processes have separate state; use a sequence column for ordering across them.
 - Plain slugs preserve all UUID bits. Base32hex UUIDv7 slugs sort by timestamp across different
   milliseconds under ASCII comparison. Base64url UUIDv7 slugs are almost time-ordered;
@@ -452,7 +452,7 @@ Conversion and timestamp extraction need no randomness, so read-only tools and s
 
 ## Upgrades and support
 
-Check the [changelog](CHANGELOG.md) before upgrading. And see the [release policy](docs/release.md).
+Check the [changelog](CHANGELOG.md) and the [release policy](docs/release.md) before upgrading.
 
 Supported identifier formats remain readable across upgrades. Retain the [matching mask settings and migration readers](docs/api.md#changing-an-existing-id-format) for stored masked IDs.
 

@@ -1,13 +1,8 @@
 # Remaining work
 
-## README review
+## README diagram and badges
 
 Items not marked "maintainer request" are leads that agents wrote, not requirements: check each against AGENTS.md §Writing public documentation before acting, and delete it if it fails. They do not authorize README edits or new measurements.
-
-- [ ] (maintainer request) Proofread and hostile-audit every public document the README links to (`docs/*.md`, `bench/README.md`, `bench/decisions.md`, `CONTRIBUTING.md`, the Rust crate README) for a cold reader: undefined terms, needless complexity and text that gives the reader nothing. Move any agent instructions found there to the owning `AGENTS.md`.
-- [ ] Proofread the complete README for typos, grammar, ambiguous references and formatting after those repairs; preserve approved tone and sound wording. Compile changed examples independently and recheck affected links after heading edits.
-
-## README diagram and badges
 
 - [ ] Runtime badges: one consistent two-part style like the Node badge (logo label, version value); colours readable on light and dark GitHub; Cloudflare Workers labelled "cloud | workers" with the Cloudflare logo; Bun and Deno show measured version floors.
 
