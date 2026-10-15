@@ -317,7 +317,7 @@ Agent instructions live only in `AGENTS.md` files, never in public documents (RE
 - Before rewriting, identify each useful claim and where it survives. Change only named defects;
   preserve approved copy exactly otherwise. A task to merge bullets does not license rewriting
   their heading. Cut repetition, never capabilities, reasons or boundaries.
-- `ROADMAP.md` README items are leads that agents wrote, not maintainer requirements. Before
+- `ROADMAP.md` README items not marked "maintainer request" are leads that agents wrote. Before
   acting on one, check it against these rules and the current README; delete it if it asks for
   copy readers do not need, and never ask the maintainer to supply content for it.
 - A consistency defect is two places that tell the reader different facts, so the reader would
