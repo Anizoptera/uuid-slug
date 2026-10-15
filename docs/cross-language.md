@@ -156,7 +156,8 @@ runtime adapters keep one public source entry while using each host's capabiliti
 build must remain executable in Bun as well as Deno, browsers, and Node-compatible hosts. When Bun
 loads that compiled graph, `#runtime` must still select its TypeScript adapter and native primitives;
 normal source selection does not waive this path. Keep one compiled implementation graph; resolve its private
-`#runtime` import to Bun source, Deno portable source, or Node native code. Deno also activates the
+`#runtime` import to Bun source, the compiled portable adapter for Deno, or Node native code. Deno
+refuses TypeScript inside npm packages, so it loads compiled output. Deno also activates the
 `node` condition, so its condition must come first. Ship source maps whose inputs resolve inside the package.
 Cloudflare Workers use the portable compiled graph over Web Crypto, with or without
 `nodejs_compat`. Run `bun scripts/check-artifact.ts --edge` to check a bundled packed consumer

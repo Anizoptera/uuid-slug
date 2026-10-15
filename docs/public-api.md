@@ -151,7 +151,8 @@ interface is complete, useful, or clear.
   bundling this package first would hide those seams from them.
 - A public condition must select different output or guard an incompatible lower condition. Put
   `deno` before `development` and `node`: Deno activates `node` and may activate `development`.
-  Deno loads the published TypeScript graph directly, so do not route it through compiled ESM.
+  Route Deno to compiled ESM: Deno refuses TypeScript inside npm packages, both from its npm cache
+  and from `node_modules`. Its condition still guards `development`, which selects source.
   Bun MUST load TypeScript normally. If it loads compiled public JavaScript directly, `#runtime`
   MUST still select the Bun TypeScript adapter and native primitives. Use the private map for adapters.
 

@@ -1,6 +1,6 @@
 {
   "name": "@anizoptera/uuid-slug",
-  "version": "0.4.1-dev",
+  "version": "0.5.0-dev",
   "description": "Zero-dependency UUIDv4/v7 generation, lossless base64url and base32hex slugs for any UUID, and reversible UUIDv7 masking for databases, URLs, and files.",
   "keywords": [
     "base32hex",
@@ -46,7 +46,7 @@
   "imports": {
     "#runtime": {
       "bun": "./src/runtime/bun.ts",
-      "deno": "./src/runtime/portable.ts",
+      "deno": "./dist/runtime/portable.js",
       "development": {
         "node": "./src/runtime/node.ts",
         "default": "./src/runtime/portable.ts"
@@ -59,7 +59,7 @@
     ".": {
       "types": "./dist/index.d.ts",
       "bun": "./src/index.ts",
-      "deno": "./src/index.ts",
+      "deno": "./dist/index.js",
       "development": "./src/index.ts",
       "default": "./dist/index.js"
     },

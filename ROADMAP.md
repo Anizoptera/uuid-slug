@@ -27,10 +27,8 @@ These items track unresolved copy; they do not authorize README edits or new mea
 
 ## Runtime support
 
-Deno consumers cannot load published 0.4.0: its `deno` export condition selects `src/index.ts`, and Deno refuses type stripping under `node_modules` and its npm cache (`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`). `scripts/check-artifact.ts` symlinks the package from outside `node_modules`, so its Deno probes pass on a layout real installs never have.
+Published 0.4.0 does not load in Deno: its `deno` condition selects TypeScript, which Deno refuses inside npm packages. Development now routes Deno to compiled output; Deno users need the next release.
 
-- [ ] Route Deno to built JavaScript (export condition and `#runtime` entry) without degrading current Deno; keep Bun on source.
-- [ ] Make the packed-artifact check install the package as a real directory under `node_modules` and add a Deno `npm:`-style probe; the regression must fail on the current routing.
 Measured with `__test__/consumer-probe.ts` alone against real installs (`node_modules` directory for Node and Bun, a local registry through `npm:` for Deno), on macOS arm64:
 
 - Node 16.20.2, 18.0.0, 18.20.8, 19.9.0, 20.0.0 and 24.21.0 pass.
@@ -38,9 +36,12 @@ Measured with `__test__/consumer-probe.ts` alone against real installs (`node_mo
 - Deno 1.30.3 through 2.9.7 pass once Deno loads compiled JavaScript; every tested Deno rejects TypeScript inside npm packages. Deno 1.29 and older cannot load any npm package today because they fetch their Node compatibility layer from `deno.land/std`, which returns HTTP 500.
 - Compiled output needs ES2022 (class and private fields, `Object.hasOwn`, error `cause`); browser floors follow from that and are not measured.
 
-- [ ] Decide the floors to declare (Node, Bun, Deno, browsers) and whether to support Bun 1.0.0–1.0.7 cancellation; record them in `package.json` `engines`, README badges and the Runtime table.
+Declared floors: Node `>=20` supported (`engines`), with docs stating it also works from Node 16; Bun `>=1.0.8` in `engines`, docs and tests, `>=1.0` on the README badge; Deno `>=1.30`. Browser floors stay undeclared until measured.
+
+- [ ] Record these floors in `package.json` `engines`, `docs/cross-language.md`, the README Runtime table and badges.
+- [ ] Keep each stated floor tested in CI with the package-only probe: Node 16.20.2 and 20.0.0, Bun 1.0.8, Deno 1.30.3 (through `npm:` resolution).
+- [ ] Decide later whether to also publish to JSR, where Deno can load the TypeScript source; it needs a ruling against the one-npm-package rule in `docs/cross-language.md`, a condition-free Deno entry and slow-types checks.
 - [ ] Decouple the CI floor probe from rival libraries: `__test__/rust-conform-probe.ts` imports `bench/candidates`, so `scripts/runtime-probe.ts` fails on Node 18 (`uniku` needs global `crypto`), Bun ≤1.2.0 (`@kripod/uuidv7`) and Deno ≤2.0 (harness `process` and `Buffer` globals) before reaching the package.
-- [ ] Exercise each declared floor in CI with the package-only probe: Node and Bun via the existing matrix, Deno via `npm:` resolution.
 - [ ] Propose the Aponte agent-gotcha rule (packed-consumer checks must match real install layout) and write it only with approval.
 
 ## Release notes

@@ -439,7 +439,7 @@ The [Rust crate](rust/uuid-slug) uses the same identifier formats. Cross-languag
 | --- | --- |
 | Node 20 and newer | Uses compiled JavaScript |
 | Bun | Uses TypeScript source |
-| Deno | TypeScript source; no flag or import map needed |
+| Deno | Compiled JavaScript; no flag or import map needed |
 | Cloudflare Workers, browsers and other compatible runtimes | Compiled JavaScript over Web Crypto |
 
 Bun's native UUIDv7 timestamp can advance ahead of the clock during bursts. Create a generator to control ordering, clock policy or payload layout.

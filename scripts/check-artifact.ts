@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
+import { mkdir, mkdtemp, rename, rm, symlink } from "node:fs/promises";
 import { isBuiltin } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -189,9 +189,15 @@ export async function inspectArtifact(
       path.join(root, "package.json"),
       JSON.stringify({ type: "module", dependencies: { [manifest.name]: manifest.version } }),
     );
+    // Install a real directory, as package managers and Deno's npm cache do. A symlink resolves to
+    // its target outside node_modules, where Deno strips TypeScript that real installs reject.
     const modules = path.join(root, "node_modules", "@anizoptera");
     await mkdir(modules, { recursive: true });
-    await symlink(extracted, path.join(modules, "uuid-slug"), "dir");
+    const installStage = path.join(root, "install-stage");
+    await mkdir(installStage);
+    await archive.extract(installStage);
+    const installed = path.join(modules, "uuid-slug");
+    await rename(path.join(installStage, "package"), installed);
 
     // Bundling checks executable modules; declaration emission belongs to the source build.
     const graphConfig = path.join(root, "graph-tsconfig.json");
@@ -252,21 +258,22 @@ export async function inspectArtifact(
 
     for (const graph of graphs) if (graph.status === "rejected") throw graph.reason;
 
-    const runtimeProbe = path.join(extracted, "runtime-route.mjs");
+    // Load the selected adapter from the installed copy: Deno rejects TypeScript only under node_modules.
+    const runtimeProbe = path.join(installed, "runtime-route.mjs");
     await Bun.write(
       runtimeProbe,
       'await import("./dist/index.js");\nconsole.log(import.meta.resolve("#runtime"));\n',
     );
     const expectRuntimeRoute = async (runtime: "bun" | "deno" | "node", expectedSuffix: string) => {
       const args = runtime === "deno" ? ["run", "--cached-only", runtimeProbe] : [runtimeProbe];
-      const resolved = (await command(runtime, args, extracted)).trim();
+      const resolved = (await command(runtime, args, installed)).trim();
       if (!resolved.endsWith(expectedSuffix))
         throw new Error(`${runtime} resolved #runtime to ${resolved}; expected ${expectedSuffix}.`);
     };
     await Promise.all([
       expectRuntimeRoute("node", "/dist/node/runtime.js"),
       expectRuntimeRoute("bun", "/src/runtime/bun.ts"),
-      expectRuntimeRoute("deno", "/src/runtime/portable.ts"),
+      expectRuntimeRoute("deno", "/dist/runtime/portable.js"),
     ]);
 
     const probe = await Bun.build({
