@@ -55,6 +55,12 @@ import { browserEngines } from "./browser-engines.ts";
 import { checkDiagramHover } from "./readme-diagram-hover.ts";
 
 const OUT = new URL("../docs/assets/uuid-representations.svg", import.meta.url);
+// TEMPORARY layout variants for the maintainer to compare (DIAGRAM_LAYOUT=a,b): "panels" tints
+// each section instead of rules, "nojob" puts Sort/Case before what a form is for, "nocall"
+// drops the one-character callout leaders and the avalanche slug lines. Keep the chosen ones as
+// the only layout and delete the switch.
+const LAYOUT = new Set((process.env["DIAGRAM_LAYOUT"] ?? "").split(","));
+const panels: [number, string][] = [];
 
 // ---------- data, all derived from the library ----------
 const UUID = "0198abcd-1234-7abc-9def-0123456789ab";
@@ -592,7 +598,8 @@ const LINE = 24,
 let y = 0;
 
 const section = (label: string, cls = "accent", right?: string) => {
-  path(`M${M} ${y}H${W - M}`, "rule", 1.2);
+  if (LAYOUT.has("panels")) panels.push([y, cls]);
+  else path(`M${M} ${y}H${W - M}`, "rule", 1.2);
   text(M, y + 28, label, FS.head, { cls, weight: 700 });
   if (right) text(W - M, y + 28, right, FS.head - 1, { cls: "muted", anchor: "end" });
   y += 44;
@@ -606,6 +613,20 @@ const head = (name: string, facts: string, masked = false) => {
 // Every line sits on the M edge with one line height; a prefix such as "Text" joins the job
 // line as a run of the same <text>, so the font, not an estimate, spaces it.
 const meta = (f: Form, prefix?: string) => {
+  if (LAYOUT.has("nojob")) {
+    const x = M + (prefix ? 64 : 0);
+    if (prefix) text(M, y + 18, prefix, FS.meta, { cls: "accent", weight: 700 });
+    text(x, y + 18, "Sort", FS.meta - 1, { cls: "key" });
+    text(x + 42, y + 18, f.sort, FS.meta, { weight: 600 });
+    text(CASE_X, y + 18, "Case", FS.meta - 1, { cls: "key" });
+    text(CASE_X + 46, y + 18, f.caseRule, FS.meta, { weight: 600 });
+    y += LINE;
+    for (const l of wrap(`${f.job} ${f.detail}`, TEXT_W - (x - M), FS.meta)) {
+      text(x, y + 18, l, FS.meta, { cls: "muted" });
+      y += LINE;
+    }
+    return;
+  }
   const lead = prefix
     ? `<tspan class="accent" font-weight="700">${prefix}</tspan><tspan dx="10">`
     : "<tspan>";
@@ -751,19 +772,21 @@ for (const [id, idx, label] of [
   plainRows[id] = { cells, top };
   drawSpecimen(f, cells, top, CELL_H, MONO_SIZE, id === "p64" ? "p" : "q");
   const c = cells[idx]!;
-  rect(
-    c.x,
-    top - 3,
-    c.w,
-    CELL_H + 6,
-    "",
-    ` fill="none" stroke="#C6D0E1" stroke-width="1.4" rx="2"`,
-  );
-  path(
-    `M${r1(c.x + c.w / 2)} ${top + CELL_H + 3}V${top + CELL_H + 8}H${SIDE_X - 14}V${top + 20}H${SIDE_X - 4}`,
-    "lead",
-    1.4,
-  );
+  if (!LAYOUT.has("nocall")) {
+    rect(
+      c.x,
+      top - 3,
+      c.w,
+      CELL_H + 6,
+      "",
+      ` fill="none" stroke="#C6D0E1" stroke-width="1.4" rx="2"`,
+    );
+    path(
+      `M${r1(c.x + c.w / 2)} ${top + CELL_H + 3}V${top + CELL_H + 8}H${SIDE_X - 14}V${top + 20}H${SIDE_X - 4}`,
+      "lead",
+      1.4,
+    );
+  }
   // The callout: glyph, its bits coloured by field, and what they hold.
   const bs = 21,
     value = (f.bitsPerChar === 6 ? ALPHA64 : ALPHA32)
@@ -882,30 +905,36 @@ for (const id of ["m64", "m32"] as const) {
     cls: "muted",
   });
   text(x0, ty + 46, "Similar UUIDs, unrelated slugs", FS.small, { weight: 600 });
-  text(x0, ty + 76, "Before", FS.small, { cls: "muted" });
-  text(bx, ty + 76, M64, 15, { cls: "masked f", mono: true });
-  text(x0, ty + 98, "After", FS.small, { cls: "muted" });
-  // The After slug is a stack of same-position lines, one tspan per character; monospace keeps
-  // every line's characters aligned. Layers: the After slug itself (changed characters `.c`) and
-  // the Before characters (`.b`, only changed positions visible), which is invisible at rest.
-  const layer = (s: string, cls: string, onlyChanged: boolean) =>
-    out.push(
-      `<text x="${r1(bx)}" y="${r1(ty + 98)}" class="masked f mono" font-size="15">${s
-        .split("")
-        .map((ch, i) => {
-          if (M64_AFTER[i] !== M64[i])
-            return `<tspan class="av ${cls}" style="--r:${spread(i, 22)}">${esc(ch)}</tspan>`;
-          return onlyChanged ? `<tspan class="x">${esc(ch)}</tspan>` : `<tspan>${esc(ch)}</tspan>`;
-        })
-        .join("")}</text>`,
-    );
-  layer(M64_AFTER, "c", false);
-  layer(M64, "b", true);
-  text(x0, ty + 120, `${CHAR_FLIPS} of 22 characters differ`, FS.small - 1, { cls: "muted" });
-  ty += 134;
+  if (LAYOUT.has("nocall")) ty += 60;
+  else {
+    text(x0, ty + 76, "Before", FS.small, { cls: "muted" });
+    text(bx, ty + 76, M64, 15, { cls: "masked f", mono: true });
+    text(x0, ty + 98, "After", FS.small, { cls: "muted" });
+    // The After slug is a stack of same-position lines, one tspan per character; monospace keeps
+    // every line's characters aligned. Layers: the After slug itself (changed characters `.c`) and
+    // the Before characters (`.b`, only changed positions visible), which is invisible at rest.
+    const layer = (s: string, cls: string, onlyChanged: boolean) =>
+      out.push(
+        `<text x="${r1(bx)}" y="${r1(ty + 98)}" class="masked f mono" font-size="15">${s
+          .split("")
+          .map((ch, i) => {
+            if (M64_AFTER[i] !== M64[i])
+              return `<tspan class="av ${cls}" style="--r:${spread(i, 22)}">${esc(ch)}</tspan>`;
+            return onlyChanged
+              ? `<tspan class="x">${esc(ch)}</tspan>`
+              : `<tspan>${esc(ch)}</tspan>`;
+          })
+          .join("")}</text>`,
+      );
+    layer(M64_AFTER, "c", false);
+    layer(M64, "b", true);
+    text(x0, ty + 120, `${CHAR_FLIPS} of 22 characters differ`, FS.small - 1, { cls: "muted" });
+    ty += 134;
+  }
   y = Math.max(y, ty);
 }
 
+const footY = y;
 // Footnotes.
 path(`M${M} ${y}H${W - M}`, "rule", 1);
 y += 8;
@@ -919,7 +948,13 @@ const H = Math.ceil(y + 18);
 
 // Ribbons go behind everything: UUID text → bytes → base64url → base32hex, then masked base64url →
 // masked base32hex.
+const panelRects = panels.map(([top, cls], i) => {
+  const bottom = (panels[i + 1]?.[0] ?? footY) - 8;
+  const fill = cls.includes("masked") ? "#17140F" : "#0F1B2D";
+  return `<rect x="${M - 14}" y="${top + 2}" width="${W - 2 * M + 28}" height="${bottom - top}" rx="10" fill="${fill}"/>`;
+});
 const background = [
+  ...panelRects,
   ...ribbons(uuidCells, textTop + CELL_H, digitCells, bytesTop),
   ...ribbons(digitCells, bytesTop + BYTES_H, plainRows.p64.cells, plainRows.p64.top),
   ...ribbons(
