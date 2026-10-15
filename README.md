@@ -130,10 +130,10 @@ All examples encode the same UUIDv7; sizes are characters except for bytes.
 | --- | ---: | --- | --- |
 | UUID text | 36 | `0198abcd-1234-7abc-9def-0123456789ab` | Lowercase hyphenated output; uppercase optional |
 | UUID bytes | 16 | `01 98 ab cd 12 34 7a bc 9d ef 01 23 45 67 89 ab` | Compact storage; writes a new or caller-owned array; encode as text for URLs |
-| Plain base64url slug | 22 | `AZirzRI0eryd7wEjRWeJqw` | Lossless for any UUID; case-sensitive; almost time-ordered for UUIDv7 |
-| Plain base32hex slug | 26 | `06canj8i6htbp7ff04hkaps9lc` | Keyless, lossless; writes lowercase, accepts mixed case; UUIDv7 sorts by timestamp in ASCII order |
-| Masked base64url UUIDv7 slug | 22 | `ap225Qa_y6wN5LQCJgwH0z` | Opaque, case-sensitive, unordered; 16-bit check; requires its codec to decode |
-| Masked base32hex UUIDv7 slug | 27 | `daerdp86nv5qo3f4mg12c307qco` | Opaque, unordered; writes lowercase, accepts mixed case; requires its codec to decode |
+| Plain base64url slug | 22 | `AZirzRI0eryd7wEjRWeJqw` | 39% shorter than UUID text; lossless for any UUID; case-sensitive; almost time-ordered for UUIDv7 |
+| Plain base32hex slug | 26 | `06canj8i6htbp7ff04hkaps9lc` | 28% shorter than UUID text; keyless, lossless; writes lowercase, accepts mixed case; UUIDv7 sorts by timestamp in ASCII order |
+| Masked base64url UUIDv7 slug | 22 | `ap225Qa_y6wN5LQCJgwH0z` | 39% shorter than UUID text; opaque, case-sensitive, unordered; 16-bit check; requires its codec to decode |
+| Masked base32hex UUIDv7 slug | 27 | `daerdp86nv5qo3f4mg12c307qco` | 25% shorter than UUID text; opaque, unordered; writes lowercase, accepts mixed case; requires its codec to decode |
 
 Parsers accept mixed-case canonical or compact hexadecimal text, brace-wrapped canonical text and UUID URNs. See [input examples](docs/api.md#uuid-text-input).
 Masked examples use the public `UUID_V7_TEST_MASK`; use a private seed for your IDs.
