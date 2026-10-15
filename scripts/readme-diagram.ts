@@ -277,7 +277,11 @@ ${AUTO_FIELDS.map((f, i) => {
 const DIM = "#24344D",
   LIT = "#F5F7FC",
   DARK = "#08111F";
-const loop = (name: string, extra = "") => `animation:${name} 8s ease-in-out infinite both${extra}`;
+// Every loop starts 4 s in, inside its finished hold phase: a snapshot of the image at time 0
+// (thumbnail, preview, print) must show the flipped bit and the changed output that the text
+// below states, never the reset state.
+const loop = (name: string, extra = "") =>
+  `animation:${name} 8s ease-in-out infinite both${extra};animation-delay:-4s`;
 const flipIn = `@keyframes avin{0%,4%{fill:${DIM}}10%,86%{fill:${LIT}}94%,100%{fill:${DIM}}}
 @keyframes avint{0%,4%{fill:${LIT}}10%,86%{fill:${DARK}}94%,100%{fill:${LIT}}}
 .av.in{${loop("avin")}}.av.int{${loop("avint")}}`;
@@ -292,8 +296,8 @@ const charSwap = (
 const AV_VARIANTS: Record<string, string> = {
   // Changed bytes and characters turn over one by one in shuffled order.
   scatter: `${flipIn}${byteFlip(16)}${charSwap(22)}
-.av.o{${loop("avo")};animation-delay:calc(var(--r) * 1.6s)}
-.av.c{${loop("avc")};animation-delay:calc(var(--r) * 1.6s)}.av.b{${loop("avb")};animation-delay:calc(var(--r) * 1.6s)}`,
+.av.o{${loop("avo")};animation-delay:calc(var(--r) * 1.6s - 4s)}
+.av.c{${loop("avc")};animation-delay:calc(var(--r) * 1.6s - 4s)}.av.b{${loop("avb")};animation-delay:calc(var(--r) * 1.6s - 4s)}`,
   // A bright dash runs down all 16 wires together; every changed byte flips as it lands.
   comet: `${flipIn}${byteFlip(22)}
 @keyframes avcm{0%,8%{stroke-dashoffset:112;opacity:0}10%{opacity:1}22%{stroke-dashoffset:-12;opacity:1}26%,100%{stroke-dashoffset:-12;opacity:0}}
@@ -301,27 +305,27 @@ const AV_VARIANTS: Record<string, string> = {
   // A ring spreads from the mask box; bytes flip as it passes them.
   ripple: `${flipIn}${byteFlip(14)}
 @keyframes avring{0%,10%{r:0;opacity:0}12%{opacity:.9}40%,100%{r:230px;opacity:0}}
-.av.ring{${loop("avring", ";animation-timing-function:ease-out")}}.av.o{${loop("avo")};animation-delay:calc(var(--d) * 1.8s)}`,
+.av.ring{${loop("avring", ";animation-timing-function:ease-out")}}.av.o{${loop("avo")};animation-delay:calc(var(--d) * 1.8s - 4s)}`,
   // Each byte shown as its 8 bits; the bits that change light up in shuffled order.
   bits: `${flipIn}${byteFlip(16)}
-.av.bit{${loop("avo")};animation-delay:calc(var(--r) * 2.4s)}`,
+.av.bit{${loop("avo")};animation-delay:calc(var(--r) * 2.4s - 4s)}`,
   // Changed bytes turn over like cards, one after another.
   card: `${flipIn}
 @keyframes avcard{0%,14%{transform:scaleX(1);fill:${DIM}}18%{transform:scaleX(0);fill:${DIM}}18.1%{fill:${LIT}}22%,84%{transform:scaleX(1);fill:${LIT}}88%{transform:scaleX(0);fill:${LIT}}88.1%{fill:${DIM}}92%,100%{transform:scaleX(1);fill:${DIM}}}
-.av.o{transform-box:fill-box;transform-origin:center;${loop("avcard")};animation-delay:calc(var(--k) * 1.5s)}`,
+.av.o{transform-box:fill-box;transform-origin:center;${loop("avcard")};animation-delay:calc(var(--k) * 1.5s - 4s)}`,
   // The Before slug's changed characters dissolve into the After ones in place.
   morph: `${flipIn}${charSwap(14)}${byteFlip(14)}
-.av.o{${loop("avo")};animation-delay:calc(var(--r) * 2s)}
-.av.c{${loop("avc")};animation-delay:calc(var(--r) * 2s)}.av.b{${loop("avb")};animation-delay:calc(var(--r) * 2s)}`,
+.av.o{${loop("avo")};animation-delay:calc(var(--r) * 2s - 4s)}
+.av.c{${loop("avc")};animation-delay:calc(var(--r) * 2s - 4s)}.av.b{${loop("avb")};animation-delay:calc(var(--r) * 2s - 4s)}`,
   // Changed characters spin through three random glyphs, then stop on the real one.
   slot: `${flipIn}${byteFlip(14)}
-.av.o{${loop("avo")};animation-delay:calc(var(--r) * 1.2s)}
+.av.o{${loop("avo")};animation-delay:calc(var(--r) * 1.2s - 4s)}
 @keyframes avb{0%,14%{fill-opacity:1}14.5%,100%{fill-opacity:0}}
 @keyframes avs1{0%,14%{fill-opacity:0}14.5%,17%{fill-opacity:1}17.5%,100%{fill-opacity:0}}
 @keyframes avs2{0%,17%{fill-opacity:0}17.5%,20%{fill-opacity:1}20.5%,100%{fill-opacity:0}}
 @keyframes avs3{0%,20%{fill-opacity:0}20.5%,23%{fill-opacity:1}23.5%,100%{fill-opacity:0}}
 @keyframes avc{0%,23%{fill-opacity:0}23.5%,90%{fill-opacity:1}96%,100%{fill-opacity:0}}
-${["b", "s1", "s2", "s3", "c"].map((k) => `.av.${k}{${loop(`av${k}`, ";animation-timing-function:linear")};animation-delay:calc(var(--r) * 1.2s)}`).join("")}`,
+${["b", "s1", "s2", "s3", "c"].map((k) => `.av.${k}{${loop(`av${k}`, ";animation-timing-function:linear")};animation-delay:calc(var(--r) * 1.2s - 4s)}`).join("")}`,
   // The input bit switches back and forth; bytes and the slug follow it exactly.
   toggle: `@keyframes avin{0%,44%{fill:${DIM}}50%,94%{fill:${LIT}}100%{fill:${DIM}}}
 @keyframes avint{0%,44%{fill:${LIT}}50%,94%{fill:${DARK}}100%{fill:${LIT}}}

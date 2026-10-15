@@ -30,10 +30,10 @@ svg:has(.lg-pad:hover) .cell:not(.pad){opacity:.3}svg:has(.lg-pad:hover) .lg:not
 .ghost.time{animation:glow 20s ease-in-out 0s infinite both}.lg-time{animation:lgglow 20s ease-in-out 0s infinite both}.ghost.version{animation:glow 20s ease-in-out 4s infinite both}.lg-version{animation:lgglow 20s ease-in-out 4s infinite both}.ghost.variant{animation:glow 20s ease-in-out 8s infinite both}.lg-variant{animation:lgglow 20s ease-in-out 8s infinite both}.ghost.payload{animation:glow 20s ease-in-out 12s infinite both}.lg-payload{animation:lgglow 20s ease-in-out 12s infinite both}.ghost.masked{animation:glow 20s ease-in-out 16s infinite both}.lg-masked{animation:lgglow 20s ease-in-out 16s infinite both}
 @keyframes avin{0%,4%{fill:#24344D}10%,86%{fill:#F5F7FC}94%,100%{fill:#24344D}}
 @keyframes avint{0%,4%{fill:#F5F7FC}10%,86%{fill:#08111F}94%,100%{fill:#F5F7FC}}
-.av.in{animation:avin 8s ease-in-out infinite both}.av.int{animation:avint 8s ease-in-out infinite both}@keyframes avo{0%,16%{fill:#24344D}22%,86%{fill:#F5F7FC}94%,100%{fill:#24344D}}@keyframes avc{0%,22%{fill-opacity:0}28%,86%{fill-opacity:1}94%,100%{fill-opacity:0}}
+.av.in{animation:avin 8s ease-in-out infinite both;animation-delay:-4s}.av.int{animation:avint 8s ease-in-out infinite both;animation-delay:-4s}@keyframes avo{0%,16%{fill:#24344D}22%,86%{fill:#F5F7FC}94%,100%{fill:#24344D}}@keyframes avc{0%,22%{fill-opacity:0}28%,86%{fill-opacity:1}94%,100%{fill-opacity:0}}
 @keyframes avb{0%,22%{fill-opacity:1}28%,86%{fill-opacity:0}94%,100%{fill-opacity:1}}
-.av.o{animation:avo 8s ease-in-out infinite both;animation-delay:calc(var(--r) * 1.6s)}
-.av.c{animation:avc 8s ease-in-out infinite both;animation-delay:calc(var(--r) * 1.6s)}.av.b{animation:avb 8s ease-in-out infinite both;animation-delay:calc(var(--r) * 1.6s)}
+.av.o{animation:avo 8s ease-in-out infinite both;animation-delay:-4s;animation-delay:calc(var(--r) * 1.6s - 4s)}
+.av.c{animation:avc 8s ease-in-out infinite both;animation-delay:-4s;animation-delay:calc(var(--r) * 1.6s - 4s)}.av.b{animation:avb 8s ease-in-out infinite both;animation-delay:-4s;animation-delay:calc(var(--r) * 1.6s - 4s)}
 svg:hover :is(.ghost,.lg,.av){animation:none}@media (prefers-reduced-motion:reduce){:is(.ghost,.lg,.av){animation:none}}
 svg:has(#gu0:hover) :is(#ou0,#ob0,#op0,#oq0){opacity:1}
 svg:has(#gu1:hover) :is(#ou1,#ob0,#op0,#op1,#oq0,#oq1){opacity:1}
