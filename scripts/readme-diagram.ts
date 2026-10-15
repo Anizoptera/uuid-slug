@@ -175,7 +175,7 @@ const FORMS = {
     facts: "",
     sort: "by time¹",
     caseRule: "insensitive",
-    job: "For UUID columns and UUID-only APIs.",
+    job: "Great for UUID columns and UUID-only APIs.",
     detail: "The standard form: every database and UUID library accepts it.",
   },
   bytes: {
@@ -187,7 +187,7 @@ const FORMS = {
     facts: "",
     sort: "by time¹ (byte order)",
     caseRule: "none (binary)",
-    job: "For binary storage and transport.",
+    job: "Great for binary storage and transport.",
     detail: "Writes into your buffer; on error the buffer stays unchanged.",
   },
   p64: {
@@ -199,7 +199,7 @@ const FORMS = {
     facts: 'default · 22 chars · A–Z a–z 0–9 "-" "_"',
     sort: "roughly by time²",
     caseRule: "sensitive",
-    job: "For short URLs, logs and JSON.",
+    job: "Great for text storage and transport: URLs, logs, JSON.",
     win: shorter(P64),
     detail: "Any base64url decoder returns its 16 UUID bytes.",
   },
@@ -212,7 +212,7 @@ const FORMS = {
     facts: "26 chars · 0–9 a–v · lowercase",
     sort: "by time¹",
     caseRule: "insensitive",
-    job: "For case-insensitive filenames and text keys.",
+    job: "Great for case-insensitive filenames and time-sorted text keys.",
     detail: `${shorter(P32)}; time-range queries work on the ID itself.`,
   },
   m64: {
@@ -224,7 +224,7 @@ const FORMS = {
     facts: 'default · 22 chars · A–Z a–z 0–9 "-" "_"',
     sort: "none",
     caseRule: "sensitive",
-    job: "For public IDs that hide the UUID's time and fields.",
+    job: "Great for public URLs and APIs: text transport that hides the UUID.",
     win: shorter(M64),
     detail: `Decoding needs the key that made it: keep old keys, or old links break.`,
   },
@@ -237,7 +237,7 @@ const FORMS = {
     facts: "27 chars · 0–9 a–v · lowercase",
     sort: "none",
     caseRule: "insensitive",
-    job: "For masked IDs in case-insensitive filenames.",
+    job: "Great for masked IDs in case-insensitive filenames.",
     detail: `${shorter(M32)}. Same UUID + same key = same slug. One codec decodes both masked forms.`,
   },
 } satisfies Record<string, Form>;
@@ -246,15 +246,15 @@ const COPY = {
   title: "One UUIDv7, six representations",
   pkg: "@anizoptera/uuid-slug",
   subtitle:
-    "Store the UUID. Every form below converts back to it exactly; masked forms need your key. No lookup table.",
+    "Store the UUID. Every form below converts back to it exactly; masked forms need your custom key.",
   urlSafe: "All text forms are URL-safe.",
   masking:
-    "Your key scrambles all UUID bits, so the slug shows no time or fields. The key turns it back into the same UUID. Inside: 42-bit time since your start date (~139 years) + 74 payload bits + 16-bit check.",
+    "Your key scrambles all UUID bits, so the slug shows no time or fields. The key turns it back into the same UUID. Inside: 42-bit time (~139 years from 1970, or from an optional start date you set) + 74 payload bits + 16-bit check.",
   overlap:
     "Plain and masked base64url look alike. Decode each with the function for the form you issued.",
   notes: [
     "¹ UUIDv7: sorts by creation millisecond if all IDs share one case and alphabet; not event order within a millisecond.",
-    "² Nearby times share prefixes, but ASCII order can swap adjacent milliseconds.",
+    "² Base64url digits are not in ASCII order, so sorting as text puts about 1 in 5 pairs of IDs out of time order.",
     "Compare decoded UUIDs, not strings: one UUID has many valid spellings. A wrong key passes the check about 1 time in 65,536 and returns a wrong UUID. Masking is not proven-secure encryption.",
   ],
 };
@@ -765,8 +765,8 @@ section("THE UUID · any version · 128 bits");
 head("UUID", "36 characters as text · 16 bytes in binary");
 const uuidCells = cellsOf(FORMS.uuid, M, CW);
 const digitCells = uuidCells.filter((c) => c.bits);
-text(SIDE_X, y + 18, "Text", FS.meta, { cls: "accent", weight: 700 });
-text(SIDE_X, y + 40, "36 chars · lowercase", FS.small, { cls: "muted" });
+text(SIDE_X, y + 18, "UUID text", FS.meta, { cls: "accent", weight: 700 });
+text(SIDE_X, y + 40, "36 chars", FS.small, { cls: "muted" });
 const textTop = y;
 drawSpecimen(FORMS.uuid, uuidCells, y, CELL_H, MONO_SIZE, "u");
 y += CELL_H + GAP;
@@ -774,7 +774,7 @@ y += CELL_H + GAP;
 // than the text, with each bit's field shown only as a thin bar.
 const bytesTop = y,
   BYTES_H = 40;
-text(SIDE_X, y + 18, "Bytes", FS.meta, { cls: "accent", weight: 700 });
+text(SIDE_X, y + 18, "UUID bytes", FS.meta, { cls: "accent", weight: 700 });
 text(SIDE_X, y + 40, "16 bytes, binary, same order", FS.small, { cls: "muted" });
 for (let i = 0; i < 16; i++) {
   const a = digitCells[i * 2]!,

@@ -205,7 +205,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <path class="ghost masked" d="M36 1170C36 1254 36 1254 36 1338L548.2 1338C548.2 1254 462.8 1254 462.8 1170Z"/>
 <text x="36" y="50" class="ink sans" font-size="34" font-weight="600">One UUIDv7, six representations</text>
 <text x="1064" y="50" class="pkg sans" font-size="20" font-weight="600" text-anchor="end">@anizoptera/uuid-slug</text>
-<text x="36" y="82" class="muted sans" font-size="18">Store the UUID.  Every form below converts back to it exactly; masked forms need your key.  No lookup table.</text>
+<text x="36" y="82" class="muted sans" font-size="18">Store the UUID.  Every form below converts back to it exactly; masked forms need your custom key.</text>
 <g class="lg lg-time time">
 <rect x="36" y="100" width="115.9" height="24" class="chip chip-time" rx="12"/>
 <rect x="43" y="106" width="11" height="11" class="time f" rx="2"/>
@@ -247,8 +247,8 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="36" y="164" class="accent sans" font-size="16" font-weight="700">THE UUID · any version · 128 bits</text>
 <text x="36" y="202" class="ink sans" font-size="24" font-weight="600">UUID</text>
 <text x="286" y="202" class="muted sans" font-size="16">36 characters as text · 16 bytes in binary</text>
-<text x="790" y="234" class="accent sans" font-size="17" font-weight="700">Text</text>
-<text x="790" y="256" class="muted sans" font-size="16">36 chars · lowercase</text>
+<text x="790" y="234" class="accent sans" font-size="17" font-weight="700">UUID text</text>
+<text x="790" y="256" class="muted sans" font-size="16">36 chars</text>
 <g id="gu0">
 <rect x="36.8" y="216" width="17.9" height="44" class="time f cell"/>
 <text x="45.7" y="248.5" class="fg mono" font-size="30" text-anchor="middle">0</text>
@@ -419,7 +419,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="695.2" y="248.5" class="fg mono" font-size="30" text-anchor="middle">b</text>
 <rect x="685.5" y="210" width="19.4" height="56" class="hit payload"/>
 <rect id="ou31" class="hl" x="685.5" y="214" width="19.4" height="48" rx="2"/></g>
-<text x="790" y="290" class="accent sans" font-size="17" font-weight="700">Bytes</text>
+<text x="790" y="290" class="accent sans" font-size="17" font-weight="700">UUID bytes</text>
 <text x="790" y="312" class="muted sans" font-size="16">16 bytes, binary, same order</text>
 <g id="gb0">
 <rect x="37" y="272" width="36.8" height="40" class="box" stroke="#667D99" stroke-width="1.2" rx="3"/>
@@ -636,14 +636,14 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="158" y="374" class="ink sans" font-size="17" font-weight="600">by time¹</text>
 <text x="446" y="374" class="key sans" font-size="16">Case</text>
 <text x="492" y="374" class="ink sans" font-size="17" font-weight="600">insensitive</text>
-<text x="116" y="398" class="ink sans" font-size="17" font-weight="400">For UUID columns and UUID-only APIs.</text>
+<text x="116" y="398" class="ink sans" font-size="17" font-weight="400">Great for UUID columns and UUID-only APIs.</text>
 <text x="116" y="422" class="muted sans" font-size="17">The standard form: every database and UUID library accepts it.</text>
 <text x="52" y="458" class="accent sans" font-size="17" font-weight="700">Bytes</text>
 <text x="116" y="458" class="key sans" font-size="16">Sort</text>
 <text x="158" y="458" class="ink sans" font-size="17" font-weight="600">by time¹ (byte order)</text>
 <text x="446" y="458" class="key sans" font-size="16">Case</text>
 <text x="492" y="458" class="ink sans" font-size="17" font-weight="600">none (binary)</text>
-<text x="116" y="482" class="ink sans" font-size="17" font-weight="400">For binary storage and transport.</text>
+<text x="116" y="482" class="ink sans" font-size="17" font-weight="400">Great for binary storage and transport.</text>
 <text x="116" y="506" class="muted sans" font-size="17">Writes into your buffer; on error the buffer stays unchanged.</text>
 <text x="36" y="564" class="accent sans" font-size="16" font-weight="700">PLAIN SLUGS · any UUID · no key · the same 128 bits in fewer characters</text>
 <text x="790" y="602" class="accent sans" font-size="17" font-weight="700">One character, two fields</text>
@@ -795,7 +795,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="94" y="690" class="ink sans" font-size="17" font-weight="600">roughly by time²</text>
 <text x="446" y="690" class="key sans" font-size="16">Case</text>
 <text x="492" y="690" class="ink sans" font-size="17" font-weight="600">sensitive</text>
-<text x="52" y="714" class="ink sans" font-size="17" font-weight="400">For short URLs, logs and JSON.</text>
+<text x="52" y="714" class="ink sans" font-size="17" font-weight="400">Great for text storage and transport: URLs, logs, JSON.</text>
 <rect x="47" y="725" width="236.1" height="18" class="win" rx="4"/>
 <text x="52" y="738" class="ink sans" font-size="17" font-weight="700" textLength="226.1" lengthAdjust="spacing">39% shorter than UUID text</text>
 <text x="292.1" y="738" class="muted sans" font-size="17">Any base64url decoder returns its 16 UUID bytes.</text>
@@ -971,12 +971,12 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="94" y="878" class="ink sans" font-size="17" font-weight="600">by time¹</text>
 <text x="446" y="878" class="key sans" font-size="16">Case</text>
 <text x="492" y="878" class="ink sans" font-size="17" font-weight="600">insensitive</text>
-<text x="52" y="902" class="ink sans" font-size="17" font-weight="400">For case-insensitive filenames and text keys.</text>
+<text x="52" y="902" class="ink sans" font-size="17" font-weight="400">Great for case-insensitive filenames and time-sorted text keys.</text>
 <text x="52" y="926" class="muted sans" font-size="17">28% shorter than UUID text; time-range queries work on the ID itself.</text>
 <text x="36" y="984" class="masked f sans" font-size="16" font-weight="700">MASKED SLUGS · UUIDv7 only · need the matching key</text>
 <text x="1064" y="984" class="muted sans" font-size="15" text-anchor="end">Examples use the public demo key</text>
 <text x="36" y="1006" class="muted sans" font-size="17">Your key scrambles all UUID bits, so the slug shows no time or fields.  The key turns it back into the same UUID. </text>
-<text x="36" y="1030" class="muted sans" font-size="17">Inside: 42-bit time since your start date (~139 years) + 74 payload bits + 16-bit check.</text>
+<text x="36" y="1030" class="muted sans" font-size="17">Inside: 42-bit time (~139 years from 1970, or from an optional start date you set) + 74 payload bits + 16-bit check.</text>
 <text x="36" y="1064" class="ink sans" font-size="17" font-weight="500">Plain and masked base64url look alike.  Decode each with the function for the form you issued.</text>
 <text x="36" y="1112" class="masked f sans" font-size="24" font-weight="600">Masked base64url</text>
 <text x="286" y="1112" class="muted sans" font-size="16">default · 22 chars · A–Z a–z 0–9 "-" "_"</text>
@@ -1094,7 +1094,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="94" y="1200" class="ink sans" font-size="17" font-weight="600">none</text>
 <text x="446" y="1200" class="key sans" font-size="16">Case</text>
 <text x="492" y="1200" class="ink sans" font-size="17" font-weight="600">sensitive</text>
-<text x="52" y="1224" class="ink sans" font-size="17" font-weight="400">For public IDs that hide the UUID's time and fields.</text>
+<text x="52" y="1224" class="ink sans" font-size="17" font-weight="400">Great for public URLs and APIs: text transport that hides the UUID.</text>
 <rect x="47" y="1235" width="236.1" height="18" class="win" rx="4"/>
 <text x="52" y="1248" class="ink sans" font-size="17" font-weight="700" textLength="226.1" lengthAdjust="spacing">39% shorter than UUID text</text>
 <text x="292.1" y="1248" class="muted sans" font-size="17">Decoding needs the key that made it: keep old keys,</text>
@@ -1242,7 +1242,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="94" y="1412" class="ink sans" font-size="17" font-weight="600">none</text>
 <text x="446" y="1412" class="key sans" font-size="16">Case</text>
 <text x="492" y="1412" class="ink sans" font-size="17" font-weight="600">insensitive</text>
-<text x="52" y="1436" class="ink sans" font-size="17" font-weight="400">For masked IDs in case-insensitive filenames.</text>
+<text x="52" y="1436" class="ink sans" font-size="17" font-weight="400">Great for masked IDs in case-insensitive filenames.</text>
 <text x="52" y="1460" class="muted sans" font-size="17">25% shorter than UUID text.  Same UUID + same key = same slug. </text>
 <text x="52" y="1484" class="muted sans" font-size="17">One codec decodes both masked forms.</text>
 <text x="790" y="1110" class="accent sans" font-size="17" font-weight="700">Masking: avalanche effect</text>
@@ -1344,7 +1344,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="790" y="1502" class="muted sans" font-size="15">22 of 22 characters differ</text>
 <path d="M36 1516H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1"/>
 <text x="36" y="1546" class="muted sans" font-size="15">¹ UUIDv7: sorts by creation millisecond if all IDs share one case and alphabet; not event order within a millisecond.</text>
-<text x="36" y="1568" class="muted sans" font-size="15">² Nearby times share prefixes, but ASCII order can swap adjacent milliseconds.</text>
+<text x="36" y="1568" class="muted sans" font-size="15">² Base64url digits are not in ASCII order, so sorting as text puts about 1 in 5 pairs of IDs out of time order.</text>
 <text x="36" y="1590" class="muted sans" font-size="15">Compare decoded UUIDs, not strings: one UUID has many valid spellings. </text>
 <text x="36" y="1612" class="muted sans" font-size="15">A wrong key passes the check about 1 time in 65,536 and returns a wrong UUID.  Masking is not proven-secure encryption.</text>
 </svg>
