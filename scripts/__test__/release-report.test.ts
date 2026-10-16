@@ -9,7 +9,12 @@ import {
   typeScriptApiSections,
 } from "../release-comparison";
 import { incompatibleExports } from "../api-compatibility";
-import { consumerReleaseNotes, verifyCrateIdentity, verifyNpmIdentity } from "../release-report";
+import {
+  consumerReleaseNotes,
+  npmContents,
+  verifyCrateIdentity,
+  verifyNpmIdentity,
+} from "../release-report";
 import { declaredRenames } from "../release-notes";
 import type { ReleaseReport } from "../release-report";
 
@@ -221,7 +226,7 @@ test.each(['"read value"', "[Symbol.iterator]", "read$"])(
   },
 );
 
-test("publication notes put each API diff at the end of its section, then size and links", () => {
+test("publication notes put each API diff at the end of its section, then size and links", async () => {
   const report: ReleaseReport = {
     release: {
       name: "@scope/pkg",
@@ -278,6 +283,43 @@ test("publication notes put each API diff at the end of its section, then size a
     ),
   ).toBe(
     "First release.\n\n**Package size**: 512 bytes compressed\n**NPM Package**: [`@scope/pkg v0.4.0`](https://www.npmjs.com/package/@scope/pkg/v/0.4.0)\n**Full Commit History**: https://github.com/owner/pkg/commits/v0.4.0\n",
+  );
+  // Declaration maps are maps and nested compiled adapters are JavaScript; anything else is other.
+  for (const [path, role] of Object.entries({
+    "package/dist/index.js": "javascript",
+    "package/dist/node/runtime.js": "javascript",
+    "package/dist/index.d.ts": "declarations",
+    "package/dist/index.d.ts.map": "sourceMaps",
+    "package/dist/index.js.map": "sourceMaps",
+    "package/src/index.ts": "typescript",
+    "package/README.md": "other",
+  })) {
+    const contents = await npmContents(new Map([[path, new Blob(["export const x = 1;\n"])]]));
+    expect(Object.entries(contents).filter(([, size]) => size > 0)).toEqual([
+      [role, expect.any(Number)],
+    ]);
+  }
+  expect(
+    consumerReleaseNotes(
+      "First release.\n",
+      {
+        ...report,
+        current: {
+          npm: 3072,
+          npmContents: {
+            javascript: 1024,
+            declarations: 512,
+            sourceMaps: 512,
+            typescript: 900,
+            other: 124,
+          },
+        },
+        comparisons: [],
+      },
+      "npm",
+    ),
+  ).toContain(
+    "**Package size**: 3.0 KB compressed (1.0 KB tree-shakable compiled JavaScript, 512 bytes type declarations, 512 bytes source maps, 900 bytes TypeScript source, 124 bytes README, license and manifest)\n",
   );
 });
 test("stable version distance must satisfy the derived release level", () => {

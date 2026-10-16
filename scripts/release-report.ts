@@ -29,8 +29,55 @@ import {
 } from "./release-surface";
 import type { CargoReleaseSurface, NpmReleaseSurface } from "./release-surface";
 
+/**
+ * Estimated compressed npm bytes by role. Most of the tarball is TypeScript source and maps that
+ * bundles never include, so the total alone overstates what a consumer ships. A `.tgz` is one gzip
+ * stream, so no file has its own compressed size; gzipping each role alone estimates its share,
+ * and the estimates sum to within about 1% of the archive.
+ */
+export interface NpmContents {
+  readonly javascript: number;
+  readonly declarations: number;
+  readonly sourceMaps: number;
+  readonly typescript: number;
+  readonly other: number;
+}
+
+const gzipped = (parts: Uint8Array[]) =>
+  parts.length ? Bun.gzipSync(Buffer.concat(parts)).length : 0;
+
+export async function npmContents(files: ReadonlyMap<string, Blob>): Promise<NpmContents> {
+  const roles: Record<keyof NpmContents, Uint8Array[]> = {
+    javascript: [],
+    declarations: [],
+    sourceMaps: [],
+    typescript: [],
+    other: [],
+  };
+  for (const [path, file] of files) {
+    const role = path.endsWith(".map")
+      ? "sourceMaps"
+      : path.endsWith(".d.ts")
+        ? "declarations"
+        : path.startsWith("package/dist/") && path.endsWith(".js")
+          ? "javascript"
+          : path.startsWith("package/src/") && path.endsWith(".ts")
+            ? "typescript"
+            : "other";
+    roles[role].push(await file.bytes());
+  }
+  return {
+    javascript: gzipped(roles.javascript),
+    declarations: gzipped(roles.declarations),
+    sourceMaps: gzipped(roles.sourceMaps),
+    typescript: gzipped(roles.typescript),
+    other: gzipped(roles.other),
+  };
+}
+
 export interface Sizes {
   readonly npm?: number;
+  readonly npmContents?: NpmContents;
   readonly crate?: number;
   readonly native?: number;
   readonly wasm?: number;
@@ -96,8 +143,12 @@ export function consumerReleaseNotes(
         : now === before
           ? `, unchanged from ${latest.tag}`
           : `, ${now > before ? "up" : "down"} ${binarySize(now - before)}${before ? ` (${now > before ? "+" : ""}${(((now - before) / before) * 100).toFixed(1)}%)` : ""} from ${latest.tag}`;
+    const parts = key === "npm" ? report.current.npmContents : undefined;
+    const unpacked = parts
+      ? ` (${binarySize(parts.javascript)} tree-shakable compiled JavaScript, ${binarySize(parts.declarations)} type declarations, ${binarySize(parts.sourceMaps)} source maps, ${binarySize(parts.typescript)} TypeScript source, ${binarySize(parts.other)} README, license and manifest)`
+      : "";
     return [
-      `**${keys.length > 1 ? `${labels[key]} size` : "Package size"}**: ${binarySize(now)} compressed${change}`,
+      `**${keys.length > 1 ? `${labels[key]} size` : "Package size"}**: ${binarySize(now)} compressed${change}${unpacked}`,
     ];
   });
   // GitHub renders each line break in a release body, so these stay one entry per line.
@@ -279,6 +330,7 @@ async function declaration(
   source: string;
   declarations: string;
   package: NpmReleaseSurface;
+  contents: NpmContents;
 }> {
   const extracted = join(work, `npm-${label}`);
   const rollup = join(extracted, "public.d.ts");
@@ -314,6 +366,7 @@ async function declaration(
     source,
     declarations: normalizeDeclarations(source),
     package: npmReleaseSurface(metadata),
+    contents: await npmContents(files),
   };
 }
 
@@ -457,6 +510,7 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
     const currentRust = await rustApi(root, join(crateRoot, "Cargo.toml"));
     const current: Sizes = {
       npm: (await stat(npm)).size,
+      npmContents: currentDeclaration.contents,
       crate: (await stat(crate)).size,
       ...(await measureLinkedSizes(root, crateRoot, work, "seeded-mask")),
     };
