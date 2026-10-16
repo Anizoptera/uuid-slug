@@ -19,7 +19,6 @@ Each item keeps behaviour, public API (`api/typescript.api.d.ts`), speed and bun
 
 ### Safe, in priority order (rule breaches first, then the biggest cuts)
 
-- [ ] Fix `src/AGENTS.md` breaches: replace `SLUG_ALPHABET_CODECS`, `slugLength` and the `reduce` in `src/slug.ts` with direct `SLUG_ALPHABET_BY_LENGTH` entries and a `SLUG_LENGTHS` template, rewording the comment that names it (no runtime lookup objects, ~10 lines); hoist the repeated "non-canonical trailing bits" message (`src/alphabet.ts`, `src/slug.ts`) to one scalar constant.
 - [ ] Delete the redundant text-case check in `generatePortableUuidV4` (`src/v4.ts`); every caller passes a resolved case or the default (5 lines; also speeds Node UUIDv4 text without native support).
 - [ ] Merge the two `bytes.length === 16` blocks in `encode` into one block choosing Latin-1 or `fromCharCode` writers (~5 lines; bench `v4.slug`, `v7.slug`, `v7.base32`, `masked.encode.bytes`).
 - [ ] Replace `HEX_DECODE`, `lowercaseHexValue` and `parsedHexValue` (`src/uuid.ts`) with `HEX_NIBBLES` lookups (`> 15` means invalid); both tables agree on every code 0–65535 (~12 lines; bench text-validation rows in `bench/conversion-cases.ts`).

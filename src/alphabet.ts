@@ -10,6 +10,9 @@ import type { Latin1Scratch } from "./runtime/types.ts";
 export const BASE32HEX_NAME = "base32hex";
 export { BASE64URL_NAME } from "./base64url-name.ts";
 
+/** Follows the alphabet name in every decoder error for set unused bits. */
+export const NON_CANONICAL_TRAILING_BITS = " value has non-canonical trailing bits";
+
 /**
  * A power-of-two alphabet plus its reverse lookup. Encoding is pure bit packing, so the only
  * character set and bits per character define the wire format.
@@ -276,7 +279,7 @@ export function decodeInto(
     if ((last & 15) !== 0)
       return new UuidSlugError(
         code,
-        `${name} value has non-canonical trailing bits; a masked slug of this length decodes only through its codec.`,
+        `${name}${NON_CANONICAL_TRAILING_BITS}; a masked slug of this length decodes only through its codec.`,
       );
     return 0;
   }
@@ -325,11 +328,10 @@ export function decodeInto(
   out[written] = (first << 3) | (last >>> 2);
   if (tailBits === 4) {
     if ((padding & 7) !== 0)
-      return new UuidSlugError(code, `${name} value has non-canonical trailing bits.`);
+      return new UuidSlugError(code, `${name}${NON_CANONICAL_TRAILING_BITS}.`);
     return ((last & 3) << 2) | (padding >>> 3);
   }
-  if ((last & 3) !== 0)
-    return new UuidSlugError(code, `${name} value has non-canonical trailing bits.`);
+  if ((last & 3) !== 0) return new UuidSlugError(code, `${name}${NON_CANONICAL_TRAILING_BITS}.`);
   return 0;
 }
 

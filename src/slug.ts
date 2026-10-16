@@ -5,6 +5,7 @@ import {
   BASE32HEX_NAME,
   BASE64URL,
   BASE64URL_NAME,
+  NON_CANONICAL_TRAILING_BITS,
   decodeInto,
   encode,
   isEncoded,
@@ -160,17 +161,12 @@ const BYTE_OFFSET_NEEDS_BYTES =
  */
 export type SlugAlphabet = typeof BASE64URL_NAME | typeof BASE32HEX_NAME;
 
-const SLUG_ALPHABET_CODECS = {
-  base32hex: BASE32HEX,
-  base64url: BASE64URL,
-} as const satisfies Record<SlugAlphabet, Alphabet>;
-
 /** Reject values outside the public alphabet union when untyped JavaScript bypasses TypeScript. */
 /*#__NO_SIDE_EFFECTS__*/
 export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlugError {
   const name = typeof alphabet === "string" ? alphabet : stringInput(alphabet);
   // Fixed comparisons avoid an own-property call and keyed lookup on every conversion.
-  // Packed complete-call comparisons favor this over SLUG_ALPHABET_CODECS; remeasure if
+  // Packed complete-call comparisons favor this over a name-keyed lookup object; remeasure if
   // the supported alphabet vocabulary grows. Wrapper normalization remains shared.
   if (name === BASE64URL_NAME) return BASE64URL;
   if (name === BASE32HEX_NAME) return BASE32HEX;
@@ -180,27 +176,21 @@ export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlug
   );
 }
 
-/** Characters needed for 16 bytes: 22 in base64url, 26 in base32hex. */
-/*#__NO_SIDE_EFFECTS__*/
-function slugLength(alpha: Alphabet) {
-  return Math.ceil(128 / alpha.bitsPerChar);
-}
-
 /**
  * Length -> alphabet, which is why decoding takes no alphabet argument: the two lengths are
  * disjoint, so a slug names its own encoding and a caller cannot pick the wrong one. Indexed
  * rather than searched because every decode and every type guard pays this lookup.
+ * The index is the characters 16 bytes need: ceil(128 / 6) = 22 in base64url, ceil(128 / 5) = 26
+ * in base32hex.
  */
-const SLUG_ALPHABET_BY_LENGTH: readonly (Alphabet | undefined)[] = /*#__PURE__*/ Object.values(
-  SLUG_ALPHABET_CODECS,
-).reduce<(Alphabet | undefined)[]>((table, alpha) => {
-  table[slugLength(alpha)] = alpha;
+const SLUG_ALPHABET_BY_LENGTH: readonly (Alphabet | undefined)[] = /*#__PURE__*/ (() => {
+  const table: (Alphabet | undefined)[] = [];
+  table[22] = BASE64URL;
+  table[26] = BASE32HEX;
   return table;
-}, []);
+})();
 
-const SLUG_LENGTHS = /*#__PURE__*/ Object.values(SLUG_ALPHABET_CODECS)
-  .map((alpha) => `${slugLength(alpha)} (${alpha.name})`)
-  .join(ALTERNATIVE_SEPARATOR);
+const SLUG_LENGTHS = `26 (${BASE32HEX_NAME})${ALTERNATIVE_SEPARATOR}22 (${BASE64URL_NAME})`;
 
 /**
  * Encode a standalone 16-byte UUID as a plain slug, using base64url by default. An `ArrayBuffer`
@@ -327,7 +317,7 @@ export function plainSlugToUuidBytes(
           `Invalid ${alpha.name} character ${JSON.stringify(slug[i])} at offset ${i}.`,
         );
     }
-    return new UuidSlugError(alpha.code, `${alpha.name} value has non-canonical trailing bits.`);
+    return new UuidSlugError(alpha.code, `${alpha.name}${NON_CANONICAL_TRAILING_BITS}.`);
   }
   const result = decodeInto(slug, alpha, target, outputOffset);
   return result instanceof Error ? result : target;
