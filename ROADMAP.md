@@ -2,7 +2,7 @@
 
 ## Runtime support
 
-- [ ] Publish the Rust crate for the first time: 0.5.0 shipped on npm only because crates.io has no trusted-publishing link for an unpublished crate. Needs the maintainer's `CRATES_IO_BOOTSTRAP_TOKEN` or a manual first upload (`dev/release.md` §Publication and recovery).
+- [ ] Publish the Rust crate's first version. crates.io trusted publishing needs an existing crate, so this needs the maintainer's crates.io token as `CRATES_IO_BOOTSTRAP_TOKEN` (`dev/release.md` §Publication and recovery).
 - [ ] Decide later whether to also publish to JSR, where Deno can load the TypeScript source; it needs a ruling against the one-npm-package rule in `dev/cross-language.md`, a condition-free Deno entry and slow-types checks.
 - [ ] Propose the Aponte agent-gotcha rule (packed-consumer checks must match real install layout) and write it only with approval.
 

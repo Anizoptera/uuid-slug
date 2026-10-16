@@ -120,18 +120,7 @@ The release command must reject a tag that differs from the manifest or lacks a 
 section. Publication keeps that section's prose unchanged and adds the generated parts described
 in §Evidence and notes.
 Use the release command to check the stable manifest before Git creates its tag; ordinary untagged work must use `-dev`.
-After pnpm creates the local tag, its `postversion` script builds and runs `bun scripts/release-prepare.ts`: the tag workflow's own preparation (reviewed archives, history comparisons, release report and notes) without publishing. Push nothing until it passes, and read `release-artifacts/notes.md`, the exact release body, before pushing; it needs `cargo-semver-checks` 0.50.0, `cargo-public-api` 0.52.0 and the nightly toolchain locally. Proving a release fix with unit tests or the commit hook alone is insufficient: only this preparation compares against every selected release and renders the notes.
-
-### Repair an unpushed or unpublished tag
-
-While no registry has the version, fix and move the tag instead of bumping it:
-
-1. Commit each fix with `UUID_SLUG_RELEASE_VERSION=<next>` set: HEAD keeps the stable version but is no longer tagged, and the hook otherwise demands `-dev`.
-2. Move the tag: `git tag -f -s -m <next> v<next> HEAD`.
-3. Rerun `bun run build && bun scripts/release-prepare.ts` until it passes, and read `release-artifacts/notes.md`.
-4. Push the branch, then `git push -f origin v<next>`; moving a pushed tag needs the maintainer's authorization.
-
-Once any registry has the version, never move its tag: release the next patch.
+After pnpm creates the tag, its `postversion` script runs `bun run build && bun scripts/release-prepare.ts` on that local tag: the tag workflow's preparation (archives, history comparisons, report, notes) without publishing. Read `release-artifacts/notes.md`, the exact release body, before pushing. It needs `cargo-semver-checks`, `cargo-public-api` and nightly Rust locally; the report names the required versions.
 
 Keep `@anizoptera/publish-clean` as a registry dependency and publication in
 `.github/workflows/release.yml`, whose filename is bound to trusted publishing. Verification of the
@@ -143,8 +132,12 @@ crates.io trusted publishing is configured in an existing crate's settings, so t
 upload needs a crates.io token with the `publish-new` scope saved as the repository secret
 `CRATES_IO_BOOTSTRAP_TOKEN`; the crate job prefers it when present. After that upload, add this
 repository and `release.yml` under the crate's Trusted Publishing settings and delete the secret.
-Without either, the crate job fails with "No Trusted Publishing config found"; finish the release
-by dispatching the workflow on the tag with `packages=npm` and publish the crate in a later release.
+With neither the token nor that link, the crate job fails with "No Trusted Publishing config found";
+finish the release by dispatching the workflow on the tag with `packages=npm`.
+
+Check publication against the registry itself (`curl https://registry.npmjs.org/@anizoptera%2Fuuid-slug`,
+`https://crates.io/api/v1/crates/uuid-slug`): `bun pm view` can answer from a stale cache and
+report a published version as missing.
 
 Create or update one draft GitHub release. Publish missing npm or crates.io artifacts only after
 checking whether that exact version already exists. Existing versions must match the retained bytes;
@@ -160,3 +153,14 @@ Write retained archives only through `--tarball-out DIR` into a caller-owned dir
 that directory. Never parse an archive path from human-facing output.
 
 Every remote write requires explicit maintainer authorization for the exact operation.
+
+### Repair an unpushed or unpublished tag
+
+While no registry has the version, fix and move the tag instead of bumping it:
+
+1. Commit each fix with `UUID_SLUG_RELEASE_VERSION=<next>` set: HEAD keeps the stable version but is no longer tagged, and the hook otherwise demands `-dev`.
+2. Move the tag: `git tag -f -s -m <next> v<next> HEAD`.
+3. Rerun `bun run build && bun scripts/release-prepare.ts` until it passes, and read `release-artifacts/notes.md`.
+4. Push the branch, then `git push -f origin v<next>`; moving a pushed tag needs the maintainer's authorization.
+
+Once any registry has the version, never move its tag: release the next patch.
