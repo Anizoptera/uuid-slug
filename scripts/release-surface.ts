@@ -1,5 +1,5 @@
 import { command } from "./command";
-import { apiDifference, combineReleaseLevels } from "./release-comparison";
+import { combineReleaseLevels } from "./release-comparison";
 import type { ApiDifference, ReleaseLevel } from "./release-comparison";
 
 export interface CargoReleaseSurface {
@@ -146,15 +146,38 @@ function exportsLevel(before: unknown, after: unknown): ReleaseLevel {
   return combineReleaseLevels(...targets, names.length > oldEntries.length ? "minor" : "patch");
 }
 
-function metadataRecords(value: unknown): string {
-  // Keep each export path with its conditions; isolated JSON lines hide which import changes.
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? Object.entries(value)
-        .map(([name, target]) =>
-          JSON.stringify(`${JSON.stringify(name)}: ${JSON.stringify(target, null, 2)}`),
-        )
-        .join("\n")
-    : JSON.stringify(JSON.stringify(value) ?? "unset");
+const isMap = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === "object" && !Array.isArray(value);
+const code = (value: unknown) => `\`${typeof value === "string" ? value : JSON.stringify(value)}\``;
+
+/**
+ * One line per changed export entry, addressed as code would read it (`exports["."].deno`), so a
+ * one-condition change reads as one line instead of two copies of the whole condition block.
+ * Condition order decides which target a runtime loads, so a reorder gets its own line; subpath
+ * keys are independent imports whose order means nothing.
+ */
+function exportChanges(path: string, before: unknown, after: unknown): string[] {
+  if (before === undefined) return [`- ${code(path)} added: ${code(after)}`];
+  if (after === undefined) return [`- ${code(path)} removed (was ${code(before)})`];
+  if (!isMap(before) || !isMap(after))
+    return JSON.stringify(before) === JSON.stringify(after)
+      ? []
+      : [`- ${code(path)}: ${code(before)} → ${code(after)}`];
+  const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])];
+  const lines = keys.flatMap((key) =>
+    exportChanges(
+      /^[A-Za-z_$][\w$]*$/.test(key) ? `${path}.${key}` : `${path}[${JSON.stringify(key)}]`,
+      before[key],
+      after[key],
+    ),
+  );
+  const shared = (map: Record<string, unknown>) =>
+    Object.keys(map).filter((key) => key in before && key in after);
+  if (!keys.some((key) => key.startsWith(".")) && shared(before).join() !== shared(after).join())
+    lines.push(
+      `- ${code(path)} condition order: ${shared(before).join(", ")} → ${shared(after).join(", ")}`,
+    );
+  return lines;
 }
 
 export function npmSurfaceDifference(
@@ -174,7 +197,7 @@ export function npmSurfaceDifference(
   if (JSON.stringify(before.exports) !== JSON.stringify(after.exports)) {
     levels.push(exportsLevel(before.exports, after.exports));
     changes.push(
-      `Package export conditions:\n\n${apiDifference(metadataRecords(before.exports), metadataRecords(after.exports), "export conditions").report}`,
+      `Package export conditions:\n\n${exportChanges("exports", before.exports, after.exports).join("\n")}`,
     );
   }
   for (const field of ["main", "module", "sideEffects", "type", "types"] as const) {

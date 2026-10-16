@@ -120,6 +120,14 @@ test("a new npm subpath is additive; a moved target is not breaking but a lost c
   const level = (exports: unknown) =>
     npmSurfaceDifference(conditions, npmReleaseSurface({ exports })).level;
   expect(level({ ".": { deno: "./dist/index.js", default: "./index.js" } })).toBe("patch");
+  expect(
+    npmSurfaceDifference(
+      conditions,
+      npmReleaseSurface({ exports: { ".": { deno: "./dist/index.js", default: "./index.js" } } }),
+    ).report,
+  ).toBe(
+    'Package export conditions:\n\n- `exports["."].deno`: `./src/index.ts` → `./dist/index.js`',
+  );
   expect(level({ ".": { default: "./index.js" } })).toBe("major");
   expect(level({ ".": "./index.js" })).toBe("major");
   expect(level({ ".": { deno: "./d.js", node: "./n.js", default: "./index.js" } })).toBe("minor");
@@ -140,13 +148,9 @@ test("export-condition priority changes show only the reordered conditions", () 
   });
   const { level, report } = npmSurfaceDifference(before, after);
   expect(level).toBe("major");
-  expect(report).toContain("```diff");
-  expect(report).toContain('- ".": {');
-  expect(report).toContain('+ ".": {');
-  expect(report).toContain('-   "bun": "./bun.ts",');
-  expect(report).toContain('+   "default": "./index.js",');
-  expect(report).not.toContain("./other");
-  expect(report).not.toContain("unchanged");
+  expect(report).toBe(
+    'Package export conditions:\n\n- `exports["."]` condition order: bun, default, types → default, bun, types',
+  );
   const conditional = npmSurfaceDifference(
     npmReleaseSurface({
       exports: { bun: "./bun.ts", default: "./index.js", types: "./index.d.ts" },
@@ -155,9 +159,9 @@ test("export-condition priority changes show only the reordered conditions", () 
       exports: { default: "./index.js", bun: "./bun.ts", types: "./index.d.ts" },
     }),
   );
-  expect(conditional.report).toContain('- "bun": "./bun.ts"');
-  expect(conditional.report).toContain('+ "default": "./index.js"');
-  expect(conditional.report).not.toContain("./index.d.ts");
+  expect(conditional.report).toBe(
+    "Package export conditions:\n\n- `exports` condition order: bun, default, types → default, bun, types",
+  );
   expect(conditional.level).toBe("major");
   expect(
     npmSurfaceDifference(
