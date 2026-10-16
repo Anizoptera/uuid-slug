@@ -47,7 +47,7 @@ test("performance runtime selection preserves every requested host and rejects o
   expect(selectComparisonRuntimes("deno:chromium")).toEqual(["deno", "chromium"]);
   expect(selectComparisonRuntimes("node:bun")).toEqual(["node", "bun"]);
   for (const invalid of ["", "bun:bun", "chromiu", "node:", ":bun", "deno::chromium"])
-    expect(() => selectComparisonRuntimes(invalid)).toThrow("must list distinct values");
+    expect(() => selectComparisonRuntimes(invalid)).toThrow("list distinct values");
 });
 
 test("performance routing times every unpublished change and refuses a missing baseline", async () => {
