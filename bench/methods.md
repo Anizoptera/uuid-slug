@@ -285,7 +285,7 @@ ceiling is a verification defect, not acceptable closure. Reuse unchanged builds
 independent checks; isolate timing from competing work. Do not meet a ceiling by dropping protected
 calls, weakening oracles, skipping cleanup or substituting simulated code for shipped code.
 
-Run `bun run build && bun run perf:check` to check the package under the selected Node and Bun.
+Run `bun run build && bun run perf:check` to check the package under the selected Node and Bun, or `bun run perf:check:all` for every runtime in `bench/comparison-runtimes.ts`.
 It times the working tree against the last published commit: `UUID_SLUG_PERF_BASELINE` in CI, otherwise the merge-base with the upstream branch. A slowdown in any unpublished commit therefore stays visible after later commits land; with no baseline it fails rather than time only the newest commit.
 `bun run check` runs this lane after other checks finish, so competing tests cannot distort its timings.
 The current-runtime CI lane also runs it with the newest Node and Bun.
@@ -310,7 +310,7 @@ file kinds fail; executable and optimizer-annotation changes retain timing.
 - `latency.ts` alternates each operation with its related primitive on the same runtime and uses the
   median of repeated ratios. The coarse limits live beside those pairs; they catch material pipeline
   slowdowns without pinning laptop nanoseconds. They cannot detect a slowdown shared by both sides.
-- A failing timing ratio requires a rerun of the same command (same refs, same filter) in a fresh invocation, and profiles of both sides. A rerun of the failing row alone is a different measurement: it changes JIT and inlining context and can pass while the full-filter run keeps failing. Do not raise a limit
+- A failing timing ratio requires a rerun of the same command (same refs, same filter) in a fresh invocation, and profiles of both sides. A rerun of the failing row alone is a different measurement: it has passed while the same full-filter run kept failing. Do not raise a limit
   to clear a failure. Host contention, JIT changes and reference speedups can affect the ratio; preserve
   evidence and explain the cause before adjusting the implementation or the internal budget.
 - The harness tests inject a discarded error and repeated parsing while preserving the result. Both

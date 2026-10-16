@@ -129,10 +129,7 @@ and `decisions.md` for measured conclusions.
 - Before timing, map contracts and failure modes, add the smallest missing falsifiers, and mutate
   the mechanism to prove detection. Run owning runtime tests before and after measurement.
 - Preserve protected calls and independent references; slowing both sides cannot hide a loss.
-  Count avoidable work separately from timing. Diagnose and repair a failing gate.
-  Only the same command (same refs and filter) passing in fresh invocations clears a `perf:check`
-  failure. Rerunning the failing row alone changes JIT context and can pass while the real slowdown stays.
-  Derive budgets from normal variation and necessary work. Never pass by dropping calls or runtimes,
+  Count avoidable work separately from timing. Diagnose and repair a failing gate.  Derive budgets from normal variation and necessary work. Never pass by dropping calls or runtimes,
   slowing baselines or loosening budgets; changed scope or acceptable loss needs explicit authorization.
 - Prove harness changes with an unchanged control and a valid-output waste mutation that fails for
   the intended diagnostic. Broken IDs prove correctness coverage, not performance/resource protection.

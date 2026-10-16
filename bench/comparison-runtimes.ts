@@ -17,13 +17,15 @@ export type BrowserComparisonRuntime = Extract<
   "chromium" | "firefox" | "webkit"
 >;
 
+// `all` selects every runtime above, so callers that must cover each one never copy this list.
 export function selectComparisonRuntimes(input: string): ComparisonRuntime[] {
+  if (input === "all") return [...COMPARISON_RUNTIMES];
   const selected = input.split(":");
   const isRuntime = (value: string): value is ComparisonRuntime =>
     COMPARISON_RUNTIMES.some((runtime) => runtime === value);
   if (!selected.every(isRuntime) || new Set(selected).size !== selected.length)
     throw new Error(
-      `UUID_SLUG_COMPARE_RUNTIMES must list distinct values from ${COMPARISON_RUNTIMES.join(":")}`,
+      `UUID_SLUG_COMPARE_RUNTIMES must be "all" or list distinct values from ${COMPARISON_RUNTIMES.join(":")}`,
     );
   return selected;
 }

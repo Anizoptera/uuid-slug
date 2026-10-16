@@ -121,7 +121,8 @@
     "lint:fix": "oxlint --type-aware --fix",
     "strings:check": "bun scripts/check-string-owners.ts",
     "artifact:web": "bun scripts/check-artifact.ts --web",
-    "perf:check": "bun bench/check.ts"
+    "perf:check": "bun bench/check.ts",
+    "perf:check:all": "bun run build && UUID_SLUG_COMPARE_RUNTIMES=all bun bench/check.ts"
   },
   "devDependencies": {
     "@anizoptera/publish-clean": "^0.10.0",
