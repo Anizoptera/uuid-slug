@@ -19,7 +19,6 @@ Each item keeps behaviour, public API (`api/typescript.api.d.ts`), speed and bun
 
 ### Safe, in priority order (rule breaches first, then the biggest cuts)
 
-- [ ] Replace `HEX_DECODE`, `lowercaseHexValue` and `parsedHexValue` (`src/uuid.ts`) with `HEX_NIBBLES` lookups (`> 15` means invalid); both tables agree on every code 0–65535 (~12 lines; bench text-validation rows in `bench/conversion-cases.ts`).
 - [ ] Inline single-caller error helpers in `src/errors.ts`: `invalidUuidStringInput`, `invalidUuidSlugInput`, `isError`, `failedFallback` (~26 lines, failure paths only), updating packed-artifact annotation expectations if `failedFallback`'s `NO_SIDE_EFFECTS` disappears; drop the unreachable string check in `normalizeUuidStringInput` but keep the one in `normalizeUuidSlugInput`, whose callers do not pre-check.
 - [ ] Remove unused re-exports in `src/uuid.ts` (`isUuidSlugError`, `UuidSlugError`, `UuidSlugErrorCode`, `UuidBytes`, `UuidString`) and inline `invalidUuidTextCase`; check the same pattern in `src/slug.ts` and `src/v4.ts`.
 - [ ] Replace `parseUuidWithCodec` (`src/uuid-value.ts`) with `(uuid) => parseUuid(uuid, maskingCodec)` at its one caller; type-check with every compiler in `scripts/typescript-compilers.ts`.

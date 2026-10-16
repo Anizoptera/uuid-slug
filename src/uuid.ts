@@ -77,9 +77,6 @@ export function invalidUuidTextCase(): UuidSlugError {
 }
 const createLatin1Scratch = runtime.latin1Scratch;
 const nativeToHex = runtime.uuidHex;
-const HEX_DECODE = new Int8Array(128).fill(-1);
-for (let i = 0; i < 10; i += 1) HEX_DECODE[48 + i] = i;
-for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
 // Nibbles of both hex cases; 0x100 marks every other ASCII character so OR-ed pairs expose it.
 const HEX_NIBBLES = new Uint16Array(128).fill(0x100);
 for (let i = 0; i < 16; i += 1) {
@@ -202,14 +199,11 @@ function uuidTextStart(value: string): number {
   return INVALID_UUID_TEXT_START;
 }
 
+// Either hex case; above 15 means not a digit. `charCodeAt` past the end gives NaN and non-ASCII
+// codes index past the table; both read undefined, hence the fallback.
 /*#__NO_SIDE_EFFECTS__*/
-function lowercaseHexValue(code: number) {
-  return HEX_DECODE[code] ?? -1;
-}
-
-/*#__NO_SIDE_EFFECTS__*/
-function parsedHexValue(code: number) {
-  return code >= 65 && code <= 70 ? code - 55 : lowercaseHexValue(code);
+function hexNibble(code: number) {
+  return HEX_NIBBLES[code] ?? 0x100;
 }
 
 /**
@@ -474,10 +468,7 @@ export function isUuidText(value: unknown): value is UuidText {
     return false;
   for (let i = 0; i < UUID_BYTE_OFFSETS.length; i += 1) {
     const offset = hyphenated ? textStart + (UUID_BYTE_OFFSETS[i] as number) : i * 2;
-    if (
-      parsedHexValue(value.charCodeAt(offset)) < 0 ||
-      parsedHexValue(value.charCodeAt(offset + 1)) < 0
-    )
+    if (hexNibble(value.charCodeAt(offset)) > 15 || hexNibble(value.charCodeAt(offset + 1)) > 15)
       return false;
   }
   return true;
@@ -500,13 +491,12 @@ const UUID_V7_TEXT_RE = /*#__PURE__*/ new RegExp(UUID_V7_RE.source, "i");
 export function isUuidV4Text(value: unknown): value is UuidV4Text {
   if (!isUuidText(value)) return false;
   const textStart = uuidTextStart(value);
-  const variant = parsedHexValue(
+  const variant = hexNibble(
     value.charCodeAt(textStart === COMPACT_UUID_TEXT_START ? 16 : textStart + 19),
   );
   return (
-    parsedHexValue(
-      value.charCodeAt(textStart === COMPACT_UUID_TEXT_START ? 12 : textStart + 14),
-    ) === 4 &&
+    hexNibble(value.charCodeAt(textStart === COMPACT_UUID_TEXT_START ? 12 : textStart + 14)) ===
+      4 &&
     variant >= 8 &&
     variant <= 11
   );
@@ -521,13 +511,12 @@ export function isUuidV7Text(value: unknown): value is UuidV7Text {
   if (typeof value === "string" && value.length === UUID_LENGTH) return UUID_V7_TEXT_RE.test(value);
   if (!isUuidText(value)) return false;
   const textStart = uuidTextStart(value);
-  const variant = parsedHexValue(
+  const variant = hexNibble(
     value.charCodeAt(textStart === COMPACT_UUID_TEXT_START ? 16 : textStart + 19),
   );
   return (
-    parsedHexValue(
-      value.charCodeAt(textStart === COMPACT_UUID_TEXT_START ? 12 : textStart + 14),
-    ) === 7 &&
+    hexNibble(value.charCodeAt(textStart === COMPACT_UUID_TEXT_START ? 12 : textStart + 14)) ===
+      7 &&
     variant >= 8 &&
     variant <= 11
   );
