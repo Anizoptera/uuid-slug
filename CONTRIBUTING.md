@@ -11,7 +11,8 @@ Use the repository's pinned tools. Run `bun install`, install the `cargo-public-
 
 Read `dev/interface.md` before changing any public interface or observable behavior.
 
-The pre-commit hook runs `bun run check`, including public API checks. When a public API change is
+The pre-commit hook runs the fast static checks, including public API checks; run `bun run check`
+for the full verification before opening a pull request. When a public API change is
 intentional, run `bun run api:update`, review the diffs of `api/typescript.api.d.ts` and
 `api/rust.api.md`, and include them in the pull request. Merging is the maintainer decision; no separate
 acceptance step exists.

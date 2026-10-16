@@ -1,5 +1,5 @@
 #!/bin/sh
 set -eu
 
-# The required complete check owns timing; keep this hook within the feedback budget.
-bun run check
+# Fast commit gate; the full verification is `bun run check` (CI and release). See scripts/check-commit.ts.
+exec bun scripts/check-commit.ts

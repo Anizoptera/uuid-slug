@@ -94,7 +94,7 @@ It restores all version files if an update fails.
 A dev bump NEVER runs `bun run release` or creates a release commit or tag. Release tags and
 published manifests never use the `-dev` suffix.
 
-The commit hook checks two independent rules. Generated declarations must match the reviewed
+The API check (`bun run api:check:built`, run by the commit hook and `bun run check`) enforces two independent rules. Generated declarations must match the reviewed
 baseline and remain compatible with the latest release. Updating the reviewed baseline cannot
 erase release history.
 

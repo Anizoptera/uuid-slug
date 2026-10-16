@@ -315,9 +315,8 @@ Agent instructions live only in `AGENTS.md` files, never in public documents (RE
 - When a release check calls a change breaking, confirm that old callers actually break (`dev/release.md` §Evidence and notes) before editing notes; a false break is a checker defect to fix, never notes to bend.
 - Trace referenced types before reporting no public API change; unchanged exported signatures can hide newly required arguments or changed results.
 
-- Let the pre-commit hook run `bun run check` before Git creates the commit unless the maintainer selects narrower intermediate checks.
-  Do not repeat that command manually for the same unchanged tree unless a failure or changed evidence requires another run.
-  Track failed checks with unfinished work; a failed complete check prevents final delivery.
+- The pre-commit hook (`scripts/check-commit.ts`) is a commit gate, not release verification: it MUST finish in a few seconds and run only checks the staged files can affect. Never put tests, packing, Rust, benchmarks or `bun run check` in it; a slow hook taxes every commit, including docs-only ones. It warns when it overruns its budget: move the slow step to `bun run check`, never raise the budget to fit it.
+- `bun run check` is the full verification; CI and `bun run release` (through `preversion`) run it. Run it yourself once on the final tree of code work before delivery, not per commit; a failed complete check prevents final delivery.
 - Commit only after staging succeeds and `git diff --cached` contains every intended hunk; `git mv` stages the rename before its consumer edits, and a failed `git add` leaves that partial index intact.
 - The release command owns the temporary stable-version context. API checks must distinguish that transition from an actual tagged commit and ordinary development; never disable the commit hook.
 - Install nightly in each job that generates Rust public API reports; another job's toolchain setup does not carry over.
