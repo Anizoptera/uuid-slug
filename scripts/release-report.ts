@@ -8,7 +8,6 @@ import {
   binarySize,
   combineReleaseLevels,
   minimumRelease,
-  missingBreakingNotes,
   normalizeDeclarations,
   satisfiesMinimum,
   sectionsLevel,
@@ -149,7 +148,10 @@ function appendToSection(notes: string, heading: string, block: string): string 
       node.children.map((child) => (child.type === "text" ? child.value : "")).join("") === heading,
   );
   if (index < 0) {
-    if (heading === "Breaking changes") throw new Error(missingBreakingNotes);
+    if (heading === "Breaking changes")
+      throw new Error(
+        'The API breaks existing callers, but the CHANGELOG section has no "### Breaking changes" heading. Explain there what callers must change.',
+      );
     return `${notes}\n\n### ${heading}\n\n${block}`;
   }
   const end = headings[index + 1]?.position?.start.offset ?? notes.length;
@@ -517,9 +519,7 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
           : undefined;
         const minimum = minimumRelease(
           inputs.version,
-          // The changelog section explains changes since the immediate release only; older
-          // release-line comparisons set the version floor but cannot demand its headings.
-          comparison.role === "immediate" ? notes : undefined,
+          notes,
           [typescript?.level, rust?.level, rustSemver?.level].filter(
             (level): level is ReleaseLevel => !!level,
           ),
