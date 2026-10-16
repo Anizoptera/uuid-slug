@@ -275,10 +275,9 @@ export function decodeMaskedCandidates(
   masks: readonly UuidV7MaskRange[],
   candidates: UuidString[] = [],
 ): UuidString[] | UuidSlugError {
-  if (!masks.length) return candidates;
-  const working = mixed.slice();
   const firstMask = masks[0];
   if (!firstMask) return candidates;
+  const working = mixed.slice();
   const firstDecoded = unmix(working, outerTag, firstMask);
   if (isUuidSlugError(firstDecoded)) return firstDecoded;
   if (firstDecoded) {
