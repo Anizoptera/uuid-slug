@@ -9,6 +9,7 @@ import {
   UuidSlugError,
 } from "./errors.ts";
 import type { UuidV7Generator, UuidV7Instant, UuidV7PayloadLayout } from "./types.ts";
+import type { GenerationOptionValues } from "./generation-options.ts";
 import type { PortableUuidV7Generator } from "./v7.ts";
 import { readUuidV7Instant } from "./instant.ts";
 import { readUuidV7PayloadLayout, uuidV7PayloadFromBytesUnchecked } from "./v7-payload.ts";
@@ -17,11 +18,7 @@ import { isUuidV7Bytes, uuidTimestampFromBytesUnchecked } from "./uuid.ts";
 const AT_OPTION = "at";
 const UUID_V7_GENERATOR_REQUIRED = "generator must be a UUIDv7 generator.";
 
-export interface UuidV7GenerationValues {
-  readonly at?: unknown;
-  readonly output?: unknown;
-  readonly outputOffset?: unknown;
-}
+export type UuidV7GenerationValues = Pick<GenerationOptionValues, "at" | "output" | "outputOffset">;
 
 export interface ValidatedUuidV7Generator {
   readonly generateUuidV7Bytes: UuidV7Generator["generateUuidV7Bytes"];

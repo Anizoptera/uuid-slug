@@ -124,9 +124,8 @@ function writeSeedWords(
  */
 /*#__NO_SIDE_EFFECTS__*/
 function chain(key0: number, key1: number, words: Int32Array, length: number, iterations: number) {
-  const out = new Int32Array(2);
-  halfSipHash(key0, key1, words, length, out);
-  for (let i = 1; i < iterations; i += 1)
+  const out = Int32Array.of(key0, key1);
+  for (let i = 0; i < iterations; i += 1)
     halfSipHash(out[0] as number, out[1] as number, words, length, out);
   return out;
 }

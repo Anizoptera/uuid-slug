@@ -88,7 +88,7 @@ export function generateUuidV4Bytes(
 // Keep owned output separate so it can draw directly into its result without adding a post-draw
 // ownership branch to caller-buffer writes. Merge the paths if either primary runtime loses this win.
 // Failures are returned so slug and text callers can decide at their own public seam.
-export function generateOwnedUuidV4Bytes(): UuidV4Bytes | UuidSlugError {
+function generateOwnedUuidV4Bytes(): UuidV4Bytes | UuidSlugError {
   if (generating) return new UuidSlugError(RNG_UNAVAILABLE, REENTRANT_GENERATION_MESSAGE);
   const output = new Uint8Array(16);
   generating = true;

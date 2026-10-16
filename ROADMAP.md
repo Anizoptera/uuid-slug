@@ -19,7 +19,6 @@ Each item keeps behaviour, public API (`api/typescript.api.d.ts`), speed and bun
 
 ### Safe, in priority order (rule breaches first, then the biggest cuts)
 
-- [ ] Minor tidying: replace `UuidV7GenerationValues` (`src/v7-generator-input.ts`) with `Pick<GenerationOptionValues, "at" | "output" | "outputOffset">`; `#local in codec` without the always-true `&& codec.#local` (`src/masking-codec-protocol.ts`); seed the sync `chain` in `src/mask.ts` like `cooperativeChain`; drop `| undefined` from `HostBuffer` and its `NonNullable` (`src/runtime/portable.ts`); drop `export` from `UuidVersionOf` and `generateOwnedUuidV4Bytes`.
 
 ### Needs a benchmark first (hot path or measured area)
 

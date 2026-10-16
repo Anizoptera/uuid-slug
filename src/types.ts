@@ -133,7 +133,7 @@ export type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> =
           ? Version7
           : UnknownVersion;
 /** Infer a version from immutable input; mutable bytes retain the complete version-field range. */
-export type UuidVersionOf<Input> = Input extends UuidSlugError
+type UuidVersionOf<Input> = Input extends UuidSlugError
   ? never
   : Input extends Uuid<infer Version, boolean, boolean>
     ? Version

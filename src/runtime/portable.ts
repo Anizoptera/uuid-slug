@@ -40,10 +40,10 @@ if (
 type Latin1Buffer = Uint8Array & {
   toString(encoding: "latin1", start: number, end: number): string;
 };
-type HostBuffer = { alloc(size: number): Latin1Buffer } | undefined;
+type HostBuffer = { alloc(size: number): Latin1Buffer };
 
 /** Build scratch text through a Node-compatible `Buffer` constructor. */
-export function bufferLatin1Scratch(hostBuffer: NonNullable<HostBuffer>) {
+export function bufferLatin1Scratch(hostBuffer: HostBuffer) {
   return (length: number): Latin1Scratch => {
     const bytes = hostBuffer.alloc(length);
     return { bytes, text: () => bytes.toString("latin1", 0, length) };

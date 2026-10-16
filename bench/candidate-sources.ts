@@ -540,7 +540,7 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
 }
 
 function latin1Candidates(source: string): readonly SourceCandidate[] {
-  const from = `export function bufferLatin1Scratch(hostBuffer: NonNullable<HostBuffer>) {
+  const from = `export function bufferLatin1Scratch(hostBuffer: HostBuffer) {
   return (length: number): Latin1Scratch => {
     const bytes = hostBuffer.alloc(length);
     return { bytes, text: () => bytes.toString("latin1", 0, length) };
@@ -550,7 +550,7 @@ function latin1Candidates(source: string): readonly SourceCandidate[] {
     replaceOnce(
       source,
       from,
-      `export function bufferLatin1Scratch(hostBuffer: NonNullable<HostBuffer>) {
+      `export function bufferLatin1Scratch(hostBuffer: HostBuffer) {
   const slice = (hostBuffer as {
     prototype?: { latin1Slice?: (this: Uint8Array, start: number, end: number) => string };
   }).prototype?.latin1Slice;
