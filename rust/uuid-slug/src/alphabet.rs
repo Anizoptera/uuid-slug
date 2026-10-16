@@ -1,15 +1,11 @@
 //! Encode identifier bits without accepting alternate padding spellings.
 use crate::{Error, ErrorCode, PlainUuidSlug};
-use data_encoding::{BASE64URL_NOPAD, Encoding, Specification};
-use std::sync::LazyLock;
+use data_encoding::{BASE32_DNSSEC, BASE64URL_NOPAD, Encoding};
 
 static BASE64URL: Encoding = BASE64URL_NOPAD;
-// Writers stay lowercase; readers also accept the RFC uppercase base32hex spelling.
-static BASE32HEX: LazyLock<Encoding> = LazyLock::new(|| {
-    let mut spec = Specification::new();
-    spec.symbols.push_str("0123456789abcdefghijklmnopqrstuv");
-    spec.encoding().expect("fixed base32hex alphabet is valid")
-});
+// DNSSEC uses our exact lowercase, unpadded base32hex wire spelling. A constant avoids
+// initialization and lets consumers discard alphabet-construction code they never use.
+static BASE32HEX: Encoding = BASE32_DNSSEC;
 
 /// Supported output representations; decoding plain slugs infers this from length.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

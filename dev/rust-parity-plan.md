@@ -2,12 +2,12 @@
 
 Preserve issued IDs and TypeScript workflows while reducing complete-call cost and unused dependencies.
 
-- [ ] Correct native-default guidance; distinguish native behavior from explicitly configured generators.
+- [x] Correct native-default guidance; distinguish native behavior from explicitly configured generators.
 - [ ] Isolate competitor features and bind probes to the repository toolchain before comparing results.
 - [ ] Complete Rust inspection, uppercase formatting, universal parsing, caller-buffer writers and simple UUIDv7 generation.
 - [ ] Preserve optional codec/layout context without enlarging the 16-byte `Uuid` value; generate once for paired outputs.
 - [ ] Add optional, default-enabled OS-seeded cryptographic randomness; retain direct OS fills, typed failures and fork reseeding.
-- [ ] Replace dynamic base32 construction with the matching static encoding; preserve all padding and wire checks.
+- [x] Replace dynamic base32 construction with the matching static encoding; preserve all padding and wire checks.
 - [ ] Verify isolated consumer dependency graphs, removed code, allocations, build cost and output size.
 - [ ] Execute browser WASM and WASIp1/p2 consumers; keep npm JavaScript-only and avoid an unused public WASM ABI.
 - [ ] Measure approved generation, parsing, formatting, conversion, masking and derivation calls across relevant resource axes.
