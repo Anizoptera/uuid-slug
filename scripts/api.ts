@@ -15,14 +15,25 @@ import {
 const root = resolve(import.meta.dir, "..");
 const apiDirectory = join(root, "api");
 const mode = process.argv[2];
-const useExistingBuild = process.argv[3] === "--built" && process.argv.length === 4;
+const flags = new Set(process.argv.slice(3));
+const useExistingBuild = flags.delete("--built");
+// The commit hook passes this when no staged path can change the Rust report: it then equals the
+// committed api/rust.api.md, so regenerating it (two rustdoc runs, most of this script's time)
+// proves nothing. CI and release runs omit it and still regenerate the report.
+const useCommittedRust = flags.delete("--committed-rust");
 
 type PackageManifest = {
   devDependencies?: Record<string, unknown>;
 };
 
-if ((mode !== "check" && mode !== "update") || (process.argv.length > 3 && !useExistingBuild)) {
-  throw new Error("Usage: bun scripts/api.ts <check|update> [--built]");
+if (
+  (mode !== "check" && mode !== "update") ||
+  flags.size > 0 ||
+  (useCommittedRust && mode !== "check")
+) {
+  throw new Error(
+    "Usage: bun scripts/api.ts <check|update> [--built] [--committed-rust (check only)]",
+  );
 }
 
 // The package supervisor owns tmpdir after interruption; projectFolder keeps extraction rooted here.
@@ -146,7 +157,6 @@ let changed = false;
 try {
   const packageManifest = (await Bun.file(join(root, "package.json")).json()) as PackageManifest;
   await checkApiExtractorVersion(packageManifest);
-  await checkCargoPublicApiVersion();
   if (!useExistingBuild) await command("bun", ["run", "build"], root);
   const extractorConfig = join(work, "api-extractor.json");
   // Extractor finds the manifest beside its config; link the owner instead of copying metadata.
@@ -168,49 +178,55 @@ try {
   );
   const typescript = await formatTypeScriptReport(declarationRollup);
 
-  const rustArgs = [
-    "public-api",
-    "--manifest-path",
-    "rust/uuid-slug/Cargo.toml",
-    "--color=never",
-    "--simplified",
-    "--include",
-    "function-parameter-names",
-  ];
-  // Homebrew cargo is not a rustup proxy; a nightly installation alone cannot select rustdoc.
-  // Bind only API extraction so normal product checks keep the repository's stable toolchain.
-  const rustApiEnvironment = await resolveRustApiEnvironment();
-  await checkRustDeprecationCompiler(rustApiEnvironment);
-  const rustTarget = (
-    JSON.parse(
-      await command(
-        "cargo",
-        [
-          "metadata",
-          "--manifest-path",
-          "rust/Cargo.toml",
-          "--no-deps",
-          "--format-version",
-          "1",
-          "--locked",
-        ],
-        root,
-      ),
-    ) as { target_directory: string }
-  ).target_directory;
-  // cargo-public-api owns one rustdoc JSON path, so feature selections must not write it concurrently.
-  const rustDefault = annotateRustApi(
-    await command("cargo", [...rustArgs, "--all-features"], root, rustApiEnvironment),
-    new Set(await readRustDeprecations(rustTarget)),
-  );
-  const rustMinimal = annotateRustApi(
-    await command("cargo", [...rustArgs, "--no-default-features"], root, rustApiEnvironment),
-    new Set(await readRustDeprecations(rustTarget)),
-  );
-  const rust = report("Rust", [
-    `## All features\n\n\`\`\`rust\n${rustDefault}\n\`\`\``,
-    `## No default features\n\n\`\`\`rust\n${rustMinimal}\n\`\`\``,
-  ]);
+  async function rustReport(): Promise<string> {
+    await checkCargoPublicApiVersion();
+    const rustArgs = [
+      "public-api",
+      "--manifest-path",
+      "rust/uuid-slug/Cargo.toml",
+      "--color=never",
+      "--simplified",
+      "--include",
+      "function-parameter-names",
+    ];
+    // Homebrew cargo is not a rustup proxy; a nightly installation alone cannot select rustdoc.
+    // Bind only API extraction so normal product checks keep the repository's stable toolchain.
+    const rustApiEnvironment = await resolveRustApiEnvironment();
+    await checkRustDeprecationCompiler(rustApiEnvironment);
+    const rustTarget = (
+      JSON.parse(
+        await command(
+          "cargo",
+          [
+            "metadata",
+            "--manifest-path",
+            "rust/Cargo.toml",
+            "--no-deps",
+            "--format-version",
+            "1",
+            "--locked",
+          ],
+          root,
+        ),
+      ) as { target_directory: string }
+    ).target_directory;
+    // cargo-public-api owns one rustdoc JSON path, so feature selections must not write it concurrently.
+    const rustDefault = annotateRustApi(
+      await command("cargo", [...rustArgs, "--all-features"], root, rustApiEnvironment),
+      new Set(await readRustDeprecations(rustTarget)),
+    );
+    const rustMinimal = annotateRustApi(
+      await command("cargo", [...rustArgs, "--no-default-features"], root, rustApiEnvironment),
+      new Set(await readRustDeprecations(rustTarget)),
+    );
+    return report("Rust", [
+      `## All features\n\n\`\`\`rust\n${rustDefault}\n\`\`\``,
+      `## No default features\n\n\`\`\`rust\n${rustMinimal}\n\`\`\``,
+    ]);
+  }
+  const rust = useCommittedRust
+    ? await Bun.file(join(apiDirectory, "rust.api.md")).text()
+    : await rustReport();
 
   await mkdir(apiDirectory, { recursive: true });
   const outputs = [
