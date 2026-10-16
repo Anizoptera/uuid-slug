@@ -35,7 +35,12 @@ const checks: {
 }[] = [
   // oxfmt ignores Markdown by configuration (`.oxfmtrc.json`).
   { script: "format:check", affects: (path) => !markdown(path) },
-  { script: "lint", affects: (path) => /\.[cm]?[jt]sx?$/.test(path) || path === "package.json" },
+  // Type-aware lint resolves the package's own name to dist/, so it must not race the build.
+  {
+    script: "lint",
+    affects: (path) => /\.[cm]?[jt]sx?$/.test(path) || path === "package.json",
+    build: true,
+  },
   { script: "typecheck:built", affects: typeInputs },
   { script: "typecheck:bun", affects: typeInputs },
   {
