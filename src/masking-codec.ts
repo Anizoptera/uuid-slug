@@ -595,14 +595,13 @@ function buildUuidSlugCodec(
     // stays here: sending a masked slug to the keyless reader would decode a different UUID.
     const readsAtOffset = typeof outputOrByteOffset === "number";
     if (readsAtOffset && (isUint8Array(uuid) || outputOrByteOffset !== 0))
-      return outputOrOutputOffset === undefined
-        ? keylessUuidToBytes(uuid as Uint8Array, outputOrByteOffset)
-        : keylessUuidToBytes(
-            uuid as Uint8Array,
-            outputOrByteOffset,
-            outputOrOutputOffset as Uint8Array,
-            offsetAfterOutput,
-          );
+      // The keyless reader treats an undefined output like an omitted one, so one call covers both.
+      return keylessUuidToBytes(
+        uuid as Uint8Array,
+        outputOrByteOffset,
+        outputOrOutputOffset as Uint8Array,
+        offsetAfterOutput,
+      );
     const output = readsAtOffset ? outputOrOutputOffset : outputOrByteOffset;
     const outputOffset = readsAtOffset
       ? offsetAfterOutput
