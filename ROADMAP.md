@@ -9,6 +9,7 @@
 ## Follow-up
 
 - [ ] Only with explicit named-call authorization, resolve the full-lane Node `Uuid.toMaskedSlug(codec)` timing gap without weakening protected calls or budgets. The full lane passes its gate but does not prove parity. Isolated calls and parsed-value sequences do not reproduce the loss; context placement and positional arguments do not repair it.
+- [ ] Make `perf:check` stop failing on noise: one full run flagged Node `bytes.base32` 3.8% slower ([1.01, 1.06]) while two isolated reruns of the same revisions gave 0.98 and 0.99. With ~100 rows each tested alone, a chance "resolved" row fails the whole `bun run check`. Fix the decision rule (multiple-comparison correction, or confirm a flagged row in a fresh process before failing), not the budgets. Done when an unchanged-package comparison passes repeatedly and a planted slowdown still fails.
 - [ ] When `bun audit` reports them fixed upstream, update `@microsoft/api-extractor` (`sprintf-js` via `argparse ~1.0.9`) and `slugid` (`uuid ^9`). Both are development-only. Never override a benchmark rival's dependencies: that changes what is measured. Diesel alerts (via `uuid64rs`) are dismissed on GitHub as unused code.
 - [ ] Decide on a masked binary form for transport that must hide the UUID structure. The masked payload is 132 bits (42-bit time offset, 74 payload bits, 16-bit check), so it needs 17 bytes; 16 bytes would mean a 12-bit check (a wrong key passes about 1 time in 4,096) or a shorter time range. Masked text slugs are unaffected.
 
@@ -16,16 +17,10 @@
 
 Each item keeps behaviour, public API (`api/typescript.api.d.ts`), speed and bundle size unless noted. Gate each with `bun run check`; items touching a hot path also need the named bench rows on Bun and Node before they land.
 
-### Needs a maintainer ruling
-
-- [ ] Limit `encode`/`decodeInto` (`src/alphabet.ts`) to 16-byte payloads: every `src/` caller passes exactly 16 bytes with tail 0 or `OUTER_TAG_BITS`, so the native `toBase64` branch and its Deno probe, the generic encode/decode accumulators and the base32hex 2-bit tail are unreachable in production (~60–70 lines). `bench/decisions.md` §base64/base32 still says to keep native and generic paths "for other lengths"; that text predates the fixed 16-byte writers running first, so rewrite it with the ruling. Drop generic-length tests with it.
-- [ ] Decide whether `generateUuidV7Value` (`src/masking-codec.ts`) should use the injected `generateBytes` like the other generation methods; it calls `generateDefaultUuidV7Bytes` directly, so `createUuidV7MaskingCodecWithGenerator` codecs bypass their generator on this method.
-
 ### Safe, in priority order (wrong facts and rule breaches first, then the biggest cuts)
 
 - [ ] Fix wrong text: `src/feistel.ts` says `mask.ts` uses `mix32` (it is `src/payload.ts`); `bench/decisions.md` says the check tag uses HalfSipHash (it uses `mix32`); `src/mask.ts` repeats "at module scope"; merge the detached JSDoc block in `src/runtime/types.ts` into its member so editor help shows it.
 - [ ] Fix `src/AGENTS.md` breaches: replace `SLUG_ALPHABET_CODECS`, `slugLength` and the `reduce` in `src/slug.ts` with direct `SLUG_ALPHABET_BY_LENGTH` entries and a `SLUG_LENGTHS` template, rewording the comment that names it (no runtime lookup objects, ~10 lines); hoist the repeated "non-canonical trailing bits" message (`src/alphabet.ts`, `src/slug.ts`) to one scalar constant.
-- [ ] Delete the fixed 16-byte writers inside `encodePortable` (`src/alphabet.ts`, ~53 lines): `encode` returns before reaching them for every 16-byte shape. Repoint bench cases `portable.base64.encode`/`portable.base32.encode`, which time this unreachable code. Prove reachability with `scripts/prove-guard.ts` planting a throw. Independent of the 16-byte ruling above.
 - [ ] Delete the redundant text-case check in `generatePortableUuidV4` (`src/v4.ts`); every caller passes a resolved case or the default (5 lines; also speeds Node UUIDv4 text without native support).
 - [ ] Merge the two `bytes.length === 16` blocks in `encode` into one block choosing Latin-1 or `fromCharCode` writers (~5 lines; bench `v4.slug`, `v7.slug`, `v7.base32`, `masked.encode.bytes`).
 - [ ] Replace `HEX_DECODE`, `lowercaseHexValue` and `parsedHexValue` (`src/uuid.ts`) with `HEX_NIBBLES` lookups (`> 15` means invalid); both tables agree on every code 0–65535 (~12 lines; bench text-validation rows in `bench/conversion-cases.ts`).
