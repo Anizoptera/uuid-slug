@@ -33,6 +33,7 @@ test("pending development work uses the tagged HEAD as its release baseline", as
       Bun.write(join(root, "rust/uuid-slug/Cargo.toml"), '[package]\nname = "uuid-slug"\n'),
       Bun.write(join(root, "api/typescript.api.d.ts"), current.typescript),
       Bun.write(join(root, "api/rust.api.md"), current.rust),
+      Bun.write(join(root, "CHANGELOG.md"), "## [0.4.0]\n\n- Release.\n"),
     ]);
     await command("git", ["init", "--quiet"], root);
     await command("git", ["config", "user.name", "Release fixture"], root);

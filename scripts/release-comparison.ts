@@ -561,18 +561,28 @@ export function binarySize(bytes: number): string {
   return unit < 0 ? `${value} bytes` : `${value.toFixed(1)} ${units[unit]}`;
 }
 
+export const missingBreakingNotes =
+  'The API breaks existing callers, but the CHANGELOG section has no "### Breaking changes" heading. Explain there what callers must change.';
+
+/**
+ * Release level the notes and measured API levels require. `notes` is undefined outside a release,
+ * where no changelog section exists yet; a release whose API breaks callers must explain the break,
+ * and checking it here lets the commit hook refuse before a tag exists, not only the tag's CI run.
+ */
 export function minimumRelease(
   version: string,
-  notes: string,
+  notes: string | undefined,
   languages: readonly ReleaseLevel[],
 ): ReleaseLevel {
-  if (version.split("+", 1)[0]?.includes("-")) return "prerelease";
   const headings = new Set(
-    fromMarkdown(notes).children.flatMap((node) => {
+    fromMarkdown(notes ?? "").children.flatMap((node) => {
       if (node.type !== "heading" || node.depth !== 3) return [];
       return [node.children.map((child) => (child.type === "text" ? child.value : "")).join("")];
     }),
   );
+  if (notes !== undefined && languages.includes("major") && !headings.has("Breaking changes"))
+    throw new Error(missingBreakingNotes);
+  if (version.split("+", 1)[0]?.includes("-")) return "prerelease";
   const declared = headings.has("Breaking changes")
     ? "major"
     : headings.has("Added")

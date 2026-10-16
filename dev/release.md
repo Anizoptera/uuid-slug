@@ -53,7 +53,8 @@ links to the published package and the commit history since the previous tag. Th
 prose only: callers need the upgrade explained, and a hand-written diff beside the generated one
 splits the same change in two places. A missing `### Added` or `### Changed` heading is created; a
 missing `### Breaking changes` heading stops the release while the API breaks callers, because only
-prose can say what to change.
+prose can say what to change. The commit hook enforces this for the release commit and tagged
+commit, so `bun run release` refuses before it creates a tag that CI would later reject.
 
 The diff shows each changed declaration as one group: its old lines directly above its new ones,
 under an `@@ name @@` header. Write each rename in the prose as `` `old` → `new` ``, or as two lists

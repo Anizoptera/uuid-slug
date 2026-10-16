@@ -3,6 +3,7 @@ import { rejects } from "node:assert/strict";
 import { fromMarkdown } from "mdast-util-from-markdown";
 import {
   minimumRelease,
+  missingBreakingNotes,
   normalizeDeclarations,
   binarySize,
   satisfiesMinimum,
@@ -340,10 +341,20 @@ test("release sizes use binary units, where 1 KB is 1024 bytes", () => {
 
 test("the strongest structural or maintainer-classified change sets the minimum release", () => {
   expect(minimumRelease("0.4.0", "### Breaking changes\n", ["patch"])).toBe("minor");
-  expect(minimumRelease("1.4.0", "### Fixed\n", ["major", "minor"])).toBe("major");
+  expect(minimumRelease("1.4.0", "### Breaking changes\n", ["major", "minor"])).toBe("major");
+  expect(minimumRelease("1.4.1-dev", undefined, ["major"])).toBe("prerelease");
   expect(minimumRelease("1.4.1", "### Added\n", ["patch"])).toBe("minor");
   expect(minimumRelease("1.4.1", "### Fixed\n", ["patch"])).toBe("patch");
   expect(minimumRelease("2.0.0-beta.2", "### Breaking changes\n", ["major"])).toBe("prerelease");
+});
+
+test("a breaking API needs a Breaking changes section before any tag exists", () => {
+  // 0.x and prereleases relax the version bump, never the explanation callers need.
+  for (const version of ["0.5.0", "2.0.0-beta.2"])
+    expect(() => minimumRelease(version, "### Changed\n", ["major"])).toThrow(missingBreakingNotes);
+  expect(() => minimumRelease("1.2.4", "```md\n### Breaking changes\n```", ["major"])).toThrow(
+    missingBreakingNotes,
+  );
 });
 
 test("release classification ignores changelog headings inside examples", () => {

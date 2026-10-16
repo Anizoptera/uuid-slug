@@ -11,6 +11,7 @@ import {
 import { incompatibleExports } from "./api-compatibility";
 import type { ReleaseLevel } from "./release-comparison";
 import { latestRelease } from "./release-history";
+import { releaseNotes } from "./release-notes";
 import {
   checkReleaseVersion,
   developmentVersionGuidance,
@@ -277,6 +278,7 @@ export async function verifyEvolution(
   packageLevels: readonly ReleaseLevel[] = [],
   tagged = true,
   pendingReleaseVersion?: string,
+  notes?: string,
 ): Promise<void> {
   const oldRust = sections(before.rust);
   const newRust = sections(after.rust);
@@ -318,7 +320,7 @@ export async function verifyEvolution(
     ),
     apiChangeLevel([...oldRustEntries].join("\n"), [...newRustEntries].join("\n")),
   ];
-  const minimum = minimumRelease(currentVersion.split("-", 1)[0] ?? currentVersion, "", levels);
+  const minimum = minimumRelease(currentVersion.split("-", 1)[0] ?? currentVersion, notes, levels);
   if (!satisfiesMinimum(previousVersion, currentVersion, minimum))
     throw new Error(
       `${currentVersion} does not satisfy the ${minimum} API change from ${previousVersion}. Option 1: restore the public surface to keep this version. Option 2: ${versionGuidance}`,
@@ -382,6 +384,10 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
     packageLevels,
     !!tagged,
     pendingReleaseVersion,
+    // Only a release commit or tagged commit has its changelog section; development has none yet.
+    tagged || manifest.version === pendingReleaseVersion
+      ? releaseNotes(await Bun.file(`${root}/CHANGELOG.md`).text(), manifest.version)
+      : undefined,
   );
   console.log(`Released API: compatible with ${tag}`);
 }
