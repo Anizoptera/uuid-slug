@@ -517,7 +517,9 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
           : undefined;
         const minimum = minimumRelease(
           inputs.version,
-          notes,
+          // The changelog section explains changes since the immediate release only; older
+          // release-line comparisons set the version floor but cannot demand its headings.
+          comparison.role === "immediate" ? notes : undefined,
           [typescript?.level, rust?.level, rustSemver?.level].filter(
             (level): level is ReleaseLevel => !!level,
           ),
