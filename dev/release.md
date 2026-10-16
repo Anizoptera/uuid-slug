@@ -121,6 +121,18 @@ The release command must reject a tag that differs from the manifest or lacks a 
 section. Publication keeps that section's prose unchanged and adds the generated parts described
 in §Evidence and notes.
 Use the release command to check the stable manifest before Git creates its tag; ordinary untagged work must use `-dev`.
+After pnpm creates the local tag, its `postversion` script builds and runs `bun scripts/release-prepare.ts`: the tag workflow's own preparation (reviewed archives, history comparisons, release report and notes) without publishing. Push nothing until it passes, and read `release-artifacts/notes.md`, the exact release body, before pushing; it needs `cargo-semver-checks` 0.50.0, `cargo-public-api` 0.52.0 and the nightly toolchain locally. Proving a release fix with unit tests or the commit hook alone is insufficient: only this preparation compares against every selected release and renders the notes.
+
+### Repair an unpushed or unpublished tag
+
+While no registry has the version, fix and move the tag instead of bumping it:
+
+1. Commit each fix with `UUID_SLUG_RELEASE_VERSION=<next>` set: HEAD keeps the stable version but is no longer tagged, and the hook otherwise demands `-dev`.
+2. Move the tag: `git tag -f -s -m <next> v<next> HEAD`.
+3. Rerun `bun run build && bun scripts/release-prepare.ts` until it passes, and read `release-artifacts/notes.md`.
+4. Push the branch, then `git push -f origin v<next>`; moving a pushed tag needs the maintainer's authorization.
+
+Once any registry has the version, never move its tag: release the next patch.
 
 Keep `@anizoptera/publish-clean` as a registry dependency and publication in
 `.github/workflows/release.yml`, whose filename is bound to trusted publishing. Verification of the

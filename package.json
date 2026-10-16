@@ -106,6 +106,7 @@
     "typecheck:bun": "bun --check",
     "version:set": "bun scripts/release-version.ts",
     "version": "bun scripts/release-notes.ts --sync > /dev/null && git add rust/Cargo.toml rust/Cargo.lock bench/rust-competitors/Cargo.lock",
+    "postversion": "bun run build && bun scripts/release-prepare.ts",
     "bench:matrix": "bun bench/matrix.ts",
     "bench:profile": "bun bench/profile-all.ts",
     "bench:profile:native": "bun bench/profile-all.ts --native",
