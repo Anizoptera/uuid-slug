@@ -36,6 +36,7 @@ must not gate release preparation. Report dependent repairs as unresolved.
 Edit public docs, including README and generated docs, only with an explicit maintainer request or approval.
 Otherwise propose the exact edit and wait. Code changes, stale text, failed checks and sync instructions do not authorize edits.
 Correction requests authorize factual repairs without another approval, never new public contracts, guarantees, APIs or behavior.
+An authorized release authorizes the factual repairs its own changelog section needs to pass release checks, such as moving a bullet to the heading that matches its effect or naming the upgrade; fix them and report them instead of asking.
 This restriction overrides documentation-update instructions below.
 
 Derive choices and checks from owning rulings and in-scope evidence before asking.
