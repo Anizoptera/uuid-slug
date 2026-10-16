@@ -2,7 +2,7 @@
 
 ## Runtime support
 
-- [ ] Release 0.5.0 so Deno users can load the package (0.4.0 routes Deno to TypeScript, which Deno refuses inside npm packages). Notes are in `CHANGELOG.md`; push, wait for green CI, then `bun run release 0.5.0`, each only with explicit authorization.
+- [ ] Publish the Rust crate for the first time: 0.5.0 shipped on npm only because crates.io has no trusted-publishing link for an unpublished crate. Needs the maintainer's `CRATES_IO_BOOTSTRAP_TOKEN` or a manual first upload (`dev/release.md` §Publication and recovery).
 - [ ] Decide later whether to also publish to JSR, where Deno can load the TypeScript source; it needs a ruling against the one-npm-package rule in `dev/cross-language.md`, a condition-free Deno entry and slow-types checks.
 - [ ] Propose the Aponte agent-gotcha rule (packed-consumer checks must match real install layout) and write it only with approval.
 

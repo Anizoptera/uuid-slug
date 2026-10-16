@@ -369,7 +369,7 @@ checksum = "7cc1186384beb7dd8eedea376413fd654937285ea6c9cfbb928dc3043ea4b606"
 
 [[package]]
 name = "uuid-slug"
-version = "0.5.0"
+version = "0.5.1-dev"
 dependencies = [
  "data-encoding",
  "getrandom",
@@ -380,7 +380,7 @@ dependencies = [
 
 [[package]]
 name = "uuid-slug-bridge"
-version = "0.5.0"
+version = "0.5.1-dev"
 dependencies = [
  "napi",
  "napi-build",
