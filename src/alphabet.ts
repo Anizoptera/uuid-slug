@@ -11,7 +11,7 @@ export const BASE32HEX_NAME = "base32hex";
 export { BASE64URL_NAME } from "./base64url-name.ts";
 
 /** Follows the alphabet name in every decoder error for set unused bits. */
-export const NON_CANONICAL_TRAILING_BITS = " value has non-canonical trailing bits";
+const NON_CANONICAL_TRAILING_BITS = " value has non-canonical trailing bits";
 
 /**
  * A power-of-two alphabet plus its reverse lookup. Encoding is pure bit packing, so the only

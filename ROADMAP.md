@@ -19,14 +19,13 @@ Each item keeps behaviour, public API (`api/typescript.api.d.ts`), speed and bun
 
 ### Safe, in priority order (rule breaches first, then the biggest cuts)
 
-- [ ] Collapse the 7-line text extraction in `src/slug.ts` and `src/masking-codec.ts` to `const text = typeof uuid === "string" ? uuid : readObjectUuidInput(uuid); if (typeof text !== "string") return text;` (~10 lines; bench `plain.decode`, `masked.decode`).
-- [ ] Replace the hand-written invalid-character loop in `src/slug.ts` caller-buffer decoding with `isEncoded` plus `decodeInto` diagnostics (~8 lines); base64url trailing-bit errors there then gain the masked-slug hint the no-buffer path already shows.
 - [ ] In `src/masking-codec.ts`: pass `keylessUuidToBytes` all four arguments instead of branching on `outputOrOutputOffset`; make `createUuidV7MaskingCodec` call `createUuidV7MaskingCodecWithGenerator` instead of repeating its try/catch; build `MASKED_PAIR_GENERATION_OPTIONS` by spreading `UUID_V7_MASKING_CODEC_VALUE_OPTIONS`; merge the `isUuidSlugError`/`isMaskHandle` returns; type `previousMasks` as `UuidV7MaskRange[]`; import `MAX_UUID_V7_UNIX_MS` from `src/v7-timestamp.ts` (~15 lines).
 - [ ] Build the custom-mask failure error once in `src/mask-handle.ts` and in `applyMix` (`src/payload.ts`); in `src/payload.ts` also format known 16-byte `unmix` blocks with `formatUuidBytesUnchecked`, dropping impossible error checks and the repeated empty-mask guard (~14 lines).
 - [ ] Minor tidying: replace `UuidV7GenerationValues` (`src/v7-generator-input.ts`) with `Pick<GenerationOptionValues, "at" | "output" | "outputOffset">`; `#local in codec` without the always-true `&& codec.#local` (`src/masking-codec-protocol.ts`); seed the sync `chain` in `src/mask.ts` like `cooperativeChain`; drop `| undefined` from `HostBuffer` and its `NonNullable` (`src/runtime/portable.ts`); `as number` instead of `?? 0` on fixed blocks in `src/payload.ts`; drop `export` from `UuidVersionOf` and `generateOwnedUuidV4Bytes`.
 
 ### Needs a benchmark first (hot path or measured area)
 
+- [ ] Collapse the 7-line text extraction in `src/slug.ts` and `src/masking-codec.ts` to `const text = typeof uuid === "string" ? uuid : readObjectUuidInput(uuid); if (typeof text !== "string") return text;` (~10 lines). Adds a second `typeof` to every string decode; bench `plain.decode` and `masked.decode` first, since `perf:check` cannot see a change this small.
 - [ ] Merge the duplicated preset-text branch in `generateUuidV7` (`src/v7-keyless.ts`, ~6 lines) without a non-null assertion; bench v7 text routes (`bench/decisions.md` records wrapper reshapes moving timings).
 - [ ] Share the v4/v7 RFC version-digit check in `src/uuid.ts` (~10 lines); adds a call on the non-canonical path only.
 - [ ] Share parse/format/case handling between the two `src/migration.ts` read methods (~6 lines); migration has timing and zero-discarded-error budgets.

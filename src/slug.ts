@@ -5,7 +5,6 @@ import {
   BASE32HEX_NAME,
   BASE64URL,
   BASE64URL_NAME,
-  NON_CANONICAL_TRAILING_BITS,
   decodeInto,
   encode,
   isEncoded,
@@ -305,16 +304,11 @@ export function plainSlugToUuidBytes(
       ? checkRange(16, outputOffset, 16)
       : checkByteRange(output, outputOffset, 16);
   if (badRange) return badRange;
+  // A caller buffer must stay unchanged on failure, so invalid input is decoded into a throwaway
+  // array only to get the same diagnostic the no-buffer path returns. Valid input never allocates.
   if (output && !isEncoded(slug, alpha, 16, true)) {
-    for (let i = 0; i < slug.length; i += 1) {
-      const code = slug.charCodeAt(i);
-      if (code >= 128 || (alpha.decode[code] as number) < 0)
-        return new UuidSlugError(
-          alpha.code,
-          `Invalid ${alpha.name} character ${JSON.stringify(slug[i])} at offset ${i}.`,
-        );
-    }
-    return new UuidSlugError(alpha.code, `${alpha.name}${NON_CANONICAL_TRAILING_BITS}.`);
+    const failed = decodeInto(slug, alpha, new Uint8Array(16), 0);
+    if (failed instanceof Error) return failed;
   }
   const result = decodeInto(slug, alpha, target, outputOffset);
   return result instanceof Error ? result : target;
