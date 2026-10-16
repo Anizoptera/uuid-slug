@@ -40,9 +40,9 @@ Correction requests authorize factual repairs without another approval, never ne
 Derive choices and checks from owning rulings and in-scope evidence before asking.
 Ask only when a material priority, consequence or permission remains unresolved. State each answer's effect
 and why evidence cannot decide it. Use plain words, separate independent decisions, and hold only dependent work.
-Two things are never questions. Code that breaks its own contract (a method that ignores the dependency
-its constructor injected) is a bug: fix it with a failing test. A `bench/decisions.md` entry is a measured
-conclusion, not a ruling: when its premise no longer matches the code, re-measure or update it with the evidence.
+Do not ask about these; act:
+- Code that contradicts its own contract is a bug (example: a method ignores the generator its constructor took). Fix it and add a test that fails without the fix.
+- A `bench/decisions.md` entry records a measurement, not a maintainer ruling. When code changes make its description of the code false, correct the entry in the same commit. Do not re-run the benchmark for this: new measurements need an explicit request (§Work scope).
 Audit findings need the failing call, trigger, consequence and normal-call control.
 Separate observed from possible harm; misuse alone does not prove ordinary-call harm or release impact.
 
@@ -311,7 +311,7 @@ Agent instructions live only in `AGENTS.md` files, never in public documents (RE
 
 ## Release
 
-- Record each consumer-visible change under `## [Unreleased]` in `CHANGELOG.md` in the commit that makes it: what callers gain, lose or must change, and why. Notes written at release time lose that reason. Only changes a consumer can observe belong there (API, behaviour, output, errors, guarantees, runtimes, package contents); refactors, tests, tooling, docs-only and repository process never do. `bun run changelog <version>` turns the section into the release section; the commit hook rejects a staged `api/` report change without a staged `CHANGELOG.md`.
+- A commit that changes something consumers can observe adds a line under `## [Unreleased]` in `CHANGELOG.md`: what callers gain, lose or must change, and why. Write it in that commit, because the reason is known then and is lost by release time. Consumer-observable: public API, behaviour, output, errors, README guarantees, supported runtimes, package contents. Not consumer-observable, so never listed: refactors, tests, tooling, CI, benchmarks, agent and maintainer docs. At release, `bun run changelog <version>` renames the section to that version. The commit hook blocks a staged `api/` report without a staged `CHANGELOG.md`; it cannot detect behaviour changes, so those depend on this rule.
 - Release notes explain what changes for consumers and how to upgrade. The `CHANGELOG.md` section holds prose only: `scripts/release-report.ts` appends one generated API diff at the end of `### Breaking changes`, `### Added` and `### Changed`, then package sizes and the npm, crate and commit-history links. Never hand-write API diff blocks in the changelog; write every rename as `` `old` → `new` `` so the diff pairs the old and new declarations; never publish declaration inventories, private helper types, repeated older comparisons, or API attachments. Read the body as a cold reader before publication.
 - Describe only the packages being published; unpublished implementations and their reports are not consumer release notes.
 - Preserve declaration names, visibility and ownership from the compiler AST; do not infer them from printed signatures, which can hide valid quoted, computed or Unicode names.
@@ -319,8 +319,8 @@ Agent instructions live only in `AGENTS.md` files, never in public documents (RE
 - When a release check calls a change breaking, confirm that old callers actually break (`dev/release.md` §Evidence and notes) before editing notes; a false break is a checker defect to fix, never notes to bend.
 - Trace referenced types before reporting no public API change; unchanged exported signatures can hide newly required arguments or changed results.
 
-- The pre-commit hook (`scripts/check-commit.ts`) is a commit gate, not release verification: it MUST finish in a few seconds and run only checks the staged files can affect. Add a check as a row in its table, with a predicate for the staged paths that can change its result. Never put tests, packing, Rust, benchmarks or `bun run check` in it; a slow hook taxes every commit, including docs-only ones. It warns when it overruns its budget: move the slow step to `bun run check`, never raise the budget to fit it.
-- `bun run check` is the full verification; CI and `bun run release` (through `preversion`) run it. Run it yourself once on the final tree of code work before delivery, not per commit; a failed complete check prevents final delivery.
+- The pre-commit hook (`scripts/check-commit.ts`) is a commit gate, not release verification: it runs only checks that the staged paths can change, and must take seconds, because every commit pays for it. Add a check as a row in its table, with a predicate naming the paths that can change its result. Never add tests, packing, Rust, benchmarks or `bun run check`. If the hook gets slow, it warns and then blocks the commit (limits in the script): move the slow step to `bun run check`; never raise the limits.
+- `bun run check` is the full verification. `bun run release` runs it (through `preversion`); CI runs its parts in separate jobs. Run it yourself once on the final tree of code work before delivery, not per commit; a failed complete check prevents final delivery.
 - Commit only after staging succeeds and `git diff --cached` contains every intended hunk; `git mv` stages the rename before its consumer edits, and a failed `git add` leaves that partial index intact.
 - The release command owns the temporary stable-version context. API checks must distinguish that transition from an actual tagged commit and ordinary development; never disable the commit hook.
 - Install nightly in each job that generates Rust public API reports; another job's toolchain setup does not carry over.
