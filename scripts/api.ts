@@ -167,11 +167,33 @@ try {
       extends: join(root, "api-extractor.json"),
       projectFolder: root,
       mainEntryPointFilePath: join(root, "dist/index.d.ts"),
-      compiler: { tsconfigFilePath: join(root, "tsconfig.json") },
+      // Load only the package declarations, not the whole project (tests, benches, scripts) and
+      // its node/bun globals: the rollup is byte-identical and extraction takes a third less time.
+      // Public declarations must not depend on runtime globals, so a missing one is a real defect.
+      compiler: {
+        overrideTsconfig: {
+          extends: join(root, "tsconfig.json"),
+          compilerOptions: { types: [] },
+          files: [join(root, "dist/index.d.ts")],
+          include: [],
+        },
+      },
       dtsRollup: { enabled: true, untrimmedFilePath: join(work, "typescript.d.ts") },
     }),
   );
-  await command("api-extractor", ["run", "--local", "--config", extractorConfig], root);
+  // Bun starts and runs the extractor about a third faster than Node, with the same rollup.
+  await command(
+    process.execPath,
+    [
+      "--bun",
+      join(root, "node_modules/.bin/api-extractor"),
+      "run",
+      "--local",
+      "--config",
+      extractorConfig,
+    ],
+    root,
+  );
 
   const declarationRollup = typescriptDeclarations(
     await readFile(join(work, "typescript.d.ts"), "utf8"),
