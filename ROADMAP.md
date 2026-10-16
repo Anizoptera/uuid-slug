@@ -19,7 +19,7 @@ Each item keeps behaviour, public API (`api/typescript.api.d.ts`), speed and bun
 
 ### Safe, in priority order (rule breaches first, then the biggest cuts)
 
-- [ ] In `src/masking-codec.ts`: pass `keylessUuidToBytes` all four arguments instead of branching on `outputOrOutputOffset`; make `createUuidV7MaskingCodec` call `createUuidV7MaskingCodecWithGenerator` instead of repeating its try/catch; build `MASKED_PAIR_GENERATION_OPTIONS` by spreading `UUID_V7_MASKING_CODEC_VALUE_OPTIONS`; merge the `isUuidSlugError`/`isMaskHandle` returns; type `previousMasks` as `UuidV7MaskRange[]`; import `MAX_UUID_V7_UNIX_MS` from `src/v7-timestamp.ts` (~15 lines).
+- [ ] In `src/masking-codec.ts` `uuidToBytes`, pass `keylessUuidToBytes` all four arguments instead of branching on `outputOrOutputOffset` (~4 lines). First check that an explicit `undefined` output and offset 0 select the same keyless overload as omitted arguments.
 - [ ] Build the custom-mask failure error once in `src/mask-handle.ts` and in `applyMix` (`src/payload.ts`); in `src/payload.ts` also format known 16-byte `unmix` blocks with `formatUuidBytesUnchecked`, dropping impossible error checks and the repeated empty-mask guard (~14 lines).
 - [ ] Minor tidying: replace `UuidV7GenerationValues` (`src/v7-generator-input.ts`) with `Pick<GenerationOptionValues, "at" | "output" | "outputOffset">`; `#local in codec` without the always-true `&& codec.#local` (`src/masking-codec-protocol.ts`); seed the sync `chain` in `src/mask.ts` like `cooperativeChain`; drop `| undefined` from `HostBuffer` and its `NonNullable` (`src/runtime/portable.ts`); `as number` instead of `?? 0` on fixed blocks in `src/payload.ts`; drop `export` from `UuidVersionOf` and `generateOwnedUuidV4Bytes`.
 

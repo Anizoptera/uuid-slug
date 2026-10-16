@@ -28,6 +28,8 @@ import {
   noMaskedSlugMatch,
   unmaskSlug,
 } from "./payload.ts";
+import type { UuidV7MaskRange } from "./payload.ts";
+import { MAX_UUID_V7_UNIX_MS } from "./v7-timestamp.ts";
 import { createMigration } from "./migration.ts";
 import { findSentinel } from "./sentinel.ts";
 import { registerMaskingCodec } from "./masking-codec-protocol.ts";
@@ -124,8 +126,7 @@ const SENTINEL_OPTIONS = {
   uuid: true,
 } as const satisfies Record<keyof UuidV7SentinelConfig, true>;
 const MASKED_PAIR_GENERATION_OPTIONS = {
-  at: true,
-  generator: true,
+  ...UUID_V7_MASKING_CODEC_VALUE_OPTIONS,
   textCase: true,
 } as const satisfies Record<keyof GenerateUuidV7WithMaskedSlugOptions, true>;
 type EncodedSentinelIndex = {
@@ -167,8 +168,7 @@ const EMPTY_SENTINEL_STATE: SentinelState = Object.freeze({
 function maskFromOption(
   mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError,
 ): UuidV7Mask | UuidSlugError {
-  if (isUuidSlugError(mask)) return mask;
-  if (isMaskHandle(mask)) return mask;
+  if (isUuidSlugError(mask) || isMaskHandle(mask)) return mask;
   if (typeof mask !== "object" || mask === null)
     return new UuidSlugError(
       INVALID_MASK,
@@ -177,7 +177,6 @@ function maskFromOption(
   return deriveUuidV7Mask(mask);
 }
 
-const MAX_UUID_V7_UNIX_MS = 2 ** 48 - 1;
 const MAX_TIMESTAMP_RANGE_START_UNIX_MS =
   MAX_UUID_V7_UNIX_MS - MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
 
@@ -340,13 +339,9 @@ function createSentinels(
 export function createUuidV7MaskingCodec(
   options: UuidV7MaskingCodecOptions,
 ): UuidV7MaskingCodec | UuidSlugError {
-  try {
-    // Codec generation keeps every failure as a value: a configured timestamp range can reject
-    // the current time, so no codec generation call is free of fallible input.
-    return buildUuidSlugCodec(options, generateDefaultUuidV7Bytes);
-  } catch (cause) {
-    return new UuidSlugError(INVALID_MASK, CODEC_CONSTRUCTION_FAILED, { cause });
-  }
+  // Codec generation keeps every failure as a value: a configured timestamp range can reject
+  // the current time, so no codec generation call is free of fallible input.
+  return createUuidV7MaskingCodecWithGenerator(options, generateDefaultUuidV7Bytes);
 }
 
 /** Internal seam for exercising generator failures without weakening public generation. */
@@ -396,7 +391,7 @@ function buildUuidSlugCodec(
   const current = { mask: handle, timestampRangeStartUnixMs: currentTimestampRangeStart };
   // Decode tries exactly the caller's masks in order. Every added mask increases false
   // acceptance, and the first passing mask decides the result, so no fallback is added here.
-  const previousMasks: { mask: UuidV7Mask; timestampRangeStartUnixMs: number }[] = [];
+  const previousMasks: UuidV7MaskRange[] = [];
   const previousMaskOptions = options.previousMasks ?? [];
   if (!Array.isArray(previousMaskOptions))
     return new UuidSlugError(
