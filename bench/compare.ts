@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { availableParallelism, loadavg, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium, firefox, webkit } from "playwright";
@@ -478,7 +478,20 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
     );
 }
 
+// Timing on a busy host measures the other work: it can show unchanged calls 20% slower and hide
+// real changes. The comparison runs one runtime at a time, about one core, so
+// any 1-minute load above this means competing work. Checked before and after timing.
+const BUSY_LOAD = Math.max(2, availableParallelism() / 4);
+function refuseBusyHost(when: string): void {
+  const [load] = loadavg();
+  if ((load ?? 0) > BUSY_LOAD)
+    throw new Error(
+      `Host too busy ${when} timing: 1-minute load ${load?.toFixed(1)} > ${BUSY_LOAD}. Results would measure other work, not this code. Stop competing jobs (builds, tests, other benchmarks) and rerun the same command.`,
+    );
+}
+
 async function main(): Promise<void> {
+  refuseBusyHost("before");
   for (const runtime of selectedRuntimes) {
     if (isBrowserRuntime(runtime)) continue;
     const executable = runtime === "bun" || runtime === "deno" ? runtime : nodeExecutable;
@@ -675,6 +688,7 @@ async function main(): Promise<void> {
           }
         }
       }
+      refuseBusyHost("after");
       emitSummary(observations);
     } finally {
       await server?.stop(true);
