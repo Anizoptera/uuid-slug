@@ -284,9 +284,16 @@ async function runHost(
       project,
       {
         UUID_SLUG_PROFILE_FILTER: filter,
-        UUID_SLUG_PROFILE_ALPHABET_MODULE: pathToFileURL(privateAlphabetApi).href,
         UUID_SLUG_PROFILE_MODULE: pathToFileURL(api).href,
-        UUID_SLUG_PROFILE_PRIVATE_MODULE: pathToFileURL(privateV4Api).href,
+        // The regression check times public calls only. Private internals may change signature
+        // between the two revisions while the shared driver calls them one way, so loading them
+        // would fail the comparison for an internal refactor that changes no consumer call.
+        ...(regressionCheck
+          ? {}
+          : {
+              UUID_SLUG_PROFILE_ALPHABET_MODULE: pathToFileURL(privateAlphabetApi).href,
+              UUID_SLUG_PROFILE_PRIVATE_MODULE: pathToFileURL(privateV4Api).href,
+            }),
         UUID_SLUG_PROFILE_MS: duration,
         UUID_SLUG_PROFILE_SAMPLES: String(samples),
         UUID_SLUG_PROFILE_WARMUP_MS: warmup,
@@ -300,7 +307,7 @@ async function runBrowser(page: Page, origin: string, revision: Revision): Promi
   const onPageError = (error: Error) => errors.push(error);
   page.on("pageerror", onPageError);
   await page.goto(
-    `${origin}?duration=${duration}&warmup=${warmup}&samples=${samples}&private=1&filter=${encodeURIComponent(filter)}`,
+    `${origin}?duration=${duration}&warmup=${warmup}&samples=${samples}&private=${regressionCheck ? 0 : 1}&filter=${encodeURIComponent(filter)}`,
   );
   try {
     await page.addScriptTag({ type: "module", url: `/${revision}.mjs` });
