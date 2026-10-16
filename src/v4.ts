@@ -109,15 +109,12 @@ export function generateOwnedUuidV4Bytes(): UuidV4Bytes | UuidSlugError {
 /**
  * Generate UUIDv4 text through the portable implementation, even on native-capable hosts.
  * Failures are returned so the native path can aggregate them with its own cause.
+ * `textCase` must already be resolved: `generateUuidV4` resolves it before calling, and the native
+ * fallback passes lowercase, so a second check here would only slow every portable call.
  */
 export function generatePortableUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCase: Case = UUID_TEXT_LOWERCASE as Case,
 ): UuidV4StringFor<Case> | UuidSlugError {
-  if (!isUuidTextCase(textCase)) {
-    const selectedCase = resolveUuidTextCase(textCase);
-    if (selectedCase instanceof Error) return selectedCase;
-    textCase = selectedCase as Case;
-  }
   const bytes = drawUuidV4Scratch();
   return bytes instanceof Error
     ? bytes
