@@ -76,6 +76,23 @@ describe("the maskable range", () => {
     expect(generated).toMatchObject({ code: "invalid_timestamp" });
   });
 
+  it("generates parsed values through the codec's injected generator, like every other method", () => {
+    const fixed = "0198abcd-1234-7abc-9def-000000000001";
+    const injected = unwrap(
+      createUuidV7MaskingCodecWithGenerator({ mask: handle }, () =>
+        unwrap(uuidStringToBytes(fixed)),
+      ),
+    );
+    expect(String(unwrap(injected.generateUuidV7Value()))).toBe(fixed);
+    // The injected payload is validated before use, as on the slug and byte routes: a UUIDv4 is refused.
+    const wrongVersion = unwrap(
+      createUuidV7MaskingCodecWithGenerator({ mask: handle }, () =>
+        unwrap(uuidStringToBytes("0198abcd-1234-4abc-9def-000000000001")),
+      ),
+    );
+    expect(wrongVersion.generateUuidV7Value()).toBeInstanceOf(Error);
+  });
+
   it("refuses anything that is not a UUIDv7, rather than stamping one on at decode", () => {
     // Decoding restores v7 constants, so accepting another version or variant changes identity.
     // Both inputs fit the timestamp range; its guard must not hide a missing version check.

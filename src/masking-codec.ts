@@ -892,9 +892,9 @@ function buildUuidSlugCodec(
     const generator = readUuidV7Generator(values.generator);
     if (generator instanceof Error) return generator;
     if (generator) return generateUuidV7ValueWithGenerator(generator, values, maskingCodec);
-    const generated = !Object.hasOwn(values, AT_OPTION)
-      ? generateDefaultUuidV7Bytes()
-      : generateDefaultUuidV7Bytes({ at: values.at as UuidV7Instant });
+    // The codec's own generator, validated like on the slug and byte routes; for public codecs
+    // it is the package default.
+    const generated = generateCodecBytesFromValues(values);
     return generated instanceof Error
       ? generated
       : createUuidValue<7, true, true>(generated, maskingCodec, uuidV7DefaultPayloadLayout());
