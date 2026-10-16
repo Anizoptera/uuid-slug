@@ -40,6 +40,9 @@ Correction requests authorize factual repairs without another approval, never ne
 Derive choices and checks from owning rulings and in-scope evidence before asking.
 Ask only when a material priority, consequence or permission remains unresolved. State each answer's effect
 and why evidence cannot decide it. Use plain words, separate independent decisions, and hold only dependent work.
+Two things are never questions. Code that breaks its own contract (a method that ignores the dependency
+its constructor injected) is a bug: fix it with a failing test. A `bench/decisions.md` entry is a measured
+conclusion, not a ruling: when its premise no longer matches the code, re-measure or update it with the evidence.
 Audit findings need the failing call, trigger, consequence and normal-call control.
 Separate observed from possible harm; misuse alone does not prove ordinary-call harm or release impact.
 
