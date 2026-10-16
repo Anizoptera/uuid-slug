@@ -180,13 +180,6 @@ export function exactLocalUuidBytes(value: unknown): Uint8Array | undefined {
   }
 }
 
-/** Recognize local Errors first, then use native or portable cross-realm recognition. */
-/*#__NO_SIDE_EFFECTS__*/
-export function isError(value: unknown): value is Error {
-  if (typeof value !== OBJECT_TYPE || value === null) return false;
-  return hasErrorBrand(value as object);
-}
-
 // A slot probe is the only proof of a genuine buffer, but calling one on anything else
 // throws, and building that native TypeError costs three orders of magnitude more than the checks
 // below (bench/decisions.md). For buffers, local identity answers the common case without reading
@@ -218,16 +211,29 @@ export function stringInput(value: unknown): string | undefined {
   }
 }
 
-/** Normalize UUID string input while preserving a preceding package failure. */
+/**
+ * Normalize UUID string input while preserving a preceding package failure. No `typeof` fast path:
+ * every caller tests for a primitive string before calling, and `stringInput` accepts one anyway.
+ */
 export function normalizeUuidStringInput(value: unknown): string | UuidSlugError {
-  if (typeof value === "string") return value;
-  return stringInput(value) ?? invalidUuidStringInput(value);
+  return (
+    stringInput(value) ??
+    (isUuidSlugError(value) ? value : new UuidSlugError(INVALID_UUID, "UUID must be text."))
+  );
 }
 
-/** Normalize slug input while preserving a preceding package failure. */
+/**
+ * Normalize slug input while preserving a preceding package failure. Codec and migration callers pass
+ * strings unchecked, so the `typeof` fast path stays.
+ */
 export function normalizeUuidSlugInput(value: unknown): string | UuidSlugError {
   if (typeof value === "string") return value;
-  return stringInput(value) ?? invalidUuidSlugInput(value);
+  return (
+    stringInput(value) ??
+    (isUuidSlugError(value)
+      ? value
+      : new UuidSlugError(INVALID_UUID_SLUG, "UUID slug must be a string."))
+  );
 }
 
 /** Describe rejected values without executing object coercion or inspecting caller properties. */
@@ -355,27 +361,14 @@ export function checkByteRange(
   return checkRange(bytes.length, offset, need);
 }
 
-/** Preserve a preceding failure or reject an untyped value that is not UUID text. */
-/*#__NO_SIDE_EFFECTS__*/
-export function invalidUuidStringInput(value: unknown): UuidSlugError {
-  return isUuidSlugError(value) ? value : new UuidSlugError(INVALID_UUID, "UUID must be text.");
-}
-
-/** Preserve a preceding failure or reject an untyped value that is not a UUID slug. */
-/*#__NO_SIDE_EFFECTS__*/
-export function invalidUuidSlugInput(value: unknown): UuidSlugError {
-  return isUuidSlugError(value)
-    ? value
-    : new UuidSlugError(INVALID_UUID_SLUG, "UUID slug must be a string.");
-}
-
 /** Preserve failures from an injected or platform entropy source without changing successful draws. */
 export const randomFailure = /* @__NO_SIDE_EFFECTS__ */ (
   value: unknown,
 ): undefined | UuidSlugError => {
   if (value === undefined) return undefined;
   if (isUuidSlugError(value)) return value;
-  return isError(value)
+  // Local Errors first, then native or portable cross-realm recognition.
+  return typeof value === OBJECT_TYPE && value !== null && hasErrorBrand(value)
     ? new UuidSlugError(RNG_UNAVAILABLE, RANDOM_FAILURE_MESSAGE, { cause: value })
     : undefined;
 };
@@ -401,18 +394,6 @@ export function generatedOrThrow<Value>(result: Value | UuidSlugError): Value {
   return result;
 }
 
-/** Keep both failed implementations inspectable when an optional native shortcut also fails. */
-/*#__NO_SIDE_EFFECTS__*/
-export function failedFallback(
-  nativeCause: unknown,
-  fallback: UuidSlugError,
-  message: string,
-): UuidSlugError {
-  return new UuidSlugError(fallback.code, fallback.message, {
-    cause: new AggregateError([nativeCause, fallback], message),
-  });
-}
-
 /** Run the portable generator once after native generation failed; dual failures keep both causes. */
 export function portableAfterNative<FallbackArgument>(
   nativeCause: unknown,
@@ -422,7 +403,13 @@ export function portableAfterNative<FallbackArgument>(
 ): string | UuidSlugError {
   const result = fallback(fallbackArgument);
   return result instanceof Error
-    ? failedFallback(nativeCause, result, `Native and portable ${operation} failed.`)
+    ? // Keep both failed implementations inspectable.
+      new UuidSlugError(result.code, result.message, {
+        cause: new AggregateError(
+          [nativeCause, result],
+          `Native and portable ${operation} failed.`,
+        ),
+      })
     : result;
 }
 
