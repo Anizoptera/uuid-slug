@@ -17,9 +17,8 @@
 
 Each item keeps behaviour, public API (`api/typescript.api.d.ts`), speed and bundle size unless noted. Gate each with `bun run check`; items touching a hot path also need the named bench rows on Bun and Node before they land.
 
-### Safe, in priority order (wrong facts and rule breaches first, then the biggest cuts)
+### Safe, in priority order (rule breaches first, then the biggest cuts)
 
-- [ ] Fix wrong text: `src/feistel.ts` says `mask.ts` uses `mix32` (it is `src/payload.ts`); `bench/decisions.md` says the check tag uses HalfSipHash (it uses `mix32`); `src/mask.ts` repeats "at module scope"; merge the detached JSDoc block in `src/runtime/types.ts` into its member so editor help shows it.
 - [ ] Fix `src/AGENTS.md` breaches: replace `SLUG_ALPHABET_CODECS`, `slugLength` and the `reduce` in `src/slug.ts` with direct `SLUG_ALPHABET_BY_LENGTH` entries and a `SLUG_LENGTHS` template, rewording the comment that names it (no runtime lookup objects, ~10 lines); hoist the repeated "non-canonical trailing bits" message (`src/alphabet.ts`, `src/slug.ts`) to one scalar constant.
 - [ ] Delete the redundant text-case check in `generatePortableUuidV4` (`src/v4.ts`); every caller passes a resolved case or the default (5 lines; also speeds Node UUIDv4 text without native support).
 - [ ] Merge the two `bytes.length === 16` blocks in `encode` into one block choosing Latin-1 or `fromCharCode` writers (~5 lines; bench `v4.slug`, `v7.slug`, `v7.base32`, `masked.encode.bytes`).
