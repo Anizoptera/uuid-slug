@@ -58,7 +58,8 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   decision-changing boundary; propose changes to the existing row or bullet instead of another inventory.
 - README's opening paragraph is maintainer-written text: NEVER change a word, character or space of
   it (each `&nbsp; ` keeps a deliberate visible double space) without the maintainer's explicit
-  request or approval, and no other rule here authorizes rewriting it. Elsewhere, position the
+  request or approval, and no other rule here authorizes rewriting it. `package.json`
+  `description` is the same text with literal U+00A0 characters in place of `&nbsp;`; change both together. Elsewhere, position the
   package by the complete consumer contract: base64url and base32hex plain slugs for
   any UUID, caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime
   paths. Keep version-neutral encoding separate from UUIDv7-only masking. Generation alone is not
