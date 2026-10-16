@@ -331,11 +331,3 @@ export function parseUuid(
     existing ? LocalUuidValue.ownPayloadLayout(existing) : foreignContext?.payloadLayout,
   );
 }
-
-/** Parse with the supplied masking codec preset by an owner method. */
-export function parseUuidWithCodec<Input extends UuidInput>(
-  uuid: Input,
-  maskingCodec: UuidV7MaskingCodec,
-): ParsedUuidResult<Input, true> | UuidSlugError {
-  return parseUuid(uuid, maskingCodec);
-}

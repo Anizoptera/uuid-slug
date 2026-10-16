@@ -91,7 +91,7 @@ import {
 } from "./uuid.ts";
 import type { UuidV7TimestampWindow, UuidV7SentinelConfig } from "./types.ts";
 import type { SlugAlphabet } from "./slug.ts";
-import { createUuidValue, parseUuidWithCodec } from "./uuid-value.ts";
+import { createUuidValue, parseUuid } from "./uuid-value.ts";
 import { generateUuidV7ValueWithGenerator, readUuidV7ValueOptions } from "./v7-value-options.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
 import { readGenerationOptions } from "./generation-options.ts";
@@ -903,7 +903,7 @@ function buildUuidSlugCodec(
   const maskingCodec: UuidV7MaskingCodec = {
     sentinels: sentinels.sentinels,
     generateUuidV7Value,
-    parseUuid: (uuid) => parseUuidWithCodec(uuid, maskingCodec),
+    parseUuid: (uuid) => parseUuid(uuid, maskingCodec),
     uuidToString,
     uuidToBytes,
     uuidToPlainSlug,
