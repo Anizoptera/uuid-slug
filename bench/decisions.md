@@ -558,7 +558,7 @@ Bun explicit-time caller output and selected-generator bytes read 10–17% slowe
 
 ### Latin-1 slug writing
 
-**Bun writes slug character codes into reused scratch and reads them with one `Buffer#toString("latin1")`; other engines use fixed character-code arguments for 16-byte payloads, including the 27-character masked base32hex spelling.** The generic accumulator handles other lengths. Native encoding is a measured alternative; its presence alone does not prove a faster consumer call.
+**Bun writes slug character codes into reused scratch and reads them with one `Buffer#toString("latin1")`; other engines use fixed character-code arguments for 16-byte payloads, including the 27-character masked base32hex spelling.** Native encoding is a measured alternative; its presence alone does not prove a faster consumer call.
 
 Median ratios against the prior writer, 2026-09 (this measured the earlier Latin-1 implementation); each pair's 95% interval below 1 unless marked:
 
@@ -595,25 +595,23 @@ Trade-off: in a process encoding both masked alphabets, base64url `masked.encode
 
 **Keep the fixed UUID writer until native encoding lowers complete caller cost without moving cost onto other primary calls.** Rejected (2026-10, Node 26.10.0 / Bun 1.4.2 / Deno 2.9.7): a `native-branch` and a module-selected `native-dispatch`. Bun conversion and pair costs did not improve consistently; dispatch raised Bun base32hex slug medians in every order despite leaving that writer unchanged. Any native candidate must select native for the plain corpus, keep masked tails outside it, fall back after a native throw, and construct one plain-slug string (two for pairs).
 
-**Native `Uint8Array.prototype.toBase64` is probed once and used for generic payload lengths; UUID payloads use the fixed writers.** Disabling native on the public plain-encode route made the portable path 2.29–2.34× slower on Bun 1.4.1, 13–15% on Deno 2.9.6, 14–29% on Chromium 151 (2026-09); Bun 1.4.2 recheck: fallback 57–96% slower. Remove native delegation only if a supported runtime reproduces a complete-route loss or the strict output contract changes.
-
-**Deno exception: detect Deno once at module load and treat its native method as unavailable.** Deno 2.9.6 made the fallback 26–27% faster (2026-09). Reopen after a Deno update; remove the exception when native no longer loses materially.
+**`encode` in `src/alphabet.ts` has no native `toBase64` branch and no any-length path.** Every slug payload is 16 bytes, and the fixed writers ran before native for every 16-byte shape, so native and the generic accumulator served only lengths no caller encodes (2026-10). The 2026-09 native-vs-portable numbers (Bun 2.29×, Deno, Chromium) predate the fixed writers running first; the 2026-10 `native-branch`/`native-dispatch` rejections above are the current comparison. Reopen if a payload of another length is added: give it a fixed path.
 
 ### Fixed-size portable base64url encoding
 
-**Encode 16-byte base64url payloads as five 24-bit groups plus the final byte; keep the generic accumulator for other lengths, alphabets and tail widths.** Wire format and native delegation unchanged. Node 24.20.0: plain encoding +10–11%, masked string +7–8%, masked byte-input +9–10% (2026-09); Bun 1.4.1 uses native here and stayed near parity. Fallback profiles on Node, Bun, Deno and Chromium cost 115–138 ns per payload (reachability, not ranking). Reopen if Node gains a native encoder or UUID routes stop owning exactly 16 bytes.
+**Encode 16-byte base64url payloads as five 24-bit groups plus the final byte.** Wire format unchanged. Node 24.20.0: plain encoding +10–11%, masked string +7–8%, masked byte-input +9–10% (2026-09). Fallback profiles on Node, Bun, Deno and Chromium cost 115–138 ns per payload (reachability, not ranking). Reopen if Node gains a native encoder or UUID routes stop owning exactly 16 bytes.
 
 ### Fixed-size portable base32hex encoding
 
-**Encode 16-byte base32hex payloads as three five-byte groups plus the final byte; keep the generic accumulator for other lengths and tail widths.** Base32hex has no native delegate, so every runtime uses this path. Node 24.20.0 direct encoding +11–13%, public UUID-to-base32 +7–10%; Deno 2.9.6 and Chromium 151 improved; Bun 1.4.1 improved or unresolved, never regressed (2026-09). Masked and sentinel routes unresolved. Reopen if UUID routes stop owning exactly 16 bytes or a runtime adds native base32hex encoding.
+**Encode 16-byte base32hex payloads as three five-byte groups plus the final byte.** Base32hex has no native delegate, so every runtime uses this path. Node 24.20.0 direct encoding +11–13%, public UUID-to-base32 +7–10%; Deno 2.9.6 and Chromium 151 improved; Bun 1.4.1 improved or unresolved, never regressed (2026-09). Masked and sentinel routes unresolved. Reopen if UUID routes stop owning exactly 16 bytes or a runtime adds native base32hex encoding.
 
 ### Fixed-size portable base64url decoding
 
-**Decode 16-byte base64url payloads as five four-character groups plus the final byte; keep the generic accumulator for every other length, alphabet and tail width.** Exact invalid-character offsets and canonical trailing-bit rejection remain part of the fixed path. Direct decoding +12–13% Node 24.20.0, +16–17% Bun 1.4.1, +26–27% Deno 2.9.6, +22–24% Chromium 151; caller-owned public decoding +10–11%, +7–10%, +14–19%, +13–15% (2026-09). Reopen if UUID routes stop decoding exactly 16 bytes or use a tail width other than zero or four.
+**Decode 16-byte base64url payloads as five four-character groups plus the final byte.** Exact invalid-character offsets and canonical trailing-bit rejection remain part of the fixed path. Direct decoding +12–13% Node 24.20.0, +16–17% Bun 1.4.1, +26–27% Deno 2.9.6, +22–24% Chromium 151; caller-owned public decoding +10–11%, +7–10%, +14–19%, +13–15% (2026-09). Reopen if UUID routes stop decoding exactly 16 bytes or use a tail width other than zero or four.
 
 ### Fixed-size portable base32hex decoding
 
-**Decode 16-byte base32hex payloads as three eight-character groups plus the final byte, resetting the accumulator per group; keep the generic decoder for every other shape.** Direct decoding +12–14% Bun 1.4.1, +8–10% Deno 2.9.6, +7–9% Chromium 151; Node 24.20.0 at parity (2026-09). Deleting it made direct decoding 12–17% slower on Node 26.8.2 and Bun 1.4.2. Exact invalid offsets, canonical low bits and every tail value are tested. Reopen if UUID routes stop decoding exactly 16 bytes or use a tail width other than zero or two.
+**Decode 16-byte base32hex payloads as three eight-character groups plus the final byte, resetting the accumulator per group.** Direct decoding +12–14% Bun 1.4.1, +8–10% Deno 2.9.6, +7–9% Chromium 151; Node 24.20.0 at parity (2026-09). Deleting it made direct decoding 12–17% slower on Node 26.8.2 and Bun 1.4.2. Exact invalid offsets, canonical low bits and every tail value are tested. Reopen if UUID routes stop decoding exactly 16 bytes or use a tail width other than zero or four.
 
 **Rejected: regex prevalidation plus fixed bit formulas.** Direct decoding regressed 23% Node, 31% Deno, 22% Chromium. Reopen only if primary engines materially change regex or fixed-index string access.
 

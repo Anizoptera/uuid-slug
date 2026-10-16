@@ -329,7 +329,7 @@ export function plainSlugToUuidBytes(
     }
     return new UuidSlugError(alpha.code, `${alpha.name} value has non-canonical trailing bits.`);
   }
-  const result = decodeInto(slug, alpha, target, outputOffset, 16);
+  const result = decodeInto(slug, alpha, target, outputOffset);
   return result instanceof Error ? result : target;
 }
 
@@ -403,9 +403,7 @@ export function plainSlugToUuidString(
   // Normalize before scratch is live, then decode and format without caller callbacks. Revisit
   // reuse if either operation gains callbacks; failed writes cannot escape this private buffer.
   // The public byte decoder owns invalid-length diagnostics, so keep that exceptional path shared.
-  const decoded = alpha
-    ? decodeInto(slug, alpha, textSlugScratch, 0, 16)
-    : plainSlugToUuidBytes(slug);
+  const decoded = alpha ? decodeInto(slug, alpha, textSlugScratch, 0) : plainSlugToUuidBytes(slug);
   if (decoded instanceof Error) return decoded;
   // A successful decode yields exactly 16 bytes, so the checked formatter would repeat work.
   return formatUuidBytesUnchecked(textSlugScratch, 0, selectedCase);
@@ -575,7 +573,7 @@ export function uuidToString(
   const decoded =
     typeof input === "string"
       ? alpha
-        ? decodeInto(input, alpha, textSlugScratch, 0, 16)
+        ? decodeInto(input, alpha, textSlugScratch, 0)
         : uuidStringToBytes(input)
       : input;
   const bytes = typeof decoded === "number" ? textSlugScratch : decoded;
@@ -873,7 +871,7 @@ export function validatePlainUuidV7SlugUnixMs(
   // validator captures all byte fields before caller-owned window accessors can reenter.
   const alpha = SLUG_ALPHABET_BY_LENGTH[plainSlug.length];
   const decoded = alpha
-    ? decodeInto(plainSlug, alpha, textSlugScratch, 0, 16)
+    ? decodeInto(plainSlug, alpha, textSlugScratch, 0)
     : plainSlugToUuidBytes(plainSlug);
   if (decoded instanceof Error) return decoded;
   const bytes = typeof decoded === "number" ? textSlugScratch : decoded;

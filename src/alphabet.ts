@@ -12,8 +12,13 @@ export { BASE64URL_NAME } from "./base64url-name.ts";
 
 /**
  * A power-of-two alphabet plus its reverse lookup. Encoding is pure bit packing, so the only
- * character set and bits per character define the wire format. Fixed UUID writers specialize
- * that format; the generic accumulator uses the same tables for other payload lengths.
+ * character set and bits per character define the wire format.
+ *
+ * Every slug holds exactly one 16-byte UUID, plus an optional 4-bit masked check tail, so the
+ * writers and readers below handle only that shape, with no any-length bit accumulator or native
+ * `toBase64` delegation behind them: nothing calls another shape. A new payload length needs its
+ * own fixed path, because the generic loop measured slower on every engine (bench/decisions.md
+ * §Fixed-size portable base64url encoding and its siblings).
  */
 export interface Alphabet {
   readonly bitsPerChar: number;
@@ -73,18 +78,6 @@ export const BASE32HEX: Alphabet = /*#__PURE__*/ alphabet(
   true,
 );
 
-// Native encoding is strict on output; decoding stays here because it must reject aliases,
-// whitespace and nonzero padding that platform decoders may accept.
-const denoVersion = (globalThis as { Deno?: { version?: { deno?: string } } }).Deno?.version?.deno;
-const availableNativeToBase64 = (
-  Uint8Array.prototype as {
-    toBase64?: (options: { alphabet: typeof BASE64URL_NAME; omitPadding: boolean }) => string;
-  }
-).toBase64;
-// Deno 2.9.6 implements this capability but takes longer than the fixed 16-byte encoder. Treat
-// that implementation as unavailable until a Deno update overturns the repeated public-route result.
-const nativeToBase64 = denoVersion === undefined ? availableNativeToBase64 : undefined;
-const BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;
 const createLatin1Scratch = runtime.latin1Scratch;
 let base64urlScratch: Latin1Scratch | undefined;
 let base32hexScratch: Latin1Scratch | undefined;
@@ -95,18 +88,6 @@ let base32hexCodes: Uint8Array | undefined;
 /*#__NO_SIDE_EFFECTS__*/
 function characterCodes(alpha: Alphabet): Uint8Array {
   return Uint8Array.from(alpha.chars, (character) => character.charCodeAt(0));
-}
-
-/**
- * Bits left over when `byteLength` bytes are written in this alphabet. A slug rounds up to whole
- * characters, so the final character has spare low bits that carry no data: 4 for 16 bytes in
- * base64url (22 chars = 132 bits), 2 in base32hex (26 chars = 130 bits). Callers may spend them
- * on a trailing value at zero cost in length — see `encode`.
- */
-/*#__NO_SIDE_EFFECTS__*/
-export function spareBits(alpha: Alphabet, byteLength: number): number {
-  const bits = byteLength * 8;
-  return (alpha.bitsPerChar - (bits % alpha.bitsPerChar)) % alpha.bitsPerChar;
 }
 
 /** Boolean validation needs no output buffer or diagnostic allocation. */
@@ -150,42 +131,20 @@ function firstInvalidCharacter(alpha: Alphabet, value: string): UuidSlugError {
 }
 
 /**
- * Pack bytes, optionally followed by `tailBits` low bits of `tail`, into `alpha`.
- *
- * `tailBits` MUST NOT exceed `spareBits`, otherwise the result grows a character. Passing
- * `tail = 0` reproduces a plain encoding byte for byte, which is what keeps identifiers issued
- * before the tail existed valid afterwards.
+ * Pack one 16-byte UUID payload, optionally followed by the 4-bit masked check `tail`, into `alpha`:
+ * 22 base64url characters either way (the tail fills the final character's spare bits), or 26
+ * base32hex characters plain and 27 masked. With `tailBits = 0`, `tail` must be 0: that keeps a
+ * plain encoding byte for byte equal to the identifiers issued before the tail existed.
  */
 /*#__NO_SIDE_EFFECTS__*/
-export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {
-  if (createLatin1Scratch && bytes.length === 16) {
-    if (alpha === BASE64URL && (tailBits === 0 || tailBits === 4))
-      return encodeBase64urlLatin1(createLatin1Scratch, bytes, tail);
-    if (alpha === BASE32HEX && (tailBits === 0 || tailBits === 2 || tailBits === 4))
-      return encodeBase32hexLatin1(createLatin1Scratch, bytes, tail, tailBits);
-  }
-  if (bytes.length === 16) {
-    if (alpha === BASE64URL && (tailBits === 0 || tailBits === 4))
-      return writeBase64url(bytes, (base64urlCodes ??= characterCodes(BASE64URL)), tail);
-    if (alpha === BASE32HEX && (tailBits === 0 || tailBits === 2 || tailBits === 4))
-      return writeBase32hex(bytes, (base32hexCodes ??= characterCodes(BASE32HEX)), tail, tailBits);
-  }
-  if (
-    nativeToBase64 &&
-    alpha === BASE64URL &&
-    tailBits >= 0 &&
-    tailBits <= spareBits(alpha, bytes.length)
-  ) {
-    const encoded = nativeToBase64.call(bytes, BASE64_OPTIONS);
-    if (tailBits === 0) return encoded;
-    // The native result zeroes padding. Spend only those spare low bits on the mask check;
-    // replacing the final character leaves the UUID payload and the wire length unchanged.
-    const last = encoded.length - 1;
-    const digit = alpha.decode[encoded.charCodeAt(last)] as number;
-    const trailing = (tail & ((1 << tailBits) - 1)) << (spareBits(alpha, bytes.length) - tailBits);
-    return encoded.slice(0, last) + alpha.chars[digit | trailing];
-  }
-  return encodePortable(bytes, alpha, tail, tailBits);
+export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits: 0 | 4 = 0): string {
+  if (createLatin1Scratch)
+    return alpha === BASE64URL
+      ? encodeBase64urlLatin1(createLatin1Scratch, bytes, tail)
+      : encodeBase32hexLatin1(createLatin1Scratch, bytes, tail, tailBits);
+  return alpha === BASE64URL
+    ? writeBase64url(bytes, (base64urlCodes ??= characterCodes(BASE64URL)), tail)
+    : writeBase32hex(bytes, (base32hexCodes ??= characterCodes(BASE32HEX)), tail, tailBits);
 }
 
 /**
@@ -226,7 +185,7 @@ function encodeBase32hexLatin1(
   create: NonNullable<typeof createLatin1Scratch>,
   bytes: Uint8Array,
   tail: number,
-  tailBits: number,
+  tailBits: 0 | 4,
 ): string {
   const scratch =
     tailBits === 4 ? (maskedBase32hexScratch ??= create(27)) : (base32hexScratch ??= create(26));
@@ -256,119 +215,34 @@ function encodeBase32hexLatin1(
   return scratch.text();
 }
 
-/** Encode without runtime-native delegation so fallback performance can be measured directly. */
-/*#__NO_SIDE_EFFECTS__*/
-export function encodePortable(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {
-  // UUID routes always encode one 16-byte block. Fixed groups remove the generic accumulator;
-  // keep the generic path for every other supported shape and tail width.
-  if (alpha === BASE64URL && bytes.length === 16 && (tailBits === 0 || tailBits === 4)) {
-    let encoded = "";
-    for (let offset = 0; offset < 15; offset += 3) {
-      const block =
-        ((bytes[offset] as number) << 16) |
-        ((bytes[offset + 1] as number) << 8) |
-        (bytes[offset + 2] as number);
-      encoded +=
-        (alpha.chars[block >>> 18] as string) +
-        (alpha.chars[(block >>> 12) & 63] as string) +
-        (alpha.chars[(block >>> 6) & 63] as string) +
-        (alpha.chars[block & 63] as string);
-    }
-    const last = bytes[15] as number;
-    return (
-      encoded +
-      (alpha.chars[last >>> 2] as string) +
-      (alpha.chars[((last & 3) << 4) | (tail & 15)] as string)
-    );
-  }
-  if (
-    alpha === BASE32HEX &&
-    bytes.length === 16 &&
-    (tailBits === 0 || tailBits === 2 || tailBits === 4)
-  ) {
-    let encoded = "";
-    const chars = alpha.chars;
-    for (let offset = 0; offset < 15; offset += 5) {
-      const a = bytes[offset] as number;
-      const b = bytes[offset + 1] as number;
-      const c = bytes[offset + 2] as number;
-      const d = bytes[offset + 3] as number;
-      const e = bytes[offset + 4] as number;
-      encoded +=
-        (chars[a >>> 3] as string) +
-        (chars[((a & 7) << 2) | (b >>> 6)] as string) +
-        (chars[(b >>> 1) & 31] as string) +
-        (chars[((b & 1) << 4) | (c >>> 4)] as string) +
-        (chars[((c & 15) << 1) | (d >>> 7)] as string) +
-        (chars[(d >>> 2) & 31] as string) +
-        (chars[((d & 3) << 3) | (e >>> 5)] as string) +
-        (chars[e & 31] as string);
-    }
-    const last = bytes[15] as number;
-    if (tailBits === 4)
-      return (
-        encoded +
-        chars[last >>> 3] +
-        chars[((last & 7) << 2) | ((tail >>> 2) & 3)] +
-        chars[(tail & 3) << 3]
-      );
-    return encoded + chars[last >>> 3] + chars[((last & 7) << 2) | (tail & 3)];
-  }
-  const { bitsPerChar, chars } = alpha;
-  const mask = (1 << bitsPerChar) - 1;
-  let out = "";
-  let acc = 0;
-  let bits = 0;
-  for (let i = 0; i < bytes.length; i += 1) {
-    // At most bitsPerChar-1 bits are held over, so `acc` peaks at 13 bits and stays in int32.
-    acc = (acc << 8) | (bytes[i] as number);
-    bits += 8;
-    while (bits >= bitsPerChar) {
-      bits -= bitsPerChar;
-      out += chars[(acc >>> bits) & mask];
-    }
-  }
-  if (tailBits > 0) {
-    acc = (acc << tailBits) | (tail & ((1 << tailBits) - 1));
-    bits += tailBits;
-    while (bits >= bitsPerChar) {
-      bits -= bitsPerChar;
-      out += chars[(acc >>> bits) & mask];
-    }
-  }
-  if (bits > 0) out += chars[(acc << (bitsPerChar - bits)) & mask];
-  return out;
-}
-
 /**
- * Inverse of `encode`, writing into a caller-owned buffer so the slug paths need no intermediate
- * allocation. Returns the trailing value (0 when `tailBits` is 0), or an Error.
+ * Inverse of `encode`: write one 16-byte UUID payload into a caller-owned buffer so the slug paths
+ * need no intermediate allocation. Returns the trailing value (0 when `tailBits` is 0), or an Error.
  *
  * Rejects any character outside the alphabet, and any padding bit that is not zero. Without that
  * last check one identifier would have several valid spellings, so a corrupted slug could decode
- * successfully instead of being refused.
+ * successfully instead of being refused. Platform base64 decoders are not used for the same reason:
+ * they may accept whitespace, padding or nonzero trailing bits.
  */
 export function decodeInto(
   value: string,
   alpha: Alphabet,
   out: Uint8Array,
   offset: number,
-  byteLength: number,
-  tailBits = 0,
+  tailBits: 0 | 4 = 0,
 ): number | UuidSlugError {
   const { bitsPerChar, decode: table, code, name } = alpha;
-  const expected = Math.ceil((byteLength * 8 + tailBits) / bitsPerChar);
+  const expected = Math.ceil((128 + tailBits) / bitsPerChar);
   if (value.length !== expected)
     return new UuidSlugError(code, `Expected ${expected} ${name} characters, got ${value.length}.`);
-  const badRange = checkRange(out.length, offset, byteLength);
+  const badRange = checkRange(out.length, offset, 16);
   if (badRange) return badRange;
 
-  // UUID base64url has five complete groups and one byte. Decode that fixed wire shape directly;
-  // keep the accumulator below for every other byte length, alphabet, and tail width.
-  // Fixed paths check every character once after the loop: ORing the codes exposes any code
+  // Base64url: five complete four-character groups and one byte.
+  // Both paths check every character once after the loop: ORing the codes exposes any code
   // above 127, whose low bits the table read would alias, and ORing the digits turns any -1
   // negative. A branch per character was slower on Node and Bun (bench/decisions.md).
-  if (alpha === BASE64URL && byteLength === 16 && (tailBits === 0 || tailBits === 4)) {
+  if (alpha === BASE64URL) {
     let codes = 0;
     let digits = 0;
     let written = offset;
@@ -407,87 +281,56 @@ export function decodeInto(
     return 0;
   }
 
-  // UUID base32hex has three complete eight-character groups and one byte; a 4-bit masked tail adds
-  // a 27th character. Fixed byte formulas remove the general accumulator and its length guards.
-  if (
-    alpha === BASE32HEX &&
-    byteLength === 16 &&
-    (tailBits === 0 || tailBits === 2 || tailBits === 4)
-  ) {
-    let codes = 0;
-    let digits = 0;
-    let written = offset;
-    for (let start = 0; start < 24; start += 8) {
-      // Eight 5-bit digits exceed int32, so each byte is assembled from the digits it spans.
-      const d0 = value.charCodeAt(start);
-      const d1 = value.charCodeAt(start + 1);
-      const d2 = value.charCodeAt(start + 2);
-      const d3 = value.charCodeAt(start + 3);
-      const d4 = value.charCodeAt(start + 4);
-      const d5 = value.charCodeAt(start + 5);
-      const d6 = value.charCodeAt(start + 6);
-      const d7 = value.charCodeAt(start + 7);
-      codes |= d0 | d1 | d2 | d3 | d4 | d5 | d6 | d7;
-      const v0 = table[d0 & 127] as number;
-      const v1 = table[d1 & 127] as number;
-      const v2 = table[d2 & 127] as number;
-      const v3 = table[d3 & 127] as number;
-      const v4 = table[d4 & 127] as number;
-      const v5 = table[d5 & 127] as number;
-      const v6 = table[d6 & 127] as number;
-      const v7 = table[d7 & 127] as number;
-      digits |= v0 | v1 | v2 | v3 | v4 | v5 | v6 | v7;
-      out[written] = (v0 << 3) | (v1 >>> 2);
-      out[written + 1] = (v1 << 6) | (v2 << 1) | (v3 >>> 4);
-      out[written + 2] = (v3 << 4) | (v4 >>> 1);
-      out[written + 3] = (v4 << 7) | (v5 << 2) | (v6 >>> 3);
-      out[written + 4] = (v6 << 5) | v7;
-      written += 5;
-    }
-    const firstCode = value.charCodeAt(24);
-    const lastCode = value.charCodeAt(25);
-    // Only a 27-character value has this code; reading past a 26-character value would return NaN.
-    const paddingCode = tailBits === 4 ? value.charCodeAt(26) : 48;
-    const first = table[firstCode & 127] as number;
-    const last = table[lastCode & 127] as number;
-    const padding = table[paddingCode & 127] as number;
-    if ((codes | firstCode | lastCode | paddingCode) > 127 || (digits | first | last | padding) < 0)
-      return firstInvalidCharacter(alpha, value);
-    out[written] = (first << 3) | (last >>> 2);
-    if (tailBits === 4) {
-      if ((padding & 7) !== 0)
-        return new UuidSlugError(code, `${name} value has non-canonical trailing bits.`);
-      return ((last & 3) << 2) | (padding >>> 3);
-    }
-    if (tailBits === 2) return last & 3;
-    if ((last & 3) !== 0)
+  // Base32hex: three complete eight-character groups and one byte; a 4-bit masked tail adds a
+  // 27th character.
+  let codes = 0;
+  let digits = 0;
+  let written = offset;
+  for (let start = 0; start < 24; start += 8) {
+    // Eight 5-bit digits exceed int32, so each byte is assembled from the digits it spans.
+    const d0 = value.charCodeAt(start);
+    const d1 = value.charCodeAt(start + 1);
+    const d2 = value.charCodeAt(start + 2);
+    const d3 = value.charCodeAt(start + 3);
+    const d4 = value.charCodeAt(start + 4);
+    const d5 = value.charCodeAt(start + 5);
+    const d6 = value.charCodeAt(start + 6);
+    const d7 = value.charCodeAt(start + 7);
+    codes |= d0 | d1 | d2 | d3 | d4 | d5 | d6 | d7;
+    const v0 = table[d0 & 127] as number;
+    const v1 = table[d1 & 127] as number;
+    const v2 = table[d2 & 127] as number;
+    const v3 = table[d3 & 127] as number;
+    const v4 = table[d4 & 127] as number;
+    const v5 = table[d5 & 127] as number;
+    const v6 = table[d6 & 127] as number;
+    const v7 = table[d7 & 127] as number;
+    digits |= v0 | v1 | v2 | v3 | v4 | v5 | v6 | v7;
+    out[written] = (v0 << 3) | (v1 >>> 2);
+    out[written + 1] = (v1 << 6) | (v2 << 1) | (v3 >>> 4);
+    out[written + 2] = (v3 << 4) | (v4 >>> 1);
+    out[written + 3] = (v4 << 7) | (v5 << 2) | (v6 >>> 3);
+    out[written + 4] = (v6 << 5) | v7;
+    written += 5;
+  }
+  const firstCode = value.charCodeAt(24);
+  const lastCode = value.charCodeAt(25);
+  // Only a 27-character value has this code; reading past a 26-character value would return NaN.
+  const paddingCode = tailBits === 4 ? value.charCodeAt(26) : 48;
+  const first = table[firstCode & 127] as number;
+  const last = table[lastCode & 127] as number;
+  const padding = table[paddingCode & 127] as number;
+  if ((codes | firstCode | lastCode | paddingCode) > 127 || (digits | first | last | padding) < 0)
+    return firstInvalidCharacter(alpha, value);
+  out[written] = (first << 3) | (last >>> 2);
+  if (tailBits === 4) {
+    if ((padding & 7) !== 0)
       return new UuidSlugError(code, `${name} value has non-canonical trailing bits.`);
-    return 0;
+    return ((last & 3) << 2) | (padding >>> 3);
   }
-
-  let acc = 0;
-  let bits = 0;
-  let written = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    const charCode = value.charCodeAt(i);
-    const digit = charCode < 128 ? (table[charCode] as number) : -1;
-    if (digit < 0) return invalidCharacter(alpha, value, i);
-    acc = (acc << bitsPerChar) | digit;
-    bits += bitsPerChar;
-    while (bits >= 8 && written < byteLength) {
-      bits -= 8;
-      out[offset + written] = (acc >>> bits) & 0xff;
-      written += 1;
-    }
-  }
-  let tail = 0;
-  if (tailBits > 0) {
-    bits -= tailBits;
-    tail = (acc >>> bits) & ((1 << tailBits) - 1);
-  }
-  if (bits > 0 && (acc & ((1 << bits) - 1)) !== 0)
+  if ((last & 3) !== 0)
     return new UuidSlugError(code, `${name} value has non-canonical trailing bits.`);
-  return tail;
+  return 0;
 }
 
 // Fixed 16-byte groups avoid per-character concatenation and temporary text buffers on V8.
@@ -532,7 +375,7 @@ function writeBase32hex(
   bytes: Uint8Array,
   codes: Uint8Array,
   tail: number,
-  tailBits: number,
+  tailBits: 0 | 4,
 ): string {
   const a = bytes[0] as number,
     b = bytes[1] as number,

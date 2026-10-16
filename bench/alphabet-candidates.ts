@@ -7,10 +7,12 @@ export function alphabetCandidates(source: string): readonly SourceCandidate[] {
   // Compare complete calls: a native kernel can lose once dispatch and exception containment
   // are included. Non-Bun runtimes must keep their original writer without a per-call Bun test.
   const declaration =
-    "export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {";
+    "export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits: 0 | 4 = 0): string {";
   const capability = "const createLatin1Scratch = runtime.latin1Scratch;";
+  // The baseline has no native encoder, so native candidates bring their own probe.
   const native =
-    'const bunPlainToBase64 = typeof Bun !== "undefined" ? nativeToBase64 : undefined;\n';
+    "const BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;\n" +
+    'const bunPlainToBase64 = typeof Bun !== "undefined" ? (Uint8Array.prototype as { toBase64?: (options: typeof BASE64_OPTIONS) => string }).toBase64 : undefined;\n';
   const call =
     "if (bunPlainToBase64 && bytes.length === 16 && alpha === BASE64URL && tailBits === 0) {\n    try { return bunPlainToBase64.call(bytes, BASE64_OPTIONS); } catch { /* Keep the existing writer when the optional native capability fails. */ }\n  }\n";
   // Keep the public dispatcher and base32 writer unchanged. This tests whether placing native
@@ -110,9 +112,9 @@ export function alphabetCandidates(source: string): readonly SourceCandidate[] {
           replaceOnce(
             replaceOnce(source, capability, native + capability),
             declaration,
-            "function encodeFixed(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {",
+            "function encodeFixed(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits: 0 | 4 = 0): string {",
           ) +
-          "\n/*#__NO_SIDE_EFFECTS__*/\nfunction encodeNativePlain(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {\n  " +
+          "\n/*#__NO_SIDE_EFFECTS__*/\nfunction encodeNativePlain(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits: 0 | 4 = 0): string {\n  " +
           call +
           "  return encodeFixed(bytes, alpha, tail, tailBits);\n}\nexport const encode = bunPlainToBase64 ? encodeNativePlain : encodeFixed;\n"
         );

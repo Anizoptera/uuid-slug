@@ -14,14 +14,7 @@
  */
 import { describe, expect, test } from "bun:test";
 import { equal } from "node:assert/strict";
-import {
-  BASE32HEX,
-  BASE64URL,
-  decodeInto,
-  encode,
-  encodePortable,
-  spareBits,
-} from "../src/alphabet";
+import { BASE32HEX, BASE64URL, decodeInto, encode } from "../src/alphabet";
 import { uuidStringToPlainSlug } from "../src/index";
 import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
@@ -39,19 +32,17 @@ describe("wire format is identical across runtimes", () => {
   // The spare bits carry the outer half of the wrong-key check, so every value one can hold must
   // survive the trip. A tail that round-trips for some values and not others would narrow the
   // check silently: the slug still decodes, and only the rate of wrong-key acceptance moves.
-  test("both alphabets round-trip 16 bytes plus every value of their spare bits", () => {
+  test("both masked spellings round-trip 16 bytes plus every 4-bit check tail", () => {
     const bytes = Uint8Array.from({ length: 16 }, (_, index) => index * 17);
     for (const [alpha, length] of [
       [BASE64URL, 22],
-      [BASE32HEX, 26],
+      [BASE32HEX, 27],
     ] as const) {
-      const width = spareBits(alpha, 16);
-      for (let tail = 0; tail < 1 << width; tail += 1) {
-        const encoded = encode(bytes, alpha, tail, width);
-        expect(encodePortable(bytes, alpha, tail, width)).toBe(encoded);
+      for (let tail = 0; tail < 16; tail += 1) {
+        const encoded = encode(bytes, alpha, tail, 4);
         expect(encoded).toHaveLength(length);
         const out = new Uint8Array(16);
-        expect(decodeInto(encoded, alpha, out, 0, 16, width)).toBe(tail);
+        expect(decodeInto(encoded, alpha, out, 0, 4)).toBe(tail);
         expect([...out]).toEqual([...bytes]);
       }
     }

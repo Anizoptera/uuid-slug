@@ -103,7 +103,6 @@ describe("portable UUID text and slug writing", () => {
         expect(api.uuidBytesToPlainSlug(uuid)).toBe(Buffer.from(uuid).toString("base64url"));
         expect(api.uuidBytesToPlainSlug(uuid, "base32hex")).toBe("008i4cq4alj7f24platspnfevs");
         expect(alphabet.encode(uuid, alphabet.BASE64URL, 9, 4)).toBe("ABEiM0RVZneImaq7zN3u_5");
-        expect(alphabet.encode(uuid, alphabet.BASE32HEX, 3, 2)).toBe("008i4cq4alj7f24platspnfevv");
         expect(alphabet.encode(uuid, alphabet.BASE32HEX, 9, 4)).toBe("008i4cq4alj7f24platspnfevu8");
       } finally {
         vi.doUnmock("#runtime");

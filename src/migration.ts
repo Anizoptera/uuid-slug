@@ -132,7 +132,6 @@ export function createMigration(
       base32 || safeMasked ? BASE32HEX : BASE64URL,
       bytes,
       0,
-      16,
       base32 ? 0 : 4,
     );
     if (tail instanceof Error) return tail;

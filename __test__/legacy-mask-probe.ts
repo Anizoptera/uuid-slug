@@ -320,7 +320,7 @@ export const legacyMaskCases = [
         return mask;
       });
       const mixed = new Uint8Array(16);
-      const tail = decodeInto(slug, BASE64URL, mixed, 0, 16, 4);
+      const tail = decodeInto(slug, BASE64URL, mixed, 0, 4);
       if (tail instanceof Error) throw tail;
       const original = mixed.slice();
       const empty: UuidString[] = [];

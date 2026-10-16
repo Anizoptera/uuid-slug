@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE32HEX, BASE64URL, BASE64URL_NAME, decodeInto, encode, spareBits } from "./alphabet.ts";
+import { BASE32HEX, BASE64URL, BASE64URL_NAME, decodeInto, encode } from "./alphabet.ts";
 import {
   INVALID_MASK,
   INVALID_TIMESTAMP,
@@ -142,8 +142,9 @@ const INNER_TAG_BITS = 12;
 /**
  * The existing base64url wire format fixes four outer check bits. Alternate spellings preserve
  * all 132 bits; the safe base32hex spelling adds three zero padding bits, not more check bits.
+ * Four is what 22 base64url characters hold beyond 16 bytes: 132 − 128 bits.
  */
-const OUTER_TAG_BITS = spareBits(BASE64URL, 16);
+const OUTER_TAG_BITS = 4;
 const TAG_BITS = INNER_TAG_BITS + OUTER_TAG_BITS;
 
 /**
@@ -218,7 +219,6 @@ export function unmaskSlug(
     slug.length === 27 ? BASE32HEX : BASE64URL,
     mixed,
     0,
-    16,
     OUTER_TAG_BITS,
   );
   if (outerTag instanceof Error) return outerTag;

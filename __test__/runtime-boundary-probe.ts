@@ -434,7 +434,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
         assert.equal(bytesToUuidString(storage, 3, UUID_TEXT_UPPERCASE), expected.toUpperCase());
         assert.equal(encode(bytes, BASE64URL_ALPHABET), Buffer.from(bytes).toString("base64url"));
         for (const [alphabet, widths] of [
-          [BASE32HEX_ALPHABET, [0, 2, 4]],
+          [BASE32HEX_ALPHABET, [0, 4]],
           [BASE64URL_ALPHABET, [0, 4]],
         ] as const)
           for (const tailBits of widths) {
