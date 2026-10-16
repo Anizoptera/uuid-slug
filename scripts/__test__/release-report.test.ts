@@ -260,14 +260,14 @@ test("publication notes put each API diff at the end of its section, then size a
       "### Breaking changes\n\n- Rename `old`.\n\n```diff\n- old()\n```",
       "### Fixed\n\n- A fix.",
       "### Added\n\n```diff\n+ fresh()\n```",
-      "**Package size**: 218.3 KB compressed, up 89.3 KB (+69.1%) from v0.3.0\n**NPM Package**: [`@scope/pkg v0.4.0`](https://www.npmjs.com/package/@scope/pkg/v/0.4.0)\n**Full Commit History**: https://github.com/owner/pkg/compare/v0.3.0...v0.4.0\n",
+      "**Package size**: 218.3 KB compressed, **up 89.3 KB (+69.1%)** from v0.3.0\n**NPM Package**: [`@scope/pkg v0.4.0`](https://www.npmjs.com/package/@scope/pkg/v/0.4.0)\n**Full Commit History**: https://github.com/owner/pkg/compare/v0.3.0...v0.4.0\n",
     ].join("\n\n"),
   );
   const both = consumerReleaseNotes(changelog, report, "both");
   expect(both).toContain(
     "**npm package**\n\n```diff\n- old()\n```\n\n**Rust crate**\n\ncrate break",
   );
-  expect(both).toContain("**Rust crate size**: 30.0 KB compressed, unchanged from v0.3.0");
+  expect(both).toContain("**Rust crate size**: 30.0 KB compressed, **unchanged** from v0.3.0");
   expect(both).toContain("**Rust Crate**: [`pkg v0.4.0`](https://crates.io/crates/pkg/0.4.0)");
   for (const omitted of ["inventory", "999", "888"]) expect(both).not.toContain(omitted);
   expect(consumerReleaseNotes(changelog, report, "crate")).not.toContain("old()");
@@ -284,7 +284,7 @@ test("publication notes put each API diff at the end of its section, then size a
   ).toBe(
     "First release.\n\n**Package size**: 512 bytes compressed\n**NPM Package**: [`@scope/pkg v0.4.0`](https://www.npmjs.com/package/@scope/pkg/v/0.4.0)\n**Full Commit History**: https://github.com/owner/pkg/commits/v0.4.0\n",
   );
-  // Declaration maps are maps and nested compiled adapters are JavaScript; anything else is other.
+  // Declaration maps are maps, nested compiled adapters are JavaScript, and the README is in no part.
   for (const [path, role] of Object.entries({
     "package/dist/index.js": "javascript",
     "package/dist/node/runtime.js": "javascript",
@@ -292,12 +292,12 @@ test("publication notes put each API diff at the end of its section, then size a
     "package/dist/index.d.ts.map": "sourceMaps",
     "package/dist/index.js.map": "sourceMaps",
     "package/src/index.ts": "typescript",
-    "package/README.md": "other",
+    "package/README.md": undefined,
   })) {
     const contents = await npmContents(new Map([[path, new Blob(["export const x = 1;\n"])]]));
-    expect(Object.entries(contents).filter(([, size]) => size > 0)).toEqual([
-      [role, expect.any(Number)],
-    ]);
+    expect(Object.entries(contents).filter(([, size]) => size > 0)).toEqual(
+      role ? [[role, expect.any(Number)]] : [],
+    );
   }
   expect(
     consumerReleaseNotes(
@@ -311,7 +311,6 @@ test("publication notes put each API diff at the end of its section, then size a
             declarations: 512,
             sourceMaps: 512,
             typescript: 900,
-            other: 124,
           },
         },
         comparisons: [],
@@ -319,7 +318,7 @@ test("publication notes put each API diff at the end of its section, then size a
       "npm",
     ),
   ).toContain(
-    "**Package size**: 3.0 KB compressed (1.0 KB tree-shakable compiled JavaScript, 512 bytes type declarations, 512 bytes source maps, 900 bytes TypeScript source, 124 bytes README, license and manifest)\n",
+    "**Package size**: 3.0 KB compressed _(1.0 KB JS, 512 bytes sourcemaps, 512 bytes types, 900 bytes TS sources)_\n",
   );
 });
 test("stable version distance must satisfy the derived release level", () => {

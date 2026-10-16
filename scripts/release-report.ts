@@ -32,15 +32,14 @@ import type { CargoReleaseSurface, NpmReleaseSurface } from "./release-surface";
 /**
  * Estimated compressed npm bytes by role. Most of the tarball is TypeScript source and maps that
  * bundles never include, so the total alone overstates what a consumer ships. A `.tgz` is one gzip
- * stream, so no file has its own compressed size; gzipping each role alone estimates its share,
- * and the estimates sum to within about 1% of the archive.
+ * stream, so no file has its own compressed size; gzipping each role alone estimates its share.
+ * README, license and manifest are not broken out.
  */
 export interface NpmContents {
   readonly javascript: number;
   readonly declarations: number;
   readonly sourceMaps: number;
   readonly typescript: number;
-  readonly other: number;
 }
 
 const gzipped = (parts: Uint8Array[]) =>
@@ -52,7 +51,6 @@ export async function npmContents(files: ReadonlyMap<string, Blob>): Promise<Npm
     declarations: [],
     sourceMaps: [],
     typescript: [],
-    other: [],
   };
   for (const [path, file] of files) {
     const role = path.endsWith(".map")
@@ -63,15 +61,14 @@ export async function npmContents(files: ReadonlyMap<string, Blob>): Promise<Npm
           ? "javascript"
           : path.startsWith("package/src/") && path.endsWith(".ts")
             ? "typescript"
-            : "other";
-    roles[role].push(await file.bytes());
+            : undefined;
+    if (role) roles[role].push(await file.bytes());
   }
   return {
     javascript: gzipped(roles.javascript),
     declarations: gzipped(roles.declarations),
     sourceMaps: gzipped(roles.sourceMaps),
     typescript: gzipped(roles.typescript),
-    other: gzipped(roles.other),
   };
 }
 
@@ -141,14 +138,14 @@ export function consumerReleaseNotes(
       before === undefined || !latest
         ? ""
         : now === before
-          ? `, unchanged from ${latest.tag}`
-          : `, ${now > before ? "up" : "down"} ${binarySize(now - before)}${before ? ` (${now > before ? "+" : ""}${(((now - before) / before) * 100).toFixed(1)}%)` : ""} from ${latest.tag}`;
+          ? `, **unchanged** from ${latest.tag}`
+          : `, **${now > before ? "up" : "down"} ${binarySize(now - before)}${before ? ` (${now > before ? "+" : ""}${(((now - before) / before) * 100).toFixed(1)}%)` : ""}** from ${latest.tag}`;
     const parts = key === "npm" ? report.current.npmContents : undefined;
-    const unpacked = parts
-      ? ` (${binarySize(parts.javascript)} tree-shakable compiled JavaScript, ${binarySize(parts.declarations)} type declarations, ${binarySize(parts.sourceMaps)} source maps, ${binarySize(parts.typescript)} TypeScript source, ${binarySize(parts.other)} README, license and manifest)`
+    const breakdown = parts
+      ? ` _(${binarySize(parts.javascript)} JS, ${binarySize(parts.sourceMaps)} sourcemaps, ${binarySize(parts.declarations)} types, ${binarySize(parts.typescript)} TS sources)_`
       : "";
     return [
-      `**${keys.length > 1 ? `${labels[key]} size` : "Package size"}**: ${binarySize(now)} compressed${change}${unpacked}`,
+      `**${keys.length > 1 ? `${labels[key]} size` : "Package size"}**: ${binarySize(now)} compressed${breakdown}${change}`,
     ];
   });
   // GitHub renders each line break in a release body, so these stay one entry per line.
