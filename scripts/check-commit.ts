@@ -76,7 +76,11 @@ async function run(script: string, args: string[] = []): Promise<string | undefi
 }
 
 // Checks without a build start at once; the build runs beside them and gates only its dependants.
-const build = selected.some((check) => check.build) ? run("build") : undefined;
+// publint and attw judge the package's shape, not the staged change, and take a third of the
+// build; `bun run check` keeps them. Output bytes are the same either way.
+const build = selected.some((check) => check.build)
+  ? run("build", ["--no-publint", "--no-attw"])
+  : undefined;
 const results = await Promise.all(
   selected.map(async (check) => {
     if (!check.build) return run(check.script, check.args);
