@@ -77,9 +77,6 @@ import {
   uuidVersion,
 } from "./uuid.ts";
 
-export { isUuidSlugError } from "./errors.ts";
-export { UuidSlugError };
-export type { UuidSlugErrorCode } from "./errors.ts";
 export type { PlainUuidSlug, PlainUuidV4Slug, PlainUuidV7Slug } from "./types.ts";
 
 const UUID_V7_TIMESTAMP_ONLY = "Timestamp is only defined for UUIDv7.";

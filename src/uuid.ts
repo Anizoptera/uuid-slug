@@ -36,11 +36,6 @@ import type {
   UuidVersion,
 } from "./types.ts";
 
-export { isUuidSlugError } from "./errors.ts";
-export { UuidSlugError };
-export type { UuidSlugErrorCode } from "./errors.ts";
-export type { UuidBytes, UuidString } from "./types.ts";
-
 /** Report byte input that does not hold exactly one 16-byte UUID. */
 export const invalidUuidBytes = /* @__NO_SIDE_EFFECTS__ */ (): UuidSlugError =>
   new UuidSlugError(INVALID_BUFFER, "UUID byte input must contain exactly 16 bytes.");
@@ -70,10 +65,9 @@ export const isUuidTextCase = (value: unknown): value is UuidTextCase =>
 export function resolveUuidTextCase(value: unknown): UuidTextCase | UuidSlugError {
   if (value === UUID_TEXT_LOWERCASE || value === UUID_TEXT_UPPERCASE) return value;
   const textCase = stringInput(value);
-  return isUuidTextCase(textCase) ? textCase : invalidUuidTextCase();
-}
-export function invalidUuidTextCase(): UuidSlugError {
-  return new UuidSlugError(INVALID_OPTIONS, "UUID text case must be lowercase or uppercase.");
+  return isUuidTextCase(textCase)
+    ? textCase
+    : new UuidSlugError(INVALID_OPTIONS, "UUID text case must be lowercase or uppercase.");
 }
 const createLatin1Scratch = runtime.latin1Scratch;
 const nativeToHex = runtime.uuidHex;

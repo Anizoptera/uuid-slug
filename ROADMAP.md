@@ -19,7 +19,6 @@ Each item keeps behaviour, public API (`api/typescript.api.d.ts`), speed and bun
 
 ### Safe, in priority order (rule breaches first, then the biggest cuts)
 
-- [ ] Remove unused re-exports in `src/uuid.ts` (`isUuidSlugError`, `UuidSlugError`, `UuidSlugErrorCode`, `UuidBytes`, `UuidString`) and inline `invalidUuidTextCase`; check the same pattern in `src/slug.ts` and `src/v4.ts`.
 - [ ] Replace `parseUuidWithCodec` (`src/uuid-value.ts`) with `(uuid) => parseUuid(uuid, maskingCodec)` at its one caller; type-check with every compiler in `scripts/typescript-compilers.ts`.
 - [ ] Collapse the 7-line text extraction in `src/slug.ts` and `src/masking-codec.ts` to `const text = typeof uuid === "string" ? uuid : readObjectUuidInput(uuid); if (typeof text !== "string") return text;` (~10 lines; bench `plain.decode`, `masked.decode`).
 - [ ] Replace the hand-written invalid-character loop in `src/slug.ts` caller-buffer decoding with `isEncoded` plus `decodeInto` diagnostics (~8 lines); base64url trailing-bit errors there then gain the masked-slug hint the no-buffer path already shows.

@@ -27,9 +27,6 @@ import {
   resolveUuidTextCase,
 } from "./uuid.ts";
 
-export { isUuidSlugError } from "./errors.ts";
-export { UuidSlugError };
-export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidV4Bytes, UuidV4String } from "./types.ts";
 export { isUuidV4Bytes, isUuidV4String, isUuidV4Text } from "./uuid.ts";
 
