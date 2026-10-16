@@ -50,7 +50,7 @@ test("performance runtime selection preserves every requested host and rejects o
     expect(() => selectComparisonRuntimes(invalid)).toThrow("must list distinct values");
 });
 
-test("performance routing uses real changes and refuses missing parent history", async () => {
+test("performance routing times every unpublished change and refuses a missing baseline", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-performance-inputs-"));
   const git = (args: string[]) => command("git", args, root);
   const commit = async (message: string) => {
@@ -97,6 +97,10 @@ test("performance routing uses real changes and refuses missing parent history",
     await Bun.write(join(root, "README.md"), "Fixture documentation.\n");
     await git(["init", "--quiet"]);
     await commit("fixture baseline");
+    // A local branch stands in for the remote: merge-base resolution is the same Git operation.
+    await git(["branch", "published"]);
+    await git(["branch", "--set-upstream-to=published"]);
+    const published = (await git(["rev-parse", "published"])).trim();
     await Bun.write(join(root, "README.md"), "Changed fixture documentation.\n");
     await Bun.write(join(root, "bench/README.md"), "Changed fixture instructions.\n");
     await commit("fixture documentation");
@@ -112,36 +116,38 @@ test("performance routing uses real changes and refuses missing parent history",
       });
       expect({ input, resources: await performanceBaseline(root, "regression") }).toEqual({
         input,
-        resources: "HEAD",
+        resources: published,
       });
       await Bun.write(join(root, input), "Fixture guard baseline.\n");
     }
     // eslint-enable no-await-in-loop
     await Bun.write(join(root, "bench/resources.ts"), "export const guard = 2;\n");
     expect(await performanceBaseline(root)).toBeUndefined();
-    expect(await performanceBaseline(root, "regression")).toBe("HEAD");
+    expect(await performanceBaseline(root, "regression")).toBe(published);
     await commit("fixture resource guard");
     expect(await performanceBaseline(root)).toBeUndefined();
-    expect(await performanceBaseline(root, "regression")).toBe("HEAD^");
+    expect(await performanceBaseline(root, "regression")).toBe(published);
     await Bun.write(join(root, "src/index.ts"), "export const value = 2;\n");
-    expect(await performanceBaseline(root)).toBe("HEAD");
+    expect(await performanceBaseline(root)).toBe(published);
     await commit("fixture production");
-    expect(await performanceBaseline(root)).toBe("HEAD^");
-    await Bun.write(join(root, "src/index.ts"), "export const value = 3;\n");
-    expect(await performanceBaseline(root)).toBe("HEAD");
-    await Bun.write(join(root, "src/index.ts"), "export const value = 2;\n");
-    // Hide ancestry on the same object database; removing this one condition must restore routing.
-    await Bun.write(join(root, ".git/shallow"), await git(["rev-parse", "HEAD"]));
-    let missingParent: Error | undefined;
+    // A later unrelated commit must not hide the earlier unpublished production change.
+    await Bun.write(join(root, "README.md"), "Later fixture documentation.\n");
+    await commit("fixture later documentation");
+    expect(await performanceBaseline(root)).toBe(published);
+    // Without an upstream the gate must fail, never fall back to timing only the newest commit.
+    await git(["branch", "--unset-upstream"]);
+    const missing = await performanceBaseline(root).catch((error: unknown) => error);
+    expect(missing instanceof Error && missing.message).toContain("--set-upstream-to");
+    // CI names the published commit explicitly; an unfetched one fails the same way.
+    process.env.UUID_SLUG_PERF_BASELINE = published;
     try {
-      await performanceBaseline(root);
-    } catch (error) {
-      if (!(error instanceof Error)) throw error;
-      missingParent = error;
+      expect(await performanceBaseline(root)).toBe(published);
+      process.env.UUID_SLUG_PERF_BASELINE = "0".repeat(39) + "1";
+      const unfetched = await performanceBaseline(root).catch((error: unknown) => error);
+      expect(unfetched instanceof Error && unfetched.message).toContain("UUID_SLUG_PERF_BASELINE");
+    } finally {
+      delete process.env.UUID_SLUG_PERF_BASELINE;
     }
-    expect(missingParent?.message).toContain("fetch-depth: 2");
-    await rm(join(root, ".git/shallow"));
-    expect(await performanceBaseline(root)).toBe("HEAD^");
     passed = true;
   } finally {
     if (passed) await rm(root, { recursive: true, force: true });

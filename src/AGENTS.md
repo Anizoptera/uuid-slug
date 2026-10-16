@@ -76,6 +76,11 @@ Rules for editing the TypeScript package. Root `AGENTS.md` applies too.
   caller inputs, results, failures, effects, guarantees and choices, never internal reasoning.
   Non-public TSDoc may explain constraints when editor help is useful. Keep versions, numbers,
   workloads and statistical limits in `bench/decisions.md`; link it rather than copy them.
+- Treat code that looks redundant (an extra branch, a duplicate check, a larger function) as
+  possibly there for speed, even with no comment saying so: function size and shape change engine
+  inlining, so deleting dead-looking code can slow the caller. Before such a cut lands, run the
+  all-runtime `perf:check` from root `AGENTS.md` §Release. When the shape turns out to matter, add
+  the comment this section requires so the next cleanup does not repeat the cut.
 - A runtime/compiler floor forbids unguarded newer APIs, not useful newer APIs. Use a newer
   JavaScript capability only for measured runtime or resource value, probe it once, retain a
   compatible fallback, and exercise both paths in their owning runtime lanes.

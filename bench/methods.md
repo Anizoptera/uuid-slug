@@ -286,6 +286,7 @@ independent checks; isolate timing from competing work. Do not meet a ceiling by
 calls, weakening oracles, skipping cleanup or substituting simulated code for shipped code.
 
 Run `bun run build && bun run perf:check` to check the package under the selected Node and Bun.
+It times the working tree against the last published commit: `UUID_SLUG_PERF_BASELINE` in CI, otherwise the merge-base with the upstream branch. A slowdown in any unpublished commit therefore stays visible after later commits land; with no baseline it fails rather than time only the newest commit.
 `bun run check` runs this lane after other checks finish, so competing tests cannot distort its timings.
 The current-runtime CI lane also runs it with the newest Node and Bun.
 

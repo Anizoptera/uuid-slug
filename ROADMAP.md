@@ -14,12 +14,7 @@
 
 ## Code reduction
 
-Each item keeps behaviour, public API (`api/typescript.api.d.ts`), speed and bundle size unless noted. Gate each with `bun run check`; items touching a hot path also need the named bench rows on Bun and Node before they land.
-
-### Safe, in priority order (rule breaches first, then the biggest cuts)
-
-
-### Needs a benchmark first (hot path or measured area)
+Each item must keep behaviour, public API (`api/typescript.api.d.ts`), speed, resource use and bundle size. Code that looks redundant can be there for speed, so every item lands only after `bun run check` and the all-runtime `perf:check` (root `AGENTS.md` §Release) pass.
 
 - [ ] In `src/payload.ts`, format known 16-byte `unmix` candidates with `formatUuidBytesUnchecked` and drop their impossible error checks (~10 lines). It replaces `bytesToUuidString`'s native-hex choice on the candidate path; bench the migration candidate rows first.
 - [ ] Collapse the 7-line text extraction in `src/slug.ts` and `src/masking-codec.ts` to `const text = typeof uuid === "string" ? uuid : readObjectUuidInput(uuid); if (typeof text !== "string") return text;` (~10 lines). Adds a second `typeof` to every string decode; bench `plain.decode` and `masked.decode` first, since `perf:check` cannot see a change this small.
