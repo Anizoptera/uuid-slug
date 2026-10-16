@@ -309,7 +309,7 @@ file kinds fail; executable and optimizer-annotation changes retain timing.
 - `latency.ts` alternates each operation with its related primitive on the same runtime and uses the
   median of repeated ratios. The coarse limits live beside those pairs; they catch material pipeline
   slowdowns without pinning laptop nanoseconds. They cannot detect a slowdown shared by both sides.
-- A failing timing ratio requires a standalone rerun and profiles of both sides. Do not raise a limit
+- A failing timing ratio requires a rerun of the same command (same refs, same filter) in a fresh invocation, and profiles of both sides. A rerun of the failing row alone is a different measurement: it changes JIT and inlining context and can pass while the full-filter run keeps failing. Do not raise a limit
   to clear a failure. Host contention, JIT changes and reference speedups can affect the ratio; preserve
   evidence and explain the cause before adjusting the implementation or the internal budget.
 - The harness tests inject a discarded error and repeated parsing while preserving the result. Both

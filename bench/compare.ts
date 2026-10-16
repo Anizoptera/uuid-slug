@@ -470,7 +470,11 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
   }
   if (failures.length)
     throw new Error(
-      `Primary-call regression check failed:\n${failures.join("\n")}\nInspect the raw paired records and reproduce in isolation; do not weaken the check to accept a slowdown.`,
+      // Rerunning only the failing row changes JIT and inlining context and can hide a slowdown that
+      // reproduces with the full filter, so the reproduction must repeat the same rows and refs.
+      `Primary-call regression check failed:\n${failures.join("\n")}\n` +
+        `Reproduce with the same refs and filter in fresh invocations: UUID_SLUG_COMPARE_RUNTIMES=${selectedRuntimes.join(":")} UUID_SLUG_PROFILE_FILTER='${filter}' bun bench/compare.ts ${baselineRef}${candidateRef ? ` ${candidateRef}` : ""} --check\n` +
+        "A run with a narrower filter is not a reproduction and cannot clear this failure. Profile both sides; do not weaken the check to accept a slowdown.",
     );
 }
 
