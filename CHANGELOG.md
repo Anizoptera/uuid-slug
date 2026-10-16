@@ -9,10 +9,10 @@ section here, with the generated API changes, package size and links added.
 
 - Deno loads the package. Its `deno` export condition now selects the compiled JavaScript; 0.4.0 selected TypeScript source, which Deno refuses inside npm packages.
 
-### Breaking changes
+### Changed
 
-- `engines` declares the tested minimums Bun 1.0.8 and Deno 1.29 (Node stays 20). Bun 1.0.0–1.0.7 cannot cancel async mask derivation; upgrade Bun to 1.0.8 or later.
-- Declarations are checked with TypeScript 5.9, 6 and 7 and with `bun check`; the documented minimum is now TypeScript 5.9 instead of 5.0. Upgrade TypeScript to 5.9 or later.
+- `engines` declares the tested minimums Bun 1.0.8 and Deno 1.29 (Node stays 20). Bun 1.0.0–1.0.7 cannot cancel async mask derivation.
+- Declarations are checked with TypeScript 5.9, 6 and 7 and with `bun check`; the documented minimum is now TypeScript 5.9 instead of 5.0.
 
 ## [0.4.0]
 

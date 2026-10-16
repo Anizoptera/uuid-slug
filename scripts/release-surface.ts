@@ -125,13 +125,17 @@ function compareFloor(
 }
 
 function exportsLevel(before: unknown, after: unknown): ReleaseLevel {
+  // Which file serves an import is implementation: every old import still resolves, and the API
+  // reports plus packed consumers judge what it provides. Only a lost path or condition, or a
+  // reorder that changes which condition wins, breaks resolution.
+  if (typeof before === "string" && typeof after === "string") return "patch";
   if (!before || !after || typeof before !== "object" || typeof after !== "object") return "major";
   const oldEntries = Object.entries(before);
   const newExports = after as Record<string, unknown>;
-  if (
-    oldEntries.some(([name, target]) => JSON.stringify(target) !== JSON.stringify(newExports[name]))
-  )
-    return "major";
+  const targets = oldEntries.map(([name, target]) =>
+    Object.hasOwn(newExports, name) ? exportsLevel(target, newExports[name]) : "major",
+  );
+  if (targets.includes("major")) return "major";
   const names = Object.keys(after);
   // Conditions choose one result in order; subpath keys identify distinct imports.
   if (!oldEntries.some(([name]) => name.startsWith("."))) {
@@ -139,7 +143,7 @@ function exportsLevel(before: unknown, after: unknown): ReleaseLevel {
     for (const name of names) if (name === oldEntries[retained]?.[0]) retained++;
     if (retained !== oldEntries.length) return "major";
   }
-  return names.length > oldEntries.length ? "minor" : "patch";
+  return combineReleaseLevels(...targets, names.length > oldEntries.length ? "minor" : "patch");
 }
 
 function metadataRecords(value: unknown): string {

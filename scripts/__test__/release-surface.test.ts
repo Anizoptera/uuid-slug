@@ -103,7 +103,7 @@ test("entrypoint and library target changes require compatible versions", () => 
   expect(cargoSurfaceDifference(cargo, { ...cargo, targets: [] }).level).toBe("major");
 });
 
-test("a new npm subpath is additive but a changed target is breaking", () => {
+test("a new npm subpath is additive; a moved target is not breaking but a lost condition is", () => {
   const before = npmReleaseSurface({ exports: { ".": "./index.js" } });
   expect(
     npmSurfaceDifference(
@@ -113,7 +113,16 @@ test("a new npm subpath is additive but a changed target is breaking", () => {
   ).toBe("minor");
   expect(
     npmSurfaceDifference(before, npmReleaseSurface({ exports: { ".": "./other.js" } })).level,
-  ).toBe("major");
+  ).toBe("patch");
+  const conditions = npmReleaseSurface({
+    exports: { ".": { deno: "./src/index.ts", default: "./index.js" } },
+  });
+  const level = (exports: unknown) =>
+    npmSurfaceDifference(conditions, npmReleaseSurface({ exports })).level;
+  expect(level({ ".": { deno: "./dist/index.js", default: "./index.js" } })).toBe("patch");
+  expect(level({ ".": { default: "./index.js" } })).toBe("major");
+  expect(level({ ".": "./index.js" })).toBe("major");
+  expect(level({ ".": { deno: "./d.js", node: "./n.js", default: "./index.js" } })).toBe("minor");
 });
 
 test("export-condition priority changes show only the reordered conditions", () => {

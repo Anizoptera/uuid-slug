@@ -35,9 +35,7 @@ must not gate release preparation. Report dependent repairs as unresolved.
 
 Edit public docs, including README and generated docs, only with an explicit maintainer request or approval.
 Otherwise propose the exact edit and wait. Code changes, stale text, failed checks and sync instructions do not authorize edits.
-Correction requests authorize factual repairs without another approval, never new public contracts, guarantees, APIs or behavior.
-An authorized release authorizes the factual repairs its own changelog section needs to pass release checks, such as moving a bullet to the heading that matches its effect or naming the upgrade; fix them and report them instead of asking.
-This restriction overrides documentation-update instructions below.
+Correction requests authorize factual repairs without another approval, never new public contracts, guarantees, APIs or behavior.This restriction overrides documentation-update instructions below.
 
 Derive choices and checks from owning rulings and in-scope evidence before asking.
 Ask only when a material priority, consequence or permission remains unresolved. State each answer's effect
@@ -311,6 +309,7 @@ Agent instructions live only in `AGENTS.md` files, never in public documents (RE
 - Release notes explain what changes for consumers and how to upgrade. The `CHANGELOG.md` section holds prose only: `scripts/release-report.ts` appends one generated API diff at the end of `### Breaking changes`, `### Added` and `### Changed`, then package sizes and the npm, crate and commit-history links. Never hand-write API diff blocks in the changelog; write every rename as `` `old` → `new` `` so the diff pairs the old and new declarations; never publish declaration inventories, private helper types, repeated older comparisons, or API attachments. Read the body as a cold reader before publication.
 - Describe only the packages being published; unpublished implementations and their reports are not consumer release notes.
 - Preserve declaration names, visibility and ownership from the compiler AST; do not infer them from printed signatures, which can hide valid quoted, computed or Unicode names.
+- When a release check calls a change breaking, confirm that old callers actually break (`dev/release.md` §Evidence and notes) before editing notes; a false break is a checker defect to fix, never notes to bend.
 - Trace referenced types before reporting no public API change; unchanged exported signatures can hide newly required arguments or changed results.
 
 - Let the pre-commit hook run `bun run check` before Git creates the commit unless the maintainer selects narrower intermediate checks.
