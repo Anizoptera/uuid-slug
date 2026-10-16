@@ -24,6 +24,11 @@ add accepted forms; they must not remove existing ones. Forms no supported encod
 Generated identifiers must meet the same promises; random draws, exact sequence positions,
 scheduling, and allocation strategy need not match.
 
+Simple Bun UUIDv7 text and base64url calls delegate directly to Bun, including its shared counter
+and logical timestamp advancement. Created generators provide the requested ordering, rollback
+and payload layout controls. Parity preserves caller promises and all UUID bits; it does not
+require simple defaults to use a created generator's counter width or state sharing.
+
 Keep verbs and parameter meanings recognizable across languages. Rust may use ownership, typed
 errors and `Result` instead of JavaScript conventions. Such differences must not silently change
 the accepted domain or result semantics. In particular, a lazy result must not expose partial

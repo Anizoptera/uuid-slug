@@ -7,6 +7,8 @@ use crate::{Error, ErrorCode, Uuid, UuidV7PayloadLayout};
 
 /// Largest timestamp the UUIDv7 wire format can carry.
 pub const MAX_UUID_V7_UNIX_MS: u64 = (1 << 48) - 1;
+// Created generators own this layout; simple Bun defaults retain Bun's native counter and clock.
+// Masking accepts either layout because it preserves all 74 UUIDv7 payload bits.
 const MAX_SEQUENCE: u64 = (1 << 42) - 1;
 
 #[derive(Clone, Copy)]

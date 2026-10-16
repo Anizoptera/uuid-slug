@@ -332,7 +332,8 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
   error policy includes the maximum total clock skew it tolerates from the accepted high-water
   reading. Failed clock and entropy operations leave sequence and clock state unchanged.
 - Keep module-level UUIDv7 generation on the fastest validated secure path for each output form; it
-  does not coordinate sequence state across calls. Callers explicitly create a generator when they
+  promises neither ordering nor a shared sequence across calls. Native paths may share state.
+  Callers explicitly create a generator when they
   need strict ordering, clock policy, fraction bits, custom entropy, or one stable payload layout.
   Pass that generator in the existing representation call; do not generate bytes and convert them.
 - Inspect the four-bit UUID version through `extractUuidVersion` or Rust `Uuid::uuid_version`.
@@ -414,8 +415,9 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
 - A structural generator is untrusted. Read and validate its byte method and payload layout before
   generation, validate its result as UUIDv7, and reject output earlier than explicit `at` at the
   fraction width that layout declares. Later output is valid because ordering can advance logical time.
-- Module-level text, byte, and paired plain-slug helpers do not share sequence state. Select each
-  representation's fastest validated secure runtime or portable path without converting through a
+- Module-level text, byte, and paired plain-slug helpers must not require shared sequence state;
+  native paths may share it internally. Select each representation's fastest validated secure
+  runtime or portable path without converting through a
   slower representation.
 - Keep standalone operations with complete names. Function properties and representation
   namespaces would duplicate them and make detached names less clear.
