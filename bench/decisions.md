@@ -295,7 +295,7 @@ Regressions in that snapshot: Node `parse` 68 → 82 and `parse.into` 49 → 62 
 
 ### Rejected TypeScript hot-path shapes
 
-**Keep the general HalfSipHash path for the check tag (the Feistel round now inlines it; see Feistel round function), the monomorphic typed-array hash input, module-level typed scratch, the compact reversible four-round Feistel loop, indexed keys, shift-based byte-order helpers and the four-word check-tag loop.** Retest only when a runtime or compiler change moves a result outside the identical-code noise band (about ±3.3% on masked routes, Node 24.20.0, Bun 1.4.1, Deno 2.9.6, Chrome 152, 2026-09).
+**Keep the monomorphic typed-array hash input, module-level typed scratch, the compact reversible four-round Feistel loop, indexed keys, shift-based byte-order helpers and the four-word check-tag loop.** Retest only when a runtime or compiler change moves a result outside the identical-code noise band (about ±3.3% on masked routes, Node 24.20.0, Bun 1.4.1, Deno 2.9.6, Chrome 152, 2026-09).
 
 Rejected (each in two packed replays unless noted):
 - Separate fixed-eight-byte HalfSipHash function called from the round: Bun +2–4%, Chrome masked routes 8.7–19.9% slower; duplicates the hash core. (Writing the rounds out inside `feistel16` later won; see Feistel round function.)

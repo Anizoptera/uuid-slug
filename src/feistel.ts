@@ -16,9 +16,9 @@ const ROUNDS = 4;
 export const FEISTEL_KEY_WORDS = ROUNDS * 2;
 
 /**
- * The `lowbias32` finalizer: an integer hash with near-ideal avalanche for its size. No longer the
- * round function — see above — but still what `mask.ts` derives its check tag with, where the input
- * is public and an unkeyed mixer is the right tool.
+ * The `lowbias32` finalizer: an integer hash with near-ideal avalanche for its size.
+ * `payload.ts` derives its check tag with it: the input is public, so an unkeyed mixer suffices
+ * (the keyed round function is HalfSipHash, above).
  */
 /*#__NO_SIDE_EFFECTS__*/
 export function mix32(value: number): number {
