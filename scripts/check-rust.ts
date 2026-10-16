@@ -2,8 +2,10 @@
 import { buildRustBridge } from "./rust-bridge";
 import { prepareNativeConformance } from "./rust-conform-matrix";
 import { checkReleaseVersion } from "./release-version";
+import { rustToolchain } from "./rust-toolchain";
 
 const manifest = "rust/Cargo.toml";
+const toolchain = await rustToolchain();
 const { version } = await Bun.file("package.json").json();
 await checkReleaseVersion(process.cwd(), version);
 const fast = process.argv[2] === "--fast";
@@ -11,8 +13,14 @@ if (process.argv.length > (fast ? 3 : 2)) throw new Error("Usage: check-rust.ts 
 
 async function run(command: string[], capture = false, env = process.env): Promise<string> {
   console.log(`> ${command.join(" ")}`);
-  const child = Bun.spawn(command, {
-    env,
+  const selected =
+    command[0] === "cargo"
+      ? [toolchain.cargo, ...toolchain.cargoArgs, ...command.slice(1)]
+      : command[0] === "rustc"
+        ? [toolchain.rustc, ...command.slice(1)]
+        : command;
+  const child = Bun.spawn(selected, {
+    env: { ...env, ...toolchain.env },
     stdout: capture ? "pipe" : "inherit",
     stderr: "inherit",
   });

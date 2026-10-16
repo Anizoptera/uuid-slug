@@ -1,9 +1,9 @@
 // Build the development Wasm bridge and run its contracts, entropy and cancellation in a browser.
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { browserEngines } from "./browser-engines";
-import { command } from "./command";
+import { rustToolchain } from "./rust-toolchain";
 import {
   compare,
   contractRequests,
@@ -16,28 +16,13 @@ const profile = process.env.UUID_SLUG_RUST_PROFILE ?? "release";
 if (profile !== "debug" && profile !== "release")
   throw new Error(`UUID_SLUG_RUST_PROFILE must be debug or release; received ${profile}`);
 const profileArgs = profile === "release" ? ["--release"] : [];
-// PATH may select a system Rust with no Wasm target; rustup owns the repository pin and targets.
-const [cargo, rustc] = await Promise.all([
-  command("rustup", ["which", "cargo"], process.cwd()).then((output) => output.trim()),
-  command("rustup", ["which", "rustc"], process.cwd()).then((output) => output.trim()),
-]);
-
-// Cargo's child linker needs the selected toolchain's LLVM library on macOS;
-// exporting DYLD_LIBRARY_PATH only to the parent does not keep it available there.
-const libraryArgs =
-  process.platform === "darwin"
-    ? [
-        "--config",
-        `env.DYLD_LIBRARY_PATH.value=${JSON.stringify(join(dirname(rustc), "..", "lib"))}`,
-        "--config",
-        "env.DYLD_LIBRARY_PATH.force=true",
-      ]
-    : [];
+const toolchain = await rustToolchain();
 
 async function run(argv: string[]): Promise<void> {
-  const selected = argv[0] === "cargo" ? [cargo, ...libraryArgs, ...argv.slice(1)] : argv;
+  const selected =
+    argv[0] === "cargo" ? [toolchain.cargo, ...toolchain.cargoArgs, ...argv.slice(1)] : argv;
   const child = Bun.spawn(selected, {
-    env: { ...process.env, RUSTC: rustc },
+    env: toolchain.env,
     stdout: "inherit",
     stderr: "inherit",
     timeout: 300_000,

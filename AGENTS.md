@@ -195,8 +195,9 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   needs a different trigger or permission boundary.
 - Execute packed browser code and both WebAssembly profiles in every browser engine selected by the
   workflow. Build once per profile; do not multiply equivalent compilation by browser count.
-- Resolve WebAssembly Cargo and rustc through `rustup which` from the repository root and bind
-  `RUSTC`; a bare tool on PATH can bypass the pinned compiler and its installed target.
+- Resolve Rust tools through `rustup which` from the repository root, bind `RUSTC` and put that
+  toolchain's bin directory first on PATH. Cargo subcommands such as Clippy otherwise can select
+  a system compiler even when Cargo and rustc are pinned.
 - Gate every runtime-dependent change in both Node Vitest and Bun tests, including branches
   outside `src/runtime/` that use optional capabilities. Neither runner covers the other's
   adapter. Share entropy cases in `__test__/entropy-probe.ts`.

@@ -3,6 +3,7 @@ import { copyFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { spawn } from "node:child_process";
+import { rustToolchain } from "./rust-toolchain";
 
 // The lane runs from the checkout root; bundled scripts must not resolve relative to their bundle.
 const root = process.cwd();
@@ -20,10 +21,12 @@ function bridgeFiles(profile: "debug" | "release") {
 
 /** Build explicitly once per lane; loading never launches an implicit Cargo process. */
 export async function buildRustBridge(profile: "debug" | "release" = "release"): Promise<void> {
+  const toolchain = await rustToolchain(root);
   await new Promise<void>((done, reject) => {
     const child = spawn(
-      "cargo",
+      toolchain.cargo,
       [
+        ...toolchain.cargoArgs,
         "build",
         "--manifest-path",
         "rust/Cargo.toml",
@@ -34,7 +37,7 @@ export async function buildRustBridge(profile: "debug" | "release" = "release"):
       ],
       {
         cwd: root,
-        env: { ...process.env, CARGO_TARGET_DIR: target },
+        env: { ...toolchain.env, CARGO_TARGET_DIR: target },
         stdio: "inherit",
       },
     );
