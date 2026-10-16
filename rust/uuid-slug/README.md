@@ -114,7 +114,10 @@ spelling. Use `Display` for the case-specific diagnostic; do not parse its text.
 
 ## Features
 
-Default feature `os-rng` provides platform entropy. Disable default features for pure conversion,
-masking, or caller-supplied entropy. Browser generation additionally requires `wasm-js`.
+Default feature `fast-rng` uses a per-thread ChaCha12 generator seeded from the OS, with required
+reseeding after 64 KB or a native process-ID change. Seed failures return `rng_unavailable`.
+For an OS draw on every call, disable defaults and enable `os-rng`; `fill_os_random_bytes` always
+draws directly from the OS. Disable default features for conversion, masking or caller-supplied
+entropy without either randomness dependency. Browser generation additionally requires `wasm-js`.
 `derive_uuid_v7_mask_async` returns an opaque, cancelable, bounded-work future without an
 executor dependency; its executor must schedule unrelated host tasks between polls.

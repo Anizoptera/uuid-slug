@@ -843,6 +843,7 @@ dependencies = [
 name = "uuid-slug"
 version = "0.5.1-dev"
 dependencies = [
+ "chacha20",
  "data-encoding",
  "getrandom 0.4.3",
  "uuid",

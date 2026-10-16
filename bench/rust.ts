@@ -2,6 +2,9 @@
 import { cpus } from "node:os";
 import { buildRustBridge } from "../scripts/rust-bridge";
 import { nativeMatrix } from "../scripts/rust-native-matrix";
+import { rustToolchain } from "../scripts/rust-toolchain";
+
+const toolchain = await rustToolchain();
 
 // Bun can return bigint CPU counters despite declaring number in its types.
 function cpuMicros(value: number | bigint): number {
@@ -10,8 +13,14 @@ function cpuMicros(value: number | bigint): number {
 
 async function run(command: readonly string[], env: Readonly<Record<string, string>> = {}) {
   const started = performance.now();
-  const child = Bun.spawn([...command], {
-    env: { ...process.env, ...env },
+  const selected =
+    command[0] === "cargo"
+      ? [toolchain.cargo, ...toolchain.cargoArgs, ...command.slice(1)]
+      : command[0] === "rustc"
+        ? [toolchain.rustc, ...command.slice(1)]
+        : [...command];
+  const child = Bun.spawn(selected, {
+    env: { ...toolchain.env, ...env },
     stdout: "pipe",
     stderr: "inherit",
   });
@@ -32,33 +41,96 @@ async function run(command: readonly string[], env: Readonly<Record<string, stri
   return { elapsedMs, output, resources };
 }
 
-const build = await run([
-  "cargo",
-  "bench",
-  "--manifest-path",
-  "rust/Cargo.toml",
-  "-p",
-  "uuid-slug",
-  "--bench",
-  "codec",
-  "--no-run",
-  "--locked",
-  "--message-format=json",
-]);
-const artifacts = build.output
-  .trim()
-  .split("\n")
-  .map((line) => JSON.parse(line))
-  .filter(
-    (entry) =>
-      entry.reason === "compiler-artifact" && entry.target.name === "codec" && entry.executable,
+async function buildCodec(features: readonly string[] = []) {
+  const build = await run([
+    "cargo",
+    "bench",
+    "--manifest-path",
+    "rust/Cargo.toml",
+    "-p",
+    "uuid-slug",
+    "--bench",
+    "codec",
+    "--no-run",
+    "--locked",
+    "--message-format=json",
+    ...features,
+  ]);
+  const artifacts = build.output
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line))
+    .filter(
+      (entry) =>
+        entry.reason === "compiler-artifact" && entry.target.name === "codec" && entry.executable,
+    );
+  if (artifacts.length !== 1) throw new Error("Cargo must identify exactly one codec executable");
+  return { executable: String(artifacts[0].executable), build };
+}
+
+if (process.argv[2] === "--generation") {
+  // Build both feature selections before timing; reverse process order to expose drift.
+  const variants = [];
+  for (const [name, features] of [
+    ["fast-rng", []],
+    ["os-rng", ["--no-default-features", "--features", "os-rng"]],
+  ] as const) {
+    variants.push({ name, ...(await buildCodec(features)) });
+  }
+  console.log(
+    JSON.stringify({
+      host: `${process.platform}/${process.arch}`,
+      cpu: cpus()[0]?.model,
+      rust: (await run(["rustc", "-Vv"])).output.trim(),
+      builds: variants.map(({ name, build }) => ({
+        name,
+        elapsedMs: build.elapsedMs,
+        resources: build.resources,
+      })),
+    }),
   );
-if (artifacts.length !== 1)
-  throw new Error("Cargo must identify exactly one codec benchmark executable");
+  for (let repetition = 0; repetition < 3; repetition++) {
+    for (let index = 0; index < variants.length; index++) {
+      const variant = variants[repetition % 2 ? variants.length - 1 - index : index];
+      if (!variant) throw new Error("Missing generation feature selection");
+      const result = await run([variant.executable], { UUID_SLUG_PROFILE_FILTER: "generation/" });
+      const records = result.output
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const expectedOperations = [4, 7].flatMap((version) =>
+        ["bytes", "text", "base64url", "base32hex"].map(
+          (output) => `generation/v${version}/${output}`,
+        ),
+      );
+      if (
+        records.pop()?.complete !== true ||
+        records.length !== expectedOperations.length * 5 ||
+        expectedOperations.some((operation) => {
+          const rows = records.filter((row) => row.operation === operation);
+          return rows.length !== 5 || new Set(rows.map((row) => row.round)).size !== 5;
+        }) ||
+        records.some(
+          (row) => row.calls !== 100_000 || !Number.isFinite(row.nsPerCall) || !(row.nsPerCall > 0),
+        ) ||
+        !result.resources ||
+        !Object.values(result.resources).every(Number.isFinite)
+      )
+        throw new Error(`${variant.name}: incomplete generation measurements`);
+      console.log(
+        JSON.stringify({ name: variant.name, repetition, ...result, output: undefined, records }),
+      );
+    }
+  }
+  process.exit(0);
+}
+
+const { executable } = await buildCodec();
 await buildRustBridge();
 await run([
   "bun",
   "build",
+  "--check",
   "bench/rust-bridge.ts",
   "--target=node",
   "--outfile=rust/target/bench-bridge.mjs",
@@ -76,7 +148,7 @@ console.log(
   }),
 );
 const lanes = [
-  { name: "Rust", command: [artifacts[0].executable], env: {}, expectedTransport: undefined },
+  { name: "Rust", command: [executable], env: {}, expectedTransport: undefined },
   ...nativeLanes.map((lane) => ({
     name: lane.label,
     command: lane.command,

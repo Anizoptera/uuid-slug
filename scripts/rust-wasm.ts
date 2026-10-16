@@ -142,11 +142,12 @@ try {
                       );
                   };
                   let draws = 0;
+                  let entropyBlocked = rejectEntropy;
                   const native = crypto.getRandomValues.bind(crypto);
                   Object.defineProperty(crypto, "getRandomValues", {
                     value: (output: Uint8Array) => {
                       draws++;
-                      if (rejectEntropy) {
+                      if (entropyBlocked) {
                         output.fill(0xaa, 0, Math.floor(output.length / 2));
                         throw new Error("Deliberate partial host entropy failure");
                       }
@@ -172,10 +173,8 @@ try {
                     const outcomes = JSON.parse(
                       wasm.evaluate(JSON.stringify([{ op: "hostGenerate", version: uuidVersion }])),
                     );
-                    demand(
-                      draws > before,
-                      `UUIDv${uuidVersion} did not reach browser crypto.getRandomValues`,
-                    );
+                    if (rejectEntropy)
+                      demand(draws > before, `UUIDv${uuidVersion} skipped its failed seed retry`);
                     demand(
                       outcomes.length === 1,
                       `UUIDv${uuidVersion} returned an incomplete result`,
@@ -193,6 +192,37 @@ try {
                       longestPollMs: 0,
                       derived: null,
                     };
+                  demand(draws > 0, "Generation never seeded from browser crypto.getRandomValues");
+                  // A cached stream may survive an OS failure only until its required reseed.
+                  // Exercise real Web Crypto interception, not a simulated Rust seed callback.
+                  entropyBlocked = true;
+                  let reseedFailed = false;
+                  for (let offset = 0; offset < 4096 && !reseedFailed; offset += 256) {
+                    const outcomes = JSON.parse(
+                      wasm.evaluate(
+                        JSON.stringify(
+                          Array.from({ length: 256 }, () => ({ op: "hostGenerate", version: 4 })),
+                        ),
+                      ),
+                    );
+                    reseedFailed = outcomes.some(
+                      (result: { error?: string }) => result.error === "rng_unavailable",
+                    );
+                    if (!reseedFailed) await new Promise((resolve) => setTimeout(resolve, 0));
+                  }
+                  demand(
+                    reseedFailed,
+                    "Generation exceeded 64 KB without requiring a fresh OS seed",
+                  );
+                  entropyBlocked = false;
+                  const beforeRetry = draws;
+                  const retry = JSON.parse(
+                    wasm.evaluate(JSON.stringify([{ op: "hostGenerate", version: 4 }])),
+                  );
+                  demand(
+                    draws > beforeRetry && typeof retry[0]?.value === "string",
+                    "Failed reseed did not recover through Web Crypto",
+                  );
                   const uuid = "018f1234-5678-7abc-9def-0123456789ab";
                   const seed = new TextEncoder().encode("browser-conformance-seed");
                   const aborted = new wasm.Derivation(seed, 4096, uuid);

@@ -107,6 +107,37 @@ fn main() -> Result<(), Error> {
             Uuid::from_uuid_bytes_array(bytes)
         })
         .collect();
+    #[cfg(feature = "os-rng")]
+    {
+        // Compare the same complete calls with default features and os-rng alone. Fixed-time
+        // callback probes cannot reveal whether clock reads or formatting erase entropy savings.
+        use uuid_slug::{UuidV7Generator, generate_uuid_v4};
+        sample("generation/v4/bytes", &ids, |_| generate_uuid_v4().unwrap());
+        sample("generation/v4/text", &ids, |_| {
+            generate_uuid_v4().unwrap().to_string()
+        });
+        let mut generator = UuidV7Generator::new();
+        sample("generation/v7/bytes", &ids, |_| {
+            generator.generate_uuid_v7().unwrap()
+        });
+        sample("generation/v7/text", &ids, |_| {
+            generator.generate_uuid_v7().unwrap().to_string()
+        });
+        for (alphabet, name) in [
+            (UuidSlugAlphabet::Base64Url, "base64url"),
+            (UuidSlugAlphabet::Base32Hex, "base32hex"),
+        ] {
+            sample(&format!("generation/v4/{name}"), &ids, |_| {
+                generate_uuid_v4().unwrap().to_plain_uuid_slug(alphabet)
+            });
+            sample(&format!("generation/v7/{name}"), &ids, |_| {
+                generator
+                    .generate_uuid_v7()
+                    .unwrap()
+                    .to_plain_uuid_slug(alphabet)
+            });
+        }
+    }
     let mask = derive_uuid_v7_mask(b"benchmark-seed-not-for-production", 1, "bench")?;
     let compact = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
         ..UuidV7MaskingCodecOptions::new(mask.clone())

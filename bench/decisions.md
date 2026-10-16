@@ -966,8 +966,22 @@ Excluded: `uuid-tag` (changes payload bits to carry a tag, a different caller ou
 
 Benchmark direct implementations separately from wrappers. Measure text, owned bytes, caller storage and batch calls only where the crate exposes them. Also record entropy failure, clock rollback, same-millisecond behavior, allocation, contention, target support and output validity. Returned fixed-size values and caller buffers count as allocation-free outcomes, returned `String` as allocated; hidden allocator work is not claimed.
 
-**Keep per-call OS entropy and independent generator state; no batch API.** Executable matrix, 2026-09: every retained direct generator produced valid RFC version and variant; the package's typed entropy failure and strict rollback error, `uuid7`'s rollback abort and `nexus-id`'s 4,096-value same-millisecond limit were exercised. Native runs: package and `uuid` equivalent for v4; package v7 led `uuid` and matched `hyperuuid`. Direct base64url: tied with `uuid-extra` for v4, package led for v7.
-- Rejected as equivalents: seeded or process-global generators run tens to hundreds of times faster but do less entropy work per call and carry mutable sequence, rollback, fork or exhaustion behavior. They are mechanism floors, not secure-generation winners.
+**Use OS-seeded ChaCha12 to avoid an OS call for every UUID.** Each thread has its own cryptographic generator. A fresh OS seed is required before exceeding 64 KB of output and after a native process-ID change. If seeding fails, return an error without issuing a UUID. Keep direct OS draws available through `os-rng`; `rand`'s thread RNG panics on seed failure, so it cannot preserve this package's error contract.
+
+Apple M4 Max, macOS Arm64, Rust 1.99.1, 2026-10-16: three fresh processes per feature selection, alternating process order; each process takes five batches of 100,000 calls. Ranges below are process medians in ns/call, including current-time reads and formatting where requested:
+
+| Complete call | `fast-rng` | Direct `os-rng` |
+| --- | ---: | ---: |
+| v4 bytes | 13–14 | 991–1,331 |
+| v4 text | 36–38 | 1,010–1,564 |
+| v7 bytes | 35–37 | 870–1,114 |
+| v7 text | 53–56 | 900–913 |
+| v4 base64url / base32hex | 36–61 / 37–39 | 1,016–1,041 / 1,015–1,033 |
+| v7 base64url / base32hex | 49–52 / 49–52 | 893–922 / 900–906 |
+
+On this Mac, current-time UUIDv7 text costs 53–56 ns per ID with `fast-rng`, versus 900–913 ns with direct OS draws: about 16–17 times faster. Peak process memory is 1.89 MB versus 1.91–1.92 MB; this does not measure total allocation or each thread's random state. Run `bun bench/rust.ts --generation` to compare both feature selections. These results cover warm repeated calls on one host, not worst-case latency or other machines. Build times use unequal caches and cannot compare build cost. Reconsider the default if other targets or resource measurements show a material loss.
+
+The earlier 2026-09 competitor matrix exercised output validity, typed entropy failure, strict rollback error, `uuid7` rollback abort and `nexus-id`'s 4,096-value same-millisecond limit. Its shared dependency graph unifies rivals' RNG features, so its speed comparisons cannot rank isolated consumers. Fewer OS draws alone do not disqualify a cryptographically seeded rival.
 - Rejected: a package batch interface. `hyperuuid` and `rivid-core` batch APIs are much faster than a scalar caller-storage loop because they amortize entropy and timestamp work. Reopen when a real caller needs batch generation; speed alone does not create the contract.
 - Four-thread contention (2026-09): package 248–345 ns per call; `uuid7` and `nativelite-uid` ~76–93 ns; `hyperuuid` 194–337 ns; `rivid-core` ~8 ns. Their entropy and state-sharing contracts differ, so this ranks nothing and does not justify shared or seeded state.
 

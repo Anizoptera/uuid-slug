@@ -3,8 +3,9 @@
 ## Randomness
 
 Built-in generation draws from platform cryptographic randomness. TypeScript uses native UUID
-methods when available, otherwise Node crypto or Web Crypto. Rust uses fallible `getrandom`;
-browser generation requires `wasm-js`. Neither implementation substitutes non-cryptographic
+methods when available, otherwise Node crypto or Web Crypto. Rust seeds its default ChaCha12
+generator through fallible `getrandom`; disabling `fast-rng` uses `getrandom` for every draw.
+Browser generation requires `wasm-js`. Neither implementation substitutes non-cryptographic
 randomness when the secure source fails. TypeScript generation with no arguments or only a
 text-case or alphabet argument throws `UuidSlugError` with code `rng_unavailable` in that case; every other
 generation call returns it, and Rust returns `Err` on every path. Separately named custom-entropy
@@ -113,7 +114,11 @@ correct masking or decoding.
 
 TypeScript pools platform randomness without expanding it. Refills become usable only after the
 source returns successfully; a partial write followed by failure must be retried, never consumed.
-Consumed pool bytes are erased. Rust draws into private generator buffers before copying output;
+Consumed pool bytes are erased. Rust's `fast-rng` keeps private per-thread state and requires a fresh
+OS seed before exceeding 64 KB of output or after a native process-ID change. A failed required
+seed emits no bytes; the next call retries. Forked children must not inherit the parent's random
+stream. Memory snapshots that preserve a process ID cannot be detected this way.
+Rust draws into private generator buffers before copying output;
 the low-level `fill_os_random_bytes` function itself does not promise an unchanged buffer on failure.
 
 The Rust crate contains no unsafe code of its own; its dependencies do.

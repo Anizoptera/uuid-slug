@@ -10,7 +10,8 @@ keywords = ["uuid", "slug", "base64url", "base32", "identifier"]
 categories = ["encoding"]
 
 [features]
-default = ["os-rng"]
+default = ["fast-rng"]
+fast-rng = ["os-rng", "dep:chacha20"]
 os-rng = ["dep:getrandom"]
 wasm-js = ["os-rng", "getrandom/wasm_js", "dep:js-sys"]
 
@@ -18,6 +19,7 @@ wasm-js = ["os-rng", "getrandom/wasm_js", "dep:js-sys"]
 uuid = { version = "1.28", default-features = false }
 data-encoding = { version = "2.11", default-features = false, features = ["alloc"] }
 getrandom = { version = "0.4", default-features = false, optional = true }
+chacha20 = { version = "0.10.2", default-features = false, features = ["rng"], optional = true }
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
 # Date::now needs neither promise helpers nor dynamic JavaScript evaluation.

@@ -220,6 +220,13 @@ Rust may use a small set of justified dependencies. Compare contract fit, failur
 supported targets, measured resource costs, build costs, licensing and maintenance before selecting
 one; implementation convenience alone does not justify it.
 
+Rust's `fast-rng` reuses OS-seeded ChaCha12 state to avoid an OS call for every UUID. Each thread
+owns its state, so generation needs no global lock. Require a new seed before exceeding 64 KB
+of output and after a native process-ID change; seed failure must return an error, never reuse
+an exhausted or inherited stream. `rand`'s thread RNG cannot provide that error contract because
+it panics on seed failure. Keep `fill_os_random_bytes` direct and conversion-only builds free of
+both dependencies. Reconsider this dependency if complete calls or other targets lose on cost.
+
 Verify every supported build type and target, not just the default release configuration.
 Cover debug and release profiles, product libraries, development bridges, examples, unit tests,
 doctests, and benchmark compilation with each distinct supported feature selection. Run every

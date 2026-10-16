@@ -13,6 +13,8 @@ mod generation;
 mod mask;
 mod masking_codec;
 mod payload;
+#[cfg(feature = "fast-rng")]
+mod random;
 mod siphash;
 mod uuid;
 

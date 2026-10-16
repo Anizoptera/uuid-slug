@@ -3,7 +3,11 @@
 //! Every `_with` callback must fill every requested byte from its chosen source or return an
 //! error. A successful partial fill cannot be distinguished reliably from valid random bytes.
 //! Use the default generators for platform CSPRNG entropy; custom callbacks own that guarantee.
+#[cfg(feature = "fast-rng")]
+use crate::random::fill_random_bytes as fill_default_random_bytes;
 use crate::{Error, ErrorCode, Uuid, UuidV7PayloadLayout};
+#[cfg(all(feature = "os-rng", not(feature = "fast-rng")))]
+use fill_os_random_bytes as fill_default_random_bytes;
 
 /// Largest timestamp the UUIDv7 wire format can carry.
 pub const MAX_UUID_V7_UNIX_MS: u64 = (1 << 48) - 1;
@@ -256,17 +260,17 @@ impl UuidV7Generator {
             not(all(target_arch = "wasm32", target_os = "unknown")),
             feature = "wasm-js"
         ))]
-        self.generate_uuid_v7_from_instant(reading, fill_os_random_bytes)
+        self.generate_uuid_v7_from_instant(reading, fill_default_random_bytes)
     }
     /// Generate at an exact standard-library time with secure platform entropy and this sequence's policy.
     #[cfg(feature = "os-rng")]
     pub fn generate_uuid_v7_at(&mut self, at: std::time::SystemTime) -> Result<Uuid, Error> {
-        self.generate_uuid_v7_at_with_random_fill(at, fill_os_random_bytes)
+        self.generate_uuid_v7_at_with_random_fill(at, fill_default_random_bytes)
     }
     /// Generate from fractional Unix milliseconds for numeric interop boundaries.
     #[cfg(feature = "os-rng")]
     pub fn generate_uuid_v7_at_unix_ms(&mut self, unix_ms: f64) -> Result<Uuid, Error> {
-        self.generate_uuid_v7_with_random_fill(unix_ms, fill_os_random_bytes)
+        self.generate_uuid_v7_with_random_fill(unix_ms, fill_default_random_bytes)
     }
 }
 fn float_instant(value: f64) -> Result<UuidV7Instant, Error> {
@@ -353,7 +357,7 @@ pub fn fill_os_random_bytes(out: &mut [u8]) -> Result<(), Error> {
 /// Generate a version-4 UUID with secure platform entropy.
 #[cfg(feature = "os-rng")]
 pub fn generate_uuid_v4() -> Result<Uuid, Error> {
-    generate_uuid_v4_with_random_fill(fill_os_random_bytes)
+    generate_uuid_v4_with_random_fill(fill_default_random_bytes)
 }
 
 #[cfg(test)]
