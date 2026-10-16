@@ -140,6 +140,13 @@ tagged commit runs without publication credentials; only a dependent publication
 them. Validate the cleaned archive, publish with public access and provenance, and derive the npm
 dist-tag from the Git tag: prereleases use `next`; stable releases use `latest`.
 
+crates.io trusted publishing is configured in an existing crate's settings, so the crate's first
+upload needs a crates.io token with the `publish-new` scope saved as the repository secret
+`CRATES_IO_BOOTSTRAP_TOKEN`; the crate job prefers it when present. After that upload, add this
+repository and `release.yml` under the crate's Trusted Publishing settings and delete the secret.
+Without either, the crate job fails with "No Trusted Publishing config found"; finish the release
+by dispatching the workflow on the tag with `packages=npm` and publish the crate in a later release.
+
 Create or update one draft GitHub release. Publish missing npm or crates.io artifacts only after
 checking whether that exact version already exists. Existing versions must match the retained bytes;
 never overwrite or attest different content. Attach only registry-matching archives and reproducible
