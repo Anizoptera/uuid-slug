@@ -112,15 +112,9 @@ export function createCustomUuidV7Mask(
       Uint8Array.from({ length: 16 }, (_, index) => index * 17),
     ]) {
       const mixed = runCustom(mask, probe);
-      if (isUuidSlugError(mixed))
-        return new UuidSlugError(INVALID_MASK, CUSTOM_MASK_FAILURE_MESSAGE, {
-          cause: mixed,
-        });
+      if (isUuidSlugError(mixed)) return customMaskFailure(mixed);
       const restored = runCustom(unmask, mixed);
-      if (isUuidSlugError(restored))
-        return new UuidSlugError(INVALID_MASK, CUSTOM_MASK_FAILURE_MESSAGE, {
-          cause: restored,
-        });
+      if (isUuidSlugError(restored)) return customMaskFailure(restored);
       if (restored.some((byte, index) => byte !== probe[index]))
         return new UuidSlugError(
           INVALID_MASK,
@@ -134,8 +128,10 @@ export function createCustomUuidV7Mask(
       return undefined;
     });
   } catch (cause) {
-    return new UuidSlugError(INVALID_MASK, CUSTOM_MASK_FAILURE_MESSAGE, {
-      cause,
-    });
+    return customMaskFailure(cause);
   }
+}
+
+function customMaskFailure(cause: unknown): UuidSlugError {
+  return new UuidSlugError(INVALID_MASK, CUSTOM_MASK_FAILURE_MESSAGE, { cause });
 }

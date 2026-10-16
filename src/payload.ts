@@ -60,20 +60,22 @@ function applyMix(
 ): undefined | UuidSlugError {
   try {
     const cause = applyMask(mask, input, output, direction);
-    return cause
-      ? new UuidSlugError(
-          INVALID_MASK,
-          `UUIDv7 mask "${mask.diagnosticLabel}" failed while ${direction === MASK_DIRECTION ? MASKING : UNMASKING}.`,
-          { cause },
-        )
-      : undefined;
+    return cause ? mixFailure(mask, direction, cause) : undefined;
   } catch (cause) {
-    return new UuidSlugError(
-      INVALID_MASK,
-      `UUIDv7 mask "${mask.diagnosticLabel}" failed while ${direction === MASK_DIRECTION ? MASKING : UNMASKING}.`,
-      { cause },
-    );
+    return mixFailure(mask, direction, cause);
   }
+}
+
+function mixFailure(
+  mask: UuidV7Mask,
+  direction: typeof MASK_DIRECTION | typeof UNMASK_DIRECTION,
+  cause: unknown,
+): UuidSlugError {
+  return new UuidSlugError(
+    INVALID_MASK,
+    `UUIDv7 mask "${mask.diagnosticLabel}" failed while ${direction === MASK_DIRECTION ? MASKING : UNMASKING}.`,
+    { cause },
+  );
 }
 
 /**
@@ -99,21 +101,25 @@ function tagFor(bytes: Uint8Array, width: number) {
  * Encoding must reject an offset at or past 2^42 ms rather than truncate it.
  */
 function injectTag(bytes: Uint8Array, tag: number) {
-  bytes[6] = ((tag & 0x0f) << 4) | ((bytes[6] ?? 0) & 0x0f);
-  bytes[8] = ((tag & 0x30) << 2) | ((bytes[8] ?? 0) & 0x3f);
-  bytes[0] = (((tag >>> 6) & 0x3f) << 2) | ((bytes[0] ?? 0) & 0x03);
+  bytes[6] = ((tag & 0x0f) << 4) | ((bytes[6] as number) & 0x0f);
+  bytes[8] = ((tag & 0x30) << 2) | ((bytes[8] as number) & 0x3f);
+  bytes[0] = (((tag >>> 6) & 0x3f) << 2) | ((bytes[0] as number) & 0x03);
 }
 
 /*#__NO_SIDE_EFFECTS__*/
 function extractTag(bytes: Uint8Array) {
-  return ((bytes[6] ?? 0) >>> 4) | (((bytes[8] ?? 0) >>> 6) << 4) | (((bytes[0] ?? 0) >>> 2) << 6);
+  return (
+    ((bytes[6] as number) >>> 4) |
+    (((bytes[8] as number) >>> 6) << 4) |
+    (((bytes[0] as number) >>> 2) << 6)
+  );
 }
 
 /** Puts back the constants the tag displaced, so the block equals the UUID the caller handed in. */
 function restoreV7(bytes: Uint8Array) {
-  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x70;
-  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
-  bytes[0] = (bytes[0] ?? 0) & 0x03;
+  bytes[6] = ((bytes[6] as number) & 0x0f) | 0x70;
+  bytes[8] = ((bytes[8] as number) & 0x3f) | 0x80;
+  bytes[0] = (bytes[0] as number) & 0x03;
 }
 
 /** Restore the fixed ciphertext block without allocating views or per-key buffers. */
