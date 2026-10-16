@@ -311,6 +311,7 @@ Agent instructions live only in `AGENTS.md` files, never in public documents (RE
 
 ## Release
 
+- Record each consumer-visible change under `## [Unreleased]` in `CHANGELOG.md` in the commit that makes it: what callers gain, lose or must change, and why. Notes written at release time lose that reason. Only changes a consumer can observe belong there (API, behaviour, output, errors, guarantees, runtimes, package contents); refactors, tests, tooling, docs-only and repository process never do. `bun run changelog <version>` turns the section into the release section; the commit hook rejects a staged `api/` report change without a staged `CHANGELOG.md`.
 - Release notes explain what changes for consumers and how to upgrade. The `CHANGELOG.md` section holds prose only: `scripts/release-report.ts` appends one generated API diff at the end of `### Breaking changes`, `### Added` and `### Changed`, then package sizes and the npm, crate and commit-history links. Never hand-write API diff blocks in the changelog; write every rename as `` `old` → `new` `` so the diff pairs the old and new declarations; never publish declaration inventories, private helper types, repeated older comparisons, or API attachments. Read the body as a cold reader before publication.
 - Describe only the packages being published; unpublished implementations and their reports are not consumer release notes.
 - Preserve declaration names, visibility and ownership from the compiler AST; do not infer them from printed signatures, which can hide valid quoted, computed or Unicode names.

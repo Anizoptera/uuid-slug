@@ -70,6 +70,14 @@ const checks: {
 
 const selected = checks.filter((check) => staged.some(check.affects));
 
+// A changed API report is the one consumer-visible change a script can see for certain; behaviour
+// changes without one rely on the AGENTS.md rule. Writing the entry now keeps its reason.
+const missingChangelog =
+  staged.some((path) => path.startsWith("api/")) && !staged.includes("CHANGELOG.md")
+    ? "The staged api/ report changes the public API, but CHANGELOG.md is not staged. Add a line under\n" +
+      "## [Unreleased] saying what callers gain or must change and why, then stage it with this commit."
+    : undefined;
+
 async function run(script: string, args: string[] = []): Promise<string | undefined> {
   const child = Bun.spawn(["bun", "run", script, ...args], { stdout: "pipe", stderr: "pipe" });
   const [out, err, code] = await Promise.all([
@@ -93,7 +101,9 @@ const results = await Promise.all(
     return failed ? undefined : run(check.script, check.args);
   }),
 );
-const failures = [await build, ...results].filter((message) => message !== undefined);
+const failures = [missingChangelog, await build, ...results].filter(
+  (message) => message !== undefined,
+);
 
 const elapsed = Math.round(performance.now() - started);
 const skipped = checks.filter((check) => !selected.includes(check)).map((check) => check.script);

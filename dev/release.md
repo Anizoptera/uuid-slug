@@ -112,8 +112,9 @@ copy.
 
 ## Publication and recovery
 
-Draft notes with `bun run changelog v<next>`, edit `CHANGELOG.md` for consumers, and commit the
-draft before `bun run release <next>`; versioning requires a clean tree. The release commit and
+Consumer-visible changes accumulate under `## [Unreleased]` as they land. Run
+`bun run changelog <next>` to rename that section to the release, read it as a cold consumer, and
+commit it before `bun run release <next>`; versioning requires a clean tree. The release commit and
 annotated tag message are the version number only. Do not encode publication selection in tags or
 add a release bot.
 The release command must reject a tag that differs from the manifest or lacks a nonempty changelog
