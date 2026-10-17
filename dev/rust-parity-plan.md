@@ -8,8 +8,8 @@ Preserve issued IDs and TypeScript workflows while reducing complete-call cost a
 - [ ] Preserve optional codec/layout context without enlarging the 16-byte `Uuid` value; generate once for paired outputs.
 - [x] Add optional, default-enabled OS-seeded cryptographic randomness; retain direct OS fills, typed failures and fork reseeding.
 - [x] Replace dynamic base32 construction with the matching static encoding; preserve all padding and wire checks.
-- [ ] Verify isolated consumer dependency graphs, removed code, allocations, build cost and output size.
-- [ ] Execute browser WASM and WASIp1/p2 consumers; keep npm JavaScript-only and avoid an unused public WASM ABI.
+- [x] Verify isolated consumer dependency graphs, removed code, allocations, build cost and output size. Conversion-only builds resolve only `uuid` and `data-encoding`; optional dependencies make that hold by construction.
+- [x] Execute browser WASM and WASIp1/p2 consumers; keep npm JavaScript-only and avoid an unused public WASM ABI.
 - [ ] Measure approved generation, parsing, formatting, conversion, masking and derivation calls across relevant resource axes.
 - [ ] Run shared contracts, feature/profile checks, packaged consumers, API checks and the final full repository check.
 - [ ] Review inline reasons and consumer guidance; commit each verified change without staging unrelated TypeScript edits.

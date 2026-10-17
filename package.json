@@ -128,6 +128,7 @@
     "@anizoptera/publish-clean": "^0.10.0",
     "@arethetypeswrong/cli": "^0.18.5",
     "@arethetypeswrong/core": "^0.18.5",
+    "@bytecodealliance/jco": "^1.39.0",
     "@kripod/uuidv7": "^0.3.4",
     "@lukeed/uuid": "2.0.1",
     "@microsoft/api-extractor": "7.59.4",

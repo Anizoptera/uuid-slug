@@ -299,8 +299,8 @@ jobs:
           bun build --check scripts/runtime-probe.ts --target=node --conditions=deno --outfile=runtime-probe.mjs
           bun runtime-probe.mjs > runtime-reference.json
           deno run --allow-read --cached-only runtime-probe.mjs runtime-reference.json
+      # Both profiles: scripts/rust-wasm.ts runs the WASIp1 tests under Node's WASI.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: matrix.profile == 'release'
         with:
           node-version-file: .tool-versions
           package-manager-cache: false

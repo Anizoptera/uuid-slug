@@ -76,6 +76,53 @@ for (const features of ["--no-default-features", "--all-features"]) {
     ...profileArgs,
   ]);
 }
+// Bun's node:wasi cannot start Rust's test harness; Node's can. The exit code is the test result.
+const wasiPreview1Host = `
+import { readFile } from "node:fs/promises";
+import { WASI } from "node:wasi";
+const wasi = new WASI({ version: "preview1", args: ["test"], returnOnExit: true });
+const module = await WebAssembly.compile(await readFile(process.argv[1]));
+process.exitCode = wasi.start(await WebAssembly.instantiate(module, wasi.getImportObject()));
+`;
+// WASI hosts supply entropy and clocks through their own imports, so run the unit tests there
+// instead of only compiling: Node's built-in WASI hosts p1, jco hosts p2 components.
+for (const target of ["wasm32-wasip1", "wasm32-wasip2"]) {
+  for (const features of ["--no-default-features", "--all-features"]) {
+    const built = Bun.spawn(
+      [
+        toolchain.cargo,
+        ...toolchain.cargoArgs,
+        "test",
+        "--manifest-path",
+        "rust/Cargo.toml",
+        "-p",
+        "uuid-slug",
+        "--lib",
+        "--no-run",
+        "--message-format=json",
+        features,
+        "--target",
+        target,
+        "--locked",
+        ...profileArgs,
+      ],
+      { env: toolchain.env, stdout: "pipe", stderr: "inherit" },
+    );
+    const messages = await new Response(built.stdout).text();
+    if ((await built.exited) !== 0) throw new Error(`${target} ${features} tests did not build`);
+    const tests = messages
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as { executable?: string | null })
+      .flatMap((message) => (message.executable ? [message.executable] : []));
+    strictEqual(tests.length, 1, `${target} ${features} must build one test module`);
+    await run(
+      target === "wasm32-wasip1"
+        ? ["node", "--input-type=module", "-e", wasiPreview1Host, tests[0]!]
+        : ["bun", "x", "jco", "run", tests[0]!],
+    );
+  }
+}
 await run([
   "cargo",
   "build",
