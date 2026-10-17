@@ -544,12 +544,18 @@ test("failed comparisons preserve diagnostics without leaving temporary checkout
   let archive: string | undefined;
   try {
     // A valid baseline followed by an invalid candidate fails before measurement but leaves
-    // real source to preserve. Isolated TMPDIR makes this proof independent of other jobs.
+    // real source to preserve. Isolated TMPDIR and the busy-host override make this proof
+    // independent of other jobs: nothing is timed, so host load cannot change the result.
     const child = Bun.spawn(
       [process.execPath, "bench/compare.ts", "HEAD", "refs/invalid/cleanup"],
       {
         cwd: project,
-        env: { ...process.env, TMPDIR: scratch, UUID_SLUG_COMPARE_RUNTIMES: "bun" },
+        env: {
+          ...process.env,
+          TMPDIR: scratch,
+          UUID_SLUG_COMPARE_RUNTIMES: "bun",
+          UUID_SLUG_PERF_ALLOW_BUSY: "1",
+        },
         stdout: "ignore",
         stderr: "pipe",
       },
