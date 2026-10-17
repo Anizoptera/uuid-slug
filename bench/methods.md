@@ -263,6 +263,12 @@ Set `UUID_SLUG_PROFILE_SAMPLES` to control batches per process in packed compari
 and browser must return that exact count. Summaries record it separately from independent
 process observations. Retain every batch; the process median does not make batches independent.
 
+The size of a host process's environment shifts its timings, in either direction and identically for
+every process with that size, by enough to resolve a regression the code never caused. Fresh
+processes alone do not remove it: a wrapper such as `bun run` changes the size for every round at
+once. `bench:compare` therefore pads each host process's environment to a fresh random size; any
+hand-written A/B script must do the same, or its pairs share one bias.
+
 Set `UUID_SLUG_PROFILE_LATENCY_SAMPLES` to a positive call count for a separate sampled-latency
 pass in `bench:profile`. Select successful scalar or byte results with a narrow filter; object
 results need a separate consumer workload. Each observation brackets one call; result

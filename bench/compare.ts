@@ -298,6 +298,11 @@ async function runHost(
         UUID_SLUG_PROFILE_MS: duration,
         UUID_SLUG_PROFILE_SAMPLES: String(samples),
         UUID_SLUG_PROFILE_WARMUP_MS: warmup,
+        // The environment's size alone moves a call's timing by up to half, in either direction,
+        // identically in every process launched with that size. A fixed environment repeats one
+        // bias in every paired round, so the interval resolves a ratio the code never caused.
+        // A fresh random size per process turns that bias into noise the median absorbs.
+        UUID_SLUG_PROFILE_LAYOUT_PAD: "x".repeat(Math.floor(Math.random() * 4096)),
       },
     ),
   );

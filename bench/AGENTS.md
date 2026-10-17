@@ -107,6 +107,8 @@ and `decisions.md` for measured conclusions.
   individual-call latency. Account for unequal batch weighting before comparing wall and CPU costs.
   Read driver verdicts; require the selected statistic in every analyzed record and fail on missing fields.
   Keep direct runtime operations separate from composed pipeline outcomes.
+- Environment size alone biases host timings; a hand-written A/B must randomize it per process
+  (`methods.md` §Measurement limits), or every pair repeats one bias.
 - Filter exploratory work narrowly; use exact `=case` names for bounded profiling repairs.
   Read each driver's runtime selector and the version recorded in each result. Comparison and
   profiling variables differ. Drain timing processes to terminal exit before starting another.
