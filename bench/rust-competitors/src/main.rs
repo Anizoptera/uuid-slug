@@ -1,3 +1,4 @@
+#![cfg_attr(feature = "uniqer", allow(dead_code, unused_imports))]
 use std::{
     hint::black_box,
     sync::Barrier,
@@ -148,6 +149,26 @@ fn probe_behavior() {
     println!("{{\"kind\":\"behavior\",\"validated\":true}}");
 }
 
+// uniqer_rs turns on uuid's fast-rng feature for the whole build, so it runs in its own build and
+// the uuid rows keep the default getrandom path.
+#[cfg(feature = "uniqer")]
+fn main() {
+    measure(
+        "uniqer-rs.v4.text",
+        4,
+        || uniqer_rs::Uniqer::new().uuidv4().unwrap(),
+        |id| valid_text(id, 4),
+    );
+    measure(
+        "uniqer-rs.v7.text",
+        7,
+        || uniqer_rs::Uniqer::new().uuidv7().unwrap(),
+        |id| valid_text(id, 7),
+    );
+    println!("{{\"complete\":true}}");
+}
+
+#[cfg(not(feature = "uniqer"))]
 fn main() {
     probe_behavior();
     let mut package_v7 = uuid_slug::UuidV7Generator::new();
@@ -253,18 +274,6 @@ fn main() {
     measure("uuidv4.v4.text", 4, uuidv4::uuid::v4, |id| {
         valid_text(id, 4)
     });
-    measure(
-        "uniqer-rs.v4.text",
-        4,
-        || uniqer_rs::Uniqer::new().uuidv4().unwrap(),
-        |id| valid_text(id, 4),
-    );
-    measure(
-        "uniqer-rs.v7.text",
-        7,
-        || uniqer_rs::Uniqer::new().uuidv7().unwrap(),
-        |id| valid_text(id, 7),
-    );
     measure(
         "uuid64rs.v4.base64",
         4,

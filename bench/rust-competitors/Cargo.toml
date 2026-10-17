@@ -16,7 +16,8 @@ qubit-id = { version = "=0.7.0", default-features = false, features = ["uuid"] }
 rivid-core = "=1.1.0"
 rok-ids = "=0.1.0"
 serde_json = "1"
-uniqer_rs = "=0.0.4"
+# Optional: it enables uuid/fast-rng, which would change what the uuid rows measure.
+uniqer_rs = { version = "=0.0.4", optional = true }
 uuid = { version = "=1.28.0", features = ["v4", "v7"] }
 uuid-extra = "=0.0.2"
 uuid-lite = "=1.10.8"
@@ -26,5 +27,8 @@ uuid7 = { version = "=1.8.0", features = ["uuid"] }
 uuid64rs = "=0.0.14"
 uuidv4 = "=1.0.0"
 uuidv7 = "=0.1.8"
+
+[features]
+uniqer = ["dep:uniqer_rs"]
 
 [workspace]

@@ -277,22 +277,51 @@ await Bun.write(join(results, "matrix.md"), matrixReport(matrixLines));
 const rustRuns: RustTimingRecord[] = [];
 const rustRaw: JsonRecord[] = [];
 let expectedRustNames: readonly string[] | undefined;
-for (let run = 0; run < 3; run++) {
-  const output = await drive(
-    [
-      "cargo",
-      "run",
-      "--manifest-path",
-      join(import.meta.dir, "rust-competitors/Cargo.toml"),
-      "--release",
-      "--locked",
-    ],
-    "Rust competitor matrix",
-    { CARGO_TARGET_DIR: join(project, "rust/target/competitors") },
+const rustCompetitors = join(import.meta.dir, "rust-competitors/Cargo.toml");
+const pinnedCargo = ["bun", join(project, "scripts/rust-toolchain.ts"), "cargo"];
+const rustTarget = { CARGO_TARGET_DIR: join(project, "rust/target/competitors") };
+// One build unifies a dependency's features across every rival, so a rival that enables uuid's
+// fast-rng would silently change the uuid rows. Such rivals run in their own feature build.
+const uuidFeatures = await drive(
+  [
+    ...pinnedCargo,
+    "tree",
+    "--manifest-path",
+    rustCompetitors,
+    "-e",
+    "features",
+    "-i",
+    "uuid",
+    "--locked",
+  ],
+  "Rust competitor feature graph",
+  rustTarget,
+);
+if (uuidFeatures.includes('uuid feature "fast-rng"'))
+  throw new Error(
+    "A Rust rival enables uuid/fast-rng in the shared build; move it to its own feature",
   );
-  const rustRecords = parseJsonLines(output);
-  if (rustRecords.filter((record) => record.complete === true).length !== 1)
-    throw new Error(`Rust competitor run ${String(run + 1)} did not complete exactly once`);
+for (let run = 0; run < 3; run++) {
+  const rustRecords: JsonRecord[] = [];
+  for (const features of [[], ["--features", "uniqer"]]) {
+    const output = await drive(
+      [
+        ...pinnedCargo,
+        "run",
+        "--manifest-path",
+        rustCompetitors,
+        "--release",
+        "--locked",
+        ...features,
+      ],
+      "Rust competitor matrix",
+      rustTarget,
+    );
+    const buildRecords = parseJsonLines(output);
+    if (buildRecords.filter((record) => record.complete === true).length !== 1)
+      throw new Error(`Rust competitor run ${String(run + 1)} did not complete exactly once`);
+    rustRecords.push(...buildRecords.filter((record) => record.complete !== true));
+  }
   if (
     rustRecords.filter((record) => record.kind === "behavior" && record.validated === true)
       .length !== 1

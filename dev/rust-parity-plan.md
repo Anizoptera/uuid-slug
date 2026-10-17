@@ -3,9 +3,9 @@
 Preserve issued IDs and TypeScript workflows while reducing complete-call cost and unused dependencies.
 
 - [x] Correct native-default guidance; distinguish native behavior from explicitly configured generators.
-- [ ] Isolate competitor features and bind probes to the repository toolchain before comparing results.
+- [x] Isolate competitor features and bind probes to the repository toolchain before comparing results.
 - [x] Complete Rust inspection, uppercase formatting, universal parsing, caller-buffer writers and simple UUIDv7 generation. Caller-buffer writers already matched TypeScript, which writes caller storage only for bytes.
-- [ ] Preserve optional codec/layout context without enlarging the 16-byte `Uuid` value; generate once for paired outputs.
+- [x] Preserve optional codec/layout context without enlarging the 16-byte `Uuid` value; generate once for paired outputs. `Uuid` stays `[u8; 16]`; callers pass the codec, and one generated `Uuid` feeds every spelling.
 - [x] Add optional, default-enabled OS-seeded cryptographic randomness; retain direct OS fills, typed failures and fork reseeding.
 - [x] Replace dynamic base32 construction with the matching static encoding; preserve all padding and wire checks.
 - [x] Verify isolated consumer dependency graphs, removed code, allocations, build cost and output size. Conversion-only builds resolve only `uuid` and `data-encoding`; optional dependencies make that hold by construction.

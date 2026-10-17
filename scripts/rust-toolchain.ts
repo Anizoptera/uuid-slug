@@ -26,3 +26,16 @@ export async function rustToolchain(root = process.cwd()) {
         : [],
   };
 }
+
+// `bun scripts/rust-toolchain.ts cargo <args>` runs Cargo on the pinned toolchain for package
+// scripts: a bare `cargo` can resolve another installed rustc and fail on mixed build artifacts.
+if (import.meta.main) {
+  const [tool, ...args] = process.argv.slice(2);
+  if (tool !== "cargo") throw new Error("Usage: rust-toolchain.ts cargo <args>");
+  const toolchain = await rustToolchain();
+  const child = Bun.spawn([toolchain.cargo, ...toolchain.cargoArgs, ...args], {
+    env: toolchain.env,
+    stdio: ["inherit", "inherit", "inherit"],
+  });
+  process.exitCode = await child.exited;
+}
