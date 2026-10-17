@@ -27,6 +27,7 @@ assert_eq!(masking_codec.masked_slug_to_uuid(&masked)?, uuid);
 Slug conversions return `PlainUuidSlug`, `MaskedUuidV7Slug`, or
 `MaskedOrSentinelUuidV7Slug`, so Rust keeps representations distinct. Borrow one anywhere an
 `&str` is accepted, format it with `Display`, or convert it into `String` without copying its text.
+`Uuid::parse_uuid` reads UUID text or a plain slug when the input can be either. `{:X}` formats uppercase UUID text and `Display` lowercase, both without allocating. `uuid_variant()` returns the RFC 9562 variant.
 
 Plain slugs preserve all 128 UUID bits without version, variant or timestamp limits.
 Masked slugs preserve the 132-bit payload. Decoding infers the representation and rejects nonzero padding.
@@ -81,7 +82,7 @@ enables the unsupported 0.2.0 masked format.
 
 ## Generation and timestamps
 
-`UuidV7Generator` owns its sequence. `generate_uuid_v7()` reads the system clock;
+`generate_uuid_v7()` needs no setup: each thread keeps its own generator, so one thread's IDs strictly increase without a lock. Create a `UuidV7Generator` for one shared sequence or the settings below; its `generate_uuid_v7()` reads the system clock;
 `generate_uuid_v7_at(SystemTime)` accepts an exact standard-library time. Both use secure platform
 entropy and join the same sequence. Use `generate_uuid_v7_at_unix_ms()` only when a numeric interop
 boundary already supplies fractional Unix milliseconds.
