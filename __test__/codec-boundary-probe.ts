@@ -828,6 +828,9 @@ export const codecBoundaryCases = [
       assert.ok(isUuidSlugError(thrown));
       assert.equal(thrown.code, "rng_unavailable");
       assert.equal(thrown.cause, cause);
+      const thrownValue = throwing.generateUuidV7Value();
+      assert.ok(isUuidSlugError(thrownValue));
+      assert.equal(thrownValue.cause, cause);
 
       const foreignFailure = Object.assign(new Error("foreign generator failed"), {
         __failure: true as const,

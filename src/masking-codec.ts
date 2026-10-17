@@ -886,9 +886,17 @@ function buildUuidSlugCodec(
     const generator = readUuidV7Generator(values.generator);
     if (generator instanceof Error) return generator;
     if (generator) return generateUuidV7ValueWithGenerator(generator, values, maskingCodec);
-    // The codec's own generator, validated like on the slug and byte routes; for public codecs
-    // it is the package default.
-    const generated = generateCodecBytesFromValues(values);
+    // Public codecs inject the package default, whose bytes and failures every module-level route
+    // already returns directly; the shared helper's generator re-read, try/catch and validation
+    // measured slower on every engine (`bench/decisions.md` §Default value generation). Injected
+    // generators keep its containment of thrown and malformed results. Remeasure if the helper
+    // loses its try/catch or validation.
+    const generated =
+      generateBytes !== generateDefaultUuidV7Bytes
+        ? generateCodecBytesFromValues(values)
+        : !Object.hasOwn(values, AT_OPTION)
+          ? generateBytes()
+          : generateBytes({ at: values.at as UuidV7Instant });
     return generated instanceof Error
       ? generated
       : createUuidValue<7, true, true>(generated, maskingCodec, uuidV7DefaultPayloadLayout());
