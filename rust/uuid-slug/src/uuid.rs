@@ -252,6 +252,16 @@ impl Uuid {
     pub fn from_uuid_string(uuid_string: &str) -> Result<Self, Error> {
         uuid_string.parse()
     }
+    /// Parse UUID text or a plain slug without a key. The plain-slug lengths (22 and 26) are disjoint
+    /// from every accepted UUID text length, so the length alone selects the decoder. Length counts
+    /// UTF-16 units, as TypeScript does, so non-ASCII input gets the same error code in both.
+    /// Masked slugs need their codec: use `UuidV7MaskingCodec::masked_slug_to_uuid`.
+    pub fn parse_uuid(uuid: &str) -> Result<Self, Error> {
+        match utf16_len(uuid) {
+            22 | 26 => Self::from_plain_uuid_slug(uuid),
+            _ => uuid.parse(),
+        }
+    }
     /// Infer the plain alphabet from the disjoint 22- and 26-character lengths.
     pub fn from_plain_uuid_slug(plain_uuid_slug: &str) -> Result<Self, Error> {
         let alphabet = match utf16_len(plain_uuid_slug) {
@@ -285,6 +295,15 @@ impl Uuid {
     /// Whether the variant is RFC 9562's `10` bit pattern.
     pub const fn is_rfc_uuid_variant(&self) -> bool {
         self.0[8] >> 6 == 2
+    }
+    /// RFC 9562 variant field, read from the leading bits of byte 8.
+    pub const fn uuid_variant(&self) -> UuidVariant {
+        match self.0[8] >> 5 {
+            0..=3 => UuidVariant::Ncs,
+            4 | 5 => UuidVariant::Rfc,
+            6 => UuidVariant::Microsoft,
+            _ => UuidVariant::Future,
+        }
     }
     /// Require version 7 and the RFC variant without interpreting its 74 payload bits.
     pub const fn is_uuid_v7(&self) -> bool {
@@ -373,10 +392,37 @@ impl FromStr for Uuid {
             .map_err(|_| Error::new(ErrorCode::InvalidUuid))
     }
 }
+/// Lowercase hyphenated text, the default UUID spelling.
 impl fmt::Display for Uuid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        uuid::Uuid::from_bytes(self.0).hyphenated().fmt(f)
+        fmt::LowerHex::fmt(self, f)
     }
+}
+/// `{:x}`: lowercase hyphenated text, the same as `Display`.
+impl fmt::LowerHex for Uuid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::LowerHex::fmt(&uuid::Uuid::from_bytes(self.0).hyphenated(), f)
+    }
+}
+/// `{:X}`: uppercase hyphenated text, the TypeScript `UUID_TEXT_UPPERCASE` spelling.
+/// Formatting writes into the caller's writer without allocating.
+impl fmt::UpperHex for Uuid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::UpperHex::fmt(&uuid::Uuid::from_bytes(self.0).hyphenated(), f)
+    }
+}
+
+/// RFC 9562 variant field values.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum UuidVariant {
+    /// `0xx`: reserved for NCS backward compatibility.
+    Ncs,
+    /// `10x`: the RFC 9562 layout, used by UUIDv4 and UUIDv7.
+    Rfc,
+    /// `110`: reserved for Microsoft backward compatibility.
+    Microsoft,
+    /// `111`: reserved for future definition.
+    Future,
 }
 
 #[cfg(test)]

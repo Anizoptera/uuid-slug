@@ -146,6 +146,29 @@ impl core::marker::Unpin for uuid_slug::UuidV7ClockRollbackPolicy
 impl core::marker::UnsafeUnpin for uuid_slug::UuidV7ClockRollbackPolicy
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7ClockRollbackPolicy
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7ClockRollbackPolicy
+pub enum uuid_slug::UuidVariant
+pub uuid_slug::UuidVariant::Future
+pub uuid_slug::UuidVariant::Microsoft
+pub uuid_slug::UuidVariant::Ncs
+pub uuid_slug::UuidVariant::Rfc
+impl core::clone::Clone for uuid_slug::UuidVariant
+pub fn uuid_slug::UuidVariant::clone(&self) -> Self
+impl core::cmp::Eq for uuid_slug::UuidVariant
+impl core::cmp::PartialEq for uuid_slug::UuidVariant
+pub fn uuid_slug::UuidVariant::eq(&self, other: &Self) -> bool
+impl core::fmt::Debug for uuid_slug::UuidVariant
+pub fn uuid_slug::UuidVariant::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for uuid_slug::UuidVariant
+pub fn uuid_slug::UuidVariant::hash<__H: core::hash::Hasher>(&self, state: &mut __H)
+impl core::marker::Copy for uuid_slug::UuidVariant
+impl core::marker::StructuralPartialEq for uuid_slug::UuidVariant
+impl core::marker::Freeze for uuid_slug::UuidVariant
+impl core::marker::Send for uuid_slug::UuidVariant
+impl core::marker::Sync for uuid_slug::UuidVariant
+impl core::marker::Unpin for uuid_slug::UuidVariant
+impl core::marker::UnsafeUnpin for uuid_slug::UuidVariant
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidVariant
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidVariant
 pub struct uuid_slug::Error
 impl uuid_slug::Error
 pub const fn uuid_slug::Error::code(&self) -> uuid_slug::ErrorCode
@@ -248,7 +271,9 @@ pub fn uuid_slug::Uuid::from_uuid_string(uuid_string: &str) -> core::result::Res
 pub const fn uuid_slug::Uuid::is_rfc_uuid_variant(&self) -> bool
 pub const fn uuid_slug::Uuid::is_uuid_v4(&self) -> bool
 pub const fn uuid_slug::Uuid::is_uuid_v7(&self) -> bool
+pub fn uuid_slug::Uuid::parse_uuid(uuid: &str) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::Uuid::to_plain_uuid_slug(&self, alphabet: uuid_slug::UuidSlugAlphabet) -> uuid_slug::PlainUuidSlug
+pub const fn uuid_slug::Uuid::uuid_variant(&self) -> uuid_slug::UuidVariant
 pub const fn uuid_slug::Uuid::uuid_version(&self) -> u8
 pub fn uuid_slug::Uuid::write_uuid_bytes(&self, out: &mut [u8], offset: usize) -> core::result::Result<(), uuid_slug::Error>
 impl core::clone::Clone for uuid_slug::Uuid
@@ -263,6 +288,10 @@ pub fn uuid_slug::Uuid::partial_cmp(&self, other: &Self) -> core::option::Option
 impl core::fmt::Debug for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for uuid_slug::Uuid
+pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::LowerHex for uuid_slug::Uuid
+pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::UpperHex for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::hash<__H: core::hash::Hasher>(&self, state: &mut __H)
@@ -527,6 +556,7 @@ pub fn uuid_slug::fill_os_random_bytes(out: &mut [u8]) -> core::result::Result<(
 pub fn uuid_slug::generate_uuid_v4() -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_into_with_random_fill(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_with_random_fill(fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
+pub fn uuid_slug::generate_uuid_v7() -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::uuid_v7_bounds(start_unix_ms: u64, end_unix_ms: core::option::Option<u64>) -> core::result::Result<uuid_slug::UuidV7Bounds, uuid_slug::Error>
 pub fn uuid_slug::uuid_v7_test_mask() -> uuid_slug::UuidV7Mask
 ```
@@ -675,6 +705,29 @@ impl core::marker::Unpin for uuid_slug::UuidV7ClockRollbackPolicy
 impl core::marker::UnsafeUnpin for uuid_slug::UuidV7ClockRollbackPolicy
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7ClockRollbackPolicy
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7ClockRollbackPolicy
+pub enum uuid_slug::UuidVariant
+pub uuid_slug::UuidVariant::Future
+pub uuid_slug::UuidVariant::Microsoft
+pub uuid_slug::UuidVariant::Ncs
+pub uuid_slug::UuidVariant::Rfc
+impl core::clone::Clone for uuid_slug::UuidVariant
+pub fn uuid_slug::UuidVariant::clone(&self) -> Self
+impl core::cmp::Eq for uuid_slug::UuidVariant
+impl core::cmp::PartialEq for uuid_slug::UuidVariant
+pub fn uuid_slug::UuidVariant::eq(&self, other: &Self) -> bool
+impl core::fmt::Debug for uuid_slug::UuidVariant
+pub fn uuid_slug::UuidVariant::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for uuid_slug::UuidVariant
+pub fn uuid_slug::UuidVariant::hash<__H: core::hash::Hasher>(&self, state: &mut __H)
+impl core::marker::Copy for uuid_slug::UuidVariant
+impl core::marker::StructuralPartialEq for uuid_slug::UuidVariant
+impl core::marker::Freeze for uuid_slug::UuidVariant
+impl core::marker::Send for uuid_slug::UuidVariant
+impl core::marker::Sync for uuid_slug::UuidVariant
+impl core::marker::Unpin for uuid_slug::UuidVariant
+impl core::marker::UnsafeUnpin for uuid_slug::UuidVariant
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidVariant
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidVariant
 pub struct uuid_slug::Error
 impl uuid_slug::Error
 pub const fn uuid_slug::Error::code(&self) -> uuid_slug::ErrorCode
@@ -777,7 +830,9 @@ pub fn uuid_slug::Uuid::from_uuid_string(uuid_string: &str) -> core::result::Res
 pub const fn uuid_slug::Uuid::is_rfc_uuid_variant(&self) -> bool
 pub const fn uuid_slug::Uuid::is_uuid_v4(&self) -> bool
 pub const fn uuid_slug::Uuid::is_uuid_v7(&self) -> bool
+pub fn uuid_slug::Uuid::parse_uuid(uuid: &str) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::Uuid::to_plain_uuid_slug(&self, alphabet: uuid_slug::UuidSlugAlphabet) -> uuid_slug::PlainUuidSlug
+pub const fn uuid_slug::Uuid::uuid_variant(&self) -> uuid_slug::UuidVariant
 pub const fn uuid_slug::Uuid::uuid_version(&self) -> u8
 pub fn uuid_slug::Uuid::write_uuid_bytes(&self, out: &mut [u8], offset: usize) -> core::result::Result<(), uuid_slug::Error>
 impl core::clone::Clone for uuid_slug::Uuid
@@ -792,6 +847,10 @@ pub fn uuid_slug::Uuid::partial_cmp(&self, other: &Self) -> core::option::Option
 impl core::fmt::Debug for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for uuid_slug::Uuid
+pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::LowerHex for uuid_slug::Uuid
+pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::UpperHex for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::hash<__H: core::hash::Hasher>(&self, state: &mut __H)

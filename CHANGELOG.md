@@ -5,6 +5,10 @@ section here, with the generated API changes, package size and links added.
 
 ## [Unreleased]
 
+### Added
+
+- Rust gains the TypeScript calls it lacked: `Uuid::parse_uuid` reads UUID text or a plain slug like `parseUuid`, `uuid_variant` returns the RFC 9562 variant, `{:X}` writes uppercase UUID text without allocating, and `generate_uuid_v7()` generates with default settings and no generator to create.
+
 ### Changed
 
 - Rust's default `fast-rng` feature amortizes OS draws with an OS-seeded ChaCha12 generator. Disable defaults and enable `os-rng` for direct OS draws on every call; conversion-only builds still need neither dependency. Initial and required reseed failures return `rng_unavailable`.

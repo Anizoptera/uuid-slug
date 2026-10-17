@@ -78,12 +78,15 @@ through `generate_uuid_v7_with_random_fill`; the callback also owns secure entro
 | TypeScript capability | Rust entry point or composition |
 | --- | --- |
 | `uuidStringToBytes` / `bytesToUuidString`; bytes and offsets | `Uuid::from_uuid_string`, `from_uuid_bytes`, `as_uuid_bytes`, `write_uuid_bytes`, `Display` |
+| Keyless `parseUuid` of UUID text or a plain slug | `Uuid::parse_uuid`; masked slugs go through their codec |
+| `UUID_TEXT_UPPERCASE` output | `{:X}` formatting; `{:x}` and `Display` give lowercase. Both write into the caller's formatter without allocating |
 | Plain slug conversion | `Uuid::to_plain_uuid_slug`, `Uuid::from_plain_uuid_slug` |
-| UUID version and generic/v4/v7 guards | Parse once, then `Uuid::uuid_version`, `is_uuid_v4`, `is_uuid_v7`, `is_rfc_uuid_variant` |
+| UUID version and generic/v4/v7 guards; `Uuid.inspect` | Parse once, then `Uuid::uuid_version`, `uuid_variant`, `is_uuid_v4`, `is_uuid_v7`, `is_rfc_uuid_variant`, `extract_uuid_v7_unix_ms` and comparison with `NIL_UUID` or `MAX_UUID`. Rust returns each field on demand instead of an inspection object |
 | Canonical nil and max UUID values | `NIL_UUID`, `MAX_UUID` |
 | Base64url UUID payload | `UuidSlugAlphabet::Base64Url.uuid_bytes_to_plain_slug`, `plain_slug_to_uuid_bytes`, `plain_slug_to_uuid_bytes_into` |
 | Canonical base64url guard | Check `UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes` success for exactly 22 characters |
 | v4 generation and caller storage | `generate_uuid_v4`, `generate_uuid_v4_with_random_fill`, `generate_uuid_v4_into_with_random_fill` |
+| Simple `generateUuidV7()` | `generate_uuid_v7()`, one generator per thread, so no lock |
 | v7 generation, rollback, explicit time and caller storage | `UuidV7Generator`, `UuidV7ClockRollbackPolicy`, exact `SystemTime`, fractional Unix-millisecond interop, explicit random-fill, and caller-output forms |
 | Generated plain or masked slugs | TypeScript representation calls may select one generator directly; Rust generates a `Uuid`, then calls `to_plain_uuid_slug` or `uuid_to_masked_slug` |
 | UUIDv7 timestamp | `Uuid::extract_uuid_v7_unix_ms` |

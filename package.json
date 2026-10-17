@@ -1,6 +1,6 @@
 {
   "name": "@anizoptera/uuid-slug",
-  "version": "0.5.1-dev",
+  "version": "0.6.0-dev",
   "description": "Fastest UUIDv4/v7 generation and handling for TS, Rust, and WASM, short base64/base32 plain and masked slugs.  Zero runtime deps, tree-shakable, and optimised for your runtime.  One efficient ID for databases, URLs and files.",
   "keywords": [
     "base32hex",

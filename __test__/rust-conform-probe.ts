@@ -105,7 +105,7 @@ function appendUuidV7CompatibilityRequests(requests: Request[], input: string): 
     value: [true, false, true, false, false, false],
   });
   deepStrictEqual(evaluate({ op: "timestamp", input }), { value: unixMs });
-  for (const op of ["parse", "timestamp", "guards"]) requests.push({ op, input });
+  for (const op of ["parse", "inspect", "timestamp", "guards"]) requests.push({ op, input });
   for (const alphabet of ["base64url", "base32hex"]) {
     const plain = evaluate({ op: "plain", input, alphabet });
     if (!("value" in plain) || typeof plain.value !== "string")
@@ -170,6 +170,17 @@ export function evaluate(request: Request): Outcome {
       }
       case "parse":
         return result(ts.uuidStringToBytes(input));
+      case "inspect": {
+        const uuid = ts.parseUuid(input);
+        if (uuid instanceof Error) return result(uuid);
+        const { version, variant } = uuid.inspect();
+        return result({
+          lowercase: uuid.toString(),
+          uppercase: ts.uuidToString(uuid, ts.UUID_TEXT_UPPERCASE),
+          version,
+          variant,
+        });
+      }
       case "byteOperations": {
         const bytes = Uint8Array.from(request.bytes as number[]);
         const offset = request.offset as number;
@@ -385,7 +396,8 @@ export async function contractRequests(): Promise<Request[]> {
     deepStrictEqual(evaluate({ op: "guards", input: value }), {
       value: [true, v4, v7, false, false, false],
     });
-    for (const op of ["parse", "timestamp", "guards"]) requests.push({ op, input: value });
+    for (const op of ["parse", "inspect", "timestamp", "guards"])
+      requests.push({ op, input: value });
   }
   const first = wire.find((vector) => vector.uuid === NIL_TEST_SENTINEL[0]?.uuid);
   const ordinary = wire.find((vector) => vector.mask === "default" && vector.uuid !== first?.uuid);
@@ -490,14 +502,30 @@ export async function contractRequests(): Promise<Request[]> {
     ...wire.map((v) => v.uuid),
     ...original.plain.map((v) => v.uuid),
   ]) {
-    for (const op of ["parse", "timestamp", "guards"]) requests.push({ op, input });
+    for (const op of ["parse", "inspect", "timestamp", "guards"]) requests.push({ op, input });
     for (const alphabet of ["base64url", "base32hex"]) {
       requests.push({ op: "plain", input, alphabet });
       const encoded = evaluate({ op: "plain", input, alphabet });
       if ("value" in encoded && typeof encoded.value === "string")
-        for (const op of ["plainToUuid", "guards"]) requests.push({ op, input: encoded.value });
+        for (const op of ["plainToUuid", "inspect", "guards"])
+          requests.push({ op, input: encoded.value });
     }
   }
+  // RFC 9562 variant field, from the top bits of byte 8: 0xx, 10x, 110, 111.
+  for (const [nibble, variant] of [
+    ["7", "ncs"],
+    ["b", "rfc"],
+    ["d", "microsoft"],
+    ["f", "future"],
+  ] as const) {
+    const input = `00000000-0000-1000-${nibble}000-000000000000`;
+    deepStrictEqual(evaluate({ op: "inspect", input }), {
+      value: { lowercase: input, uppercase: input.toUpperCase(), version: 1, variant },
+    });
+    requests.push({ op: "inspect", input });
+  }
+  // Universal parsing picks its decoder by UTF-16 length: 22 units is a slug, 22 UTF-8 bytes is not.
+  for (const input of ["é".repeat(22), "é".repeat(11)]) requests.push({ op: "inspect", input });
   for (const input of ["", "A", "Zg", "Zh", "Zg=", "Zg\n", "é", ...wire.map((v) => v.plain)]) {
     for (const op of ["base64Decode", "base64Guard", "plainToUuid", "guards"])
       requests.push({ op, input });

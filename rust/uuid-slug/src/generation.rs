@@ -1,4 +1,4 @@
-//! Generate RFC UUIDs with explicit state and fallible entropy; no global lock is required.
+//! Generate RFC UUIDs with explicit or per-thread state and fallible entropy; no global lock is required.
 //!
 //! Every `_with` callback must fill every requested byte from its chosen source or return an
 //! error. A successful partial fill cannot be distinguished reliably from valid random bytes.
@@ -359,10 +359,33 @@ pub fn fill_os_random_bytes(out: &mut [u8]) -> Result<(), Error> {
 pub fn generate_uuid_v4() -> Result<Uuid, Error> {
     generate_uuid_v4_with_random_fill(fill_default_random_bytes)
 }
+/// Generate a UUIDv7 at the system clock with secure platform entropy and default settings.
+/// Each thread keeps its own generator, so the call takes no lock: IDs from one thread strictly
+/// increase, while IDs from different threads in the same millisecond have no defined order.
+/// Create a `UuidV7Generator` for a rollback policy, fraction bits or one shared sequence.
+#[cfg(feature = "os-rng")]
+pub fn generate_uuid_v7() -> Result<Uuid, Error> {
+    std::thread_local! {
+        static GENERATOR: std::cell::RefCell<UuidV7Generator> =
+            const { std::cell::RefCell::new(UuidV7Generator::new()) };
+    }
+    GENERATOR.with_borrow_mut(UuidV7Generator::generate_uuid_v7)
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    // A fresh generator per call would reseed each time and lose this order within a millisecond.
+    #[cfg(feature = "os-rng")]
+    #[test]
+    fn simple_uuid_v7_calls_continue_one_sequence_per_thread() {
+        let mut previous = generate_uuid_v7().unwrap();
+        for _ in 0..10_000 {
+            let next = generate_uuid_v7().unwrap();
+            assert!(next.is_uuid_v7() && next > previous);
+            previous = next;
+        }
+    }
     fn fill(out: &mut [u8]) -> Result<(), Error> {
         for (i, byte) in out.iter_mut().enumerate() {
             *byte = i as u8;

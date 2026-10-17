@@ -206,11 +206,25 @@ fn run(request: &Value) -> Result<Value, Error> {
             let uuid = if request["version"] == 4 {
                 uuid_slug::generate_uuid_v4()?
             } else {
-                uuid_slug::UuidV7Generator::new().generate_uuid_v7()?
+                uuid_slug::generate_uuid_v7()?
             };
             Ok(json!(uuid.to_string()))
         }
         "parse" => Ok(json!(Uuid::from_uuid_string(input)?.as_uuid_bytes())),
+        "inspect" => {
+            let uuid = Uuid::parse_uuid(input)?;
+            Ok(json!({
+                "lowercase": format!("{uuid:x}"),
+                "uppercase": format!("{uuid:X}"),
+                "version": uuid.uuid_version(),
+                "variant": match uuid.uuid_variant() {
+                    uuid_slug::UuidVariant::Ncs => "ncs",
+                    uuid_slug::UuidVariant::Rfc => "rfc",
+                    uuid_slug::UuidVariant::Microsoft => "microsoft",
+                    uuid_slug::UuidVariant::Future => "future",
+                },
+            }))
+        }
         "byteOperations" => {
             let bytes: Vec<u8> = serde_json::from_value(request["bytes"].clone())
                 .map_err(|_| Error::new(ErrorCode::InvalidBuffer))?;
@@ -251,11 +265,10 @@ fn run(request: &Value) -> Result<Value, Error> {
                 .ok_or_else(|| Error::new(ErrorCode::InvalidTimestamp))?;
             let bounds = uuid_v7_bounds(start, Some(end))?;
             let format = |uuid: Uuid| {
-                let text = uuid.to_string();
                 if request["textCase"] == "uppercase" {
-                    text.to_uppercase()
+                    format!("{uuid:X}")
                 } else {
-                    text
+                    uuid.to_string()
                 }
             };
             Ok(json!({
