@@ -3,6 +3,7 @@
 import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
 import { availableParallelism, loadavg, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 import { chromium, firefox, webkit } from "playwright";
 import type { Page } from "playwright";
@@ -334,22 +335,53 @@ async function runBrowser(page: Page, origin: string, revision: Revision): Promi
   return validateRows(rows, "Browser comparison");
 }
 
+// Host runs inherit `command`'s timeout; Playwright's `evaluate` has none, so a wedged headless
+// engine can sit idle indefinitely and stall the whole comparison. The bound is far
+// above one profile process even on a loaded host. One retry in a new process separates a wedged
+// engine from a deterministic hang in the profiled code, which fails both attempts.
+const BROWSER_TIMEOUT_MS = 120_000;
+
 async function runFreshBrowser(
   runtime: BrowserRuntime,
   origin: string,
   revision: Revision,
 ): Promise<ProfileRow[]> {
+  for (let attempt = 1; ; attempt += 1) {
+    const rows = await runBoundedBrowser(runtime, origin, revision);
+    if (rows) return rows;
+    const message = `${runtime} ${revision} profile exceeded ${BROWSER_TIMEOUT_MS} ms`;
+    if (attempt === 2) throw new Error(message);
+    console.error(`warning: ${message}; retrying once in a new process`);
+  }
+}
+
+// Unreferenced so a pending bound never keeps the comparison process alive.
+const expire = (ms: number) => sleep(ms, undefined, { ref: false });
+
+/** Resolves `undefined` when the engine misses `BROWSER_TIMEOUT_MS`. */
+async function runBoundedBrowser(
+  runtime: BrowserRuntime,
+  origin: string,
+  revision: Revision,
+): Promise<ProfileRow[] | undefined> {
   // A new page alone can share engine caches with the preceding revision; fork before warm-up.
-  const browser = await browserEngines[runtime].launch({ headless: true });
+  const browser = await browserEngines[runtime].launch({
+    headless: true,
+    timeout: BROWSER_TIMEOUT_MS,
+  });
   try {
     const version = browser.version();
     const previous = runtimeVersions.get(runtime);
     if (previous !== undefined && previous !== version)
       throw new Error(`${runtime} changed version between comparison rounds`);
     runtimeVersions.set(runtime, version);
-    return await runBrowser(await browser.newPage(), origin, revision);
+    return await Promise.race([
+      browser.newPage().then((page) => runBrowser(page, origin, revision)),
+      expire(BROWSER_TIMEOUT_MS),
+    ]);
   } finally {
-    await browser.close();
+    // A wedged engine can also ignore `close`; the bound must not hang there instead.
+    await Promise.race([browser.close(), expire(10_000)]);
   }
 }
 
@@ -484,10 +516,12 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
 const BUSY_LOAD = Math.max(2, availableParallelism() / 4);
 function refuseBusyHost(when: string): void {
   const [load] = loadavg();
-  if ((load ?? 0) > BUSY_LOAD)
-    throw new Error(
-      `Host too busy ${when} timing: 1-minute load ${load?.toFixed(1)} > ${BUSY_LOAD}. Results would measure other work, not this code. Stop competing jobs (builds, tests, other benchmarks) and rerun the same command.`,
-    );
+  if ((load ?? 0) <= BUSY_LOAD) return;
+  const message = `Host too busy ${when} timing: 1-minute load ${load?.toFixed(1)} > ${BUSY_LOAD}. Results would measure other work, not this code. Stop competing jobs (builds, tests, other benchmarks) and rerun the same command.`;
+  // A maintainer can force a run when the competing work cannot be stopped; the warning keeps the
+  // load beside the results so a failure is read as possibly contaminated.
+  if (process.env.UUID_SLUG_PERF_ALLOW_BUSY === "1") console.error(`warning: ${message}`);
+  else throw new Error(`${message} UUID_SLUG_PERF_ALLOW_BUSY=1 forces the run.`);
 }
 
 async function main(): Promise<void> {
