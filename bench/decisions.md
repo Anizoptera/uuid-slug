@@ -961,7 +961,7 @@ Browser host integration has a separate retained cost. In the same ordinary-rele
 
 **Passing the chosen table into the decoder removes the other native alphabet table.** The decoder in extracted `0b9c558` takes the alphabet enum and retains both tables. The candidate passes `&Encoding` and uses a const generic for the tail size: 0 bits for plain slugs, 4 for masked slugs. This lets the compiler remove unused tables and branches without inlining the full decoder. All sixteen single-alphabet native consumers omit the other table across default/reduced features and ordinary release/ThinLTO; four masking controls retain both. Twenty native and sixty Chromium/Firefox/WebKit executions pass. Rust 1.97.0 default/reduced debug/release tests pass (45/42 tests per selection).
 
-Keep the candidate out of production until speed and build cost are measured and the native masking increase is resolved. Sizes below use defaults disabled, ordinary release linking and a fresh build directory: Rust 1.99.1, macOS Arm64, 2026-10-23.
+The selected-encoding change is implemented in `62ed6bb`; release acceptance still requires full-call timing and assessment of the masking-size trade-off. Sizes below describe the earlier candidate with defaults disabled, ordinary release linking and a fresh build directory: Rust 1.99.1, macOS Arm64, 2026-10-23.
 
 | Consumer | Baseline bytes | Candidate bytes |
 | --- | ---: | ---: |
@@ -987,7 +987,7 @@ Cargo can reuse the wrong binary after source restoration. Restoring baseline by
 | Masking | off | 65,990 | 65,990 |
 | Masking | on | 67,943 | 67,951 |
 
-These rows use ordinary release linking. With defaults, decoder savings are 1,983–2,311 bytes; ThinLTO also reduces all four decoder outputs. Masking grows by 8 WASM bytes with defaults, or 2 with ThinLTO; without defaults its WASM size stays unchanged. Native masking grows by 64 bytes without defaults (48 with ThinLTO); with defaults it is unchanged (112 bytes smaller with ThinLTO). Keep the candidate unshipped until full-call timing and build cost are checked.
+These rows use ordinary release linking. With defaults, decoder savings are 1,983–2,311 bytes; ThinLTO also reduces all four decoder outputs. Masking grows by 8 WASM bytes with defaults, or 2 with ThinLTO; without defaults its WASM size stays unchanged. Native masking grows by 64 bytes without defaults (48 with ThinLTO); with defaults it is unchanged (112 bytes smaller with ThinLTO). These size results do not close full-call speed acceptance; the build-cost screen below covers one consumer.
 
 **Ordinary-release build costs are close in the sampled decoder consumer.** A base64url returned-byte consumer at `349110d` builds and executes after each baseline/candidate substitution on Rust 1.99.1, macOS Arm64 (2026-10-23). Dependencies are warm; incremental compilation is disabled and both the crate and app recompile each time. Six pairs per feature selection alternate order and randomize environment size. Repeated source and binary hashes match within each selection/variant, ruling out the earlier stale-artifact failure.
 
