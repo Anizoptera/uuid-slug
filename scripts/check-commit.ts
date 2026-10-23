@@ -71,9 +71,11 @@ const checks: {
 const selected = checks.filter((check) => staged.some(check.affects));
 
 // A changed API report is the one consumer-visible change a script can see for certain; behaviour
-// changes without one rely on the AGENTS.md rule. Writing the entry now keeps its reason.
+// changes without one rely on the AGENTS.md rule. Documentation in api/ is not a report.
+// Writing the entry now keeps its reason.
 const missingChangelog =
-  staged.some((path) => path.startsWith("api/")) && !staged.includes("CHANGELOG.md")
+  staged.some((path) => path === "api/typescript.api.d.ts" || path === "api/rust.api.md") &&
+  !staged.includes("CHANGELOG.md")
     ? "The staged api/ report changes the public API, but CHANGELOG.md is not staged. Add a line under\n" +
       "## [Unreleased] saying what callers gain or must change and why, then stage it with this commit."
     : undefined;

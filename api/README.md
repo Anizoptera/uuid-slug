@@ -1,8 +1,8 @@
 # Packaged API checks
 
-Run `bun run api:check` to check the reviewed files and compatibility with the latest governed release. On a tagged commit, that tag is the current release and the check uses its predecessor. Run `bun run api:update` when a proposed public change alters either report, then include the generated diff in the pull request.
+Run `bun run api:check` to check both reviewed reports and npm compatibility with the latest governed release. On a tagged commit, that tag is the current release and the npm check uses its predecessor. Run `bun run api:update` when a proposed public change alters either report, then include the generated diff in the pull request.
 
-Reviewed files show proposed changes; release tags preserve the compatibility baseline. Updating a reviewed file does not bypass version or deprecation rules.
+Reviewed files show proposed changes. Rust publication compatibility and deprecation checks run during release preparation against registry-verified crate archives; an npm tag containing Rust source does not prove that crate was published. See [release comparison evidence](../dev/release.md#evidence-and-notes). Updating a reviewed file does not bypass version or deprecation rules.
 
 Install the pinned Rust extractor with `cargo install cargo-public-api --version 0.52.0 --locked`, then activate the repository hook once with `bun run hooks:install`.
 

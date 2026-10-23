@@ -2,7 +2,7 @@
 
 Preserve issued IDs and ordinary-call speed. Keep masks explicit, failures typed and unused features removable.
 
-Never run formatters on Markdown or other prose files, or manually hard-wrap their paragraphs. Keep each prose paragraph on one source line; preserve code blocks, tables, list structure and intentional Markdown hard breaks. `.oxfmtrc.json` owns formatter exclusions; keep them effective for package commands, hooks, CI and direct file arguments. Editor soft wrapping needs no file changes.
+Never run formatters on Markdown or other prose files, or manually hard-wrap their paragraphs. Keep each prose paragraph on one source line; preserve code blocks, tables, list structure and intentional Markdown hard breaks. Generate prose paragraphs unwrapped too; fix the template instead of adding a formatter after generation. `.oxfmtrc.json` owns formatter exclusions; keep them effective for package commands, hooks, CI and direct file arguments. Editor soft wrapping needs no file changes.
 
 ## Read before work
 
@@ -128,7 +128,7 @@ README is roughly 60% marketing and 40% usage. It MUST explain why the complete 
 
 ## Release
 
-- A commit that changes something consumers can observe adds a line under `## [Unreleased]` in `CHANGELOG.md`: what callers gain, lose or must change, and why. Write it in that commit, because the reason is known then and is lost by release time. Consumer-observable: public API, behaviour, output, errors, README guarantees, supported runtimes, package contents. Not consumer-observable, so never listed: refactors, tests, tooling, CI, benchmarks, agent and maintainer docs. At release, `bun run changelog <version>` renames the section to that version. The commit hook blocks a staged `api/` report without a staged `CHANGELOG.md`; it cannot detect behaviour changes, so those depend on this rule.
+- A commit that changes something consumers can observe adds a line under `## [Unreleased]` in `CHANGELOG.md`: what callers gain, lose or must change, and why. Write it in that commit, because the reason is known then and is lost by release time. Consumer-observable: public API, behaviour, output, errors, README guarantees, supported runtimes, package contents. Not consumer-observable, so never listed: refactors, tests, tooling, CI, benchmarks, agent and maintainer docs. At release, `bun run changelog <version>` renames the section to that version. The commit hook blocks a staged generated API report without a staged `CHANGELOG.md`; documentation such as `api/README.md` is not an API report. The hook cannot detect behaviour changes, so those depend on this rule.
 - Release notes explain what changes for consumers and how to upgrade. The `CHANGELOG.md` section holds prose only: `scripts/release-report.ts` appends one generated API diff at the end of `### Breaking changes`, `### Added` and `### Changed`, then package sizes and the npm, crate and commit-history links. Never hand-write API diff blocks in the changelog; write every rename as `` `old` → `new` `` so the diff pairs the old and new declarations; never publish declaration inventories, private helper types, repeated older comparisons, or API attachments. Read the body as a cold reader before publication.
 - Describe only the packages being published; unpublished implementations and their reports are not consumer release notes.
 - Preserve declaration names, visibility and ownership from the compiler AST; do not infer them from printed signatures, which can hide valid quoted, computed or Unicode names.
