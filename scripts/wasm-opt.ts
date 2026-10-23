@@ -8,7 +8,7 @@ const root = resolve(import.meta.dir, "..");
 const jco = import.meta.resolve("@bytecodealliance/jco");
 const wasmOpt = createRequire(jco).resolve("binaryen/bin/wasm-opt");
 const jcoCli = join(dirname(fileURLToPath(jco)), "jco.js");
-const flags = ["-O2"];
+const flags = ["-O2"] as const;
 let version: Promise<string> | undefined;
 
 // Keep Cargo's input untouched; later cached builds must not reuse an optimized replacement.
