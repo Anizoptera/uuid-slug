@@ -3,6 +3,7 @@ import { isBuiltin } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { command } from "./command";
+import { checkConsumerInterop } from "./check-consumer-interop";
 import { typeScriptCheckers } from "./typescript-compilers";
 import { archiveAndRemoveScratch } from "./archive-scratch";
 import { formatConsumerGraph, inspectConsumerGraph } from "./consumer-graph";
@@ -342,6 +343,7 @@ export async function inspectArtifact(
       'import * as api from "./package/dist/index.js";\nimport { probeConsumer } from "./probe.mjs";\nawait probeConsumer(api);\n',
     );
     const consumers = await Promise.allSettled([
+      checkConsumerInterop(root, project),
       ...typeScriptCheckers.map(([checker, ...args]) => command(checker, args, root)),
       command("node", [runner], root),
       command("bun", [runner], root),
