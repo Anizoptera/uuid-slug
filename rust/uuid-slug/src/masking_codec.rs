@@ -309,6 +309,38 @@ mod tests {
     }
 
     #[test]
+    fn mixed_parser_preserves_retained_overlap_meanings() -> Result<(), Error> {
+        let fixtures: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/fixtures-original-slugs.json"
+        ))
+        .unwrap();
+        let overlap = &fixtures["overlap"];
+        let slug = overlap["slug"].as_str().unwrap();
+        let mask =
+            crate::derive_uuid_v7_mask(overlap["seed"].as_str().unwrap().as_bytes(), 1, "fixture")?;
+        let codec = UuidV7MaskingCodec::new(mask);
+        let masked = Uuid::from_uuid_string(overlap["currentUuid"].as_str().unwrap())?;
+        let plain = Uuid::from_uuid_string(overlap["plainUuid"].as_str().unwrap())?;
+        assert_ne!(masked, plain);
+        assert_eq!(codec.parse_uuid(slug)?, masked);
+        assert_eq!(Uuid::from_plain_uuid_slug(slug)?, plain);
+        // Flip only the outer check, leaving the encrypted block intact. Neither masked
+        // validation nor canonical plain decoding can accept this spelling.
+        let (bytes, tail) = crate::payload::normalize(slug)?;
+        assert_eq!(tail, 0);
+        let rejected = UuidSlugAlphabet::Base64Url.encode_tail(&bytes, tail ^ 1, 4)?;
+        assert_eq!(
+            codec.masked_slug_to_uuid(&rejected).unwrap_err().code(),
+            ErrorCode::InvalidUuidSlug
+        );
+        assert_eq!(
+            codec.parse_uuid(&rejected).unwrap_err().code(),
+            ErrorCode::InvalidUuidSlug
+        );
+        Ok(())
+    }
+
+    #[test]
     fn callback_failure_respects_first_result_and_atomic_candidates() -> Result<(), Error> {
         assert!(
             UuidV7Mask::from_permutation_functions(
@@ -343,6 +375,7 @@ mod tests {
         let slug = writer.uuid_to_masked_slug(uuid)?;
         let fallback = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
             previous_masks: vec![UuidV7PreviousMask::new(good.clone())],
+            sentinels: vec![("reserved".to_owned(), uuid_at(0))],
             ..UuidV7MaskingCodecOptions::new(custom.clone())
         })?;
         let first = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
@@ -353,6 +386,25 @@ mod tests {
         let error = fallback.masked_slug_to_uuid(&slug).unwrap_err();
         assert_eq!(error.code(), ErrorCode::InvalidMask);
         assert!(std::error::Error::source(&error).is_some());
+        // Plain fallback must not hide an operational error, even when its padding is valid.
+        let plain = uuid.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url);
+        let error = fallback.parse_uuid(&plain).unwrap_err();
+        assert_eq!(error.code(), ErrorCode::InvalidMask);
+        let cause = std::error::Error::source(&error).unwrap();
+        assert_eq!(
+            cause.downcast_ref::<Error>().unwrap().code(),
+            ErrorCode::InvalidBuffer
+        );
+        assert_eq!(first.parse_uuid(&slug)?, uuid);
+        assert_eq!(fallback.parse_uuid(&uuid.to_string())?, uuid);
+        assert_eq!(
+            fallback.parse_uuid(&uuid.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex))?,
+            uuid
+        );
+        for alphabet in [UuidSlugAlphabet::Base64Url, UuidSlugAlphabet::Base32Hex] {
+            let sentinel = uuid_at(0).to_plain_uuid_slug(alphabet);
+            assert_eq!(fallback.parse_uuid(&sentinel)?, uuid_at(0));
+        }
         let migration =
             first.create_uuid_slug_migration_decoder(UuidSlugMigrationOptions::default());
         assert_eq!(
@@ -576,6 +628,34 @@ impl UuidV7MaskingCodec {
             .encode_tail(&bytes, tail, 4)
             .map(MaskedUuidV7Slug)
             .map(MaskedOrSentinelUuidV7Slug::Masked)
+    }
+
+    /// Parse UUID text, either plain-slug alphabet, or masked slugs under this codec's keys.
+    /// Sentinels take priority; ambiguous base64url reads masked first, then plain. Callback
+    /// failures stop decoding. For known sources use [`Uuid::from_plain_uuid_slug`] or
+    /// [`Self::masked_slug_to_uuid`]. The returned UUID does not retain this codec or its keys.
+    pub fn parse_uuid(&self, uuid: &str) -> Result<Uuid, Error> {
+        match crate::uuid::utf16_len(uuid) {
+            22 => {
+                if let Some(sentinel) = self.sentinel(uuid) {
+                    return Ok(sentinel);
+                }
+                let (bytes, tail) = crate::payload::normalize(uuid)?;
+                if let Some(candidate) = self.decode_candidate(bytes, tail)? {
+                    return Ok(candidate);
+                }
+                // The same decoded block is plain UUID data only with zero padding. Reusing
+                // it avoids a second alphabet parse; callback errors never reach this branch.
+                if tail == 0 {
+                    return Ok(Uuid::from_uuid_bytes_array(bytes));
+                }
+                Err(Error::new(ErrorCode::InvalidUuidSlug).with_message(
+                    "No configured mask accepts this slug and its trailing bits are not canonical plain UUID padding.",
+                ))
+            }
+            27 => self.masked_slug_to_uuid(uuid),
+            _ => Uuid::parse_uuid(uuid),
+        }
     }
 
     /// Return the first current masked UUIDv7 candidate, not proof that this codec issued the ID.

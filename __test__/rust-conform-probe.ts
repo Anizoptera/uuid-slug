@@ -306,6 +306,8 @@ export function evaluate(request: Request): Outcome {
       }),
     );
     switch (request.op) {
+      case "parseWithCodec":
+        return result(ts.uuidToString(codec.parseUuid(input)));
       case "mask":
         return result(codec.uuidToMaskedSlug(input));
       case "unmask":
@@ -364,8 +366,8 @@ export async function contractRequests(): Promise<Request[]> {
   const original: {
     issued: { uuid: string; slug: string; raw: string }[];
     plain: { uuid: string; slug: string }[];
-    overlap: { slug: string; seed: string };
-    keyOverlap: { slug: string; seeds: string[] };
+    overlap: { slug: string; seed: string; currentUuid: string; plainUuid: string };
+    keyOverlap: { slug: string; seeds: string[]; uuids: string[] };
   } = JSON.parse(
     await readFile("rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json", "utf8"),
   );
@@ -473,11 +475,12 @@ export async function contractRequests(): Promise<Request[]> {
       requests.push(
         { ...options, op: "mask", input: vector.uuid },
         { ...options, op: "unmask", input: encoded.value },
+        { ...options, op: "parseWithCodec", input: encoded.value },
         { ...options, op: "candidates", input: encoded.value },
         { ...options, op: "sentinels" },
       );
       if (encoded.value.length === 26) {
-        for (const op of ["unmask", "migration", "candidates"]) {
+        for (const op of ["unmask", "migration", "candidates", "parseWithCodec"]) {
           const upper: Request = { ...options, op, input: encoded.value.toUpperCase() };
           deepStrictEqual(evaluate(upper), evaluate({ ...upper, input: encoded.value }));
           requests.push(upper);
@@ -502,12 +505,13 @@ export async function contractRequests(): Promise<Request[]> {
     ...wire.map((v) => v.uuid),
     ...original.plain.map((v) => v.uuid),
   ]) {
-    for (const op of ["parse", "inspect", "timestamp", "guards"]) requests.push({ op, input });
+    for (const op of ["parse", "inspect", "timestamp", "guards", "parseWithCodec"])
+      requests.push({ op, input });
     for (const alphabet of ["base64url", "base32hex"]) {
       requests.push({ op: "plain", input, alphabet });
       const encoded = evaluate({ op: "plain", input, alphabet });
       if ("value" in encoded && typeof encoded.value === "string")
-        for (const op of ["plainToUuid", "inspect", "guards"])
+        for (const op of ["plainToUuid", "inspect", "guards", "parseWithCodec"])
           requests.push({ op, input: encoded.value });
     }
   }
@@ -525,7 +529,8 @@ export async function contractRequests(): Promise<Request[]> {
     requests.push({ op: "inspect", input });
   }
   // Universal parsing picks its decoder by UTF-16 length: 22 units is a slug, 22 UTF-8 bytes is not.
-  for (const input of ["é".repeat(22), "é".repeat(11)]) requests.push({ op: "inspect", input });
+  for (const input of ["é".repeat(22), "é".repeat(11), "😀".repeat(11), "0".repeat(26) + "1"])
+    requests.push({ op: "inspect", input }, { op: "parseWithCodec", input });
   for (const input of ["", "A", "Zg", "Zh", "Zg=", "Zg\n", "é", ...wire.map((v) => v.plain)]) {
     for (const op of ["base64Decode", "base64Guard", "plainToUuid", "guards"])
       requests.push({ op, input });
@@ -713,6 +718,27 @@ export async function contractRequests(): Promise<Request[]> {
     original: true,
     plain: true,
   });
+  const overlap = {
+    op: "parseWithCodec",
+    input: original.overlap.slug,
+    mask: { seed: original.overlap.seed },
+  };
+  // Retained producer identities distinguish masked-first parsing from a valid but wrong plain read.
+  deepStrictEqual(evaluate(overlap), { value: original.overlap.currentUuid });
+  deepStrictEqual(evaluate({ op: "plainToUuid", input: overlap.input }), {
+    value: original.overlap.plainUuid,
+  });
+  requests.push(overlap);
+  for (const index of [0, 1]) {
+    const request = {
+      op: "parseWithCodec",
+      input: original.keyOverlap.slug,
+      mask: { seed: original.keyOverlap.seeds[index] },
+      previous: [{ seed: original.keyOverlap.seeds[1 - index] }],
+    };
+    deepStrictEqual(evaluate(request), { value: original.keyOverlap.uuids[index] });
+    requests.push(request);
+  }
   requests.push({
     op: "candidates",
     input: original.keyOverlap.slug,

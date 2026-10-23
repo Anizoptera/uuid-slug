@@ -429,6 +429,7 @@ pub fn uuid_slug::UuidV7MaskingCodec::extract_masked_uuid_v7_payload(&self, mask
 pub fn uuid_slug::UuidV7MaskingCodec::from_options(options: uuid_slug::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::masked_slug_to_uuid(&self, masked_uuid_slug: &str) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::new(mask: uuid_slug::UuidV7Mask) -> Self
+pub fn uuid_slug::UuidV7MaskingCodec::parse_uuid(&self, uuid: &str) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::UuidV7Sentinel]
 pub fn uuid_slug::UuidV7MaskingCodec::uuid_to_masked_slug(&self, uuid: uuid_slug::Uuid) -> core::result::Result<uuid_slug::MaskedOrSentinelUuidV7Slug, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms<'a>(&self, slug: &'a str, window: uuid_slug::UuidV7TimestampWindow) -> core::result::Result<alloc::borrow::Cow<'a, str>, uuid_slug::Error>
@@ -1008,6 +1009,7 @@ pub fn uuid_slug::UuidV7MaskingCodec::extract_masked_uuid_v7_payload(&self, mask
 pub fn uuid_slug::UuidV7MaskingCodec::from_options(options: uuid_slug::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::masked_slug_to_uuid(&self, masked_uuid_slug: &str) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::new(mask: uuid_slug::UuidV7Mask) -> Self
+pub fn uuid_slug::UuidV7MaskingCodec::parse_uuid(&self, uuid: &str) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::UuidV7Sentinel]
 pub fn uuid_slug::UuidV7MaskingCodec::uuid_to_masked_slug(&self, uuid: uuid_slug::Uuid) -> core::result::Result<uuid_slug::MaskedOrSentinelUuidV7Slug, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms<'a>(&self, slug: &'a str, window: uuid_slug::UuidV7TimestampWindow) -> core::result::Result<alloc::borrow::Cow<'a, str>, uuid_slug::Error>

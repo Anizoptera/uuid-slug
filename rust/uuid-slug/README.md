@@ -19,6 +19,8 @@ let masking_codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
 })?;
 let masked = masking_codec.uuid_to_masked_slug(uuid)?;
 assert_eq!(masking_codec.masked_slug_to_uuid(&masked)?, uuid);
+assert_eq!(masking_codec.parse_uuid(&masked)?, uuid);
+assert_eq!(masking_codec.parse_uuid(&filename)?, uuid);
 # Ok(())
 # }
 ```
@@ -28,6 +30,8 @@ Slug conversions return `PlainUuidSlug`, `MaskedUuidV7Slug`, or `MaskedOrSentine
 Keyless parsers accept strings, typed plain slugs and their standard borrowed or owned containers through `KeylessUuidText`. They reject typed masked slugs: pass those to their masking codec. For a `MaskedOrSentinelUuidV7Slug`, select its `Sentinel` variant before keyless decoding. Custom string wrappers can pass `.as_str()` explicitly; that erases provenance, so it cannot protect against ambiguous raw text. When forwarding generic input, use `Input: KeylessUuidText + ?Sized`; a reusable detached parser can use `let parse: fn(&str) -> Result<Uuid, uuid_slug::Error> = Uuid::parse_uuid` to retain ordinary string coercions.
 
 Use `UuidV7MaskingCodec::new(mask)` for base64url output with no sentinels or previous keys. Use `UuidV7MaskingCodec::from_options(options)?` to select those settings or a different timestamp range. Both require an explicit mask; only configured construction can return a validation error.
+
+Use `masking_codec.parse_uuid(text)?` when input may be UUID text, a plain slug or a masked slug. Registered sentinels take priority. For ambiguous 22-character text, the first passing mask decides the UUID; plain decoding applies only when every mask rejects it. Callback failures are returned, not retried as plain text. Use `Uuid::from_plain_uuid_slug` or `masked_slug_to_uuid` when you know the source. The returned `Uuid` owns its bytes without retaining the codec or keys.
 
 Plain slugs preserve all 128 UUID bits without version, variant or timestamp limits. Masked slugs preserve the 132-bit payload. Decoding infers the representation and rejects nonzero padding.
 

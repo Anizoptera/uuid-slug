@@ -377,6 +377,7 @@ fn run(request: &Value) -> Result<Value, Error> {
             };
             Ok(json!(uuid.to_string()))
         }
+        "parseWithCodec" => Ok(json!(masking_codec(request)?.parse_uuid(input)?.to_string())),
         "unmaskV7" => Ok(json!(
             masking_codec(request)?.masked_slug_to_uuid(input)?.to_string()
         )),

@@ -22,6 +22,8 @@ Run shared cases through each implementation from its first increment; check non
 
 ## Rust call sites
 
+Use `UuidV7MaskingCodec::parse_uuid(&str)` for mixed UUID text, plain slugs and this codec's masked slugs. Registered sentinels win first; ambiguous base64url tries masks in configured order before accepting canonical plain bytes. Callback errors stop decoding. Keep `Uuid::from_plain_uuid_slug` and `masked_slug_to_uuid` for known source meanings; a parsed Rust `Uuid` owns only its bytes and does not retain the codec or its keys.
+
 Keyless parsing accepts `KeylessUuidText`: ordinary `str` and `String`, typed plain slugs, and references, `Box`, `Rc`, `Arc` or `Cow` around accepted inputs. Seal this trait so a typed masked slug cannot implicitly enter a keyless decoder through its `Deref<str>` implementation. Custom wrappers pass an explicit text view; `.as_str()` deliberately erases provenance. Raw base64url text can still be ambiguous. Keep parsing nongeneric behind thin borrowed wrappers so input types add no parsing, allocation or parser duplication. A detached generic function fixes its input type on use; use an explicit `fn(&str) -> Result<Uuid, Error>` when one function value must accept different deref-coercible string containers.
 
 Use validated `Uuid` values between operations; parse text once rather than at each codec call. Use `From` conversions between `Uuid`, `uuid::Uuid` and `[u8; 16]` without text or allocation. `TryFrom<&[u8]>` requires exactly 16 bytes; explicit-offset reads select a UUID in a larger buffer. Preserve every bit without imposing version or variant validation. TypeScript interoperability uses its existing strings and standard byte containers rather than library-specific adapters. Both languages generate UUIDv4 and UUIDv7 only. Generic parsing, version inspection, and plain conversion preserve other UUID versions without version-specific APIs. Do not add generation, constants, bounds, fields, guards, or helpers for another version unless the maintainer reopens that boundary for concrete demand.
@@ -36,6 +38,7 @@ Native Rust uses `SystemTime` for configured fraction bits. Rust WebAssembly kee
 | --- | --- |
 | `uuidStringToBytes` / `bytesToUuidString`; bytes and offsets | `Uuid::from_uuid_string`, `from_uuid_bytes`, `as_uuid_bytes`, `write_uuid_bytes`, `Display` |
 | Keyless `parseUuid` of UUID text or a plain slug | `Uuid::parse_uuid`; masked slugs go through their codec |
+| Masking-codec `parseUuid` of mixed textual forms | `UuidV7MaskingCodec::parse_uuid` |
 | `UUID_TEXT_UPPERCASE` output | `{:X}` formatting; `{:x}` and `Display` give lowercase. Both write into the caller's formatter without allocating |
 | Plain slug conversion | `Uuid::to_plain_uuid_slug`, `Uuid::from_plain_uuid_slug` |
 | UUID version and generic/v4/v7 guards; `Uuid.inspect` | Parse once, then `Uuid::uuid_version`, `uuid_variant`, `is_uuid_v4`, `is_uuid_v7`, `is_rfc_uuid_variant`, `extract_uuid_v7_unix_ms` and comparison with `NIL_UUID` or `MAX_UUID`. Rust returns each field on demand instead of an inspection object |
