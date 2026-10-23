@@ -18,7 +18,6 @@ if (hostRuntimes.length) {
   await mkdir(reports, { recursive: true });
   directory = await mkdtemp(join(reports, "check-"));
 }
-let passed = false;
 try {
   if (directory) {
     const result = await Bun.build({
@@ -39,6 +38,9 @@ try {
         console.log(`${runtime}: ${name}\n${output.trim()}`);
       }
     }
+    // These probes passed; later comparison failures need their own artifacts, not these bundles.
+    await rm(directory, { recursive: true });
+    directory = undefined;
   }
   if (selectedRuntimes.includes("deno")) {
     // Deno can use the same forwarding counters and defect fixtures through Node compatibility.
@@ -156,17 +158,14 @@ try {
     if ((await comparison.exited) !== 0)
       throw new Error("Packed primary-call timing regression check failed");
   }
-  passed = true;
 } finally {
   if (directory) {
     // Failure output names the exact executable and bundle; deleting it would prevent that replay.
-    if (passed) await rm(directory, { recursive: true, force: true });
-    else
-      console.error(
-        `Performance check failed. Files remain in ${directory}; rerun the failing command with the same environment.`,
-      );
-    await rmdir(reports).catch((error: NodeJS.ErrnoException) => {
-      if (error.code !== "ENOENT" && error.code !== "ENOTEMPTY") throw error;
-    });
+    console.error(
+      `Performance check failed. Files remain in ${directory}; rerun the failing command with the same environment.`,
+    );
   }
+  await rmdir(reports).catch((error: NodeJS.ErrnoException) => {
+    if (error.code !== "ENOENT" && error.code !== "ENOTEMPTY") throw error;
+  });
 }
