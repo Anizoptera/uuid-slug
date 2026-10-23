@@ -34,11 +34,13 @@ export async function runLinkedWasm(
   }
   await mkdir(directory, { recursive: true });
   const optimized = join(directory, "optimized.wasm");
-  const optimization = await optimizeWasm(wasm, optimized);
+  const { functionMap, ...optimization } = await optimizeWasm(wasm, optimized, "inspect-module");
+  if (!functionMap?.trim()) throw new Error("Optimized WASM consumer has no function-map evidence");
   wasm = optimized;
   if (needsBindings) files.set("/consumer_bg.wasm", Bun.file(wasm));
   files.set("/consumer.wasm", Bun.file(wasm));
-  const module = await WebAssembly.compile(await Bun.file(wasm).arrayBuffer());
+  const wasmBytes = Buffer.from(await Bun.file(wasm).arrayBuffer());
+  const module = await WebAssembly.compile(wasmBytes);
   const start = needsBindings
     ? 'import init from "/consumer.js"; const load = init;'
     : 'const load = async () => (await WebAssembly.instantiateStreaming(fetch("/consumer.wasm"))).instance.exports;';
@@ -72,6 +74,15 @@ catch (error) { document.body.dataset.result = String(error); }
       wasm: (await stat(wasm)).size,
       javascript: javascriptBytes,
       optimization,
+      wasmFunctions: functionMap.split("\n").filter((line) => line.includes("uuid_slug")),
+      // These byte witnesses need matching encoder controls; absence alone proves no removal.
+      wasmAlphabetBytes: {
+        base64url: wasmBytes.includes(
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
+        ),
+        base32hex: wasmBytes.includes("0123456789abcdefghijklmnopqrstuv"),
+      },
+      wasmSha256: new Bun.CryptoHasher("sha256").update(wasmBytes).digest("hex"),
       wasmExecuted: browsers.map(({ name }) => name),
       imports: WebAssembly.Module.imports(module),
     };

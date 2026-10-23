@@ -16,17 +16,25 @@ let version: Promise<string> | undefined;
 export async function optimizeWasm(
   input: string,
   output: string,
-  kind: "module" | "component" = "module",
+  mode: "module" | "component" | "inspect-module" = "module",
 ) {
   const tool = (await (version ??= command(process.execPath, [wasmOpt, "--version"], root))).trim();
-  await command(
+  const functionMap = await command(
     process.execPath,
-    kind === "component"
+    mode === "component"
       ? [jcoCli, "opt", input, "--output", output, "--quiet", "--", ...flags]
-      : [wasmOpt, input, ...flags, "--output", output],
+      : [
+          wasmOpt,
+          input,
+          ...flags,
+          ...(mode === "inspect-module" ? ["--print-function-map"] : []),
+          "--output",
+          output,
+        ],
     root,
     undefined,
     { timeoutMs: 300_000 },
   );
-  return { tool, flags };
+  // Print after optimization while names are available; do not add debug bytes to measured output.
+  return { tool, flags, functionMap: mode === "inspect-module" ? functionMap : undefined };
 }
