@@ -1,0 +1,89 @@
+// Isolate consumer reachability; broad bridge exports cannot answer what an application links.
+import { mkdtemp, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { command } from "../scripts/command";
+import { buildLinkedConsumer, maskingConsumer } from "../scripts/rust-linked";
+import type { LinkedRustConsumer } from "../scripts/rust-linked";
+import { rustToolchain } from "../scripts/rust-toolchain";
+
+const crate = process.argv[2];
+if (!crate || process.argv.length !== 3)
+  throw new Error("Usage: bun bench/rust-linked.ts <extracted-crate-directory>");
+const root = process.cwd();
+const nm = Bun.which(process.env.LLVM_NM ?? "llvm-nm");
+if (!nm) throw new Error("Set LLVM_NM to llvm-nm to inspect the linked native programs.");
+const toolchain = await rustToolchain();
+console.log(JSON.stringify({ compiler: (await command(toolchain.rustc, ["-vV"], root)).trim() }));
+
+function consumer(body: string, generation = false): LinkedRustConsumer {
+  return {
+    source: `use std::hint::black_box;\nuse uuid_slug::*;\nfn main() { ${body} }\n`,
+    defaultFeatures: generation,
+    // Browser entropy needs explicit host integration; this does not add JS dependencies natively.
+    features: generation ? ["wasm-js"] : [],
+  };
+}
+
+const consumers: Record<string, LinkedRustConsumer> = {
+  empty: { source: "fn main() {}\n" },
+  v4: consumer(
+    "let id = generate_uuid_v4().unwrap(); assert!(id.is_uuid_v4()); black_box(id);",
+    true,
+  ),
+  v7: consumer(
+    "let id = generate_uuid_v7().unwrap(); assert!(id.is_uuid_v7()); black_box(id);",
+    true,
+  ),
+  parse: consumer(
+    'black_box(Uuid::parse_uuid(black_box("01890f3e-93b8-7cc6-a76b-b2a67b746c2a")).unwrap());',
+  ),
+  "encode-base64": consumer(
+    'let id = Uuid::from_uuid_bytes_array(black_box([0; 16])); assert_eq!(id.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url).as_str(), "AAAAAAAAAAAAAAAAAAAAAA");',
+  ),
+  "decode-base64": consumer(
+    'assert_eq!(UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes(black_box("AAAAAAAAAAAAAAAAAAAAAA")).unwrap(), [0; 16]);',
+  ),
+  "encode-base32": consumer(
+    'let id = Uuid::from_uuid_bytes_array(black_box([0; 16])); assert_eq!(id.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex).as_str(), "00000000000000000000000000");',
+  ),
+  "decode-base32": consumer(
+    'assert_eq!(UuidSlugAlphabet::Base32Hex.plain_slug_to_uuid_bytes(black_box("00000000000000000000000000")).unwrap(), [0; 16]);',
+  ),
+  masking: maskingConsumer,
+};
+
+const work = await mkdtemp(join(tmpdir(), "uuid-slug-consumers-"));
+try {
+  for (const thinLto of [false, true]) {
+    for (const [name, source] of Object.entries(consumers)) {
+      const paths = await buildLinkedConsumer(root, resolve(crate), work, name, source, thinLto);
+      await command(paths.native, [], root);
+      const symbols = await command(nm, ["--demangle", "--defined-only", paths.native], root);
+      const module = await WebAssembly.compile(await Bun.file(paths.wasm).arrayBuffer());
+      const imports = WebAssembly.Module.imports(module);
+      let wasmExecuted = false;
+      if (imports.length === 0) {
+        const instance = await WebAssembly.instantiate(module);
+        const main = instance.exports.main;
+        if (typeof main !== "function") throw new Error(`${name}: WASM binary has no main export`);
+        main(0, 0);
+        wasmExecuted = true;
+      }
+      console.log(
+        JSON.stringify({
+          name,
+          thinLto,
+          native: (await stat(paths.native)).size,
+          wasm: (await stat(paths.wasm)).size,
+          nativeExecuted: true,
+          wasmExecuted,
+          imports,
+          symbols: symbols.split("\n").filter((line) => line.includes("uuid_slug::")),
+        }),
+      );
+    }
+  }
+} finally {
+  await rm(work, { recursive: true, force: true });
+}

@@ -17,6 +17,7 @@ Drop `--smoke` for repeated measurements.
 | Compare UUID generation, slugs and timestamp extraction | `bun run bench:competitors` |
 | Compare conversion and audit randomness | `bun run bench:matrix` |
 | Compare Rust generators | `bun run bench:competitors:rust` |
+| Inspect linked Rust consumers in release and ThinLTO builds | `bun bench/rust-linked.ts /path/to/extracted/crate` (set `LLVM_NM` if `llvm-nm` is not on PATH) |
 | Record timing and resource use | `bun run bench:profile` |
 | Add native CPU and allocation profiles | `bun run bench:profile:native` |
 | Compare against a Git revision | `bun run bench:compare BASELINE_REF` |
