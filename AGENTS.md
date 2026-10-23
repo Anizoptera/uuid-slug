@@ -153,3 +153,4 @@ README is roughly 60% marketing and 40% usage. It MUST explain why the complete 
 - Every CI job invoking the normal packed-artifact check must install Node, Bun and Deno; its default package-resolution probes execute all three. `--web` adds browser execution, not the first Deno requirement.
 - Build before Node Vitest in each CI checkout; entropy subprocesses import the compiled Node adapter, so a source-only runtime probe cannot prepare those tests.
 - Pack only after repository build and test processes exit; packlist traversal can race temporary cache files excluded from the tarball.
+- `publish-clean verify` runs the configured artifact validator before retaining the tarball and hides its output on success. Do not repeat the same archive check just to obtain logs; run it directly only for different coverage or diagnosis. Read the installed packer's validator contract when this behavior changes.
