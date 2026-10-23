@@ -3,6 +3,7 @@ import { mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { command } from "./command";
 import { rustToolchain } from "./rust-toolchain";
+import { optimizeWasm } from "./wasm-opt";
 
 export interface LinkedRustConsumer {
   readonly source: string;
@@ -64,8 +65,15 @@ export async function measureLinkedSizes(
   label: string,
 ): Promise<{ native: number; wasm: number }> {
   const paths = await buildLinkedConsumer(cwd, crate, work, label, maskingConsumer);
+  const optimized = join(work, `${label}.optimized.wasm`);
+  await optimizeWasm(paths.wasm, optimized);
+  await command(paths.native, [], cwd);
+  const { instance } = await WebAssembly.instantiate(await Bun.file(optimized).arrayBuffer());
+  const main = instance.exports.main;
+  if (typeof main !== "function") throw new Error("Linked masking consumer has no main export");
+  main(0, 0);
   return {
     native: (await stat(paths.native)).size,
-    wasm: (await stat(paths.wasm)).size,
+    wasm: (await stat(optimized)).size,
   };
 }
