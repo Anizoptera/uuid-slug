@@ -214,6 +214,25 @@ fn main() -> Result<(), Error> {
                 .unwrap(),
         );
     });
+    // Keep each alphabet constant at its call site, as in a consumer selecting one spelling.
+    let base32_slugs: Vec<_> = ids
+        .iter()
+        .map(|id| id.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex))
+        .collect();
+    sample("decode/base32/owned", &ids, |_| {
+        cursor = (cursor + 1) % base32_slugs.len();
+        UuidSlugAlphabet::Base32Hex
+            .plain_slug_to_uuid_bytes(&base32_slugs[cursor])
+            .unwrap()
+    });
+    sample("decode/base32/caller-buffer", &ids, |_| {
+        cursor = (cursor + 1) % base32_slugs.len();
+        black_box(
+            UuidSlugAlphabet::Base32Hex
+                .plain_slug_to_uuid_bytes_into(&base32_slugs[cursor], &mut out, 0)
+                .unwrap(),
+        );
+    });
     let migration = compact.create_uuid_slug_migration_decoder(Default::default());
     sample("migration/first", &ids, |_| {
         cursor = (cursor + 1) % encoded.len();
