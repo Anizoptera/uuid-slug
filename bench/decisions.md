@@ -942,11 +942,22 @@ Browser host integration has a separate retained cost. In the same ordinary-rele
 
 **Direct UUID interoperability needs no text or allocation on the measured route.** An external Cargo consumer of the extracted `d7cb757` crate, with `uuid` 1.29.0 and defaults disabled, compiles its four `From` routes (`Uuid` ↔ `uuid::Uuid`, `Uuid` ↔ `[u8; 16]`) to aliases of one Arm64 `ldr q0; str q0; ret` body under Rust 1.99.1 release. Probe wrappers use `#[inline(never)]` only to retain observable entry points; the library conversions still optimize normally. The `&str`, `&String` and `&Box<str>` parse wrappers all tail-call the same nongeneric parser; containers add pointer/length loads, not parser copies. Rust 1.97.0 executes 128 independent bit-basis round trips, exact slice lengths from 0 through 32, and all three container calls against that extracted crate. These observations cover the compiled routes and tested compiler/architecture, not arbitrary consumer code or a global allocator census.
 
-**Select the decoder's encoding before its shared body.** An isolated patch to the extracted `0b9c558` crate passes the selected `Encoding` into the decoder and makes its internal plain/masked tail width a constant generic. This retains one source implementation without making callers inline the whole decoder. All sixteen single-alphabet native consumers omit the other table across default/reduced features and ordinary release/ThinLTO; the four masking controls retain both. Twenty native and sixty Chromium/Firefox/WebKit executions pass. Rust 1.97.0 default/reduced debug/release unit tests also pass (45/42 tests per selection).
+**Passing the chosen table into the decoder removes the other native alphabet table.** The decoder in extracted `0b9c558` takes the alphabet enum and retains both tables. The candidate passes `&Encoding` and uses a const generic for the tail size: 0 bits for plain slugs, 4 for masked slugs. This lets the compiler remove unused tables and branches without inlining the full decoder. All sixteen single-alphabet native consumers omit the other table across default/reduced features and ordinary release/ThinLTO; four masking controls retain both. Twenty native and sixty Chromium/Firefox/WebKit executions pass. Rust 1.97.0 default/reduced debug/release tests pass (45/42 tests per selection).
 
-In a fresh-path ordinary-release reduced-feature comparison, base64url array/caller-storage WASM shrinks from 103,280/104,814 to 99,671/101,180 bytes; base32hex shrinks from 103,284/104,818 to 100,525/102,039. The masking control stays 89,148 WASM bytes, while its native executable grows from 474,320 to 474,400 bytes. Keep this candidate isolated until complete-call timing and build costs settle the trade-off; smaller decoders do not establish unchanged masking performance. Measurements: 2026-10-23, Rust 1.99.1, macOS Arm64; these import-free WASM controls execute in Bun 1.4.4. The browser matrix separately measures required binding output. Reproduce the matrix with `bun bench/rust-linked.ts <candidate-crate> decode-base64 decode-base32 decode-base64-into decode-base32-into masking`.
+Keep the candidate out of production until speed and build cost are measured and the native masking increase is resolved. Sizes below use defaults disabled, ordinary release linking and a fresh build directory: Rust 1.99.1, macOS Arm64, 2026-10-23.
 
-Cargo cache invalidation is part of this comparison. Restoring identical baseline bytes with an older archive timestamp reused the candidate artifact; refreshing only the source timestamp restored the baseline's two-table binary and original size. Source hashes stayed identical. That stale replay is invalid; only fresh builds and the timestamp-invalidated restoration support the figures above.
+| Consumer | Baseline bytes | Candidate bytes |
+| --- | ---: | ---: |
+| Base64url → array, WASM | 103,280 | 99,671 |
+| Base64url → caller storage, WASM | 104,814 | 101,180 |
+| Base32hex → array, WASM | 103,284 | 100,525 |
+| Base32hex → caller storage, WASM | 104,818 | 102,039 |
+| Masking, WASM | 89,148 | 89,148 |
+| Masking, native | 474,320 | 474,400 |
+
+These WASM programs need no imports and run in Bun 1.4.4; browser binding costs are measured separately. Repeat the browser/native matrix with `bun bench/rust-linked.ts <candidate-crate> decode-base64 decode-base32 decode-base64-into decode-base32-into masking`.
+
+Cargo can reuse the wrong binary after source restoration. Restoring baseline bytes with their older archive timestamp left the candidate binary in use. Updating only the source timestamp rebuilt the baseline with both tables and its original size; the source hash did not change. The figures above use fresh builds and this rebuilt baseline. The cached result is invalid.
 
 ### Rust competitor inventory
 
