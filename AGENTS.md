@@ -2,6 +2,8 @@
 
 Preserve issued IDs and ordinary-call speed. Keep masks explicit, failures typed and unused features removable.
 
+Write instructions, plans, reports, comments and replies for someone who has not seen the conversation. State what they need to know or do and why. Cut repetition, unexplained jargon and session narration; preserve reasoning, evidence and limits.
+
 Never run formatters on Markdown or other prose files, or manually hard-wrap their paragraphs. Keep each prose paragraph on one source line; preserve code blocks, tables, list structure and intentional Markdown hard breaks. Generate prose paragraphs unwrapped too; fix the template instead of adding a formatter after generation. `.oxfmtrc.json` owns formatter exclusions; keep them effective for package commands, hooks, CI and direct file arguments. Editor soft wrapping needs no file changes.
 
 ## Read before work
