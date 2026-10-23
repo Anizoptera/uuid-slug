@@ -41,6 +41,32 @@ Masking stores a timestamp offset from `timestamp_range_start_unix_ms` and resto
 timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`; plain slugs
 retain the full UUIDv7 timestamp range. Registered sentinels are always plain slugs and are never masked.
 
+## Interoperability
+
+Convert directly between this crate's `Uuid`, `uuid::Uuid` and `[u8; 16]` with
+`.into()`. These conversions preserve every bit without allocating or formatting text,
+including UUID versions and variants this crate does not generate.
+
+```rust
+use uuid_slug::{Uuid, UuidSlugAlphabet};
+
+# fn main() -> Result<(), uuid_slug::Error> {
+let external = uuid::Uuid::from_bytes([0x55; 16]);
+let id: Uuid = external.into();
+let slug = id.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url);
+let restored: uuid::Uuid = Uuid::from_plain_uuid_slug(&slug)?.into();
+assert_eq!(restored, external);
+
+let bytes: [u8; 16] = id.into();
+assert_eq!(Uuid::try_from(bytes.as_slice())?, id);
+# Ok(())
+# }
+```
+
+`Uuid::try_from(slice)` copies exactly 16 bytes and rejects every other length with
+`ErrorCode::InvalidBuffer`. For a UUID within a larger buffer, use
+`Uuid::from_uuid_bytes(buffer, offset)`; the offset is in bytes.
+
 ## Key rotation
 
 Keep previous keys while stored identifiers still need them. The current key writes new slugs;

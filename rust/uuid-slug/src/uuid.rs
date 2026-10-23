@@ -168,6 +168,57 @@ impl fmt::Display for MaskedOrSentinelUuidV7Slug {
 /// A 128-bit UUID; generic parsing accepts every version and variant, including nil.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Uuid([u8; 16]);
+
+// Both UUID types own the same wire-order bytes. Converting through text would add
+// formatting, parsing and allocation without establishing any additional invariant.
+/// Preserve all 128 bits from the `uuid` crate without allocating or checking the version.
+impl From<uuid::Uuid> for Uuid {
+    #[inline]
+    fn from(uuid: uuid::Uuid) -> Self {
+        Self(uuid.into_bytes())
+    }
+}
+
+/// Transfer all UUID bits to the `uuid` crate without allocating.
+impl From<Uuid> for uuid::Uuid {
+    #[inline]
+    fn from(uuid: Uuid) -> Self {
+        Self::from_bytes(uuid.0)
+    }
+}
+
+/// Own exactly sixteen wire-order bytes, preserving every UUID version and variant.
+impl From<[u8; 16]> for Uuid {
+    #[inline]
+    fn from(bytes: [u8; 16]) -> Self {
+        Self(bytes)
+    }
+}
+
+/// Return all sixteen wire-order bytes without allocating.
+impl From<Uuid> for [u8; 16] {
+    #[inline]
+    fn from(uuid: Uuid) -> Self {
+        uuid.0
+    }
+}
+
+/// Copy exactly sixteen wire-order bytes, returning `InvalidBuffer` for any other length.
+/// Use [`Uuid::from_uuid_bytes`] to select a UUID within a larger buffer.
+impl TryFrom<&[u8]> for Uuid {
+    type Error = Error;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Error> {
+        // A slice carries no selected offset: accepting its prefix would hide a wrong range.
+        <[u8; 16]>::try_from(bytes).map(Self).map_err(|_| {
+            Error::new(ErrorCode::InvalidBuffer).with_message(format!(
+                "Expected exactly 16 UUID bytes; got {}. Select a 16-byte slice or use Uuid::from_uuid_bytes with an offset.",
+                bytes.len()
+            ))
+        })
+    }
+}
+
 /// The all-zero UUID value, without a version or issuance claim.
 pub const NIL_UUID: Uuid = Uuid::from_uuid_bytes_array([0; 16]);
 /// The all-one UUID value, without a version or issuance claim.
@@ -428,6 +479,43 @@ pub enum UuidVariant {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn external_uuid_conversions_preserve_each_wire_bit() -> Result<(), Error> {
+        // Single-bit and inverted-bit inputs include every version/variant field;
+        // known-version examples alone would miss accidental RFC normalization.
+        for bit in 0..128 {
+            for background in [0, u8::MAX] {
+                let mut bytes = [background; 16];
+                bytes[bit / 8] ^= 1 << (bit % 8);
+                let external = uuid::Uuid::from_bytes(bytes);
+                let id = Uuid::from(external);
+                assert_eq!(id.as_uuid_bytes(), &bytes);
+                assert_eq!(uuid::Uuid::from(id), external);
+                assert_eq!(<[u8; 16]>::from(id), bytes);
+                assert_eq!(Uuid::from(bytes), id);
+                assert_eq!(Uuid::try_from(bytes.as_slice())?, id);
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn slice_conversion_requires_an_exact_payload() -> Result<(), Error> {
+        let bytes = [0x55; 32];
+        for length in [0, 1, 15, 17, 31, 32] {
+            assert_eq!(
+                Uuid::try_from(&bytes[..length]).unwrap_err().code(),
+                ErrorCode::InvalidBuffer
+            );
+        }
+        assert_eq!(
+            Uuid::try_from(&bytes[8..24])?,
+            Uuid::from_uuid_bytes(&bytes, 8)?
+        );
+        Ok(())
+    }
+
     #[test]
     fn collections_preserve_slug_variants() {
         use std::collections::{BTreeMap, HashMap};

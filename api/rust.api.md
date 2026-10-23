@@ -285,6 +285,17 @@ impl core::cmp::PartialEq for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::eq(&self, other: &Self) -> bool
 impl core::cmp::PartialOrd for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::partial_cmp(&self, other: &Self) -> core::option::Option<core::cmp::Ordering>
+impl core::convert::From<[u8; 16]> for uuid_slug::Uuid
+pub fn uuid_slug::Uuid::from(bytes: [u8; 16]) -> Self
+impl core::convert::From<uuid::Uuid> for uuid_slug::Uuid
+pub fn uuid_slug::Uuid::from(uuid: uuid::Uuid) -> Self
+impl core::convert::From<uuid_slug::Uuid> for [u8; 16]
+pub fn [u8; 16]::from(uuid: uuid_slug::Uuid) -> Self
+impl core::convert::From<uuid_slug::Uuid> for uuid::Uuid
+pub fn uuid::Uuid::from(uuid: uuid_slug::Uuid) -> Self
+impl core::convert::TryFrom<&[u8]> for uuid_slug::Uuid
+pub type uuid_slug::Uuid::Error = uuid_slug::Error
+pub fn uuid_slug::Uuid::try_from(bytes: &[u8]) -> core::result::Result<Self, uuid_slug::Error>
 impl core::fmt::Debug for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for uuid_slug::Uuid
@@ -844,6 +855,17 @@ impl core::cmp::PartialEq for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::eq(&self, other: &Self) -> bool
 impl core::cmp::PartialOrd for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::partial_cmp(&self, other: &Self) -> core::option::Option<core::cmp::Ordering>
+impl core::convert::From<[u8; 16]> for uuid_slug::Uuid
+pub fn uuid_slug::Uuid::from(bytes: [u8; 16]) -> Self
+impl core::convert::From<uuid::Uuid> for uuid_slug::Uuid
+pub fn uuid_slug::Uuid::from(uuid: uuid::Uuid) -> Self
+impl core::convert::From<uuid_slug::Uuid> for [u8; 16]
+pub fn [u8; 16]::from(uuid: uuid_slug::Uuid) -> Self
+impl core::convert::From<uuid_slug::Uuid> for uuid::Uuid
+pub fn uuid::Uuid::from(uuid: uuid_slug::Uuid) -> Self
+impl core::convert::TryFrom<&[u8]> for uuid_slug::Uuid
+pub type uuid_slug::Uuid::Error = uuid_slug::Error
+pub fn uuid_slug::Uuid::try_from(bytes: &[u8]) -> core::result::Result<Self, uuid_slug::Error>
 impl core::fmt::Debug for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for uuid_slug::Uuid

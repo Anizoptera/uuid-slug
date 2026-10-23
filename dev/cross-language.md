@@ -54,6 +54,10 @@ callback checks; map JS UTF-16 explicitly rather than pretending Rust strings co
 ## Rust call sites
 
 Use validated `Uuid` values between operations; parse text once rather than at each codec call.
+Use `From` conversions between `Uuid`, `uuid::Uuid` and `[u8; 16]` without text or allocation.
+`TryFrom<&[u8]>` requires exactly 16 bytes; explicit-offset reads select a UUID in a larger buffer.
+Preserve every bit without imposing version or variant validation. TypeScript interoperability
+uses its existing strings and standard byte containers rather than library-specific adapters.
 Both languages generate UUIDv4 and UUIDv7 only. Generic parsing, version inspection, and plain
 conversion preserve other UUID versions without version-specific APIs. Do not add generation,
 constants, bounds, fields, guards, or helpers for another version unless the maintainer reopens
