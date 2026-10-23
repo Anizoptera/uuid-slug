@@ -68,6 +68,12 @@ Masking supports UUIDv7 only. It replaces the recognizable UUIDv7 layout, includ
 
 Convert directly between this crate's `Uuid`, `uuid::Uuid` and `[u8; 16]` with `.into()`. These conversions preserve every bit without allocating or formatting text, including UUID versions and variants this crate does not generate.
 
+The example also needs `uuid` as a direct dependency of your app. If missing, add this under `[dependencies]` in your app's `Cargo.toml`:
+
+```toml
+uuid = { version = "1", default-features = false }
+```
+
 ```rust
 use uuid_slug::{Uuid, UuidSlugAlphabet};
 
