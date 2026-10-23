@@ -974,6 +974,15 @@ Cargo can reuse the wrong binary after source restoration. Restoring baseline by
 
 These rows use ordinary release linking. With defaults, decoder savings are 1,983–2,311 bytes; ThinLTO also reduces all four decoder outputs. Masking grows by 8 WASM bytes with defaults, or 2 with ThinLTO; without defaults its WASM size stays unchanged. Native masking grows by 64 bytes without defaults (48 with ThinLTO); with defaults it is unchanged (112 bytes smaller with ThinLTO). Keep the candidate unshipped until full-call timing and build cost are checked.
 
+**Ordinary-release build costs are close in the sampled decoder consumer.** A base64url returned-byte consumer at `349110d` builds and executes after each baseline/candidate substitution on Rust 1.99.1, macOS Arm64 (2026-10-23). Dependencies are warm; incremental compilation is disabled and both the crate and app recompile each time. Six pairs per feature selection alternate order and randomize environment size. Repeated source and binary hashes match within each selection/variant, ruling out the earlier stale-artifact failure.
+
+| Features | Baseline build CPU, median (range), seconds | Candidate build CPU, median (range), seconds | Baseline / candidate peak RSS, median, MB |
+| --- | ---: | ---: | ---: |
+| Defaults off | 0.685 (0.67–0.72) | 0.700 (0.69–0.70) | 149.5 / 149.7 |
+| Defaults on | 0.845 (0.83–0.88) | 0.865 (0.82–0.88) | 173.7 / 173.2 |
+
+CPU and peak RSS come from `/usr/bin/time -l` around Cargo, not allocation tracking. The shared host's initial load is 11.20; wall time is not a clean-machine comparison. These runs establish neither an unchanged build cost nor a stable percentage regression: the CPU ranges overlap, and processes share scheduling/thermal conditions. They cover ordinary release and this one consumer, not dependency-cold builds, ThinLTO or other targets. Full-call runtime evidence is still required before retention. Raw logs, exact candidate diff, consumer and driver: `bench/reports/rust-decoder-build.yl1W0p`.
+
 Optimization also changes the browser overhead estimate. Formatting with defaults and `wasm-js` is 28,891 WASM bytes plus 4,920 JavaScript bytes, versus 28,126 WASM bytes without defaults. Entropy and clock imports are absent; exception/table bindings remain. V4 imports entropy without a clock; v7 imports both, with defaults enabled and disabled. The shared release-size probe executes its native and optimized WASM masking consumer and reports 474,336/65,990 bytes.
 
 The ordinary Rust implementation also passes debug/release correctness checks after `wasm-opt` 132 `-O2`: each WASI target runs 42 reduced-feature and 45 all-feature tests, and each browser runs 29,894 shared cases in both entropy-success and entropy-failure contexts. This validates those optimized builds, not other optimizer versions or presets.
