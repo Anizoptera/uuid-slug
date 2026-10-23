@@ -15,6 +15,7 @@ This is the sole live plan. Preserve unrelated unfinished items below. Add arisi
 - [ ] Completion audit: map every approved requirement to its implementation and acceptance evidence; map every added public part to a consumer job. No unchecked task may disappear into a completion claim. Report unexecuted platform/remote checks and authorization prerequisites explicitly.
 - [ ] Final verification: run `bun run check` on the final code tree; require every locally executable required check to pass. A configured CI job, source inspection, TypeScript/Rust agreement, aggregate pass or unit suite cannot substitute for the packaged consumer, target or failure path it does not execute.
 - [ ] Delivery: inspect each staged diff against the request, commit self-contained changes with explicit file lists, preserve unrelated changes, remove task scratch artifacts, and finish with a clean tree. Do not claim publication readiness while required evidence or setup remains unresolved.
+- [ ] Maintainer request: remove prose hard-wrapping across repository documentation and instructions; preserve words, Markdown structure, code and intentional hard breaks. Keep prose excluded from every formatter entry point and put the no-wrap instruction in root `AGENTS.md`. Verify the actual formatter ignores prose without adding a prose-formatting gate.
 
 ### Rust API and interoperability
 

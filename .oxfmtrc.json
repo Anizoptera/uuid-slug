@@ -1,13 +1,14 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  // Preserve authored prose line breaks; printWidth still governs code.
+  // Prose is excluded below; printWidth governs code only.
   "proseWrap": "preserve",
-  // Art excludes Markdown formatting: table padding ignores printWidth. Do not re-enable it
-  // without approval. This also leaves other Markdown normalization to authors.
-  // Include the formatter's Markdown/MDX filenames as well as extensions.
+  // Do not format prose, including tables or embedded examples. Keep filename-based
+  // Markdown detection excluded too; proseWrap alone does not disable formatting.
   "ignorePatterns": [
     "**/*.{md,livemd,markdown,mdown,mdwn,mdx,mkd,mkdn,mkdown,ronn,scd,workbook}",
+    "**/*.{txt,text,rst,adoc,asciidoc}",
     "**/README",
+    "**/{LICENSE,LICENCE,COPYING,NOTICE,AUTHORS,CONTRIBUTORS,CHANGELOG}",
     "**/contents.lr"
   ]
 }

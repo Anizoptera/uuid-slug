@@ -2,6 +2,8 @@
 
 Preserve issued IDs and ordinary-call speed. Keep masks explicit, failures typed and unused features removable.
 
+Never run formatters on Markdown or other prose files, or manually hard-wrap their paragraphs. Keep each prose paragraph on one source line; preserve code blocks, tables, list structure and intentional Markdown hard breaks. `.oxfmtrc.json` owns formatter exclusions; keep them effective for package commands, hooks, CI and direct file arguments. Editor soft wrapping needs no file changes.
+
 ## Read before work
 
 READ the owner before changing its subject; these references hold the detailed rules.
@@ -214,8 +216,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   nothing; the script requires exactly one match and always restores the file byte for byte.
   Isolate a component before attributing an aggregate result to it, especially when decoding
   tries multiple masks.
-- Format with `bun run format` (`oxfmt`), or `bun x oxfmt <files>` for a subset. Any other
-  formatter rewraps whole files to its own width, and `format:check` rejects the result.
+- Format code with `bun run format` (`oxfmt`), or `bun x oxfmt <code files>` for a subset; the root configuration must exclude prose. For prose-only changes, skip formatting: oxfmt's “all matched files may have been excluded” means the exclusion is working, not permission to bypass it or substitute another formatter.
 - Entropy probes must exercise the package's portable draw path as well as native delegation.
   String generation can bypass `fillRandom`; inspect the selected path instead of assuming a
   method name identifies the code under test. Compare byte keys with `join(",")` or hex,
