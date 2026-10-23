@@ -74,7 +74,7 @@ catch (error) { document.body.dataset.result = String(error); }
       wasm: (await stat(wasm)).size,
       javascript: javascriptBytes,
       optimization,
-      wasmFunctions: functionMap.split("\n").filter((line) => line.includes("uuid_slug")),
+      wasmFunctions: functionMap.trim().split("\n"),
       // Absence is meaningful only when matching encoder controls retain these bytes.
       wasmAlphabetBytes: {
         base64url: wasmBytes.includes(
