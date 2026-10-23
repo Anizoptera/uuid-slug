@@ -91,6 +91,29 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(any(unix, windows))]
+    fn native_threads_do_not_replay_the_same_random_stream() -> Result<(), Error> {
+        // Catch copied thread-local streams; disjoint finite samples do not certify entropy.
+        let draw = || {
+            (0..16)
+                .map(|_| crate::generate_uuid_v4())
+                .collect::<Result<Vec<_>, Error>>()
+        };
+        let (left, right) = std::thread::scope(|scope| {
+            let left = scope.spawn(draw);
+            let right = scope.spawn(draw);
+            Ok::<_, Error>((
+                left.join().expect("first entropy worker panicked")?,
+                right.join().expect("second entropy worker panicked")?,
+            ))
+        })?;
+        let ids: std::collections::HashSet<_> = left.into_iter().chain(right).collect();
+        assert_eq!(ids.len(), 32);
+        assert!(ids.iter().all(crate::Uuid::is_uuid_v4));
+        Ok(())
+    }
+
+    #[test]
     fn partial_budgets_require_a_successful_seed_before_output() -> Result<(), Error> {
         // Mixed UUIDv4/v7 draw sizes need not exhaust the budget at an exact draw boundary.
         for remaining in [0, 1, 15, 16, 17] {
