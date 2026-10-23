@@ -332,6 +332,8 @@ impl Uuid {
         text::from_plain_uuid_slug(plain_uuid_slug.as_uuid_text())
     }
     /// Encode the UUID unchanged in the chosen alphabet.
+    // Preserve a caller's constant alphabet through this public forwarding boundary.
+    #[inline]
     pub fn to_plain_uuid_slug(&self, alphabet: UuidSlugAlphabet) -> PlainUuidSlug {
         alphabet.uuid_bytes_to_plain_slug(&self.0)
     }

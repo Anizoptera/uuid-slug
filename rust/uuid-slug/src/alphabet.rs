@@ -37,10 +37,13 @@ impl UuidSlugAlphabet {
             Self::Base32Hex => Error::new(ErrorCode::InvalidBase32Hex),
         }
     }
+    #[inline]
     fn encode_raw(self, bytes: &[u8]) -> String {
         self.encoding().encode(bytes)
     }
     /// Encode exactly one 16-byte UUID payload.
+    // Keep the selected table visible across the library boundary.
+    #[inline]
     pub fn uuid_bytes_to_plain_slug(self, uuid_bytes: &[u8; 16]) -> PlainUuidSlug {
         PlainUuidSlug(self.encode_raw(uuid_bytes))
     }

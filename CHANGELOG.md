@@ -13,7 +13,7 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ### Changed
 
-- Rust consumers decoding one slug alphabet can discard the other alphabet's tables without LTO.
+- Rust consumers encoding or decoding one slug alphabet can discard the other alphabet's tables without LTO.
 - Rust API documentation states mask-derivation and payload-layout limits, cooperative scheduling requirements, and the raw entropy fill's partial-write behavior on failure.
 - Rust interop examples now show the direct `uuid` dependency needed in the application's `Cargo.toml`.
 - The Rust source archive excludes benchmark drivers while retaining runnable examples and correctness fixtures.
