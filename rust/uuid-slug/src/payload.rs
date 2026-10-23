@@ -1,5 +1,6 @@
 //! Store a fixed 16-bit check beside UUIDv7 content without losing timestamp or random bits.
 use crate::{Error, ErrorCode, alphabet::UuidSlugAlphabet, mask::UuidV7Mask, uuid::utf16_len};
+use alloc::format;
 
 const MAX_MASKED_UUID_V7_HIGH_BYTE: u8 = 3;
 /// Largest timestamp offset that fits in a masked UUIDv7 payload.

@@ -1,5 +1,6 @@
 //! Encode identifier bits without accepting alternate padding spellings.
 use crate::{Error, ErrorCode, KeylessUuidText, PlainUuidSlug};
+use alloc::{format, string::String};
 use data_encoding::{BASE32_DNSSEC, BASE64URL_NOPAD, Encoding};
 
 static BASE64URL: Encoding = BASE64URL_NOPAD;

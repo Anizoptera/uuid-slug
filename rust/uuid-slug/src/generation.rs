@@ -6,6 +6,7 @@
 #[cfg(feature = "fast-rng")]
 use crate::random::fill_random_bytes as fill_default_random_bytes;
 use crate::{Error, ErrorCode, Uuid, UuidV7PayloadLayout};
+use alloc::format;
 #[cfg(all(feature = "os-rng", not(feature = "fast-rng")))]
 use fill_os_random_bytes as fill_default_random_bytes;
 

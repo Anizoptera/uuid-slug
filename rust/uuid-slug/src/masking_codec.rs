@@ -4,7 +4,7 @@ use crate::{
     Error, ErrorCode, MaskedOrSentinelUuidV7Slug, MaskedUuidV7Slug, PlainUuidSlug, Uuid,
     UuidSlugAlphabet, UuidV7Mask, UuidV7Payload, UuidV7PayloadLayout,
 };
-use std::borrow::Cow;
+use alloc::{borrow::Cow, format, string::String, vec, vec::Vec};
 
 /// A named UUID emitted as a plain slug instead of through the mask.
 #[derive(Clone, Debug)]

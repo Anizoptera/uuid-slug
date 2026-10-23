@@ -7,6 +7,9 @@
 #![forbid(unsafe_code)]
 #![doc = include_str!("../README.md")]
 
+// Portable representations and masks need owned storage, independently of clocks and entropy.
+extern crate alloc;
+
 mod alphabet;
 mod error;
 mod generation;

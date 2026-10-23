@@ -1,6 +1,7 @@
 //! Preserve every UUID bit while accepting standard text and enforcing canonical slug spellings.
 use crate::{Error, ErrorCode, KeylessUuidText, UuidSlugAlphabet, text};
-use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
+use alloc::{format, string::String};
+use core::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
 
 pub(crate) fn utf16_len(text: &str) -> usize {
     text.encode_utf16().count()
@@ -405,7 +406,7 @@ impl Uuid {
         })
     }
 }
-pub(crate) fn range(capacity: usize, offset: usize) -> Result<std::ops::Range<usize>, Error> {
+pub(crate) fn range(capacity: usize, offset: usize) -> Result<core::ops::Range<usize>, Error> {
     let end = offset
         .checked_add(16)
         .filter(|&end| end <= capacity)
@@ -436,7 +437,7 @@ impl FromStr for Uuid {
             }
             _ => return Err(Error::new(ErrorCode::InvalidUuid)),
         };
-        let body = std::str::from_utf8(body).map_err(|_| Error::new(ErrorCode::InvalidUuid))?;
+        let body = core::str::from_utf8(body).map_err(|_| Error::new(ErrorCode::InvalidUuid))?;
         uuid::Uuid::parse_str(body)
             .map(|id| Self(*id.as_bytes()))
             .map_err(|_| Error::new(ErrorCode::InvalidUuid))

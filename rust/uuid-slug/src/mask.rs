@@ -4,16 +4,15 @@ use crate::{
     Error, ErrorCode,
     siphash::{HashState, hash_bytes, hash_words, tail_word},
 };
-use std::{
+use alloc::{format, string::String, sync::Arc, vec::Vec};
+use core::{
     fmt,
     future::Future,
     pin::Pin,
-    sync::{
-        Arc, LazyLock,
-        atomic::{AtomicBool, Ordering},
-    },
+    sync::atomic::{AtomicBool, Ordering},
     task::{Context, Poll},
 };
+use std::sync::LazyLock;
 
 // Changing these keys, four rounds, or word indices changes every issued identifier.
 const CHAIN_A: [u32; 2] = [0x6469_7575, 0x4167_6c73];
@@ -72,7 +71,7 @@ impl UuidV7Mask {
                 },
             )),
         };
-        for probe in [[0; 16], std::array::from_fn(|index| (index * 17) as u8)] {
+        for probe in [[0; 16], core::array::from_fn(|index| (index * 17) as u8)] {
             if built.unmask(built.mask(probe)?)? != probe {
                 return Err(Error::new(ErrorCode::InvalidMask).with_message(
                     "Custom mask must restore every input; mask and unmask disagree on a probe.",
@@ -295,7 +294,7 @@ impl Future for MaskDerivation {
                 if this.chain == 2 {
                     this.finished = true;
                     return Poll::Ready(Ok(from_keys(
-                        std::mem::take(&mut this.label),
+                        core::mem::take(&mut this.label),
                         expand(this.chains[0], this.chains[1]),
                     )));
                 }

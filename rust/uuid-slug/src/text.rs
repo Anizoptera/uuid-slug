@@ -1,6 +1,13 @@
 //! Keep known masked inputs out of keyless parsing without changing ordinary string storage.
 use crate::{Error, ErrorCode, PlainUuidSlug, Uuid, UuidSlugAlphabet, uuid::utf16_len};
-use std::{borrow::Cow, rc::Rc, sync::Arc};
+use alloc::{
+    borrow::{Cow, ToOwned},
+    boxed::Box,
+    format,
+    rc::Rc,
+    string::String,
+    sync::Arc,
+};
 
 /// Text accepted by keyless UUID and plain-slug parsers.
 ///

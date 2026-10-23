@@ -1,5 +1,6 @@
 //! Report failures with the same stable codes as the TypeScript package.
-use std::{borrow::Cow, fmt};
+use alloc::{borrow::Cow, boxed::Box};
+use core::fmt;
 
 /// Stable machine-readable failure classification shared with TypeScript.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -83,7 +84,7 @@ impl ErrorCode {
 pub struct Error {
     code: ErrorCode,
     message: Cow<'static, str>,
-    source: Option<Box<dyn std::error::Error + Send + Sync>>,
+    source: Option<Box<dyn core::error::Error + Send + Sync>>,
 }
 
 impl Error {
@@ -108,7 +109,7 @@ impl Error {
     }
 
     /// Attach the original failure without changing this error's classification.
-    pub fn with_source(mut self, source: impl std::error::Error + Send + Sync + 'static) -> Self {
+    pub fn with_source(mut self, source: impl core::error::Error + Send + Sync + 'static) -> Self {
         self.source = Some(Box::new(source));
         self
     }
@@ -120,11 +121,11 @@ impl fmt::Display for Error {
     }
 }
 
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl core::error::Error for Error {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         self.source
             .as_deref()
-            .map(|source| source as &(dyn std::error::Error + 'static))
+            .map(|source| source as &(dyn core::error::Error + 'static))
     }
 }
 
