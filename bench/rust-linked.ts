@@ -2,10 +2,13 @@
 import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import type { Browser } from "playwright";
+import { browserEngines } from "../scripts/browser-engines";
 import { command } from "../scripts/command";
 import { buildLinkedConsumer, maskingConsumer } from "../scripts/rust-linked";
 import type { LinkedRustConsumer } from "../scripts/rust-linked";
 import { rustToolchain } from "../scripts/rust-toolchain";
+import { runLinkedWasm } from "./rust-linked-browser";
 
 const crate = process.argv[2];
 if (!crate)
@@ -62,7 +65,10 @@ for (const name of selected)
     throw new Error(`Unknown consumer ${name}: choose ${Object.keys(consumers).join(", ")}`);
 
 const work = await mkdtemp(join(tmpdir(), "uuid-slug-consumers-"));
+const browsers: { name: string; browser: Browser }[] = [];
 try {
+  for (const [name, engine] of Object.entries(browserEngines))
+    browsers.push({ name, browser: await engine.launch({ headless: true }) });
   for (const thinLto of [false, true]) {
     for (const defaultFeatures of [false, true]) {
       for (const [name, source] of Object.entries(consumers)) {
@@ -83,27 +89,15 @@ try {
         );
         await command(paths.native, [], root);
         const symbols = await command(nm, ["--demangle", "--defined-only", paths.native], root);
-        const module = await WebAssembly.compile(await Bun.file(paths.wasm).arrayBuffer());
-        const imports = WebAssembly.Module.imports(module);
-        let wasmExecuted = false;
-        if (imports.length === 0) {
-          const instance = await WebAssembly.instantiate(module);
-          const main = instance.exports.main;
-          if (typeof main !== "function")
-            throw new Error(`${name}: WASM binary has no main export`);
-          main(0, 0);
-          wasmExecuted = true;
-        }
+        const wasm = await runLinkedWasm(paths.wasm, join(work, "browser"), browsers);
         console.log(
           JSON.stringify({
             name,
             thinLto,
             defaultFeatures,
             native: (await stat(paths.native)).size,
-            wasm: (await stat(paths.wasm)).size,
             nativeExecuted: true,
-            wasmExecuted,
-            imports,
+            ...wasm,
             symbols: symbols.split("\n").filter((line) => line.includes("uuid_slug::")),
           }),
         );
@@ -111,5 +105,9 @@ try {
     }
   }
 } finally {
-  await rm(work, { recursive: true, force: true });
+  try {
+    await Promise.all(browsers.map(({ browser }) => browser.close()));
+  } finally {
+    await rm(work, { recursive: true, force: true });
+  }
 }
