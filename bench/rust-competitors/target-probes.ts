@@ -2,7 +2,8 @@
 
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { rustToolchain } from "../../scripts/rust-toolchain";
 
 interface Probe {
   readonly name: string;
@@ -113,13 +114,25 @@ const probes: readonly Probe[] = [
   },
 ];
 
-const root = await mkdtemp(join(tmpdir(), "uuid-slug-rust-targets-"));
+const toolchain = await rustToolchain(resolve(import.meta.dir, "../.."));
 
 async function run(
   command: readonly string[],
   cwd: string,
 ): Promise<{ readonly status: number; readonly stderr: string; readonly stdout: string }> {
-  const child = Bun.spawn([...command], { cwd, stderr: "pipe", stdout: "pipe" });
+  // Scratch directories do not inherit the repository's rustup selection.
+  const selected =
+    command[0] === "cargo"
+      ? [toolchain.cargo, ...toolchain.cargoArgs, ...command.slice(1)]
+      : command[0] === "rustc"
+        ? [toolchain.rustc, ...command.slice(1)]
+        : [...command];
+  const child = Bun.spawn(selected, {
+    cwd,
+    env: toolchain.env,
+    stderr: "pipe",
+    stdout: "pipe",
+  });
   const [stdout, stderr, status] = await Promise.all([
     new Response(child.stdout).text(),
     new Response(child.stderr).text(),
@@ -147,7 +160,28 @@ const wasmEntropyBackends = [
   'getrandom04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }',
 ].join("\n");
 
+const root = await mkdtemp(join(tmpdir(), "uuid-slug-rust-targets-"));
 try {
+  // A missing target is an environment failure, not evidence against every crate.
+  const control = join(root, "control.rs");
+  await Bun.write(control, "pub fn target_control() {}\n");
+  for (const target of targets) {
+    const result = await run(
+      [
+        "rustc",
+        "--crate-type=lib",
+        "--emit=metadata",
+        "--target",
+        target,
+        control,
+        "--out-dir",
+        root,
+      ],
+      root,
+    );
+    if (result.status !== 0)
+      throw new Error(`Rust target preflight failed for ${target}:\n${result.stderr}`);
+  }
   const jobs = probes.flatMap((probe) => targets.map((target) => ({ probe, target })));
   let next = 0;
   await Promise.all(

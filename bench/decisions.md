@@ -980,6 +980,8 @@ The ordinary Rust implementation also passes debug/release correctness checks af
 
 ### Rust competitor inventory
 
+The tracked `bench/results/rust-competitors.md` report dated 2026-10-02 cannot establish current rankings or WASM support. Its package timings precede the default fast RNG, and its missing-`core` target failures are infrastructure failures, not unsupported libraries. An empty WASM program fails with missing `std` under ambient Homebrew Cargo but compiles through the repository's pinned rustup toolchain (macOS Arm64, Rust 1.99.1, 2026-10-23). Target probes must bind that toolchain before entering temporary directories and compile an empty control for each target before reporting library results. Refresh the report through `bun run bench:results`; do not relabel the old failures or carry its timings forward.
+
 This is the benchmark work list, not a claim that crates.io has no other UUID package. The census uses the registry searches `uuid`, `uuid v4`, `uuid7`, and `uuidv7`. It includes reusable libraries that generate UUIDv4 or UUIDv7 and excludes CLIs, database extensions, domain packages, parsers, formatters, and libraries that only consume UUIDs. Re-run the same searches before benchmarking. Run `bun run bench:competitors:audit` to detect a newer release or repository commit. Release dates come from crates.io; commit dates come from each package's declared GitHub repository. A new version requires source inspection before its evidence or benchmark result can be carried forward.
 
 | Crate | Versions | Release | Repo commit | Why retained | Evidence |
