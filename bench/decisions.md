@@ -1000,6 +1000,18 @@ CPU and peak RSS come from `/usr/bin/time -l` around Cargo, not allocation track
 
 Optimization also changes the browser overhead estimate. Formatting with defaults and `wasm-js` is 28,891 WASM bytes plus 4,920 JavaScript bytes, versus 28,126 WASM bytes without defaults. Entropy and clock imports are absent; exception/table bindings remain. V4 imports entropy without a clock; v7 imports both, with defaults enabled and disabled. The shared release-size probe executes its native and optimized WASM masking consumer and reports 474,336/65,990 bytes.
 
+**Normal decoder calls show no per-call heap allocation in the captured workloads.** On `718fbde`, Instruments 26 Allocations records each ordinary-release/default-feature codec workload in a separate native process on macOS Arm64/Rust 1.99.1 (2026-10-23). Each decoder performs 500,000 timed calls plus 64 warm-up calls over 64 inputs. The process totals include setup, reporting and shutdown; instrumented timings are not speed evidence.
+
+| Complete call | Total heap allocations | Total allocated bytes |
+| --- | ---: | ---: |
+| Base64url → returned array | 1,373 | 154,464 |
+| Base64url → caller storage | 1,373 | 154,576 |
+| Base32hex → returned array | 1,373 | 154,576 |
+| Base32hex → caller storage | 1,373 | 154,576 |
+| UUID → owned base64url slug, positive control | 501,437 | 16,156,512 |
+
+The encoding control adds exactly 500,064 allocations and 16,002,048 bytes relative to the returned-array base64url decoder: one 32-byte allocator block per measured or warm-up call. This checks that the instrument detects repeated string allocations; process RSS cannot supply that evidence. All five processes exit normally with five nonempty timing records and a completion marker. These are single captures of successful calls, not allocation-stack attribution, rare/failure-path coverage, reduced-feature evidence or a global allocation-free guarantee. Only disposable executable copies receive debugging entitlements, and both scratch directories are removed. Driver, executable-build metadata, trace files, exported Statistics and process output: `bench/reports/rust-decoder-alloc.zdV1Xa`.
+
 The ordinary Rust implementation also passes debug/release correctness checks after `wasm-opt` 132 `-O2`: each WASI target runs 42 reduced-feature and 45 all-feature tests, and each browser runs 29,894 shared cases in both entropy-success and entropy-failure contexts. This validates those optimized builds, not other optimizer versions or presets.
 
 ### Rust competitor inventory
