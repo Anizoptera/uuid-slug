@@ -104,7 +104,7 @@ try {
             native: (await stat(paths.native)).size,
             nativeExecuted: true,
             ...wasm,
-            symbols: symbols.split("\n").filter((line) => line.includes("uuid_slug::")),
+            symbols: symbols.trim().split("\n"),
           }),
         );
       }
