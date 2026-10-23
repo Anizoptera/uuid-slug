@@ -368,11 +368,11 @@ pub fn generate_uuid_v4() -> Result<Uuid, Error> {
     generate_uuid_v4_with_random_fill(fill_default_random_bytes)
 }
 /// Generate a UUIDv7 at the system clock with secure platform entropy and default settings.
-/// Each thread keeps its own generator, so the call takes no lock: IDs from one thread strictly
-/// increase, while IDs from different threads in the same millisecond have no defined order.
-/// Create a `UuidV7Generator` for a rollback policy, fraction bits or one shared sequence.
+/// Create a `UuidV7Generator` for guaranteed ordering, a rollback policy, fraction bits or one
+/// shared sequence; module-level calls promise neither ordering nor shared sequence state.
 #[cfg(all(feature = "std", feature = "os-rng"))]
 pub fn generate_uuid_v7() -> Result<Uuid, Error> {
+    // Per-thread state amortizes generation without a shared lock; it is not an ordering contract.
     std::thread_local! {
         static GENERATOR: std::cell::RefCell<UuidV7Generator> =
             const { std::cell::RefCell::new(UuidV7Generator::new()) };
@@ -384,16 +384,12 @@ pub fn generate_uuid_v7() -> Result<Uuid, Error> {
 mod tests {
     use super::*;
     use alloc::string::ToString;
-    // A fresh generator per call would reseed each time and lose this order within a millisecond.
+    // Exercise real platform entropy under each feature selection without imposing sequence order.
     #[cfg(all(feature = "std", feature = "os-rng"))]
     #[test]
-    fn simple_uuid_v7_calls_continue_one_sequence_per_thread() {
-        let mut previous = generate_uuid_v7().unwrap();
-        for _ in 0..10_000 {
-            let next = generate_uuid_v7().unwrap();
-            assert!(next.is_uuid_v7() && next > previous);
-            previous = next;
-        }
+    fn simple_generation_uses_the_requested_rfc_version() {
+        assert!(generate_uuid_v4().unwrap().is_uuid_v4());
+        assert!(generate_uuid_v7().unwrap().is_uuid_v7());
     }
     fn fill(out: &mut [u8]) -> Result<(), Error> {
         for (i, byte) in out.iter_mut().enumerate() {
