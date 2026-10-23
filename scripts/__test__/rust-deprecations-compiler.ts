@@ -3,7 +3,9 @@ import { copyFile, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { command } from "../command";
-import { annotateRustApi, rustDeprecations } from "../rust-deprecations";
+import { rustDeprecations } from "../rust-deprecations";
+import { extractRustApi } from "../rust-api";
+import { verifyEvolution } from "../api-evolution";
 import type { Rustdoc } from "../rust-deprecations";
 
 const project = resolve(import.meta.dir, "../..");
@@ -32,20 +34,10 @@ export async function checkRustDeprecationCompiler(
         copyFile(join(import.meta.dir, "fixtures/rust-deprecations", file), join(root, file)),
       ),
     );
-    const source = await command(
-      "cargo",
-      [
-        "public-api",
-        "--manifest-path",
-        join(root, "Cargo.toml"),
-        "--color=never",
-        "--simplified",
-        "--include",
-        "function-parameter-names",
-      ],
-      project,
-      { ...environment, CARGO_TARGET_DIR: join(root, "target") },
-    );
+    const api = await extractRustApi(project, join(root, "Cargo.toml"), {
+      ...environment,
+      CARGO_TARGET_DIR: join(root, "target"),
+    });
     const generated = (await Bun.file(join(root, "target/doc/uuid_slug.json")).json()) as Rustdoc;
     const deprecated = new Set(rustDeprecations(generated));
     assert.deepEqual(
@@ -64,13 +56,16 @@ export async function checkRustDeprecationCompiler(
         "value uuid_slug::Union::old",
       ]),
     );
-    const lines = source.split("\n");
+    const lines = api.declarations
+      .split("\n")
+      .filter((line) => line.startsWith("all: "))
+      .map((line) => line.slice(5));
     const member = lines.find((line) => line.includes("::deprecated_callback_owner("));
     const current = lines.find((line) => line.includes("::current("));
-    const annotated = annotateRustApi(source, deprecated);
+    const annotated = api.report;
     assert.equal(
       annotated.split("\n").filter((line) => line.startsWith("#[deprecated] ")).length,
-      deprecated.size,
+      deprecated.size * 2,
     );
     assert.ok(member);
     assert.ok(current);
@@ -81,6 +76,19 @@ export async function checkRustDeprecationCompiler(
     assert.ok(
       !annotated.includes(`#[deprecated] ${current}`),
       `Unexpected deprecation: ${current}`,
+    );
+    // The release policy must consume compiler-derived deprecations, not just render them.
+    const before = { typescript: "", rust: api.report };
+    await verifyEvolution("0.4.0", "0.5.0", before, {
+      ...before,
+      rust: api.report.replaceAll(`#[deprecated] ${member}\n`, ""),
+    });
+    await assert.rejects(
+      verifyEvolution("0.4.0", "0.5.0", before, {
+        ...before,
+        rust: api.report.replaceAll(`${current}\n`, ""),
+      }),
+      /Rust removes API that was not deprecated/,
     );
   } finally {
     await rm(root, { recursive: true, force: true });

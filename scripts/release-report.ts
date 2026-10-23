@@ -14,6 +14,8 @@ import {
   typeScriptApiSections,
 } from "./release-comparison";
 import { incompatibleExports } from "./api-compatibility";
+import { verifyEvolution } from "./api-evolution";
+import { extractRustApi } from "./rust-api";
 import type { ApiDifference, ApiSections, ReleaseLevel } from "./release-comparison";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
@@ -273,7 +275,7 @@ export async function measureLinkedSizes(
     ),
     Bun.write(
       join(driver, "src/main.rs"),
-      `use std::hint::black_box;\nuse uuid_slug::{uuid_v7_test_mask, Uuid, UuidV7MaskingCodec, UuidV7MaskingCodecOptions};\nfn main() {\n let uuid = Uuid::from_uuid_string("01890f3e-93b8-7cc6-a76b-b2a67b746c2a").unwrap();\n black_box(UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(uuid_v7_test_mask())).unwrap().uuid_to_masked_slug(uuid).unwrap());\n}\n`,
+      `use std::hint::black_box;\nuse uuid_slug::{uuid_v7_test_mask, Uuid, UuidV7MaskingCodec};\nfn main() {\n let uuid = Uuid::from_uuid_string("01890f3e-93b8-7cc6-a76b-b2a67b746c2a").unwrap();\n black_box(UuidV7MaskingCodec::new(uuid_v7_test_mask()).uuid_to_masked_slug(uuid).unwrap());\n}\n`,
     ),
   ]);
   const manifest = join(driver, "Cargo.toml");
@@ -370,27 +372,17 @@ async function declaration(
 async function rustApi(
   cwd: string,
   manifest: string,
-): Promise<{ declarations: string; package: CargoReleaseSurface }> {
-  const base = ["public-api", "--manifest-path", manifest, "--color=never", "--simplified"];
+): Promise<{ declarations: string; report: string; package: CargoReleaseSurface }> {
   // API extraction alone uses nightly; installed system Cargo may not select it automatically.
   const env = {
     RUSTC: (await command("rustup", ["which", "--toolchain", "nightly", "rustc"], cwd)).trim(),
     RUSTDOC: (await command("rustup", ["which", "--toolchain", "nightly", "rustdoc"], cwd)).trim(),
   };
-  const all = await command("cargo", [...base, "--all-features"], cwd, env);
-  const minimal = await command("cargo", [...base, "--no-default-features"], cwd, env);
+  const api = await extractRustApi(cwd, manifest, env);
   const manifestSurface = await rustReleaseSurface(cwd, manifest);
   return {
     package: manifestSurface,
-    declarations: `${all
-      .trim()
-      .split("\n")
-      .map((line) => `all: ${line}`)
-      .join("\n")}\n${minimal
-      .trim()
-      .split("\n")
-      .map((line) => `minimal: ${line}`)
-      .join("\n")}\n`,
+    ...api,
   };
 }
 
@@ -557,6 +549,16 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
           ? await (async () => {
               const previousRust = await rustApi(root, join(previousCrateRoot, "Cargo.toml"));
               const metadata = cargoSurfaceDifference(previousRust.package, currentRust.package);
+              // Only registry-verified archives establish a published Rust API. An npm tag's
+              // source report can predate the crate's first publication or an npm-only release.
+              if (comparison.role === "immediate")
+                await verifyEvolution(
+                  comparison.tag.slice(1),
+                  inputs.version,
+                  { typescript: "", rust: previousRust.report },
+                  { typescript: "", rust: currentRust.report },
+                  [metadata.level],
+                );
               return withMetadata(
                 lineApiSections(
                   previousRust.declarations,

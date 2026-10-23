@@ -14,7 +14,10 @@ import {
 
 test("pending development work uses the tagged HEAD as its release baseline", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-post-release-"));
-  const current = reports("export declare function published(): void;", "");
+  const current = reports(
+    "export declare function published(): void;",
+    "pub fn uuid_slug::unpublished()",
+  );
   const writeVersion = async (version: string) => {
     await Promise.all([
       Bun.write(join(root, "package.json"), JSON.stringify({ name: "fixture", version })),
@@ -43,6 +46,9 @@ test("pending development work uses the tagged HEAD as its release baseline", as
     await checkReleasedApi(root, current);
     await writeVersion("0.4.1-dev");
     await checkReleasedApi(root, current);
+    // An npm tag can contain Rust source before any crate publication. The offline gate must
+    // still protect npm consumers, but cannot turn that source snapshot into a crate release.
+    await checkReleasedApi(root, { ...current, rust: "" });
     await rejects(
       checkReleasedApi(root, {
         ...current,

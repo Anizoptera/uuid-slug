@@ -139,14 +139,12 @@ fn main() -> Result<(), Error> {
         }
     }
     let mask = derive_uuid_v7_mask(b"benchmark-seed-not-for-production", 1, "bench")?;
-    let compact = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
-        ..UuidV7MaskingCodecOptions::new(mask.clone())
-    })?;
-    let safe = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+    let compact = UuidV7MaskingCodec::new(mask.clone());
+    let safe = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
         masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
         ..UuidV7MaskingCodecOptions::new(mask)
     })?;
-    let reserved = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+    let reserved = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
         masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
         sentinels: vec![("reserved".to_owned(), ids[0])],
         ..UuidV7MaskingCodecOptions::new(uuid_slug::uuid_v7_test_mask())
@@ -191,10 +189,7 @@ fn main() -> Result<(), Error> {
         compact.masked_slug_to_uuid(&encoded[cursor]).unwrap()
     });
     sample("construct/default", &ids, |_| {
-        UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(
-            uuid_slug::uuid_v7_test_mask(),
-        ))
-        .unwrap()
+        UuidV7MaskingCodec::new(uuid_slug::uuid_v7_test_mask())
     });
     let plain_uuid_slugs: Vec<_> = ids
         .iter()

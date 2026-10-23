@@ -34,6 +34,29 @@ mod tests {
     }
 
     #[test]
+    fn default_construction_matches_explicit_default_options() -> Result<(), Error> {
+        let mask = crate::uuid_v7_test_mask();
+        let default = UuidV7MaskingCodec::new(mask.clone());
+        let configured = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions::new(mask))?;
+        for timestamp in [0, crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS] {
+            let uuid = uuid_at(timestamp);
+            let slug = default.uuid_to_masked_slug(uuid)?;
+            assert_eq!(slug.len(), 22);
+            assert_eq!(slug, configured.uuid_to_masked_slug(uuid)?);
+            assert_eq!(configured.masked_slug_to_uuid(&slug)?, uuid);
+        }
+        assert!(default.sentinels().is_empty());
+        assert_eq!(
+            default
+                .uuid_to_masked_slug(uuid_at(crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS + 1))
+                .unwrap_err()
+                .code(),
+            ErrorCode::InvalidTimestamp
+        );
+        Ok(())
+    }
+
+    #[test]
     fn timestamp_validation_borrows_canonical_slugs_and_normalizes_base32_case() -> Result<(), Error>
     {
         let uuid = Uuid::from_uuid_string("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
@@ -42,7 +65,7 @@ mod tests {
             max_timestamp_delta_ms: 0.0,
         };
         for masked_slug_alphabet in [UuidSlugAlphabet::Base64Url, UuidSlugAlphabet::Base32Hex] {
-            let codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+            let codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
                 masked_slug_alphabet,
                 sentinels: vec![(
                     "reserved".to_owned(),
@@ -76,7 +99,7 @@ mod tests {
     fn masked_writers_accept_the_timestamp_endpoint_and_reject_its_successor() -> Result<(), Error>
     {
         for masked_slug_alphabet in [UuidSlugAlphabet::Base64Url, UuidSlugAlphabet::Base32Hex] {
-            let codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+            let codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
                 masked_slug_alphabet,
                 ..UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask())
             })?;
@@ -100,7 +123,7 @@ mod tests {
                 ErrorCode::InvalidTimestamp
             );
             let sentinel = uuid_at(crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS + 1);
-            let codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+            let codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
                 masked_slug_alphabet,
                 sentinels: vec![("future".to_owned(), sentinel)],
                 ..UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask())
@@ -124,7 +147,7 @@ mod tests {
     fn shifted_range_preserves_uuid_and_previous_range() -> Result<(), Error> {
         let start = 1 << 42;
         let old_mask = crate::uuid_v7_test_mask();
-        let writer = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+        let writer = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
             timestamp_range_start_unix_ms: start,
             ..UuidV7MaskingCodecOptions::new(old_mask.clone())
         })?;
@@ -142,7 +165,7 @@ mod tests {
         );
         let uuid = uuid_at(start);
         let slug = writer.uuid_to_masked_slug(uuid)?;
-        let reader = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+        let reader = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
             previous_masks: vec![UuidV7PreviousMask {
                 mask: old_mask,
                 timestamp_range_start_unix_ms: start,
@@ -161,7 +184,7 @@ mod tests {
     fn shifted_range_must_fit_uuid_v7_timestamp() {
         let max_start = (1_u64 << 48) - 1 - crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
         let latest = uuid_at((1_u64 << 48) - 1);
-        let last_range = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+        let last_range = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
             timestamp_range_start_unix_ms: max_start,
             ..UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask())
         })
@@ -175,7 +198,7 @@ mod tests {
                 .expect("latest UUIDv7 must decode"),
             latest
         );
-        let error = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+        let error = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
             timestamp_range_start_unix_ms: max_start + 1,
             ..UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask())
         })
@@ -193,8 +216,7 @@ mod tests {
 
     #[test]
     fn masked_writers_reject_generic_uuid_boundaries() -> Result<(), Error> {
-        let codec =
-            UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask()))?;
+        let codec = UuidV7MaskingCodec::new(crate::uuid_v7_test_mask());
         for uuid in [crate::NIL_UUID, crate::MAX_UUID] {
             assert_eq!(
                 codec.uuid_to_masked_slug(uuid).unwrap_err().code(),
@@ -240,7 +262,7 @@ mod tests {
             vec![(String::new(), uuid)],
             vec![("nil".to_owned(), uuid), ("nil".to_owned(), uuid_at(1))],
         ] {
-            let error = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+            let error = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
                 sentinels,
                 ..UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask())
             })
@@ -269,7 +291,7 @@ mod tests {
             (*reserved.as_uuid_bytes(), 0)
         );
         for alphabet in [UuidSlugAlphabet::Base64Url, UuidSlugAlphabet::Base32Hex] {
-            let codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+            let codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
                 sentinels: vec![("nil".to_owned(), reserved)],
                 masked_slug_alphabet: alphabet,
                 ..UuidV7MaskingCodecOptions::new(collision.clone())
@@ -317,14 +339,13 @@ mod tests {
             UuidV7Mask::from_permutation_functions("fallible", fallible.clone(), fallible)?;
         let uuid = Uuid::from_uuid_string("01234567-89ab-7cde-8fab-0123456789ab")?;
         let good = crate::uuid_v7_test_mask();
-        let writer =
-            UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask()))?;
+        let writer = UuidV7MaskingCodec::new(crate::uuid_v7_test_mask());
         let slug = writer.uuid_to_masked_slug(uuid)?;
-        let fallback = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+        let fallback = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
             previous_masks: vec![UuidV7PreviousMask::new(good.clone())],
             ..UuidV7MaskingCodecOptions::new(custom.clone())
         })?;
-        let first = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+        let first = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
             previous_masks: vec![UuidV7PreviousMask::new(custom)],
             ..UuidV7MaskingCodecOptions::new(good)
         })?;
@@ -407,8 +428,36 @@ pub struct UuidV7MaskingCodec {
 }
 
 impl UuidV7MaskingCodec {
-    /// Validate reserved identities before a codec can emit unreadable output.
-    pub fn new(options: UuidV7MaskingCodecOptions) -> Result<Self, Error> {
+    /// Use an explicit mask with base64url output, a timestamp range starting at zero,
+    /// and no previous keys or sentinels. Use [`Self::from_options`] to configure those choices.
+    ///
+    /// ```
+    /// use uuid_slug::{derive_uuid_v7_mask, UuidV7MaskingCodec};
+    /// # fn main() -> Result<(), uuid_slug::Error> {
+    /// let mask = derive_uuid_v7_mask(b"replace-with-your-own-private-seed", 1, "current")?;
+    /// let masking_codec = UuidV7MaskingCodec::new(mask);
+    /// # assert!(masking_codec.sentinels().is_empty());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn new(mask: UuidV7Mask) -> Self {
+        // These defaults cannot violate configurable range or sentinel constraints.
+        // Construct directly rather than exposing an impossible error or panic to callers.
+        Self {
+            masks: vec![MaskRange {
+                mask,
+                timestamp_range_start_unix_ms: 0,
+            }],
+            sentinels: Vec::new(),
+            reserved: Vec::new(),
+            masked: UuidSlugAlphabet::Base64Url,
+        }
+    }
+
+    /// Configure output spelling, timestamp ranges, previous keys and reserved UUIDv7 identities.
+    /// Invalid ranges return `InvalidTimestamp`; duplicate or empty sentinel names or duplicate
+    /// identities return `InvalidSentinel`; non-v7 sentinels return `InvalidUuidVersion`.
+    pub fn from_options(options: UuidV7MaskingCodecOptions) -> Result<Self, Error> {
         const MAX_UUID_V7_UNIX_MS: u64 = (1 << 48) - 1;
         let max_start = MAX_UUID_V7_UNIX_MS - crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
         if options.timestamp_range_start_unix_ms > max_start {

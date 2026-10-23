@@ -153,7 +153,7 @@ fn masking_codec(request: &Value) -> Result<UuidV7MaskingCodec, Error> {
             })
             .collect::<Result<_, Error>>()?;
     }
-    UuidV7MaskingCodec::new(options)
+    UuidV7MaskingCodec::from_options(options)
 }
 
 fn run(request: &Value) -> Result<Value, Error> {

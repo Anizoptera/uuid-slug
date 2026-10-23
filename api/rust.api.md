@@ -425,8 +425,9 @@ pub struct uuid_slug::UuidV7MaskingCodec
 impl uuid_slug::UuidV7MaskingCodec
 pub fn uuid_slug::UuidV7MaskingCodec::create_uuid_slug_migration_decoder(&self, options: uuid_slug::UuidSlugMigrationOptions) -> uuid_slug::UuidSlugMigrationDecoder<'_>
 pub fn uuid_slug::UuidV7MaskingCodec::extract_masked_uuid_v7_payload(&self, masked_uuid_slug: &str, layout: uuid_slug::UuidV7PayloadLayout) -> core::result::Result<uuid_slug::UuidV7Payload, uuid_slug::Error>
+pub fn uuid_slug::UuidV7MaskingCodec::from_options(options: uuid_slug::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::masked_slug_to_uuid(&self, masked_uuid_slug: &str) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
-pub fn uuid_slug::UuidV7MaskingCodec::new(options: uuid_slug::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::Error>
+pub fn uuid_slug::UuidV7MaskingCodec::new(mask: uuid_slug::UuidV7Mask) -> Self
 pub fn uuid_slug::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::UuidV7Sentinel]
 pub fn uuid_slug::UuidV7MaskingCodec::uuid_to_masked_slug(&self, uuid: uuid_slug::Uuid) -> core::result::Result<uuid_slug::MaskedOrSentinelUuidV7Slug, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms<'a>(&self, slug: &'a str, window: uuid_slug::UuidV7TimestampWindow) -> core::result::Result<alloc::borrow::Cow<'a, str>, uuid_slug::Error>
@@ -992,8 +993,9 @@ pub struct uuid_slug::UuidV7MaskingCodec
 impl uuid_slug::UuidV7MaskingCodec
 pub fn uuid_slug::UuidV7MaskingCodec::create_uuid_slug_migration_decoder(&self, options: uuid_slug::UuidSlugMigrationOptions) -> uuid_slug::UuidSlugMigrationDecoder<'_>
 pub fn uuid_slug::UuidV7MaskingCodec::extract_masked_uuid_v7_payload(&self, masked_uuid_slug: &str, layout: uuid_slug::UuidV7PayloadLayout) -> core::result::Result<uuid_slug::UuidV7Payload, uuid_slug::Error>
+pub fn uuid_slug::UuidV7MaskingCodec::from_options(options: uuid_slug::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::masked_slug_to_uuid(&self, masked_uuid_slug: &str) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
-pub fn uuid_slug::UuidV7MaskingCodec::new(options: uuid_slug::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::Error>
+pub fn uuid_slug::UuidV7MaskingCodec::new(mask: uuid_slug::UuidV7Mask) -> Self
 pub fn uuid_slug::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::UuidV7Sentinel]
 pub fn uuid_slug::UuidV7MaskingCodec::uuid_to_masked_slug(&self, uuid: uuid_slug::Uuid) -> core::result::Result<uuid_slug::MaskedOrSentinelUuidV7Slug, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms<'a>(&self, slug: &'a str, window: uuid_slug::UuidV7TimestampWindow) -> core::result::Result<alloc::borrow::Cow<'a, str>, uuid_slug::Error>

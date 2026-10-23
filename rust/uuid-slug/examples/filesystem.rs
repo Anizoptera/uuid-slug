@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn exercise(directory: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
-    let masking_codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+    let masking_codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
         masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
         ..UuidV7MaskingCodecOptions::new(uuid_v7_test_mask())
     })?;

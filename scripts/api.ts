@@ -5,8 +5,7 @@ import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { checkReleasedApi, typescriptDeclarations } from "./api-evolution";
 import { command } from "./command";
-import { annotateRustApi, rustDeprecations } from "./rust-deprecations";
-import type { Rustdoc } from "./rust-deprecations";
+import { extractRustApi } from "./rust-api";
 import {
   checkRustDeprecationCompiler,
   resolveRustApiEnvironment,
@@ -129,10 +128,6 @@ async function diff(
   return true;
 }
 
-function report(language: string, contentSections: string[]): string {
-  return `# ${language} packaged API\n\nThis generated baseline records packaged API signatures for compatibility checks.\n\n${contentSections.join("\n\n")}\n`;
-}
-
 async function formatTypeScriptReport(declarations: string): Promise<string> {
   const source = `// Generated signature baseline for compatibility checks; update with \`bun run api:update\` instead of editing.\n\n${declarations}\n`;
   const child = Bun.spawn(
@@ -146,11 +141,6 @@ async function formatTypeScriptReport(declarations: string): Promise<string> {
   ]);
   if (status !== 0) throw new Error(`oxfmt failed (${status}): ${stderr.trim()}`);
   return stdout;
-}
-
-async function readRustDeprecations(target: string): Promise<string[]> {
-  const rustdoc = (await Bun.file(join(target, "doc/uuid_slug.json")).json()) as Rustdoc;
-  return rustDeprecations(rustdoc);
 }
 
 let changed = false;
@@ -202,49 +192,11 @@ try {
 
   async function rustReport(): Promise<string> {
     await checkCargoPublicApiVersion();
-    const rustArgs = [
-      "public-api",
-      "--manifest-path",
-      "rust/uuid-slug/Cargo.toml",
-      "--color=never",
-      "--simplified",
-      "--include",
-      "function-parameter-names",
-    ];
     // Homebrew cargo is not a rustup proxy; a nightly installation alone cannot select rustdoc.
     // Bind only API extraction so normal product checks keep the repository's stable toolchain.
     const rustApiEnvironment = await resolveRustApiEnvironment();
     await checkRustDeprecationCompiler(rustApiEnvironment);
-    const rustTarget = (
-      JSON.parse(
-        await command(
-          "cargo",
-          [
-            "metadata",
-            "--manifest-path",
-            "rust/Cargo.toml",
-            "--no-deps",
-            "--format-version",
-            "1",
-            "--locked",
-          ],
-          root,
-        ),
-      ) as { target_directory: string }
-    ).target_directory;
-    // cargo-public-api owns one rustdoc JSON path, so feature selections must not write it concurrently.
-    const rustDefault = annotateRustApi(
-      await command("cargo", [...rustArgs, "--all-features"], root, rustApiEnvironment),
-      new Set(await readRustDeprecations(rustTarget)),
-    );
-    const rustMinimal = annotateRustApi(
-      await command("cargo", [...rustArgs, "--no-default-features"], root, rustApiEnvironment),
-      new Set(await readRustDeprecations(rustTarget)),
-    );
-    return report("Rust", [
-      `## All features\n\n\`\`\`rust\n${rustDefault}\n\`\`\``,
-      `## No default features\n\n\`\`\`rust\n${rustMinimal}\n\`\`\``,
-    ]);
+    return (await extractRustApi(root, "rust/uuid-slug/Cargo.toml", rustApiEnvironment)).report;
   }
   const rust = useCommittedRust
     ? await Bun.file(join(apiDirectory, "rust.api.md")).text()

@@ -12,6 +12,7 @@ section here, with the generated API changes, package size and links added.
 
 ### Changed
 
+- Rust configured codec construction moves from `UuidV7MaskingCodec::new(options)` → `UuidV7MaskingCodec::from_options(options)`. Use `UuidV7MaskingCodec::new(mask)` for defaults without a fallible configuration step; both paths require an explicit mask.
 - Rust's default `fast-rng` feature amortizes OS draws with an OS-seeded ChaCha12 generator. Disable defaults and enable `os-rng` for direct OS draws on every call; conversion-only builds still need neither dependency. Initial and required reseed failures return `rng_unavailable`.
 - `plainSlugToUuidBytes(slug, output)` now gives the same error message as the call without `output`. For a 22-character slug with set trailing bits it says that a masked slug of that length decodes only through its codec, which is the usual cause.
 

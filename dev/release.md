@@ -69,6 +69,10 @@ rejects is breaking. Text comparison cannot decide this, and TypeScript never
 relates deferred conditional types across two files, so unchanged exports are compatible by
 definition and only changed ones are checked; a false failure can only call a change breaking.
 Rust compatibility comes from cargo-semver-checks.
+The local API gate checks Rust report drift, not publication history: an npm tag can contain an
+unpublished Rust implementation. Check Rust removal/deprecation policy and version compatibility
+against registry-verified crate archives during release preparation. A first crate publication has
+no Rust compatibility baseline; do not invent one from npm's tags or add registry I/O to commit hooks.
 Keep complete API comparisons internal to compatibility checks. Do not publish declaration
 inventories, private helper types, repeated older API comparisons, or API attachments.
 Include only the packages selected for publication; keep unpublished implementations and their
@@ -94,9 +98,10 @@ It restores all version files if an update fails.
 A dev bump NEVER runs `bun run release` or creates a release commit or tag. Release tags and
 published manifests never use the `-dev` suffix.
 
-The API check (`bun run api:check:built`, run by the commit hook and `bun run check`) enforces two independent rules. Generated declarations must match the reviewed
-baseline and remain compatible with the latest release. Updating the reviewed baseline cannot
-erase release history.
+The API check (`bun run api:check:built`, run by the commit hook and `bun run check`) requires both
+generated reports to match their reviewed baselines and checks npm compatibility against the latest
+release tag. Rust publication checks use the verified archives described above. Updating a reviewed
+baseline cannot erase publication history.
 
 On the tagged commit, the tag is the current release, so the check compares it with the prior
 release and enforces the structural minimum version.

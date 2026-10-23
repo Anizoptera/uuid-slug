@@ -119,7 +119,10 @@ available through `cause` in TypeScript and `source()` in Rust.
 
 Generators own mutable sequence state; codecs own immutable keys. Both languages require callers
 to select private key material or the published mask explicitly. Keeping generation separate allows
-shared codecs without a hidden generator lock. Default generators use platform entropy; custom
+shared codecs without a hidden generator lock. Rust `UuidV7MaskingCodec::new(mask)` returns the
+default codec directly: an explicit valid mask cannot invalidate the default range or empty sentinel list.
+`from_options(options)` validates configured ranges and sentinels once and returns `Result`.
+Default generators use platform entropy; custom
 separately named TypeScript calls and Rust `_with` callbacks must fill the entire destination or
 fail. Pass `fill_os_random_bytes` to
 caller-buffer operations for the same platform source. Invalid destination ranges draw no entropy.

@@ -14,7 +14,7 @@ let filename = uuid.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex);
 assert_eq!(Uuid::from_plain_uuid_slug(&filename)?, uuid);
 
 let mask = derive_uuid_v7_mask(b"replace-with-your-own-secret-seed", 1, "current")?;
-let masking_codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+let masking_codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
     masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
     ..UuidV7MaskingCodecOptions::new(mask)
 })?;
@@ -28,6 +28,10 @@ Slug conversions return `PlainUuidSlug`, `MaskedUuidV7Slug`, or
 `MaskedOrSentinelUuidV7Slug`, so Rust keeps representations distinct. Borrow one anywhere an
 `&str` is accepted, format it with `Display`, or convert it into `String` without copying its text.
 `Uuid::parse_uuid` reads UUID text or a plain slug when the input can be either. `{:X}` formats uppercase UUID text and `Display` lowercase, both without allocating. `uuid_variant()` returns the RFC 9562 variant.
+
+Use `UuidV7MaskingCodec::new(mask)` for base64url output with no sentinels or previous keys.
+Use `UuidV7MaskingCodec::from_options(options)?` to select those settings or a different timestamp range.
+Both require an explicit mask; only configured construction can return a validation error.
 
 Plain slugs preserve all 128 UUID bits without version, variant or timestamp limits.
 Masked slugs preserve the 132-bit payload. Decoding infers the representation and rejects nonzero padding.
@@ -84,8 +88,8 @@ use uuid_slug::{
 let old_key = derive_uuid_v7_mask(b"previous-private-seed", 1, "previous")?;
 let new_key = derive_uuid_v7_mask(b"replacement-private-seed", 1, "current")?;
 # let uuid = uuid_slug::Uuid::from_uuid_string("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
-# let stored = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(old_key.clone()))?.uuid_to_masked_slug(uuid)?;
-let masking_codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+# let stored = UuidV7MaskingCodec::new(old_key.clone()).uuid_to_masked_slug(uuid)?;
+let masking_codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
     previous_masks: vec![UuidV7PreviousMask::new(old_key)],
     ..UuidV7MaskingCodecOptions::new(new_key)
 })?;

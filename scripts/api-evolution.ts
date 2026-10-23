@@ -16,16 +16,12 @@ import {
   developmentVersionGuidance,
   taggedVersionGuidance,
 } from "./release-version";
-import {
-  cargoManifestSurface,
-  cargoSurfaceDifference,
-  npmReleaseSurface,
-  npmSurfaceDifference,
-} from "./release-surface";
+import { npmReleaseSurface, npmSurfaceDifference } from "./release-surface";
 
 interface ApiReports {
   readonly typescript: string;
-  readonly rust: string;
+  // Omit when publication has not been established. A tracked report is not registry evidence.
+  readonly rust?: string;
 }
 
 type DeclarationContainer =
@@ -278,8 +274,8 @@ export async function verifyEvolution(
   tagged = true,
   pendingReleaseVersion?: string,
 ): Promise<void> {
-  const oldRust = sections(before.rust);
-  const newRust = sections(after.rust);
+  const oldRust = sections(before.rust ?? "");
+  const newRust = sections(before.rust === undefined ? "" : (after.rust ?? ""));
   const oldTsSource = before.typescript;
   const newTsSource = after.typescript;
   const oldTsEntries = typescriptEntries(oldTsSource);
@@ -329,11 +325,9 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
   const manifest = (await Bun.file(`${root}/package.json`).json()) as Record<string, unknown> & {
     version: string;
   };
-  const [tags, currentTags, currentCargoText, currentCargoPackageText] = await Promise.all([
+  const [tags, currentTags] = await Promise.all([
     command("git", ["tag", "--list", "v*"], root),
     command("git", ["tag", "--points-at", "HEAD", "--list", "v*"], root),
-    Bun.file(`${root}/rust/Cargo.toml`).text(),
-    Bun.file(`${root}/rust/uuid-slug/Cargo.toml`).text(),
   ]);
   const tagsAtHead = currentTags.trim().split("\n").filter(Boolean);
   if (tagsAtHead.length > 1)
@@ -357,31 +351,24 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
     console.log("Released API: no governed release exists; v0.4.0 will create the first baseline.");
     return;
   }
-  const [typescript, rust] = await Promise.all([
+  const [typescript, oldNpmText] = await Promise.all([
     command("git", ["show", `${tag}:api/typescript.api.d.ts`], root),
-    command("git", ["show", `${tag}:api/rust.api.md`], root),
-  ]);
-  const [oldNpmText, oldCargoText, oldCargoPackageText] = await Promise.all([
     command("git", ["show", `${tag}:package.json`], root),
-    command("git", ["show", `${tag}:rust/Cargo.toml`], root),
-    command("git", ["show", `${tag}:rust/uuid-slug/Cargo.toml`], root),
   ]);
   const oldNpm = JSON.parse(oldNpmText) as Record<string, unknown>;
   const packageLevels = [
     npmSurfaceDifference(npmReleaseSurface(oldNpm), npmReleaseSurface(manifest)).level,
-    cargoSurfaceDifference(
-      cargoManifestSurface(oldCargoText, oldCargoPackageText),
-      cargoManifestSurface(currentCargoText, currentCargoPackageText),
-    ).level,
   ];
   await verifyEvolution(
     tag.slice(1),
     manifest.version,
-    { typescript, rust },
-    current,
+    { typescript },
+    { typescript: current.typescript },
     packageLevels,
     !!tagged,
     pendingReleaseVersion,
   );
-  console.log(`Released API: compatible with ${tag}`);
+  console.log(
+    `npm API: compatible with ${tag}; Rust publication compatibility is checked against registry archives during release preparation.`,
+  );
 }
