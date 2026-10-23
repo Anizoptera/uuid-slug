@@ -16,6 +16,7 @@ mod payload;
 #[cfg(feature = "fast-rng")]
 mod random;
 mod siphash;
+mod text;
 mod uuid;
 
 pub use alphabet::UuidSlugAlphabet;
@@ -36,6 +37,7 @@ pub use masking_codec::{
     UuidV7TimestampWindow,
 };
 pub use payload::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
+pub use text::KeylessUuidText;
 pub use uuid::{
     MAX_UUID, MaskedOrSentinelUuidV7Slug, MaskedUuidV7Slug, NIL_UUID, PlainUuidSlug, Uuid,
     UuidV7Payload, UuidV7PayloadField, UuidV7PayloadLayout, UuidVariant,

@@ -25,6 +25,8 @@ assert_eq!(masking_codec.masked_slug_to_uuid(&masked)?, uuid);
 
 Slug conversions return `PlainUuidSlug`, `MaskedUuidV7Slug`, or `MaskedOrSentinelUuidV7Slug`, so Rust keeps representations distinct. Borrow one anywhere an `&str` is accepted, format it with `Display`, or convert it into `String` without copying its text. `Uuid::parse_uuid` reads UUID text or a plain slug when the input can be either. `{:X}` formats uppercase UUID text and `Display` lowercase, both without allocating. `uuid_variant()` returns the RFC 9562 variant.
 
+Keyless parsers accept strings, typed plain slugs and their standard borrowed or owned containers through `KeylessUuidText`. They reject typed masked slugs: pass those to their masking codec. For a `MaskedOrSentinelUuidV7Slug`, select its `Sentinel` variant before keyless decoding. Custom string wrappers can pass `.as_str()` explicitly; that erases provenance, so it cannot protect against ambiguous raw text. When forwarding generic input, use `Input: KeylessUuidText + ?Sized`; a reusable detached parser can use `let parse: fn(&str) -> Result<Uuid, uuid_slug::Error> = Uuid::parse_uuid` to retain ordinary string coercions.
+
 Use `UuidV7MaskingCodec::new(mask)` for base64url output with no sentinels or previous keys. Use `UuidV7MaskingCodec::from_options(options)?` to select those settings or a different timestamp range. Both require an explicit mask; only configured construction can return a validation error.
 
 Plain slugs preserve all 128 UUID bits without version, variant or timestamp limits. Masked slugs preserve the 132-bit payload. Decoding infers the representation and rejects nonzero padding.

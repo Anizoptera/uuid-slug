@@ -1,5 +1,5 @@
 //! Encode identifier bits without accepting alternate padding spellings.
-use crate::{Error, ErrorCode, PlainUuidSlug};
+use crate::{Error, ErrorCode, KeylessUuidText, PlainUuidSlug};
 use data_encoding::{BASE32_DNSSEC, BASE64URL_NOPAD, Encoding};
 
 static BASE64URL: Encoding = BASE64URL_NOPAD;
@@ -141,15 +141,44 @@ impl UuidSlugAlphabet {
         }
     }
     /// Decode exactly one canonical 16-byte UUID payload.
-    pub fn plain_slug_to_uuid_bytes(self, plain_uuid_slug: &str) -> Result<[u8; 16], Error> {
+    ///
+    /// ```compile_fail
+    /// use uuid_slug::{MaskedUuidV7Slug, UuidSlugAlphabet};
+    /// fn reject(masked: &MaskedUuidV7Slug) {
+    ///     let _ = UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes(masked);
+    /// }
+    /// ```
+    #[inline]
+    pub fn plain_slug_to_uuid_bytes<Input: KeylessUuidText + ?Sized>(
+        self,
+        plain_uuid_slug: &Input,
+    ) -> Result<[u8; 16], Error> {
         let mut decoded = [0; 16];
-        self.decode_into(plain_uuid_slug, &mut decoded, 0)?;
+        self.decode_into(plain_uuid_slug.as_uuid_text(), &mut decoded, 0)?;
         Ok(decoded)
     }
 
     /// Decode into caller storage and return only the decoded range, without allocating.
     /// Invalid text and ranges leave storage unchanged.
-    pub fn plain_slug_to_uuid_bytes_into<'a>(
+    ///
+    /// ```compile_fail
+    /// use uuid_slug::{MaskedUuidV7Slug, UuidSlugAlphabet};
+    /// fn reject(masked: &MaskedUuidV7Slug) {
+    ///     let _ = UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes_into(masked, &mut [0; 16], 0);
+    /// }
+    /// ```
+    #[inline]
+    pub fn plain_slug_to_uuid_bytes_into<'a, Input: KeylessUuidText + ?Sized>(
+        self,
+        plain_uuid_slug: &Input,
+        output: &'a mut [u8],
+        output_offset: usize,
+    ) -> Result<&'a mut [u8], Error> {
+        self.decode_plain_into(plain_uuid_slug.as_uuid_text(), output, output_offset)
+    }
+
+    // Error construction and output validation are shared across every input container.
+    fn decode_plain_into<'a>(
         self,
         plain_uuid_slug: &str,
         output: &'a mut [u8],

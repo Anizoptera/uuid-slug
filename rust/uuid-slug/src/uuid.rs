@@ -1,5 +1,5 @@
 //! Preserve every UUID bit while accepting standard text and enforcing canonical slug spellings.
-use crate::{Error, ErrorCode, UuidSlugAlphabet};
+use crate::{Error, ErrorCode, KeylessUuidText, UuidSlugAlphabet, text};
 use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
 
 pub(crate) fn utf16_len(text: &str) -> usize {
@@ -307,27 +307,26 @@ impl Uuid {
     /// from every accepted UUID text length, so the length alone selects the decoder. Length counts
     /// UTF-16 units, as TypeScript does, so non-ASCII input gets the same error code in both.
     /// Masked slugs need their codec: use `UuidV7MaskingCodec::masked_slug_to_uuid`.
-    pub fn parse_uuid(uuid: &str) -> Result<Self, Error> {
-        match utf16_len(uuid) {
-            22 | 26 => Self::from_plain_uuid_slug(uuid),
-            _ => uuid.parse(),
-        }
+    ///
+    /// ```compile_fail
+    /// use uuid_slug::{MaskedUuidV7Slug, Uuid};
+    /// fn reject(masked: &MaskedUuidV7Slug) { let _ = Uuid::parse_uuid(masked); }
+    /// ```
+    #[inline]
+    pub fn parse_uuid<Input: KeylessUuidText + ?Sized>(uuid: &Input) -> Result<Self, Error> {
+        text::parse_uuid(uuid.as_uuid_text())
     }
     /// Infer the plain alphabet from the disjoint 22- and 26-character lengths.
-    pub fn from_plain_uuid_slug(plain_uuid_slug: &str) -> Result<Self, Error> {
-        let alphabet = match utf16_len(plain_uuid_slug) {
-            22 => UuidSlugAlphabet::Base64Url,
-            26 => UuidSlugAlphabet::Base32Hex,
-            _ => {
-                return Err(Error::new(ErrorCode::InvalidUuidSlug).with_message(format!(
-                    "Plain UUID slug must contain 22 base64url or 26 base32hex characters; got {}.",
-                    utf16_len(plain_uuid_slug)
-                )));
-            }
-        };
-        let mut bytes = [0; 16];
-        alphabet.decode_into(plain_uuid_slug, &mut bytes, 0)?;
-        Ok(Self(bytes))
+    ///
+    /// ```compile_fail
+    /// use uuid_slug::{MaskedUuidV7Slug, Uuid};
+    /// fn reject(masked: &MaskedUuidV7Slug) { let _ = Uuid::from_plain_uuid_slug(masked); }
+    /// ```
+    #[inline]
+    pub fn from_plain_uuid_slug<Input: KeylessUuidText + ?Sized>(
+        plain_uuid_slug: &Input,
+    ) -> Result<Self, Error> {
+        text::from_plain_uuid_slug(plain_uuid_slug.as_uuid_text())
     }
     /// Encode the UUID unchanged in the chosen alphabet.
     pub fn to_plain_uuid_slug(&self, alphabet: UuidSlugAlphabet) -> PlainUuidSlug {

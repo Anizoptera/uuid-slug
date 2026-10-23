@@ -8,3 +8,4 @@ Rules for editing Rust code. Root `AGENTS.md` applies too. `dev/cross-language.m
 - Add a Rust dependency only after the comparison in `dev/cross-language.md` §Distribution and dependencies.
 - `bridge/` serves development only: never published, no public ABI. Node and Bun load the same generated N-API boundary; browsers load the generated wasm-bindgen boundary. Panic handling cannot contain allocation aborts or WebAssembly traps, so keep real Node, Bun and browser transport checks beside the shared dispatcher tests.
 - Verify with `bun run check:rust`, then `scripts/rust-wasm.ts` under `UUID_SLUG_RUST_PROFILE=debug` and `release`.
+- Direct `rustc` consumer probes must use the Cargo-reported library plus its profile's `deps` directory in `-L dependency`. Require a valid call to compile and the invalid call to fail for its intended diagnostic; a missing crate or mismatched toolchain proves nothing about the API.

@@ -81,8 +81,8 @@ pub uuid_slug::UuidSlugAlphabet::Base32Hex
 pub uuid_slug::UuidSlugAlphabet::Base64Url
 impl uuid_slug::UuidSlugAlphabet
 pub const fn uuid_slug::UuidSlugAlphabet::bits_per_character(self) -> usize
-pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes(self, plain_uuid_slug: &str) -> core::result::Result<[u8; 16], uuid_slug::Error>
-pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes_into<'a>(self, plain_uuid_slug: &str, output: &'a mut [u8], output_offset: usize) -> core::result::Result<&'a mut [u8], uuid_slug::Error>
+pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(self, plain_uuid_slug: &Input) -> core::result::Result<[u8; 16], uuid_slug::Error>
+pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes_into<'a, Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(self, plain_uuid_slug: &Input, output: &'a mut [u8], output_offset: usize) -> core::result::Result<&'a mut [u8], uuid_slug::Error>
 pub fn uuid_slug::UuidSlugAlphabet::uuid_bytes_to_plain_slug(self, uuid_bytes: &[u8; 16]) -> uuid_slug::PlainUuidSlug
 impl core::clone::Clone for uuid_slug::UuidSlugAlphabet
 pub fn uuid_slug::UuidSlugAlphabet::clone(&self) -> Self
@@ -252,6 +252,7 @@ impl core::marker::StructuralPartialEq for uuid_slug::PlainUuidSlug
 impl core::ops::deref::Deref for uuid_slug::PlainUuidSlug
 pub type uuid_slug::PlainUuidSlug::Target = str
 pub fn uuid_slug::PlainUuidSlug::deref(&self) -> &Self::Target
+impl uuid_slug::KeylessUuidText for uuid_slug::PlainUuidSlug
 impl core::marker::Freeze for uuid_slug::PlainUuidSlug
 impl core::marker::Send for uuid_slug::PlainUuidSlug
 impl core::marker::Sync for uuid_slug::PlainUuidSlug
@@ -264,14 +265,14 @@ impl uuid_slug::Uuid
 pub const fn uuid_slug::Uuid::as_uuid_bytes(&self) -> &[u8; 16]
 pub fn uuid_slug::Uuid::extract_uuid_v7_payload(&self, layout: uuid_slug::UuidV7PayloadLayout) -> core::result::Result<uuid_slug::UuidV7Payload, uuid_slug::Error>
 pub fn uuid_slug::Uuid::extract_uuid_v7_unix_ms(&self) -> core::result::Result<u64, uuid_slug::Error>
-pub fn uuid_slug::Uuid::from_plain_uuid_slug(plain_uuid_slug: &str) -> core::result::Result<Self, uuid_slug::Error>
+pub fn uuid_slug::Uuid::from_plain_uuid_slug<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(plain_uuid_slug: &Input) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::Uuid::from_uuid_bytes(bytes: &[u8], offset: usize) -> core::result::Result<Self, uuid_slug::Error>
 pub const fn uuid_slug::Uuid::from_uuid_bytes_array(bytes: [u8; 16]) -> Self
 pub fn uuid_slug::Uuid::from_uuid_string(uuid_string: &str) -> core::result::Result<Self, uuid_slug::Error>
 pub const fn uuid_slug::Uuid::is_rfc_uuid_variant(&self) -> bool
 pub const fn uuid_slug::Uuid::is_uuid_v4(&self) -> bool
 pub const fn uuid_slug::Uuid::is_uuid_v7(&self) -> bool
-pub fn uuid_slug::Uuid::parse_uuid(uuid: &str) -> core::result::Result<Self, uuid_slug::Error>
+pub fn uuid_slug::Uuid::parse_uuid<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(uuid: &Input) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::Uuid::to_plain_uuid_slug(&self, alphabet: uuid_slug::UuidSlugAlphabet) -> uuid_slug::PlainUuidSlug
 pub const fn uuid_slug::Uuid::uuid_variant(&self) -> uuid_slug::UuidVariant
 pub const fn uuid_slug::Uuid::uuid_version(&self) -> u8
@@ -562,6 +563,16 @@ pub const uuid_slug::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS: u64
 pub const uuid_slug::MAX_UUID: uuid_slug::Uuid
 pub const uuid_slug::MAX_UUID_V7_UNIX_MS: u64
 pub const uuid_slug::NIL_UUID: uuid_slug::Uuid
+pub trait uuid_slug::KeylessUuidText: uuid_slug::text::sealed::Text
+impl uuid_slug::KeylessUuidText for alloc::string::String
+impl uuid_slug::KeylessUuidText for str
+impl uuid_slug::KeylessUuidText for uuid_slug::PlainUuidSlug
+impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for &Input
+impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for &mut Input
+impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::boxed::Box<Input>
+impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::arc::Arc<Input>
+impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::rc::Rc<Input>
+impl<Input: uuid_slug::KeylessUuidText + alloc::borrow::ToOwned + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::borrow::Cow<'_, Input>
 pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
 pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: uuid_slug::UuidV7MaskDerivationCancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::fill_os_random_bytes(out: &mut [u8]) -> core::result::Result<(), uuid_slug::Error>
@@ -652,8 +663,8 @@ pub uuid_slug::UuidSlugAlphabet::Base32Hex
 pub uuid_slug::UuidSlugAlphabet::Base64Url
 impl uuid_slug::UuidSlugAlphabet
 pub const fn uuid_slug::UuidSlugAlphabet::bits_per_character(self) -> usize
-pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes(self, plain_uuid_slug: &str) -> core::result::Result<[u8; 16], uuid_slug::Error>
-pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes_into<'a>(self, plain_uuid_slug: &str, output: &'a mut [u8], output_offset: usize) -> core::result::Result<&'a mut [u8], uuid_slug::Error>
+pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(self, plain_uuid_slug: &Input) -> core::result::Result<[u8; 16], uuid_slug::Error>
+pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes_into<'a, Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(self, plain_uuid_slug: &Input, output: &'a mut [u8], output_offset: usize) -> core::result::Result<&'a mut [u8], uuid_slug::Error>
 pub fn uuid_slug::UuidSlugAlphabet::uuid_bytes_to_plain_slug(self, uuid_bytes: &[u8; 16]) -> uuid_slug::PlainUuidSlug
 impl core::clone::Clone for uuid_slug::UuidSlugAlphabet
 pub fn uuid_slug::UuidSlugAlphabet::clone(&self) -> Self
@@ -823,6 +834,7 @@ impl core::marker::StructuralPartialEq for uuid_slug::PlainUuidSlug
 impl core::ops::deref::Deref for uuid_slug::PlainUuidSlug
 pub type uuid_slug::PlainUuidSlug::Target = str
 pub fn uuid_slug::PlainUuidSlug::deref(&self) -> &Self::Target
+impl uuid_slug::KeylessUuidText for uuid_slug::PlainUuidSlug
 impl core::marker::Freeze for uuid_slug::PlainUuidSlug
 impl core::marker::Send for uuid_slug::PlainUuidSlug
 impl core::marker::Sync for uuid_slug::PlainUuidSlug
@@ -835,14 +847,14 @@ impl uuid_slug::Uuid
 pub const fn uuid_slug::Uuid::as_uuid_bytes(&self) -> &[u8; 16]
 pub fn uuid_slug::Uuid::extract_uuid_v7_payload(&self, layout: uuid_slug::UuidV7PayloadLayout) -> core::result::Result<uuid_slug::UuidV7Payload, uuid_slug::Error>
 pub fn uuid_slug::Uuid::extract_uuid_v7_unix_ms(&self) -> core::result::Result<u64, uuid_slug::Error>
-pub fn uuid_slug::Uuid::from_plain_uuid_slug(plain_uuid_slug: &str) -> core::result::Result<Self, uuid_slug::Error>
+pub fn uuid_slug::Uuid::from_plain_uuid_slug<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(plain_uuid_slug: &Input) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::Uuid::from_uuid_bytes(bytes: &[u8], offset: usize) -> core::result::Result<Self, uuid_slug::Error>
 pub const fn uuid_slug::Uuid::from_uuid_bytes_array(bytes: [u8; 16]) -> Self
 pub fn uuid_slug::Uuid::from_uuid_string(uuid_string: &str) -> core::result::Result<Self, uuid_slug::Error>
 pub const fn uuid_slug::Uuid::is_rfc_uuid_variant(&self) -> bool
 pub const fn uuid_slug::Uuid::is_uuid_v4(&self) -> bool
 pub const fn uuid_slug::Uuid::is_uuid_v7(&self) -> bool
-pub fn uuid_slug::Uuid::parse_uuid(uuid: &str) -> core::result::Result<Self, uuid_slug::Error>
+pub fn uuid_slug::Uuid::parse_uuid<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(uuid: &Input) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::Uuid::to_plain_uuid_slug(&self, alphabet: uuid_slug::UuidSlugAlphabet) -> uuid_slug::PlainUuidSlug
 pub const fn uuid_slug::Uuid::uuid_variant(&self) -> uuid_slug::UuidVariant
 pub const fn uuid_slug::Uuid::uuid_version(&self) -> u8
@@ -1130,6 +1142,16 @@ pub const uuid_slug::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS: u64
 pub const uuid_slug::MAX_UUID: uuid_slug::Uuid
 pub const uuid_slug::MAX_UUID_V7_UNIX_MS: u64
 pub const uuid_slug::NIL_UUID: uuid_slug::Uuid
+pub trait uuid_slug::KeylessUuidText: uuid_slug::text::sealed::Text
+impl uuid_slug::KeylessUuidText for alloc::string::String
+impl uuid_slug::KeylessUuidText for str
+impl uuid_slug::KeylessUuidText for uuid_slug::PlainUuidSlug
+impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for &Input
+impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for &mut Input
+impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::boxed::Box<Input>
+impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::arc::Arc<Input>
+impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::rc::Rc<Input>
+impl<Input: uuid_slug::KeylessUuidText + alloc::borrow::ToOwned + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::borrow::Cow<'_, Input>
 pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
 pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: uuid_slug::UuidV7MaskDerivationCancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::generate_uuid_v4_into_with_random_fill(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
