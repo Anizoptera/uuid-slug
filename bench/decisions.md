@@ -928,11 +928,11 @@ RFC 9562 permits four useful payload models: random bits; a fixed leading counte
 
 ### Rust linked consumers and interoperability
 
-The WASM sizes and executions below precede final binary optimization. Keep them as diagnostics; optimized binaries must be measured and run before these findings can describe the final WebAssembly artifact. Native results are unaffected.
+WASM results without a `wasm-opt` version precede binary optimization and are diagnostic only. Use optimized results for final artifact claims. Native results are unaffected.
 
 **Keep generation independent; do not add version-specific feature switches for linked size.** On macOS Arm64 with Rust 1.99.1, ordinary release and ThinLTO consumers of the extracted `d7cb757` crate omit v7 clock/sequence and masking symbols from v4, and omit v4 and conversion/masking symbols from v7. Both default entropy and direct OS entropy builds execute natively. Their wasm-bindgen-processed programs execute in Chromium, Firefox and WebKit: v4 imports `getRandomValues` without `Date.now`, while v7 imports both. This establishes these consumers and compiler, not every target or future optimizer. Run `bun bench/rust-linked.ts /path/to/extracted/crate v4 v7` to reproduce; dependencies enabled during compilation remain a separate cost.
 
-**Single-alphabet removal remains incomplete.** The same ordinary-release crate retains both alphabet tables in each writer and reader. ThinLTO drops the unused writer table but retains both reader tables. Making `Uuid::to_plain_uuid_slug`, `UuidSlugAlphabet::uuid_bytes_to_plain_slug`, `encode_raw` and `decode_into` inline removes the unrelated native table in default and reduced-feature builds. However, the reduced-feature masking WASM program grows from 89,096 to 92,175 bytes; removing only the decoder annotation brings it to 89,120 bytes. Keep this candidate out of production while its cost remains unresolved; an annotation affecting size does not establish which compiled code grew. A further annotation on `encoding` adds no benefit in the tested cases. The complete candidate matrix executes native and all three browser engines; passing output does not settle latency or build cost. Measurements: 2026-10-23, Rust 1.99.1, macOS Arm64; the browser figures are final WASM modules, with required JavaScript measured separately.
+**Single-alphabet removal remains incomplete.** The same ordinary-release crate retains both alphabet tables in each writer and reader. ThinLTO drops the unused writer table but retains both reader tables. Making `Uuid::to_plain_uuid_slug`, `UuidSlugAlphabet::uuid_bytes_to_plain_slug`, `encode_raw` and `decode_into` inline removes the unrelated native table in default and reduced-feature builds. However, the reduced-feature masking WASM program grows from 89,096 to 92,175 bytes; removing only the decoder annotation brings it to 89,120 bytes. Keep this candidate out of production while its cost remains unresolved; an annotation affecting size does not establish which compiled code grew. A further annotation on `encoding` adds no benefit in the tested cases. The complete candidate matrix executes native and all three browser engines; passing output does not settle latency or build cost. Measurements: 2026-10-23, Rust 1.99.1, macOS Arm64; the browser figures are wasm-bindgen output before Binaryen, with required JavaScript measured separately.
 
 Separating an inline plain decoder from a shared masked decoder preserves single-alphabet removal but does not eliminate the size trade-off. Under the same compiler, the reduced-feature ordinary-release masking consumer is 89,259 WASM bytes, 163 above the unchanged baseline; its native executable is 474,160 bytes versus 474,336 before the annotations. Twenty selected native consumers and sixty browser executions pass across both alphabets, masking, feature selections and linking profiles; default and reduced-feature unit tests also pass. Keep the split unshipped: caller-storage pruning and complete-call timing remain unmeasured, and the smaller native executable does not cancel the WASM increase.
 
@@ -960,6 +960,23 @@ Keep the candidate out of production until speed and build cost are measured and
 These WASM programs need no imports and run in Bun 1.4.4; browser binding costs are measured separately. Repeat the browser/native matrix with `bun bench/rust-linked.ts <candidate-crate> decode-base64 decode-base32 decode-base64-into decode-base32-into masking`.
 
 Cargo can reuse the wrong binary after source restoration. Restoring baseline bytes with their older archive timestamp left the candidate binary in use. Updating only the source timestamp rebuilt the baseline with both tables and its original size; the source hash did not change. The figures above use fresh builds and this rebuilt baseline. The cached result is invalid.
+
+**The decoder savings survive Binaryen optimization.** With `wasm-opt` 132 `-O2`, all 48 baseline release consumers run natively and in Chromium, Firefox and WebKit (144 browser executions); the decoder candidate passes 20 native and 60 browser executions. Both cover defaults enabled/disabled and ordinary release/ThinLTO. The candidate's sixteen single-alphabet native consumers retain only their selected table. Baseline: extracted `0b9c558`; compiler: Rust 1.99.1 on macOS Arm64; measurement: 2026-10-23.
+
+| Optimized WASM consumer | Defaults | Baseline bytes | Candidate bytes |
+| --- | --- | ---: | ---: |
+| Base64url → array | off | 79,733 | 77,586 |
+| Base64url → caller storage | off | 80,773 | 78,600 |
+| Base32hex → array | off | 80,686 | 78,301 |
+| Base32hex → caller storage | off | 81,724 | 79,316 |
+| Masking | off | 65,990 | 65,990 |
+| Masking | on | 67,943 | 67,951 |
+
+These rows use ordinary release linking. With defaults, decoder savings are 1,983–2,311 bytes; ThinLTO also reduces all four decoder outputs. Masking grows by 8 WASM bytes with defaults, or 2 with ThinLTO; without defaults its WASM size stays unchanged. Native masking grows by 64 bytes without defaults (48 with ThinLTO); with defaults it is unchanged (112 bytes smaller with ThinLTO). Keep the candidate unshipped until full-call timing and build cost are checked.
+
+Optimization also changes the browser overhead estimate. Formatting with defaults and `wasm-js` is 28,891 WASM bytes plus 4,920 JavaScript bytes, versus 28,126 WASM bytes without defaults. Entropy and clock imports are absent; exception/table bindings remain. V4 imports entropy without a clock; v7 imports both, with defaults enabled and disabled. The shared release-size probe executes its native and optimized WASM masking consumer and reports 474,336/65,990 bytes.
+
+The ordinary Rust implementation also passes debug/release correctness checks after `wasm-opt` 132 `-O2`: each WASI target runs 42 reduced-feature and 45 all-feature tests, and each browser runs 29,894 shared cases in both entropy-success and entropy-failure contexts. This validates those optimized builds, not other optimizer versions or presets.
 
 ### Rust competitor inventory
 

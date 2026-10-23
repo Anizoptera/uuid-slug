@@ -8,6 +8,7 @@ const root = resolve(import.meta.dir, "..");
 const jco = import.meta.resolve("@bytecodealliance/jco");
 const wasmOpt = createRequire(jco).resolve("binaryen/bin/wasm-opt");
 const jcoCli = join(dirname(fileURLToPath(jco)), "jco.js");
+// Use -O2 to exercise optimizations for speed; consumers choose settings when compiling the crate.
 const flags = ["-O2"] as const;
 let version: Promise<string> | undefined;
 
