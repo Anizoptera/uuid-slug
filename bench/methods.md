@@ -4,7 +4,7 @@ The harness reports each runtime separately and rejects failed or missing measur
 
 ## Reports and controls
 
-Recover archived artifacts from `bench/reports/retained-artifact-index.json`: extract the named member with `tar -xf ARCHIVE MEMBER` in a disposable directory, then check its recorded SHA-256 and length. `bun scripts/compact-reports.ts` compresses retained reports on macOS without changing paths or bytes. `bun run clean` removes generated build output, not retained reports. Reusable Cargo caches use `rust/target/`.
+`bun scripts/compact-reports.ts` compresses retained reports on macOS without changing paths or bytes. `bun run clean` removes generated build output, not retained reports. Reusable Cargo caches use `rust/target/`.
 
 - Competitor and randomness figures are informational. Process failures, empty output and malformed records fail the matrix while successful measurements remain visible.
 - Run `bun run bench:matrix --smoke` for a short comparison. Set `UUID_SLUG_BENCH_RUNTIMES` to colon-separated executable paths to add runtimes. Each requested runtime must produce both reports.
