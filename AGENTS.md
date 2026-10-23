@@ -25,6 +25,8 @@ Size documentation reads by bytes, not lines: unwrapped paragraphs can exceed to
 
 Prepare releases only. Release version changes, tags, publication, finalization and `bun run release` require final explicit maintainer authorization for each operation; plans, credentials and checks grant no permission. Other remote writes (pushes, pull requests, settings) also need explicit authorization.
 
+When a selected registry fails, preserve the original package selection and retained artifacts on retry; do not turn a partial joint release into a completed single-package release. Follow `dev/release.md` §Publication and recovery.
+
 Fix wrong, missing or unreachable instructions first, then the plan, then implementation. Anything in this project that surprises you (a rule, tool, check or behavior that contradicts what you expected) MUST be reported to the user at once and written into the `AGENTS.md` that the next agent would load at that moment, so nobody hits it twice. Put the trigger and required action in visible `AGENTS.md`; unread rules cannot prevent mistakes.
 
 Standalone benchmarks, profiles, screens, calibration and optimization need an explicit request naming the consumer call. Release preparation, gaps, probes, plans, repairs and procedures grant no authority. Revisit rejected or inconclusive experiments only with new evidence changing the question or mechanism, not rewrites, longer runs or warm-ups. Keep regression checks; new measurements and resource-parity targets must not gate release preparation. Report dependent repairs as unresolved.
