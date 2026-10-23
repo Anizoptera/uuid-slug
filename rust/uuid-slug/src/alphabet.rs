@@ -175,18 +175,17 @@ impl UuidSlugAlphabet {
         output: &'a mut [u8],
         output_offset: usize,
     ) -> Result<&'a mut [u8], Error> {
-        self.decode_plain_into(plain_uuid_slug.as_uuid_text(), output, output_offset)
+        let decoded = self.plain_slug_to_uuid_bytes(plain_uuid_slug)?;
+        Self::write_decoded_bytes(&decoded, output, output_offset)
     }
 
-    // Error construction and output validation are shared across every input container.
-    fn decode_plain_into<'a>(
-        self,
-        plain_uuid_slug: &str,
+    // Keep the checked write shared without carrying alphabet selection across this call.
+    // Decoding must finish first: malformed text takes precedence and never writes output.
+    fn write_decoded_bytes<'a>(
+        decoded: &[u8; 16],
         output: &'a mut [u8],
         output_offset: usize,
     ) -> Result<&'a mut [u8], Error> {
-        let mut decoded = [0; 16];
-        self.decode_into(plain_uuid_slug, &mut decoded, 0)?;
         let end = output_offset.checked_add(16).ok_or_else(|| {
             Error::new(ErrorCode::InvalidBuffer).with_message(format!(
                 "Output needs 16 bytes at offset {output_offset}, but the offset overflows usize."
@@ -199,7 +198,7 @@ impl UuidSlugAlphabet {
                 capacity
             ))
         })?;
-        target.copy_from_slice(&decoded);
+        target.copy_from_slice(decoded);
         Ok(target)
     }
 }
@@ -268,6 +267,36 @@ mod tests {
         }
         Ok(())
     }
+    #[test]
+    fn malformed_plain_input_precedes_invalid_destination() {
+        for (alphabet, valid, invalid, input_error) in [
+            (
+                UuidSlugAlphabet::Base64Url,
+                "AAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAB",
+                ErrorCode::InvalidBase64Url,
+            ),
+            (
+                UuidSlugAlphabet::Base32Hex,
+                "00000000000000000000000000",
+                "00000000000000000000000001",
+                ErrorCode::InvalidBase32Hex,
+            ),
+        ] {
+            for offset in [3, usize::MAX] {
+                for (text, expected) in [(valid, ErrorCode::InvalidBuffer), (invalid, input_error)]
+                {
+                    let mut output = [0xa5; 18];
+                    let error = alphabet
+                        .plain_slug_to_uuid_bytes_into(text, &mut output, offset)
+                        .unwrap_err();
+                    assert_eq!(error.code(), expected);
+                    assert_eq!(output, [0xa5; 18]);
+                }
+            }
+        }
+    }
+
     #[test]
     fn base64_uuid_payload_is_exact_and_transactional() -> Result<(), Error> {
         let bytes = [0xa5; 16];
