@@ -234,6 +234,8 @@ pub struct UuidV7PayloadLayout {
 
 impl UuidV7PayloadLayout {
     /// Validate an RFC 9562 Method 3 fraction width followed by a Method 1 counter width.
+    /// The fraction width is `0..=12`; both widths together must fit the 74-bit payload.
+    /// Zero omits a field. Invalid widths return `InvalidOptions`.
     pub fn new(sub_millisecond_fraction_bits: u8, counter_bits: u8) -> Result<Self, Error> {
         if sub_millisecond_fraction_bits > 12 {
             return Err(Error::new(ErrorCode::InvalidOptions).with_message(format!(

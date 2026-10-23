@@ -358,6 +358,8 @@ pub fn generate_uuid_v4_into_with_random_fill(
     Ok(())
 }
 /// Fill from the platform CSPRNG, retaining its error as the cause on failure.
+/// On failure, `out` may be partially modified; discard its contents.
+/// Generation methods instead keep caller storage unchanged on failure.
 #[cfg(feature = "os-rng")]
 pub fn fill_os_random_bytes(out: &mut [u8]) -> Result<(), Error> {
     getrandom::fill(out).map_err(|error| Error::new(ErrorCode::RngUnavailable).with_source(error))

@@ -18,7 +18,7 @@ pub enum ErrorCode {
     InvalidMask,
     /// Operation options are missing, unknown, or outside their accepted range.
     InvalidOptions,
-    /// A sentinel name or UUID is empty, invalid, or repeats within one masking codec.
+    /// A sentinel name is empty or repeats, or a UUID repeats within one masking codec.
     InvalidSentinel,
     /// A timestamp does not satisfy the requested operation's range or precision.
     InvalidTimestamp,

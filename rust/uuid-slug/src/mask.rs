@@ -139,6 +139,7 @@ fn validate(seed: &[u8], iterations: u32) -> Result<(), Error> {
 }
 
 /// Derive a mask from exact seed bytes; pass `text.as_bytes()` for TypeScript UTF-8 string parity.
+/// Require at least 16 seed bytes and `key_derivation_iterations` in `1..=16_777_216`; otherwise return `InvalidMask`.
 /// Keep the same iteration count when reading issued IDs: it is key material, not a tuning hint.
 pub fn derive_uuid_v7_mask(
     mask_seed: &[u8],
@@ -235,6 +236,9 @@ struct MaskDerivation {
 
 /// Capture options and seed bytes now, before the returned future is first polled.
 /// Allocation and this input snapshot are outside the bounded computation slice.
+/// Seed and iteration limits match [`derive_uuid_v7_mask`]; validation errors use `InvalidMask` when polled.
+/// Cancellation takes priority and returns `Aborted`. Dropping the future stops work; no background task is started.
+/// Polling bounds hashing work, but the executor must schedule other tasks between polls.
 pub fn derive_uuid_v7_mask_async(
     mask_seed: &[u8],
     key_derivation_iterations: u32,
