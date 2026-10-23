@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { command } from "./command";
+import { rustToolchain } from "./rust-toolchain";
 import { fromMarkdown } from "mdast-util-from-markdown";
 import {
   lineApiSections,
@@ -280,22 +281,16 @@ export async function measureLinkedSizes(
   ]);
   const manifest = join(driver, "Cargo.toml");
   const base = ["build", "--release", "--manifest-path", manifest];
-  // Resolve from the repository, not the external driver or a system Cargo on PATH.
-  const [cargo, rustc] = await Promise.all(
-    ["cargo", "rustc"].map(async (tool) => (await command("rustup", ["which", tool], cwd)).trim()),
+  // The caller checkout owns toolchain selection, even for an extracted historical crate.
+  const toolchain = await rustToolchain(cwd);
+  const env = { ...toolchain.env, CARGO_TARGET_DIR: target };
+  await command(toolchain.cargo, [...toolchain.cargoArgs, ...base], cwd, env);
+  await command(
+    toolchain.cargo,
+    [...toolchain.cargoArgs, ...base, "--target", "wasm32-unknown-unknown"],
+    cwd,
+    env,
   );
-  if (!cargo || !rustc) throw new Error("Repository Rust toolchain could not be resolved.");
-  // macOS linker children need Cargo to forward the selected compiler's LLVM library path.
-  if (process.platform === "darwin")
-    base.push(
-      "--config",
-      `env.DYLD_LIBRARY_PATH.value=${JSON.stringify(join(dirname(rustc), "..", "lib"))}`,
-      "--config",
-      "env.DYLD_LIBRARY_PATH.force=true",
-    );
-  const env = { CARGO_TARGET_DIR: target, RUSTC: rustc };
-  await command(cargo, base, cwd, env);
-  await command(cargo, [...base, "--target", "wasm32-unknown-unknown"], cwd, env);
   return {
     native: (await stat(join(target, "release/uuid-slug-linked-probe"))).size,
     wasm: (await stat(join(target, "wasm32-unknown-unknown/release/uuid-slug-linked-probe.wasm")))
