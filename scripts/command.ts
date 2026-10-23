@@ -44,7 +44,8 @@ export async function command(
       cwd,
       env: {
         ...childEnvironment,
-        PATH: `${join(cwd, "node_modules/.bin")}${delimiter}${process.env.PATH ?? ""}`,
+        // Callers can pin a toolchain for subcommands; ambient PATH must not replace it.
+        PATH: `${join(cwd, "node_modules/.bin")}${delimiter}${childEnvironment.PATH ?? ""}`,
       },
       encoding: "utf8",
       timeout: options?.timeoutMs ?? 30_000,
