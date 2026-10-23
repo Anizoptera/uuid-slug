@@ -39,7 +39,7 @@ export async function buildLinkedConsumer(
   const env = {
     ...toolchain.env,
     CARGO_TARGET_DIR: target,
-    ...(thinLto ? { CARGO_PROFILE_RELEASE_LTO: "thin" } : {}),
+    CARGO_PROFILE_RELEASE_LTO: thinLto ? "thin" : "false",
   };
   await command(toolchain.cargo, [...toolchain.cargoArgs, ...base], cwd, env);
   await command(

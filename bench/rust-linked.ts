@@ -8,8 +8,8 @@ import type { LinkedRustConsumer } from "../scripts/rust-linked";
 import { rustToolchain } from "../scripts/rust-toolchain";
 
 const crate = process.argv[2];
-if (!crate || process.argv.length !== 3)
-  throw new Error("Usage: bun bench/rust-linked.ts <extracted-crate-directory>");
+if (!crate)
+  throw new Error("Usage: bun bench/rust-linked.ts <extracted-crate-directory> [consumer ...]");
 const root = process.cwd();
 const nm = Bun.which(process.env.LLVM_NM ?? "llvm-nm");
 if (!nm) throw new Error("Set LLVM_NM to llvm-nm to inspect the linked native programs.");
@@ -38,6 +38,9 @@ const consumers: Record<string, LinkedRustConsumer> = {
   parse: consumer(
     'black_box(Uuid::parse_uuid(black_box("01890f3e-93b8-7cc6-a76b-b2a67b746c2a")).unwrap());',
   ),
+  format: consumer(
+    'let id = Uuid::from_uuid_bytes_array(black_box([0; 16])); assert_eq!(id.to_string(), "00000000-0000-0000-0000-000000000000");',
+  ),
   "encode-base64": consumer(
     'let id = Uuid::from_uuid_bytes_array(black_box([0; 16])); assert_eq!(id.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url).as_str(), "AAAAAAAAAAAAAAAAAAAAAA");',
   ),
@@ -53,35 +56,58 @@ const consumers: Record<string, LinkedRustConsumer> = {
   masking: maskingConsumer,
 };
 
+const selected = process.argv.slice(3);
+for (const name of selected)
+  if (!(name in consumers))
+    throw new Error(`Unknown consumer ${name}: choose ${Object.keys(consumers).join(", ")}`);
+
 const work = await mkdtemp(join(tmpdir(), "uuid-slug-consumers-"));
 try {
   for (const thinLto of [false, true]) {
-    for (const [name, source] of Object.entries(consumers)) {
-      const paths = await buildLinkedConsumer(root, resolve(crate), work, name, source, thinLto);
-      await command(paths.native, [], root);
-      const symbols = await command(nm, ["--demangle", "--defined-only", paths.native], root);
-      const module = await WebAssembly.compile(await Bun.file(paths.wasm).arrayBuffer());
-      const imports = WebAssembly.Module.imports(module);
-      let wasmExecuted = false;
-      if (imports.length === 0) {
-        const instance = await WebAssembly.instantiate(module);
-        const main = instance.exports.main;
-        if (typeof main !== "function") throw new Error(`${name}: WASM binary has no main export`);
-        main(0, 0);
-        wasmExecuted = true;
-      }
-      console.log(
-        JSON.stringify({
-          name,
+    for (const defaultFeatures of [false, true]) {
+      for (const [name, source] of Object.entries(consumers)) {
+        if (selected.length && !selected.includes(name)) continue;
+        // Reuse dependency artifacts; each executable is inspected before the next source replaces it.
+        const paths = await buildLinkedConsumer(
+          root,
+          resolve(crate),
+          work,
+          `${defaultFeatures}-${thinLto}`,
+          {
+            ...source,
+            defaultFeatures,
+            // getrandom needs a browser backend even when linking later discards every entropy call.
+            features: defaultFeatures ? ["wasm-js"] : (source.features ?? []),
+          },
           thinLto,
-          native: (await stat(paths.native)).size,
-          wasm: (await stat(paths.wasm)).size,
-          nativeExecuted: true,
-          wasmExecuted,
-          imports,
-          symbols: symbols.split("\n").filter((line) => line.includes("uuid_slug::")),
-        }),
-      );
+        );
+        await command(paths.native, [], root);
+        const symbols = await command(nm, ["--demangle", "--defined-only", paths.native], root);
+        const module = await WebAssembly.compile(await Bun.file(paths.wasm).arrayBuffer());
+        const imports = WebAssembly.Module.imports(module);
+        let wasmExecuted = false;
+        if (imports.length === 0) {
+          const instance = await WebAssembly.instantiate(module);
+          const main = instance.exports.main;
+          if (typeof main !== "function")
+            throw new Error(`${name}: WASM binary has no main export`);
+          main(0, 0);
+          wasmExecuted = true;
+        }
+        console.log(
+          JSON.stringify({
+            name,
+            thinLto,
+            defaultFeatures,
+            native: (await stat(paths.native)).size,
+            wasm: (await stat(paths.wasm)).size,
+            nativeExecuted: true,
+            wasmExecuted,
+            imports,
+            symbols: symbols.split("\n").filter((line) => line.includes("uuid_slug::")),
+          }),
+        );
+      }
     }
   }
 } finally {
