@@ -37,9 +37,10 @@ This is the sole live plan. Preserve unrelated unfinished items below. Add arisi
 
 ### TypeScript interoperability
 
-- [ ] Preserve direct use of strings, `Uint8Array`, `Buffer`, exact `ArrayBuffer` and ranged `DataView`. Do not introduce UUID-library detection, adapters or runtime dependencies where the existing representations suffice.
-- [ ] Verify both directions using actual external producers/consumers: Node `randomUUID()` and the installed `uuid` package's v4/v7 generation, parsing and formatting. Cover both alphabets, ordinary and externally branded strings, byte inputs and unions without casts.
-- [ ] Verify caller-output identity, offsets, untouched surrounding bytes and failure atomicity. Distinguish copies required by ownership from avoidable parsing/conversion; do not claim zero-copy where a result must own bytes.
+- [x] Preserve direct use of strings, `Uint8Array`, `Buffer`, exact `ArrayBuffer` and ranged `DataView`. Do not introduce UUID-library detection, adapters or runtime dependencies where the existing representations suffice.
+- [x] Verify both directions using actual external producers/consumers: Node `randomUUID()` and the installed `uuid` package's v4/v7 generation, parsing and formatting. Cover both alphabets, ordinary and externally branded strings, byte inputs and unions without casts.
+- [x] Verify caller-output identity, offsets, untouched surrounding bytes and failure atomicity. Distinguish copies required by ownership from avoidable parsing/conversion; do not claim zero-copy where a result must own bytes.
+  - `bun scripts/check-artifact.ts` passes the installed-package `consumer-interop.fixture.ts` under all four configured checkers and Node/Bun/Deno execution. Real `uuid` producers constrain byte order and formatting; both alphabets accept all listed byte containers, Buffer writes preserve identity and surrounding bytes, invalid text/ranges preserve storage, and mutating a parsed value's returned bytes does not mutate that value. The externally branded-string case proves compiler acceptance, not a distinct runtime representation. No product code or runtime dependency changes are required.
 - [ ] Run these calls against packaged declarations with every checker in `scripts/typescript-compilers.ts` and execute real installed package consumers. Include rejected known representation mismatches and intended-diagnostic controls. Extend the existing consumer harness instead of creating a parallel suite.
 
 ### Features, unused code, WebAssembly and WASI
@@ -114,9 +115,9 @@ Authorized complete-call measurements cover UUIDv4/v7 generation, parsing/format
 
 - Local Rust report drift and registry-verified publication compatibility have separate owners. `scripts/rust-api.ts` supplies both with compiler-derived signatures/deprecations. The real-Git API regression fails when the old npm-tag-as-crate-baseline path is restored with `scripts/prove-guard.ts`; the compiler fixture exercises allowed deprecated removal and rejected nondeprecated removal. Full exact-archive release preparation remains unexecuted.
 - The compiler prototype accepts ordinary strings and typed plain slugs while rejecting a typed masked slug at a sealed keyless boundary. Full API integration, diagnostics, code generation and packaged consumers remain unchecked.
-- The local Node interoperability probe covers external string producers, both alphabets, byte containers, caller-output identity and external formatting readback. It does not establish all-checker compatibility, packed resolution or performance.
+- Packed TypeScript interoperability passes all configured checkers and Node/Bun/Deno execution through the existing artifact harness. It establishes the listed consumer calls and ownership checks, not performance or arbitrary external libraries.
 - Raw 22-character plain and masked slugs can overlap. A matching codec restores the issued UUID while a plain parser can return another UUID; compile-time provenance protection must not be mistaken for a raw-text authenticity check.
-- Initial linked consumers show separate v4/v7 code on native release builds; symmetric default/reduced-feature coverage and final browser-WASM artifacts remain required. Individual-alphabet consumers still retain unrelated tables as detailed above.
+- Symmetric generation consumers execute natively and in all configured browsers under default/reduced features and ordinary release/ThinLTO. Individual-alphabet coupling, browser binding overhead and build-cost comparisons remain open as detailed above.
 - Treat `no_std` as shared-code portability, not a promise of allocation-free APIs or universal embedded support. Revisit any implementation that needs a duplicate algorithm or large new abstraction rather than hiding that cost.
 
 ## Runtime support
