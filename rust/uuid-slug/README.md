@@ -1,7 +1,6 @@
 # uuid-slug
 
-The crate generates UUIDv4/v7 and encodes any UUID as a 22-character base64url or 26-character base32hex slug.
-UUIDv7 fields can be masked with a key; lowercase masked slugs use 27 characters for case-insensitive filenames.
+The crate generates UUIDv4/v7 and encodes any UUID as a 22-character base64url or 26-character base32hex slug. UUIDv7 fields can be masked with a key; lowercase masked slugs use 27 characters for case-insensitive filenames.
 
 Install the crate from crates.io or this repository.
 
@@ -24,32 +23,17 @@ assert_eq!(masking_codec.masked_slug_to_uuid(&masked)?, uuid);
 # }
 ```
 
-Slug conversions return `PlainUuidSlug`, `MaskedUuidV7Slug`, or
-`MaskedOrSentinelUuidV7Slug`, so Rust keeps representations distinct. Borrow one anywhere an
-`&str` is accepted, format it with `Display`, or convert it into `String` without copying its text.
-`Uuid::parse_uuid` reads UUID text or a plain slug when the input can be either. `{:X}` formats uppercase UUID text and `Display` lowercase, both without allocating. `uuid_variant()` returns the RFC 9562 variant.
+Slug conversions return `PlainUuidSlug`, `MaskedUuidV7Slug`, or `MaskedOrSentinelUuidV7Slug`, so Rust keeps representations distinct. Borrow one anywhere an `&str` is accepted, format it with `Display`, or convert it into `String` without copying its text. `Uuid::parse_uuid` reads UUID text or a plain slug when the input can be either. `{:X}` formats uppercase UUID text and `Display` lowercase, both without allocating. `uuid_variant()` returns the RFC 9562 variant.
 
-Use `UuidV7MaskingCodec::new(mask)` for base64url output with no sentinels or previous keys.
-Use `UuidV7MaskingCodec::from_options(options)?` to select those settings or a different timestamp range.
-Both require an explicit mask; only configured construction can return a validation error.
+Use `UuidV7MaskingCodec::new(mask)` for base64url output with no sentinels or previous keys. Use `UuidV7MaskingCodec::from_options(options)?` to select those settings or a different timestamp range. Both require an explicit mask; only configured construction can return a validation error.
 
-Plain slugs preserve all 128 UUID bits without version, variant or timestamp limits.
-Masked slugs preserve the 132-bit payload. Decoding infers the representation and rejects nonzero padding.
+Plain slugs preserve all 128 UUID bits without version, variant or timestamp limits. Masked slugs preserve the 132-bit payload. Decoding infers the representation and rejects nonzero padding.
 
-Masking supports UUIDv7 only. It replaces the recognizable UUIDv7 layout, including its timestamp,
-with a keyed reversible payload. Its cryptographic strength is not established.
-An incorrect key can pass the 16-bit check and return the wrong UUID; look up decoded records
-and check caller access. Each read key adds that risk. Use `uuid_v7_test_mask()` only for examples
-and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs.
-Masking stores a timestamp offset from `timestamp_range_start_unix_ms` and restores the UUID's
-timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`; plain slugs
-retain the full UUIDv7 timestamp range. Registered sentinels are always plain slugs and are never masked.
+Masking supports UUIDv7 only. It replaces the recognizable UUIDv7 layout, including its timestamp, with a keyed reversible payload. Its cryptographic strength is not established. An incorrect key can pass the 16-bit check and return the wrong UUID; look up decoded records and check caller access. Each read key adds that risk. Use `uuid_v7_test_mask()` only for examples and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs. Masking stores a timestamp offset from `timestamp_range_start_unix_ms` and restores the UUID's timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`; plain slugs retain the full UUIDv7 timestamp range. Registered sentinels are always plain slugs and are never masked.
 
 ## Interoperability
 
-Convert directly between this crate's `Uuid`, `uuid::Uuid` and `[u8; 16]` with
-`.into()`. These conversions preserve every bit without allocating or formatting text,
-including UUID versions and variants this crate does not generate.
+Convert directly between this crate's `Uuid`, `uuid::Uuid` and `[u8; 16]` with `.into()`. These conversions preserve every bit without allocating or formatting text, including UUID versions and variants this crate does not generate.
 
 ```rust
 use uuid_slug::{Uuid, UuidSlugAlphabet};
@@ -67,16 +51,11 @@ assert_eq!(Uuid::try_from(bytes.as_slice())?, id);
 # }
 ```
 
-`Uuid::try_from(slice)` copies exactly 16 bytes and rejects every other length with
-`ErrorCode::InvalidBuffer`. For a UUID within a larger buffer, use
-`Uuid::from_uuid_bytes(buffer, offset)`; the offset is in bytes.
+`Uuid::try_from(slice)` copies exactly 16 bytes and rejects every other length with `ErrorCode::InvalidBuffer`. For a UUID within a larger buffer, use `Uuid::from_uuid_bytes(buffer, offset)`; the offset is in bytes.
 
 ## Key rotation
 
-Keep previous keys while stored identifiers still need them. The current key writes new slugs;
-previous keys only add read candidates. Install readers for the new key and spelling before
-switching writers. A rollback must retain those readers or it can strand newly issued identifiers.
-Here, `stored` is an existing slug written with the previous key.
+Keep previous keys while stored identifiers still need them. The current key writes new slugs; previous keys only add read candidates. Install readers for the new key and spelling before switching writers. A rollback must retain those readers or it can strand newly issued identifiers. Here, `stored` is an existing slug written with the previous key.
 
 ```rust
 use uuid_slug::{
@@ -105,50 +84,16 @@ let candidates = migration_decoder.uuid_slug_to_uuid_candidates(&stored, None)?;
 # }
 ```
 
-Use `uuid_slug_to_uuid` when one candidate suffices; name a `UuidSlugMigrationFormat` when the stored format is known.
-Use `uuid_slug_to_uuid_candidates` for explicit lookup across possible formats or keys, and check the result against
-your store. Disable each legacy reader only after its stored values are migrated; neither option
-enables the unsupported 0.2.0 masked format.
+Use `uuid_slug_to_uuid` when one candidate suffices; name a `UuidSlugMigrationFormat` when the stored format is known. Use `uuid_slug_to_uuid_candidates` for explicit lookup across possible formats or keys, and check the result against your store. Disable each legacy reader only after its stored values are migrated; neither option enables the unsupported 0.2.0 masked format.
 
 ## Generation and timestamps
 
-`generate_uuid_v7()` needs no setup: each thread keeps its own generator, so one thread's IDs strictly increase without a lock. Create a `UuidV7Generator` for one shared sequence or the settings below; its `generate_uuid_v7()` reads the system clock;
-`generate_uuid_v7_at(SystemTime)` accepts an exact standard-library time. Both use secure platform
-entropy and join the same sequence. Use `generate_uuid_v7_at_unix_ms()` only when a numeric interop
-boundary already supplies fractional Unix milliseconds.
-The crate accepts every RFC 9562 UUIDv7 and preserves its 74 payload bits. Use
-`Uuid::extract_uuid_v7_payload` with `UuidV7PayloadLayout` only when the generator's leading
-fraction and counter widths are known. Every undeclared low bit remains in `remaining`.
-`with_sub_millisecond_fraction_bits` assigns 1 through 12 leading payload bits to the clock
-fraction; `payload_layout` returns that split and the remaining counter width.
-Supplied time fills the configured fraction field. Native current-time generation reads the operating
-system's sub-millisecond clock; WebAssembly's built-in clock uses millisecond `Date.now()`, so pass a
-fractional reading to `generate_uuid_v7_with_random_fill` when that precision matters.
-When the clock stalls or moves backward, the generator advances this logical fraction and then
-the millisecond timestamp when needed; extracted fractions can be later than the clock reading.
-Successful calls on one generator strictly increase in UUID byte order under the default
-clock-rollback policy, which preserves order. Calls under the reset policy, after its tolerance, are outside that sequence.
-Use `UuidV7MaskingCodec::extract_masked_uuid_v7_payload` for masked slugs. Masking rejects timestamps outside the codec's
-configured range instead of truncating them. Same-millisecond ordering depends on the generator
-and is not a cross-language guarantee.
-`uuid_v7_bounds(start, end)` returns the inclusive lowest and highest UUIDv7 search keys; pass
-`None` for one millisecond. Use the bounds only with comparison in UUID wire-byte order.
-Preserve-order clock rollback is the default. Use `with_clock_rollback_policy` to reset or return
-`InvalidTimestamp` after a chosen total-skew tolerance.
-`generate_uuid_v4()` creates random IDs.
+`generate_uuid_v7()` needs no setup: each thread keeps its own generator, so one thread's IDs strictly increase without a lock. Create a `UuidV7Generator` for one shared sequence or the settings below; its `generate_uuid_v7()` reads the system clock; `generate_uuid_v7_at(SystemTime)` accepts an exact standard-library time. Both use secure platform entropy and join the same sequence. Use `generate_uuid_v7_at_unix_ms()` only when a numeric interop boundary already supplies fractional Unix milliseconds. The crate accepts every RFC 9562 UUIDv7 and preserves its 74 payload bits. Use `Uuid::extract_uuid_v7_payload` with `UuidV7PayloadLayout` only when the generator's leading fraction and counter widths are known. Every undeclared low bit remains in `remaining`. `with_sub_millisecond_fraction_bits` assigns 1 through 12 leading payload bits to the clock fraction; `payload_layout` returns that split and the remaining counter width. Supplied time fills the configured fraction field. Native current-time generation reads the operating system's sub-millisecond clock; WebAssembly's built-in clock uses millisecond `Date.now()`, so pass a fractional reading to `generate_uuid_v7_with_random_fill` when that precision matters. When the clock stalls or moves backward, the generator advances this logical fraction and then the millisecond timestamp when needed; extracted fractions can be later than the clock reading. Successful calls on one generator strictly increase in UUID byte order under the default clock-rollback policy, which preserves order. Calls under the reset policy, after its tolerance, are outside that sequence. Use `UuidV7MaskingCodec::extract_masked_uuid_v7_payload` for masked slugs. Masking rejects timestamps outside the codec's configured range instead of truncating them. Same-millisecond ordering depends on the generator and is not a cross-language guarantee. `uuid_v7_bounds(start, end)` returns the inclusive lowest and highest UUIDv7 search keys; pass `None` for one millisecond. Use the bounds only with comparison in UUID wire-byte order. Preserve-order clock rollback is the default. Use `with_clock_rollback_policy` to reset or return `InvalidTimestamp` after a chosen total-skew tolerance. `generate_uuid_v4()` creates random IDs.
 
 ## Errors
 
-Failures return `Error`, retaining the underlying cause. Match `Error::code()` against
-`ErrorCode`; use `ErrorCode::as_str()` only when a text protocol needs the shared TypeScript
-spelling. Use `Display` for the case-specific diagnostic; do not parse its text.
+Failures return `Error`, retaining the underlying cause. Match `Error::code()` against `ErrorCode`; use `ErrorCode::as_str()` only when a text protocol needs the shared TypeScript spelling. Use `Display` for the case-specific diagnostic; do not parse its text.
 
 ## Features
 
-Default feature `fast-rng` uses a per-thread ChaCha12 generator seeded from the OS, with required
-reseeding after 64 KB or a native process-ID change. Seed failures return `rng_unavailable`.
-For an OS draw on every call, disable defaults and enable `os-rng`; `fill_os_random_bytes` always
-draws directly from the OS. Disable default features for conversion, masking or caller-supplied
-entropy without either randomness dependency. Browser generation additionally requires `wasm-js`.
-`derive_uuid_v7_mask_async` returns an opaque, cancelable, bounded-work future without an
-executor dependency; its executor must schedule unrelated host tasks between polls.
+Default feature `fast-rng` uses a per-thread ChaCha12 generator seeded from the OS, with required reseeding after 64 KB or a native process-ID change. Seed failures return `rng_unavailable`. For an OS draw on every call, disable defaults and enable `os-rng`; `fill_os_random_bytes` always draws directly from the OS. Disable default features for conversion, masking or caller-supplied entropy without either randomness dependency. Browser generation additionally requires `wasm-js`. `derive_uuid_v7_mask_async` returns an opaque, cancelable, bounded-work future without an executor dependency; its executor must schedule unrelated host tasks between polls.

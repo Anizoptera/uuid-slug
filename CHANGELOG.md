@@ -1,7 +1,6 @@
 # Changelog
 
-Notable changes per release, newest first. Each version's GitHub Release notes are its
-section here, with the generated API changes, package size and links added.
+Notable changes per release, newest first. Each version's GitHub Release notes are its section here, with the generated API changes, package size and links added.
 
 ## [Unreleased]
 

@@ -527,8 +527,7 @@ Medians in ns, package / floor, 2026-09 (Node 24.21.0, Bun 1.4.2, Deno 2.9.6, Ch
 
 Node 26.8.2 `crypto.randomUUIDv7` randomizes the 12 bits after the timestamp per call and stayed at the clock over 2 million calls, but is slower than the package generator.
 
-**Default native output is trusted directly: no result validation, no identity tracking.** Stronger guarantees belong only on explicit configurable paths (`dev/interface.md`). Validating each native UUIDv7 value cost 61–63 ns vs a 41–43 ns floor on Bun; a shared trust helper Bun did not inline cost 38–40 vs 31–33 ns for UUIDv4 text. Removing validation left every timing unresolved on Node 26.10.0, Bun 1.4.2, Chromium 153, Firefox 155, WebKit 26.6, Deno 2.9.7 and JITless Node (2026-10): it removes machinery, not a measured throughput win.
-Reopen when: Bun changes the `randomUUIDv7` overflow policy or clock argument; Node native UUIDv7 text overtakes the portable generator; a runtime adds native UUIDv7 bytes.
+**Default native output is trusted directly: no result validation, no identity tracking.** Stronger guarantees belong only on explicit configurable paths (`dev/interface.md`). Validating each native UUIDv7 value cost 61–63 ns vs a 41–43 ns floor on Bun; a shared trust helper Bun did not inline cost 38–40 vs 31–33 ns for UUIDv4 text. Removing validation left every timing unresolved on Node 26.10.0, Bun 1.4.2, Chromium 153, Firefox 155, WebKit 26.6, Deno 2.9.7 and JITless Node (2026-10): it removes machinery, not a measured throughput win. Reopen when: Bun changes the `randomUUIDv7` overflow policy or clock argument; Node native UUIDv7 text overtakes the portable generator; a runtime adds native UUIDv7 bytes.
 
 Bun explicit-time caller output and selected-generator bytes read 10–17% slower in corpus replays but did not reproduce in isolation (at most ~3 ns): treat as warm-up history, not a regression.
 
@@ -673,8 +672,7 @@ Rejected: per-nibble lookups without a table (112 ns Node 26.8.2, 51 ns Bun vs 6
 
 ### Portable UUIDv7 timestamp writes
 
-**Select the 48-bit timestamp writer once at module load: Bun keeps the six-byte loop; other runtimes write one high 16-bit and one low 32-bit word.** The split avoids five divisions on V8 without a per-write branch. Node caller-owned continuation +6.8–8.6%, advancing clock +14.3–14.8%; Chromium +12.3–13.3% and +4.4–5.0%; Deno improved; Bun no significant regression (2026-09, Node 24.20.0, Bun 1.4.1, Deno 2.9.6, Chromium 151).
-Rejected: a universal word writer (Bun advancing and rollback −6.2%, −5.3%); a per-call runtime branch (Bun byte routes 4–10% slower). Reopen if JavaScriptCore stops favoring the loop or V8 stops favoring fixed writes.
+**Select the 48-bit timestamp writer once at module load: Bun keeps the six-byte loop; other runtimes write one high 16-bit and one low 32-bit word.** The split avoids five divisions on V8 without a per-write branch. Node caller-owned continuation +6.8–8.6%, advancing clock +14.3–14.8%; Chromium +12.3–13.3% and +4.4–5.0%; Deno improved; Bun no significant regression (2026-09, Node 24.20.0, Bun 1.4.1, Deno 2.9.6, Chromium 151). Rejected: a universal word writer (Bun advancing and rollback −6.2%, −5.3%); a per-call runtime branch (Bun byte routes 4–10% slower). Reopen if JavaScriptCore stops favoring the loop or V8 stops favoring fixed writes.
 
 ### Portable UUIDv7 profile coverage
 
@@ -708,8 +706,7 @@ Rejected:
 
 ### Portable UUIDv4 ownership paths
 
-**Draw entropy directly into package-owned output; caller-owned output draws into private storage, then copies,** so entropy failure cannot partly modify caller data and Web Crypto never receives an unsupported caller view. Owned bytes +10.7–13.3% Node, +30.2–33.2% Bun, +7.4–9.3% Chromium; Bun slugs +7.7–10.8% (2026-09, Node 24.20.0, Bun 1.4.1, Deno 2.9.6, Chromium 151). Private text fallback +1.9–4.2% on Node, Bun, Chromium.
-Rejected: one shared path with an ownership branch after the draw (caller-owned −4.1–4.3% Bun, −4.3–5.7% Deno) or before it (Bun −3.6–5.7%). The split duplicates a short guard and draw to keep both paths branch-free. Merge if a primary runtime stops gaining on owned output or caller-owned output regresses reproducibly.
+**Draw entropy directly into package-owned output; caller-owned output draws into private storage, then copies,** so entropy failure cannot partly modify caller data and Web Crypto never receives an unsupported caller view. Owned bytes +10.7–13.3% Node, +30.2–33.2% Bun, +7.4–9.3% Chromium; Bun slugs +7.7–10.8% (2026-09, Node 24.20.0, Bun 1.4.1, Deno 2.9.6, Chromium 151). Private text fallback +1.9–4.2% on Node, Bun, Chromium. Rejected: one shared path with an ownership branch after the draw (caller-owned −4.1–4.3% Bun, −4.3–5.7% Deno) or before it (Bun −3.6–5.7%). The split duplicates a short guard and draw to keep both paths branch-free. Merge if a primary runtime stops gaining on owned output or caller-owned output regresses reproducibly.
 
 **The unchecked formatter is used only behind the generator-owned 16-byte text buffer** (see UUID text formatting). A direct byte-pair formatter lost on Chromium without closing Node or Deno.
 
@@ -931,13 +928,7 @@ RFC 9562 permits four useful payload models: random bits; a fixed leading counte
 
 ### Rust competitor inventory
 
-This is the benchmark work list, not a claim that crates.io has no other UUID package. The census
-uses the registry searches `uuid`, `uuid v4`, `uuid7`, and `uuidv7`. It includes reusable libraries
-that generate UUIDv4 or UUIDv7 and excludes CLIs, database extensions, domain packages, parsers,
-formatters, and libraries that only consume UUIDs. Re-run the same searches before benchmarking.
-Run `bun run bench:competitors:audit` to detect a newer release or repository commit. Release
-dates come from crates.io; commit dates come from each package's declared GitHub repository. A new
-version requires source inspection before its evidence or benchmark result can be carried forward.
+This is the benchmark work list, not a claim that crates.io has no other UUID package. The census uses the registry searches `uuid`, `uuid v4`, `uuid7`, and `uuidv7`. It includes reusable libraries that generate UUIDv4 or UUIDv7 and excludes CLIs, database extensions, domain packages, parsers, formatters, and libraries that only consume UUIDs. Re-run the same searches before benchmarking. Run `bun run bench:competitors:audit` to detect a newer release or repository commit. Release dates come from crates.io; commit dates come from each package's declared GitHub repository. A new version requires source inspection before its evidence or benchmark result can be carried forward.
 
 | Crate | Versions | Release | Repo commit | Why retained | Evidence |
 | --- | --- | --- | --- | --- | --- |
@@ -993,11 +984,7 @@ The earlier 2026-09 competitor matrix exercised output validity, typed entropy f
 
 ### TypeScript competitor inventory
 
-Run `bun run bench:competitors:audit` to compare both inventories with npm, crates.io, and each
-package's declared GitHub repository. A changed release or repository date requires source
-inspection before carrying its evidence forward. Dates show activity, not maintainability by
-themselves; stable code may need few commits, while frequent commits may still leave consumer
-defects unresolved.
+Run `bun run bench:competitors:audit` to compare both inventories with npm, crates.io, and each package's declared GitHub repository. A changed release or repository date requires source inspection before carrying its evidence forward. Dates show activity, not maintainability by themselves; stable code may need few commits, while frequent commits may still leave consumer defects unresolved.
 
 | Package | Release | Repo commit | Why retained |
 | --- | --- | --- | --- |
@@ -1012,10 +999,7 @@ defects unresolved.
 | [`uuidv7-js` 2.0.0](https://www.npmjs.com/package/uuidv7-js) | 2026-05-11 | 2026-05-11 | Random-increment UUIDv7 generator and validated timestamp extraction |
 | [`fastv7` 1.0.2](https://www.npmjs.com/package/fastv7) | 2025-12-20 | 2025-12-20 | Minimal zero-start UUIDv7 generator with a distinct collision trade-off |
 
-The inventory covers the most-downloaded packages and every distinct relevant strategy found.
-Official npm downloads for 2026-09-05 through 2026-09-11 ranged from 206,849,086 for `uuid` to 293
-for `fastv7`; low-download packages remain only where their strategy or API differs. The deprecated
-`uuidv4` wrapper and older duplicate generators add no independent implementation evidence.
+The inventory covers the most-downloaded packages and every distinct relevant strategy found. Official npm downloads for 2026-09-05 through 2026-09-11 ranged from 206,849,086 for `uuid` to 293 for `fastv7`; low-download packages remain only where their strategy or API differs. The deprecated `uuidv4` wrapper and older duplicate generators add no independent implementation evidence.
 
 | Capability | Strongest retained alternatives | This package |
 | --- | --- | --- |
