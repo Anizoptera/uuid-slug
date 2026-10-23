@@ -8,6 +8,8 @@ Never run formatters on Markdown or other prose files, or manually hard-wrap the
 
 READ the owner before changing its subject; these references hold the detailed rules.
 
+Size documentation reads by bytes, not lines: unwrapped paragraphs can exceed tool output limits in a small line range. Check the requested range's byte count against both nested and outer output budgets before reading; split it when needed. A truncated result is not a completed read; recover every omitted range before relying on it.
+
 | Work | Owner |
 | --- | --- |
 | ANY public TypeScript or Rust interface, type, error or declaration comment | `dev/interface.md` in full |
