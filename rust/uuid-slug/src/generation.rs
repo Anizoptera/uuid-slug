@@ -917,6 +917,15 @@ mod tests {
             );
             let recovered = generator.generate_uuid_v7_with_random_fill(100.0, fill)?;
             assert_ne!(first, recovered);
+            // A failed later reading must not make the last accepted time look like rollback.
+            let failed = generator
+                .generate_uuid_v7_with_random_fill(200.0, |out| {
+                    out.fill(255);
+                    Err(Error::new(ErrorCode::RngUnavailable))
+                })
+                .unwrap_err();
+            assert_eq!(failed.code(), ErrorCode::RngUnavailable);
+            assert!(generator.generate_uuid_v7_with_random_fill(100.0, fill)? > recovered);
         }
         Ok(())
     }
