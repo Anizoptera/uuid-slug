@@ -2,7 +2,8 @@
 use std::{fs, io};
 use uuid_slug::{
     Uuid, UuidSlugAlphabet, UuidSlugMigrationFormat, UuidSlugMigrationOptions, UuidV7Generator,
-    UuidV7MaskingCodec, UuidV7MaskingCodecOptions, generate_uuid_v4, uuid_v7_test_mask,
+    UuidV7MaskingCodec, UuidV7MaskingCodecOptions, generate_uuid_v4, generate_uuid_v7,
+    uuid_v7_test_mask,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -17,12 +18,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn exercise(directory: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+    // Reserved identities stay plain, even beyond the masked timestamp range.
+    let sentinel = Uuid::from_uuid_string("ffffffff-ffff-7000-8000-000000000000")?;
     let masking_codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
         masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
+        sentinels: vec![("reserved".to_owned(), sentinel)],
         ..UuidV7MaskingCodecOptions::new(uuid_v7_test_mask())
     })?;
-    let mut generator = UuidV7Generator::new();
-    let uuid = generator.generate_uuid_v7()?;
+    let uuid = generate_uuid_v7()?;
     let mut cases = vec![
         (
             uuid.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex)
@@ -33,20 +36,23 @@ fn exercise(directory: &std::path::Path) -> Result<(), Box<dyn std::error::Error
     ];
     // Cross digit boundaries; never infer chronology from directory enumeration order.
     let mut chronological = Vec::new();
+    // A current-time draw on this generator would advance historical times under preserve-order.
+    let mut generator = UuidV7Generator::new();
     for timestamp in [31, 32, 1023, 1024, (1_u64 << 42) - 1] {
         let id = generator.generate_uuid_v7_at(
             std::time::UNIX_EPOCH + std::time::Duration::from_millis(timestamp),
         )?;
+        if id.extract_uuid_v7_unix_ms()? != timestamp {
+            return Err(io::Error::other("Generator state moved the requested boundary").into());
+        }
         let name = id.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex);
         chronological.push(name.to_string());
         cases.push((name.into_string(), id));
     }
-    cases.extend(
-        masking_codec
-            .sentinels()
-            .iter()
-            .map(|entry| (entry.plain_uuid_slug.to_string(), entry.uuid)),
-    );
+    cases.push((
+        masking_codec.uuid_to_masked_slug(sentinel)?.into_string(),
+        sentinel,
+    ));
     for (name, expected) in &cases {
         fs::write(directory.join(name), expected.to_string())?;
     }
