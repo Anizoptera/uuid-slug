@@ -9,7 +9,10 @@ fn sample<T>(name: &str, inputs: &[Uuid], mut operation: impl FnMut(Uuid) -> T) 
     // Isolate one operation for allocation attribution without changing its workload.
     static FILTER: std::sync::LazyLock<Option<String>> =
         std::sync::LazyLock::new(|| std::env::var("UUID_SLUG_PROFILE_FILTER").ok());
-    if FILTER.as_ref().is_some_and(|filter| !name.contains(filter)) {
+    if FILTER
+        .as_ref()
+        .is_some_and(|filter| !filter.split(',').any(|term| name.contains(term)))
+    {
         return;
     }
     let iterations = 100_000;
@@ -191,6 +194,14 @@ fn main() -> Result<(), Error> {
     sample("unmask/base64", &ids, |_| {
         cursor = (cursor + 1) % encoded.len();
         compact.masked_slug_to_uuid(&encoded[cursor]).unwrap()
+    });
+    let encoded_base32: Vec<_> = ids
+        .iter()
+        .map(|id| safe.uuid_to_masked_slug(*id))
+        .collect::<Result<_, _>>()?;
+    sample("unmask/base32", &ids, |_| {
+        cursor = (cursor + 1) % encoded_base32.len();
+        safe.masked_slug_to_uuid(&encoded_base32[cursor]).unwrap()
     });
     sample("construct/default", &ids, |_| {
         UuidV7MaskingCodec::new(uuid_slug::uuid_v7_test_mask())
