@@ -4,6 +4,7 @@ import { appendFile, copyFile, mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { inspectCrate } from "./check-crate";
 import { preflightRelease } from "./release-notes";
+import { rustToolchain } from "./rust-toolchain";
 
 const reviewedDirectory = "rust/target/reviewed-crate";
 const userAgent = "uuid-slug release (https://github.com/Anizoptera/uuid-slug)";
@@ -29,10 +30,23 @@ export async function crateChecksum(version: string): Promise<string | undefined
   return checksum;
 }
 
-async function cargo(args: string[], manifest = "rust/Cargo.toml"): Promise<void> {
+async function cargo(
+  toolchain: Awaited<ReturnType<typeof rustToolchain>>,
+  args: string[],
+  manifest = "rust/Cargo.toml",
+): Promise<void> {
   const child = Bun.spawn(
-    ["cargo", ...args, "--manifest-path", manifest, "--package", "uuid-slug", "--locked"],
-    { stdout: "inherit", stderr: "inherit", timeout: 240_000 },
+    [
+      toolchain.cargo,
+      ...toolchain.cargoArgs,
+      ...args,
+      "--manifest-path",
+      manifest,
+      "--package",
+      "uuid-slug",
+      "--locked",
+    ],
+    { env: toolchain.env, stdout: "inherit", stderr: "inherit", timeout: 240_000 },
   );
   if ((await child.exited) !== 0) throw new Error(`cargo ${args[0]} failed.`);
 }
@@ -44,6 +58,8 @@ async function releaseCrate(mode: string): Promise<void> {
   if (!tag || process.env.GITHUB_REF_TYPE !== "tag")
     throw new Error("A release must run on a Git tag.");
   const { version } = await preflightRelease(process.cwd(), tag);
+  // Packaging, extracted-source verification and upload must use the same compiler selection.
+  const toolchain = await rustToolchain();
   const filename = `uuid-slug-${version}.crate`;
   const packaged = join("rust/target/package", filename);
   const reviewed = join(reviewedDirectory, filename);
@@ -51,10 +67,11 @@ async function releaseCrate(mode: string): Promise<void> {
     await mkdir(reviewedDirectory, { recursive: true });
     if ((await readdir(reviewedDirectory)).length)
       throw new Error("Reviewed crate directory must be empty before packaging.");
-    await cargo(["package"]);
+    await cargo(toolchain, ["package"]);
     await inspectCrate(packaged, version);
     // Package verification only compiles the library; run fixtures and docs from extracted bytes.
     await cargo(
+      toolchain,
       ["test", "--all-features"],
       join("rust/target/package", `uuid-slug-${version}`, "Cargo.toml"),
     );
@@ -70,7 +87,7 @@ async function releaseCrate(mode: string): Promise<void> {
   if (existing) verifyCrateChecksum(bytes, existing);
   if (mode === "check") {
     // Repack without building dependency code in the credential-bearing job.
-    await cargo(["package", "--no-verify"]);
+    await cargo(toolchain, ["package", "--no-verify"]);
     verifyCrateChecksum(await Bun.file(packaged).bytes(), expected);
     const output = process.env.GITHUB_OUTPUT;
     if (!output) throw new Error("GITHUB_OUTPUT is required for the release preflight.");
@@ -79,7 +96,7 @@ async function releaseCrate(mode: string): Promise<void> {
   }
   if (!existing) {
     verifyCrateChecksum(await Bun.file(packaged).bytes(), expected);
-    await cargo(["publish", "--no-verify", "--registry", "crates-io"]);
+    await cargo(toolchain, ["publish", "--no-verify", "--registry", "crates-io"]);
     verifyCrateChecksum(await Bun.file(packaged).bytes(), expected);
   }
   const published = existing ?? (await crateChecksum(version));
