@@ -926,6 +926,19 @@ Run `bun run bench:competitors` to compare the package's JavaScript paths with c
 
 RFC 9562 permits four useful payload models: random bits; a fixed leading counter; a randomly seeded value increased by random positive amounts; and 1–12 leading fraction bits, optionally followed by a fixed counter. The first and third stay in `remaining`: one UUID cannot prove which process made random-looking bits. The second and fourth decode only when the caller already knows their widths.
 
+### Rust derivation future construction
+
+Constructing `derive_uuid_v7_mask_async` synchronously copies its seed and diagnostic label; bounded polling starts after that capture. Owning the snapshot lets callers reuse their inputs before polling, as the native mutation-after-construction test requires. For large inputs, include capture when deciding whether construction belongs on the caller's thread.
+
+An isolated consumer of `5f70330`, Rust 1.99.1 release on macOS Arm64 with crate defaults disabled (2026-10-23), varies seed and label lengths separately from 16 bytes to 16 MB. Three fresh processes capture sixteen observations per size/mode, with either a new cancellation handle or a clone of a shared one. Timing includes that handle acquisition and construction; input setup, future drop, polling and hashing are outside the interval. For the new-handle call, ranges of the three process medians are:
+
+| Varied input | 64 KB | 1 MB | 16 MB |
+| --- | ---: | ---: | ---: |
+| Seed | 0.83–2.42 µs | 13.27–31.56 µs | 247.44–254.33 µs |
+| Diagnostic label | 0.79 µs | 13.29–13.56 µs | 244.23–285.31 µs |
+
+The largest observed construction is 1.16 ms. Small-input observations approach the clock's quantization: the adjacent-clock control has a zero median and an 84 ns maximum, so a zero sample is not free construction. All 2,496 records and completion markers validate against the requested sizes/modes/processes. Inputs run in fixed ascending order and share allocator/cache state; initial host load is 6.81. These observations establish neither individual-call tail latency nor a bound for other machines, WASM, larger inputs or scheduler contention. Sources and raw records: `bench/reports/rust-derivation-capture.MJ5Rpy`. The existing native polling and optimized browser checks establish cancellation, input ownership and cooperative execution separately.
+
 ### Rust linked consumers and interoperability
 
 WASM results without a `wasm-opt` version precede binary optimization and are diagnostic only. Use optimized results for final artifact claims. Native results are unaffected.
