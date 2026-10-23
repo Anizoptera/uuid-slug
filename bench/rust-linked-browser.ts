@@ -75,7 +75,7 @@ catch (error) { document.body.dataset.result = String(error); }
       javascript: javascriptBytes,
       optimization,
       wasmFunctions: functionMap.split("\n").filter((line) => line.includes("uuid_slug")),
-      // These byte witnesses need matching encoder controls; absence alone proves no removal.
+      // Absence is meaningful only when matching encoder controls retain these bytes.
       wasmAlphabetBytes: {
         base64url: wasmBytes.includes(
           "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
