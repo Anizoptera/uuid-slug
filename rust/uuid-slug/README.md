@@ -2,7 +2,34 @@
 
 The crate generates UUIDv4/v7 and encodes any UUID as a 22-character base64url or 26-character base32hex slug. UUIDv7 fields can be masked with a key; lowercase masked slugs use 27 characters for case-insensitive filenames.
 
-Install the crate from crates.io or this repository.
+For a local checkout, add this dependency to your application's `Cargo.toml`, adjusting the path to the repository:
+
+```toml
+[dependencies]
+uuid-slug = { path = "../uuid-slug/rust/uuid-slug" }
+```
+
+## Generate an ID
+
+With default features, generate a UUIDv7 and derive a URL slug from that same ID. Use `generate_uuid_v4()` instead when you need a random UUID without a timestamp.
+
+```rust
+# fn main() -> Result<(), uuid_slug::Error> {
+# #[cfg(all(feature = "std", feature = "os-rng"))]
+# {
+use uuid_slug::{generate_uuid_v7, UuidSlugAlphabet};
+
+let id = generate_uuid_v7()?;
+let url_id = id.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url);
+println!("UUID: {id}; URL slug: {url_id}");
+# }
+# Ok(())
+# }
+```
+
+Both generators return an owned `Uuid`; generation failures propagate with `?`. Module-level UUIDv7 calls do not promise ordering. Use a [created generator](#generation-and-timestamps) when you need a shared sequence or clock policy.
+
+## Convert and mask existing UUIDs
 
 ```rust
 use uuid_slug::{UuidSlugAlphabet, Uuid, UuidV7MaskingCodec, UuidV7MaskingCodecOptions, derive_uuid_v7_mask};
@@ -59,6 +86,27 @@ assert_eq!(Uuid::try_from(bytes.as_slice())?, id);
 
 `Uuid::try_from(slice)` copies exactly 16 bytes and rejects every other length with `ErrorCode::InvalidBuffer`. For a UUID within a larger buffer, use `Uuid::from_uuid_bytes(buffer, offset)`; the offset is in bytes.
 
+## Caller-owned storage
+
+Decode directly into a packet or database buffer without allocating a byte array on the heap. The returned slice borrows exactly the 16-byte UUID range; the offset is in bytes. Invalid text or an invalid destination range leaves the entire buffer unchanged.
+
+```rust
+use uuid_slug::UuidSlugAlphabet;
+
+# fn main() -> Result<(), uuid_slug::Error> {
+let mut packet = [0xa5; 24];
+let bytes = UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes_into(
+    "AZChssPUfl-KmwwdLj9AUQ", &mut packet, 4,
+)?;
+# assert_eq!(bytes, &[0x01, 0x90, 0xa1, 0xb2, 0xc3, 0xd4, 0x7e, 0x5f, 0x8a, 0x9b, 0x0c, 0x1d, 0x2e, 0x3f, 0x40, 0x51]);
+# assert_eq!(&packet[..4], &[0xa5; 4]);
+# assert_eq!(&packet[20..], &[0xa5; 4]);
+# Ok(())
+# }
+```
+
+Already have a `Uuid`? Borrow its bytes with `as_uuid_bytes()`, or copy them into an existing buffer with `write_uuid_bytes(&mut buffer, offset)?`. Use `generate_uuid_v4_into_with_random_fill` or the corresponding `UuidV7Generator` method to generate into caller storage; `fill_os_random_bytes` supplies platform entropy when `os-rng` is enabled.
+
 ## Key rotation
 
 Keep previous keys while stored identifiers still need them. The current key writes new slugs; previous keys only add read candidates. Install readers for the new key and spelling before switching writers. A rollback must retain those readers or it can strand newly issued identifiers. Here, `stored` is an existing slug written with the previous key.
@@ -94,14 +142,61 @@ Use `uuid_slug_to_uuid` when one candidate suffices; name a `UuidSlugMigrationFo
 
 ## Generation and timestamps
 
+Keep a generator when successive calls must share ordering state. Supplied times join that same sequence:
+
+```rust
+# fn main() -> Result<(), uuid_slug::Error> {
+# #[cfg(all(feature = "std", feature = "os-rng"))]
+# {
+use std::time::{Duration, SystemTime};
+use uuid_slug::UuidV7Generator;
+
+let mut generator = UuidV7Generator::new();
+let recorded_at = SystemTime::UNIX_EPOCH + Duration::from_millis(1_720_000_000_000);
+let first = generator.generate_uuid_v7_at(recorded_at)?;
+let second = generator.generate_uuid_v7_at(recorded_at)?;
+assert!(first < second);
+# assert_eq!(first.extract_uuid_v7_unix_ms()?, 1_720_000_000_000);
+# }
+# Ok(())
+# }
+```
+
 `generate_uuid_v7()` needs no setup and uses secure platform entropy. Module-level calls do not guarantee ordering or a shared sequence. Create a `UuidV7Generator` when you need those guarantees or the settings below; its `generate_uuid_v7()` reads the system clock; `generate_uuid_v7_at(SystemTime)` accepts an exact standard-library time. Both use secure platform entropy and join the same sequence. Use `generate_uuid_v7_at_unix_ms()` only when a numeric interop boundary already supplies fractional Unix milliseconds. The crate accepts every RFC 9562 UUIDv7 and preserves its 74 payload bits. Use `Uuid::extract_uuid_v7_payload` with `UuidV7PayloadLayout` only when the generator's leading fraction and counter widths are known. Every undeclared low bit remains in `remaining`. `with_sub_millisecond_fraction_bits` assigns 1 through 12 leading payload bits to the clock fraction; `payload_layout` returns that split and the remaining counter width. Supplied time fills the configured fraction field. Native and WASI current-time generation use the host's clock through `SystemTime`; browser WebAssembly with `wasm-js` uses millisecond `Date.now()`, so pass a fractional reading to `generate_uuid_v7_with_random_fill` when that precision matters. When the clock stalls or moves backward, the generator advances this logical fraction and then the millisecond timestamp when needed; extracted fractions can be later than the clock reading. Successful calls on one created generator strictly increase in UUID byte order under the default clock-rollback policy, which preserves order. Calls under the reset policy, after its tolerance, are outside that sequence. Use `UuidV7MaskingCodec::extract_masked_uuid_v7_payload` for masked slugs. Masking rejects timestamps outside the codec's configured range instead of truncating them. Same-millisecond ordering depends on the generator and is not a cross-language guarantee. `uuid_v7_bounds(start, end)` returns the inclusive lowest and highest UUIDv7 search keys; pass `None` for one millisecond. Use the bounds only with comparison in UUID wire-byte order. Preserve-order clock rollback is the default. Use `with_clock_rollback_policy` to reset or return `InvalidTimestamp` after a chosen total-skew tolerance. `generate_uuid_v4()` creates random IDs.
 
 ## Errors
 
 Failures return `Error`, retaining the underlying cause. Match `Error::code()` against `ErrorCode`; use `ErrorCode::as_str()` only when a text protocol needs the shared TypeScript spelling. Use `Display` for the case-specific diagnostic; do not parse its text.
 
+```rust
+use uuid_slug::{ErrorCode, Uuid};
+
+# fn main() -> Result<(), uuid_slug::Error> {
+let user_input = "not-a-uuid";
+match Uuid::from_uuid_string(user_input) {
+    Ok(id) => println!("{id}"),
+    Err(error) if error.code() == ErrorCode::InvalidUuid => {
+        eprintln!("Enter UUID text, for example 0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051: {error}");
+    }
+    Err(error) => return Err(error),
+}
+# Ok(())
+# }
+```
+
 ## Features
 
 Defaults enable `std` and `fast-rng`. The latter uses a per-thread ChaCha12 generator seeded from the OS, with required reseeding after 64 KB or a native process-ID change. Seed failures return `rng_unavailable`. For an OS draw on every call, disable defaults and enable `os-rng`; `fill_os_random_bytes` always draws directly from the OS. Add `std` for `SystemTime` methods and current-time generation. Browser generation uses `wasm-js`, which includes `std` and `os-rng`.
 
 With default features disabled, the crate uses `no_std` plus `alloc`: conversions, masking, migration, derivation and explicit Unix-millisecond generation remain available. Supply entropy through the `_with_random_fill` methods, or enable `os-rng` on a supported host. Your target must provide an allocator and pointer-width/8-bit atomics. `std` alone adds standard-library time without an entropy dependency. `derive_uuid_v7_mask_async` returns an opaque, cancelable, bounded-work future without an executor dependency; its executor must schedule unrelated host tasks between polls.
+
+For conversions alone, or when your application supplies time and entropy, disable defaults in the dependency declaration:
+
+```toml
+[dependencies]
+uuid-slug = { path = "../uuid-slug/rust/uuid-slug", default-features = false }
+```
+
+For browser WebAssembly generation, add `features = ["wasm-js"]` to that declaration. For WASI generation, use defaults or `features = ["std", "os-rng"]`; the WASI host supplies clock and entropy access. Keep the JavaScript feature for browser integration.
+
+Features select host capabilities and dependencies, independently of UUID version or slug alphabet. A v4-only or v7-only application does not need a per-version feature. Unused functions can be removed from the linked application, but enabling a feature still affects its dependency graph and compilation. Other dependencies can also enable features through Cargo feature unification.
