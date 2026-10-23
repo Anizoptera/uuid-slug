@@ -86,6 +86,7 @@ function enabledFeatures(names: string[], enabled = new Set<string>()): Set<stri
 const selections = [
   { names: ["default"], args: [] },
   { names: [], args: ["--no-default-features"] },
+  { names: ["std", "os-rng"], args: ["--no-default-features", "--features", "std,os-rng"] },
   ...Object.keys(product.features)
     .filter((name) => name !== "default")
     .map((name) => ({
@@ -128,6 +129,22 @@ for (const selection of fast ? selections.slice(0, 1) : selections) {
       ...profile,
     ]);
   }
+}
+if (!fast) {
+  // Host tests link std themselves; a target without std exposes accidental library dependencies.
+  await run([
+    "cargo",
+    "check",
+    "--manifest-path",
+    manifest,
+    "-p",
+    "uuid-slug",
+    "--lib",
+    "--no-default-features",
+    "--target",
+    "wasm32v1-none",
+    "--locked",
+  ]);
 }
 await run(["cargo", "test", "--manifest-path", manifest, "-p", "uuid-slug", "--doc", "--locked"]);
 await run([

@@ -5,10 +5,13 @@
 //! against your own store. Select private key material explicitly for real identifiers.
 
 #![forbid(unsafe_code)]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![doc = include_str!("../README.md")]
 
 // Portable representations and masks need owned storage, independently of clocks and entropy.
 extern crate alloc;
+#[cfg(test)]
+extern crate std;
 
 mod alphabet;
 mod error;
@@ -24,12 +27,14 @@ mod uuid;
 
 pub use alphabet::UuidSlugAlphabet;
 pub use error::{Error, ErrorCode};
+#[cfg(all(feature = "std", feature = "os-rng"))]
+pub use generation::generate_uuid_v7;
 pub use generation::{
     MAX_UUID_V7_UNIX_MS, UuidV7Bounds, UuidV7ClockRollbackPolicy, UuidV7Generator,
     generate_uuid_v4_into_with_random_fill, generate_uuid_v4_with_random_fill, uuid_v7_bounds,
 };
 #[cfg(feature = "os-rng")]
-pub use generation::{fill_os_random_bytes, generate_uuid_v4, generate_uuid_v7};
+pub use generation::{fill_os_random_bytes, generate_uuid_v4};
 pub use mask::{
     UuidV7Mask, UuidV7MaskDerivationCancellation, derive_uuid_v7_mask, derive_uuid_v7_mask_async,
     uuid_v7_test_mask,

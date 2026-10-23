@@ -6,6 +6,7 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ### Added
 
+- Rust supports `no_std` with `alloc` when default features are disabled. Enable `std` for standard-library time and thread-local conveniences; `os-rng` remains independent, while `fast-rng` and `wasm-js` include `std`. Defaults retain their existing behavior.
 - Rust `UuidV7MaskingCodec::parse_uuid` accepts UUID text, both plain and masked slug alphabets, and registered sentinels. Ambiguous base64url reads masked first, matching TypeScript; callback failures remain errors.
 - Rust `Uuid` converts directly to and from `uuid::Uuid` and `[u8; 16]` without allocation or text conversion. `TryFrom<&[u8]>` accepts exactly 16 bytes and reports `InvalidBuffer` for other lengths.
 - Rust gains the TypeScript calls it lacked: `Uuid::parse_uuid` reads UUID text or a plain slug like `parseUuid`, `uuid_variant` returns the RFC 9562 variant, `{:X}` writes uppercase UUID text without allocating, and `generate_uuid_v7()` generates with default settings and no generator to create.

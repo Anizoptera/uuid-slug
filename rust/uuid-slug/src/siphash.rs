@@ -78,6 +78,7 @@ pub(crate) fn hash_words(key: [u32; 2], words: &[u32]) -> [u32; 2] {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::{format, string::String, vec::Vec};
     #[test]
     fn published_reference_vectors_cover_every_tail_length() {
         let fixture: serde_json::Value =

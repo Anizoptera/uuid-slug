@@ -130,6 +130,7 @@ impl UuidV7Generator {
         self.generate_uuid_v7_from_instant(float_instant(unix_ms)?, fill)
     }
     /// Generate at an exact standard-library time using caller-supplied entropy.
+    #[cfg(feature = "std")]
     pub fn generate_uuid_v7_at_with_random_fill(
         &mut self,
         at: std::time::SystemTime,
@@ -223,6 +224,7 @@ impl UuidV7Generator {
     }
     /// Generate at an exact standard-library time into caller storage.
     /// Invalid storage or time and entropy failure leave the destination unchanged.
+    #[cfg(feature = "std")]
     pub fn generate_uuid_v7_at_into_with_random_fill(
         &mut self,
         at: std::time::SystemTime,
@@ -237,7 +239,7 @@ impl UuidV7Generator {
         Ok(())
     }
     /// Generate at the system clock with the operating system's secure entropy source.
-    #[cfg(feature = "os-rng")]
+    #[cfg(all(feature = "std", feature = "os-rng"))]
     pub fn generate_uuid_v7(&mut self) -> Result<Uuid, Error> {
         #[cfg(all(target_arch = "wasm32", target_os = "unknown", feature = "wasm-js"))]
         let reading = float_instant(js_sys::Date::now())?;
@@ -264,7 +266,7 @@ impl UuidV7Generator {
         self.generate_uuid_v7_from_instant(reading, fill_default_random_bytes)
     }
     /// Generate at an exact standard-library time with secure platform entropy and this sequence's policy.
-    #[cfg(feature = "os-rng")]
+    #[cfg(all(feature = "std", feature = "os-rng"))]
     pub fn generate_uuid_v7_at(&mut self, at: std::time::SystemTime) -> Result<Uuid, Error> {
         self.generate_uuid_v7_at_with_random_fill(at, fill_default_random_bytes)
     }
@@ -275,18 +277,23 @@ impl UuidV7Generator {
     }
 }
 fn float_instant(value: f64) -> Result<UuidV7Instant, Error> {
-    if !value.is_finite() || value < 0.0 || value.trunc() > MAX_UUID_V7_UNIX_MS as f64 {
+    if !value.is_finite() || value < 0.0 || value >= (MAX_UUID_V7_UNIX_MS + 1) as f64 {
         return Err(
             Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
                 "UUIDv7 timestamp must be a finite nonnegative number of Unix milliseconds in 0..={MAX_UUID_V7_UNIX_MS}; got {value}."
             )),
         );
     }
+    // Nonnegative, bounded casts truncate toward the containing millisecond/fraction bucket.
+    // All 48-bit milliseconds are exactly representable, so subtraction preserves the remainder
+    // without std's floating-point rounding helpers or an additional math dependency.
+    let unix_ms = value as u64;
     Ok(UuidV7Instant {
-        unix_ms: value as u64,
-        fraction_12: (value.fract() * 4096.0).floor() as u16,
+        unix_ms,
+        fraction_12: ((value - unix_ms as f64) * 4096.0) as u16,
     })
 }
+#[cfg(feature = "std")]
 fn system_instant(value: std::time::SystemTime) -> Result<UuidV7Instant, Error> {
     let elapsed = value
         .duration_since(std::time::UNIX_EPOCH)
@@ -364,7 +371,7 @@ pub fn generate_uuid_v4() -> Result<Uuid, Error> {
 /// Each thread keeps its own generator, so the call takes no lock: IDs from one thread strictly
 /// increase, while IDs from different threads in the same millisecond have no defined order.
 /// Create a `UuidV7Generator` for a rollback policy, fraction bits or one shared sequence.
-#[cfg(feature = "os-rng")]
+#[cfg(all(feature = "std", feature = "os-rng"))]
 pub fn generate_uuid_v7() -> Result<Uuid, Error> {
     std::thread_local! {
         static GENERATOR: std::cell::RefCell<UuidV7Generator> =
@@ -376,8 +383,9 @@ pub fn generate_uuid_v7() -> Result<Uuid, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::string::ToString;
     // A fresh generator per call would reseed each time and lose this order within a millisecond.
-    #[cfg(feature = "os-rng")]
+    #[cfg(all(feature = "std", feature = "os-rng"))]
     #[test]
     fn simple_uuid_v7_calls_continue_one_sequence_per_thread() {
         let mut previous = generate_uuid_v7().unwrap();
@@ -424,6 +432,61 @@ mod tests {
         assert!(generate_uuid_v4_into_with_random_fill(&mut output, 1, untouched).is_err());
         assert_eq!(output, [19; 16]);
     }
+    #[test]
+    fn fractional_unix_time_matches_containing_buckets() -> Result<(), Error> {
+        // Exponent and fraction boundaries expose rounding across a millisecond or payload bit;
+        // std's floor is an independent oracle for the no_std cast/subtraction implementation.
+        let layout = UuidV7PayloadLayout::new(12, 30)?;
+        for exponent in 0..=48 {
+            let boundary = (1_u64 << exponent) as f64;
+            for value in [boundary.next_down(), boundary, boundary.next_up()] {
+                let mut generator =
+                    UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
+                let generated = generator.generate_uuid_v7_with_random_fill(value, fill);
+                if value >= (1_u64 << 48) as f64 {
+                    assert_eq!(generated.unwrap_err().code(), ErrorCode::InvalidTimestamp);
+                } else {
+                    let uuid = generated?;
+                    assert_eq!(uuid.extract_uuid_v7_unix_ms()?, value.floor() as u64);
+                    assert_eq!(
+                        uuid.extract_uuid_v7_payload(layout)?
+                            .sub_millisecond_fraction
+                            .unwrap()
+                            .value,
+                        (value.fract() * 4096.0).floor() as u16
+                    );
+                }
+            }
+        }
+        for fraction in 0_u16..4096 {
+            let value = 1_700_000_000_000.0 + f64::from(fraction) / 4096.0;
+            let uuid = UuidV7Generator::new()
+                .with_sub_millisecond_fraction_bits(12)?
+                .generate_uuid_v7_with_random_fill(value, fill)?;
+            assert_eq!(
+                uuid.extract_uuid_v7_payload(layout)?
+                    .sub_millisecond_fraction
+                    .unwrap()
+                    .value,
+                fraction
+            );
+        }
+        for value in [-0.0, 0.0, f64::from_bits(1), f64::MIN_POSITIVE] {
+            let uuid = UuidV7Generator::new()
+                .with_sub_millisecond_fraction_bits(12)?
+                .generate_uuid_v7_with_random_fill(value, fill)?;
+            assert_eq!(uuid.extract_uuid_v7_unix_ms()?, 0);
+            assert_eq!(
+                uuid.extract_uuid_v7_payload(layout)?
+                    .sub_millisecond_fraction
+                    .unwrap()
+                    .value,
+                0
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn generation_preserves_every_payload_bit() -> Result<(), Error> {
         // A one-hot basis catches dropped or merged bits without judging random samples.
@@ -510,6 +573,7 @@ mod tests {
         Ok(())
     }
     #[test]
+    #[cfg(feature = "std")]
     fn system_time_preserves_exact_fraction_and_uuid_v7_boundaries() -> Result<(), Error> {
         use std::time::{Duration, UNIX_EPOCH};
 

@@ -109,17 +109,20 @@ fn main() -> Result<(), Error> {
         .collect();
     #[cfg(feature = "os-rng")]
     {
-        // Compare the same complete calls with default features and os-rng alone. Fixed-time
+        // Compare the same complete calls with default features and std + os-rng. Fixed-time
         // callback probes cannot reveal whether clock reads or formatting erase entropy savings.
-        use uuid_slug::{UuidV7Generator, generate_uuid_v4};
+        use uuid_slug::generate_uuid_v4;
         sample("generation/v4/bytes", &ids, |_| generate_uuid_v4().unwrap());
         sample("generation/v4/text", &ids, |_| {
             generate_uuid_v4().unwrap().to_string()
         });
-        let mut generator = UuidV7Generator::new();
+        #[cfg(feature = "std")]
+        let mut generator = uuid_slug::UuidV7Generator::new();
+        #[cfg(feature = "std")]
         sample("generation/v7/bytes", &ids, |_| {
             generator.generate_uuid_v7().unwrap()
         });
+        #[cfg(feature = "std")]
         sample("generation/v7/text", &ids, |_| {
             generator.generate_uuid_v7().unwrap().to_string()
         });
@@ -130,6 +133,7 @@ fn main() -> Result<(), Error> {
             sample(&format!("generation/v4/{name}"), &ids, |_| {
                 generate_uuid_v4().unwrap().to_plain_uuid_slug(alphabet)
             });
+            #[cfg(feature = "std")]
             sample(&format!("generation/v7/{name}"), &ids, |_| {
                 generator
                     .generate_uuid_v7()

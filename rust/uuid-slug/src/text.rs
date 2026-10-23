@@ -113,6 +113,7 @@ pub(crate) fn from_plain_uuid_slug(text: &str) -> Result<Uuid, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::string::ToString;
 
     // Compile the same public calls through each container rather than converting the fixture
     // to str first: that would hide an inconvenient or missing implementation of the boundary.

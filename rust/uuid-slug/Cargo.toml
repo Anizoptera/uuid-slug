@@ -10,10 +10,11 @@ keywords = ["uuid", "slug", "base64url", "base32", "identifier"]
 categories = ["encoding"]
 
 [features]
-default = ["fast-rng"]
-fast-rng = ["os-rng", "dep:chacha20"]
+default = ["std", "fast-rng"]
+std = []
+fast-rng = ["std", "os-rng", "dep:chacha20"]
 os-rng = ["dep:getrandom"]
-wasm-js = ["os-rng", "getrandom/wasm_js", "dep:js-sys"]
+wasm-js = ["std", "os-rng", "getrandom/wasm_js", "dep:js-sys"]
 
 [dependencies]
 uuid = { version = "1.28", default-features = false }
@@ -37,4 +38,4 @@ harness = false
 
 [[example]]
 name = "filesystem"
-required-features = ["os-rng"]
+required-features = ["std", "os-rng"]

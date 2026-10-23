@@ -12,6 +12,7 @@ use core::{
     sync::atomic::{AtomicBool, Ordering},
     task::{Context, Poll},
 };
+#[cfg(feature = "std")]
 use std::sync::LazyLock;
 
 // Changing these keys, four rounds, or word indices changes every issued identifier.
@@ -110,8 +111,15 @@ impl UuidV7Mask {
 
 /// Return the published mask for examples and wire fixtures; it conceals nothing from users.
 pub fn uuid_v7_test_mask() -> UuidV7Mask {
+    #[cfg(feature = "std")]
     static KEYS: LazyLock<[u32; 8]> = LazyLock::new(|| derive(PUBLIC_SEED, 1));
-    from_keys("default".into(), *KEYS)
+    #[cfg(feature = "std")]
+    let keys = *KEYS;
+    // The explicit public test key stays available without a host synchronization dependency.
+    // Reduced builds derive it on request; private production keys already use caller ownership.
+    #[cfg(not(feature = "std"))]
+    let keys = derive(PUBLIC_SEED, 1);
+    from_keys("default".into(), keys)
 }
 
 fn validate(seed: &[u8], iterations: u32) -> Result<(), Error> {

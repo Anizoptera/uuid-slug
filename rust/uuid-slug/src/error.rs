@@ -132,6 +132,7 @@ impl core::error::Error for Error {
 #[cfg(test)]
 mod tests {
     use super::{Error, ErrorCode};
+    use alloc::string::ToString;
     use std::error::Error as _;
 
     #[test]

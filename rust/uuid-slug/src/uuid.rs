@@ -479,6 +479,7 @@ pub enum UuidVariant {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::{borrow::ToOwned, string::ToString};
 
     #[test]
     fn external_uuid_conversions_preserve_each_wire_bit() -> Result<(), Error> {

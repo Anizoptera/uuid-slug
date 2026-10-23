@@ -20,6 +20,7 @@ pub struct UuidV7Sentinel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::{borrow::ToOwned, string::ToString};
     use std::sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
