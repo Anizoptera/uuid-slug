@@ -91,6 +91,36 @@ mod tests {
     use super::*;
 
     #[test]
+    fn partial_budgets_require_a_successful_seed_before_output() -> Result<(), Error> {
+        // Mixed UUIDv4/v7 draw sizes need not exhaust the budget at an exact draw boundary.
+        for remaining in [0, 1, 15, 16, 17] {
+            let mut source = RandomSource::new();
+            source.fill(&mut vec![0; RESEED_BYTES - remaining], 1, |seed| {
+                seed.fill(7);
+                Ok(())
+            })?;
+            let mut output = [0xa5; 16];
+            let result = source.fill(&mut output, 1, |_| {
+                Err(Error::new(ErrorCode::RngUnavailable))
+            });
+            if remaining < output.len() {
+                assert_eq!(result.unwrap_err().code(), ErrorCode::RngUnavailable);
+                assert_eq!(output, [0xa5; 16]);
+                assert_eq!(source.remaining, remaining);
+                source.fill(&mut output, 1, |seed| {
+                    seed.fill(8);
+                    Ok(())
+                })?;
+                assert_eq!(source.remaining, RESEED_BYTES - output.len());
+            } else {
+                result?;
+                assert_eq!(source.remaining, remaining - output.len());
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn failed_seeds_block_initial_threshold_and_fork_output() -> Result<(), Error> {
         let mut source = RandomSource::new();
         let mut output = [0xa5; 16];
