@@ -32,6 +32,7 @@ Apply `../AGENTS.md` §Work scope before starting experiments; keep required reg
 
 ## Drivers and evidence
 
+- WebAssembly size and execution evidence must use optimized binaries; read `../dev/cross-language.md` §Distribution and dependencies before building them.
 - Extend the nearest driver in `bench/` or `scripts/`; read exports and callers first. Split only for a different oracle, runtime, isolation or feedback boundary, never because a filename matches. Isolate source substitutions from the shared working tree. Keep benchmark dependencies dev-only.
 - After restoring Rust source from an archive or backup, refresh every restored file's modification time before reusing Cargo's target directory, or build in a fresh target directory. Otherwise Cargo can reuse code from the previous source. Check that the binary contains the intended code; matching source hashes do not prove a rebuild.
 - Keep drivers in the repository, raw output in `reports/` and conclusions in `decisions.md`. Extract executable baselines outside the repository; Git ignores do not exclude compiler or tests. Source captures must be text or archives, never executable `.ts` files. Never bypass artifact checks or suppress source-capture compiler errors. `bench/reports/` is git-ignored and exists only on the machine that ran it, so a report path is NOT evidence for anyone else. A durable claim states its own evidence: the deciding numbers, runtime versions and measurement date.
