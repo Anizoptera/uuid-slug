@@ -68,8 +68,22 @@ impl UuidSlugAlphabet {
         out: &mut [u8; 16],
         tail_bits: u8,
     ) -> Result<u8, Error> {
-        let encoding = self.encoding();
         match tail_bits {
+            0 => self.decode_with_encoding::<0>(self.encoding(), text, out),
+            4 => self.decode_with_encoding::<4>(self.encoding(), text, out),
+            _ => Err(self.error()),
+        }
+    }
+
+    // Fix the wire layout independently of the caller's string container; there are only
+    // plain UUID and masked payload layouts, not one decoder body per input type.
+    fn decode_with_encoding<const TAIL_BITS: u8>(
+        self,
+        encoding: &Encoding,
+        text: &str,
+        out: &mut [u8; 16],
+    ) -> Result<u8, Error> {
+        match TAIL_BITS {
             0 => {
                 let expected = 128usize.div_ceil(self.bits_per_character());
                 if text.len() != expected {
@@ -155,7 +169,13 @@ impl UuidSlugAlphabet {
         plain_uuid_slug: &Input,
     ) -> Result<[u8; 16], Error> {
         let mut decoded = [0; 16];
-        self.decode_into(plain_uuid_slug.as_uuid_text(), &mut decoded, 0)?;
+        // Pass the selected table across this boundary so single-alphabet callers can
+        // discard the other encoding without requiring whole-program optimization.
+        self.decode_with_encoding::<0>(
+            self.encoding(),
+            plain_uuid_slug.as_uuid_text(),
+            &mut decoded,
+        )?;
         Ok(decoded)
     }
 
