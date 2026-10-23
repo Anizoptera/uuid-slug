@@ -101,6 +101,30 @@ Rust's `fast-rng` reuses OS-seeded ChaCha12 state to avoid an OS call for every 
 
 Use Rust features for host capabilities. Defaults enable `std` and `fast-rng`; `fast-rng` requires `std` and `os-rng` for per-thread state. Keep `os-rng` independently usable without `std` on supported entropy targets. `wasm-js` enables `std`, OS-source selection and JavaScript clock integration. Without defaults, keep conversions, masking, migration, derivation and explicit Unix-time generation on `core` and `alloc`; callers supply entropy. Require allocation and pointer-width/8-bit atomics for shared masks and cancellation. Gate `SystemTime` methods and thread-local conveniences behind `std` rather than retaining unavailable host operations in reduced builds.
 
+### Rust optimization
+
+Design Rust calls so consumers compile and retain only the capabilities their application needs; verify compilation cost, linked code and runtime work separately.
+
+| Concern | TypeScript | Rust |
+| --- | --- | --- |
+| What identifies unused work | A bundler follows ESM imports and uses side-effect information. | The compiler and linker follow reachable calls and data in the consumer program. A public method is not automatically a retained binary export. |
+| Optional dependencies | This package has no runtime dependencies; named imports select removable code. | Cargo features exclude optional dependencies and unavailable host code before compilation. Link-time removal alone does not avoid compiling enabled dependencies. |
+| Cross-module optimization | Preserve ESM boundaries and valid purity annotations in shipped JavaScript. | Keep selected values visible across call boundaries; small generic or inline wrappers can help. Rust module paths are organization, not equivalents of npm subpaths or purity annotations. |
+| Final artifact | Execute each consumer bundle under independent bundlers. | Execute and inspect native consumer binaries and optimized WASM, with ordinary release and ThinLTO treated separately. Explicit WASM exports remain reachable. |
+
+Apply these choices to the crate:
+
+- Keep generation, plain conversion and keyed masking separate. A v4 call must not construct a v7 generator or codec; a v7 call must not calculate a slug the caller did not request. This also lets either version disappear when only the other is used.
+- Use host-capability features as described above, rather than one switch per method or UUID version. Features are additive across the dependency graph: an application's disabled defaults cannot cancel features enabled by another dependency. Check the resolved graph as well as the binary.
+- Carry validated values across calls. `Uuid` owns `[u8; 16]`; `From` interoperability transfers bytes, and formatting writes through the caller's formatter. Conversion does not need a string round trip, another parse or an inspection object containing unused fields. Caller-buffer methods preserve output ownership and commit only after successful validation.
+- Keep input-type wrappers thin. The sealed `KeylessUuidText` trait prevents known masked inputs from entering keyless parsing; its generic entry points forward to shared nongeneric parsers. Specialize where a selected value removes real work, not by duplicating an entire parser for each string container.
+- Keep alphabet data immutable and initialization-free. The crate uses prebuilt encoding constants. This avoids alphabet construction, but does not by itself remove an unused table: a shared runtime alphabet selector can still reference both.
+- Separate a selected algorithm from shared work that does not depend on that selection. The caller-buffer decoder shares its checked copy after decoding. The unshipped decoder candidate passes the selected encoding into a small specialized boundary; it removes the other native table in measured consumers. Its speed and build cost remain unresolved, so it is not a production recommendation.
+- Use `#[inline]` only where consumer optimization needs visibility, then measure the whole call and artifact. It is a hint, not a removal guarantee; wider inlining can increase code size and compilation work. Do not require LTO to hide avoidable coupling in ordinary release builds, or replace runtime configuration with extra public types solely for a smaller probe.
+- Keep mutable state with the operation that needs it. Generators own their sequence, codecs own immutable keys, and default fast entropy is thread-local. Parsing and formatting must not initialize those generators. Custom mask callbacks remain an explicit capability; replacing them with static dispatch must not remove caller functionality.
+
+The linked-consumer evidence in [bench/decisions.md](../bench/decisions.md#rust-linked-consumers-and-interoperability) supports v4/v7 separation on the measured compiler and targets. It also records remaining alphabet coupling and browser binding overhead; do not generalize those results into a promise that every unused feature vanishes. Recheck after changes to call boundaries, features, dependencies, compiler, target or optimizer. A smaller file alone does not prove the right code disappeared, nor that speed, entropy or failure behavior survived.
+
 Unused-code removal must work in every direction: v4-only, v7-only, parsing, formatting, individual alphabets, encoding, decoding and masking consumers must retain only the capabilities they use. Verify default and reduced-feature builds separately, with ordinary release linking before optional ThinLTO. Inspect final native and WebAssembly consumer artifacts with positive controls for omitted capabilities; compiler dependencies, linked code and required host imports are different costs. A retained capability must have a consumer requirement, not merely share a module with the requested operation.
 
 Optimize WebAssembly binaries before comparing sizes or using execution results to verify them. Use the same optimizer and settings for baseline and candidate, and run the optimized files in the required browser and WASI hosts for each profile. Keep unoptimized output for diagnosis only; it does not prove the final artifact's size or behavior.
