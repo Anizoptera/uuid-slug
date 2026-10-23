@@ -241,7 +241,13 @@ try {
   ];
   for (const [executable, arguments_] of runtimes) {
     const rows = await collectForks(async () =>
-      parseMeasurements(await command(executable, arguments_, project, environment), "host"),
+      // Full inventories spend longer than the shared short-command bound in timed batches.
+      parseMeasurements(
+        await command(executable, arguments_, project, environment, {
+          timeoutMs: smoke ? 30_000 : 240_000,
+        }),
+        "host",
+      ),
     );
     print(rows[0]?.runtime ?? "unknown", rows);
   }
