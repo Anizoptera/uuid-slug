@@ -43,8 +43,9 @@ async function rejected(extra: Record<string, string>, message: string): Promise
   }
 }
 
-test("crate validation rejects foreign roots, compiled payloads, machine paths, and build scripts", async () => {
+test("crate validation rejects foreign roots, development files, compiled payloads, machine paths, and build scripts", async () => {
   await rejected({ "other/Cargo.toml": "" }, "Forbidden crate path");
+  await rejected({ [`${root}benches/codec.rs`]: "fn main() {}" }, "Forbidden crate path");
   await rejected({ [`${root}src/libuuid_slug.so`]: "" }, "Compiled payload");
   await rejected({ [`${root}src/leak.rs`]: "/Users/builder/project" }, "Build-machine path");
   await rejected(

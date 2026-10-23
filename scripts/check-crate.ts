@@ -1,7 +1,14 @@
 import { basename } from "node:path";
 
 const BUILD_PATH_LEAK = /(?:\/Users\/|\/home\/[a-z]|[A-Z]:\\Users\\)/;
-const FORBIDDEN_PARTS = new Set([".git", ".github", "node_modules", "scripts", "target"]);
+const FORBIDDEN_PARTS = new Set([
+  ".git",
+  ".github",
+  "node_modules",
+  "scripts",
+  "target",
+  "benches",
+]);
 
 interface PackageManifest {
   readonly package?: Record<string, unknown>;

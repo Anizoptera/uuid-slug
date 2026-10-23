@@ -8,6 +8,7 @@ repository.workspace = true
 description = "Compact UUIDs with reversible UUIDv7 masking and filesystem-safe representations"
 keywords = ["uuid", "slug", "base64url", "base32", "identifier"]
 categories = ["encoding"]
+exclude = ["benches/"]
 
 [features]
 default = ["std", "fast-rng"]

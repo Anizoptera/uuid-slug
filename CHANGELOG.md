@@ -13,6 +13,7 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ### Changed
 
+- The Rust source archive excludes benchmark drivers while retaining runnable examples and correctness fixtures.
 - Rust keyless UUID and plain-slug parsers accept `KeylessUuidText` rather than implicitly coercing typed masked slugs to strings. Strings, plain slugs and standard string containers remain supported; custom wrappers pass an explicit text view, and masked slugs use their codec.
 - Rust configured codec construction moves from `UuidV7MaskingCodec::new(options)` → `UuidV7MaskingCodec::from_options(options)`. Use `UuidV7MaskingCodec::new(mask)` for defaults without a fallible configuration step; both paths require an explicit mask.
 - Rust's default `fast-rng` feature amortizes OS draws with an OS-seeded ChaCha12 generator. Disable defaults and enable `os-rng` for direct OS draws on every call; conversion-only builds still need neither dependency. Initial and required reseed failures return `rng_unavailable`.
