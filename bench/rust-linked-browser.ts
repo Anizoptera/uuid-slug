@@ -3,6 +3,7 @@ import { mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { Browser } from "playwright";
 import { command } from "../scripts/command";
+import { optimizeWasm } from "../scripts/wasm-opt";
 
 export async function runLinkedWasm(
   rawWasm: string,
@@ -31,10 +32,13 @@ export async function runLinkedWasm(
     files.set("/consumer.js", Bun.file(javascript));
     files.set("/consumer_bg.wasm", Bun.file(wasm));
   }
+  await mkdir(directory, { recursive: true });
+  const optimized = join(directory, "optimized.wasm");
+  const optimization = await optimizeWasm(wasm, optimized);
+  wasm = optimized;
+  if (needsBindings) files.set("/consumer_bg.wasm", Bun.file(wasm));
   files.set("/consumer.wasm", Bun.file(wasm));
-  const module = needsBindings
-    ? await WebAssembly.compile(await Bun.file(wasm).arrayBuffer())
-    : rawModule;
+  const module = await WebAssembly.compile(await Bun.file(wasm).arrayBuffer());
   const start = needsBindings
     ? 'import init from "/consumer.js"; const load = init;'
     : 'const load = async () => (await WebAssembly.instantiateStreaming(fetch("/consumer.wasm"))).instance.exports;';
@@ -67,6 +71,7 @@ catch (error) { document.body.dataset.result = String(error); }
     return {
       wasm: (await stat(wasm)).size,
       javascript: javascriptBytes,
+      optimization,
       wasmExecuted: browsers.map(({ name }) => name),
       imports: WebAssembly.Module.imports(module),
     };

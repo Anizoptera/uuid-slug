@@ -4,6 +4,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { browserEngines } from "./browser-engines";
 import { rustToolchain } from "./rust-toolchain";
+import { optimizeWasm } from "./wasm-opt";
 import {
   compare,
   contractRequests,
@@ -115,12 +116,25 @@ for (const target of ["wasm32-wasip1", "wasm32-wasip2"]) {
       .filter(Boolean)
       .map((line) => JSON.parse(line) as { executable?: string | null })
       .flatMap((message) => (message.executable ? [message.executable] : []));
-    strictEqual(tests.length, 1, `${target} ${features} must build one test module`);
-    await run(
-      target === "wasm32-wasip1"
-        ? ["node", "--input-type=module", "-e", wasiPreview1Host, tests[0]!]
-        : ["bun", "x", "jco", "run", tests[0]!],
-    );
+    const [test] = tests;
+    if (tests.length !== 1 || !test)
+      throw new Error(`${target} ${features} must build one test module`);
+    const optimized = `${test}.optimized.wasm`;
+    try {
+      const optimization = await optimizeWasm(
+        test,
+        optimized,
+        target === "wasm32-wasip2" ? "component" : "module",
+      );
+      console.log(JSON.stringify({ target, features, profile, optimization }));
+      await run(
+        target === "wasm32-wasip1"
+          ? ["node", "--input-type=module", "-e", wasiPreview1Host, optimized]
+          : ["bun", "x", "jco", "run", optimized],
+      );
+    } finally {
+      await rm(optimized, { force: true });
+    }
   }
 }
 await run([
@@ -145,9 +159,11 @@ try {
     "--out-dir",
     directory,
   ]);
+  const optimized = join(directory, "optimized.wasm");
+  const optimization = await optimizeWasm(join(directory, "uuid_slug_bridge_bg.wasm"), optimized);
   const files = new Map([
     ["/bridge.js", Bun.file(join(directory, "uuid_slug_bridge.js"))],
-    ["/uuid_slug_bridge_bg.wasm", Bun.file(join(directory, "uuid_slug_bridge_bg.wasm"))],
+    ["/uuid_slug_bridge_bg.wasm", Bun.file(optimized)],
   ]);
   const server = Bun.serve({
     hostname: "127.0.0.1",
@@ -393,6 +409,7 @@ try {
               JSON.stringify({
                 adapter: `${browserName} Wasm`,
                 profile,
+                optimization,
                 entropyFailure: failEntropy,
                 contracts: selectedRequests.length,
                 exactSystemTimeNanoseconds: observation.fineSystemTime,
