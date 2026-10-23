@@ -71,7 +71,7 @@ if (product.version !== version)
 const features = product.features;
 
 // Feature unification in workspace tests can hide a product's missing optional dependency.
-// Deduplicate equivalent selections, such as the default containing only os-rng.
+// Deduplicate equivalent selections, such as default and fast-rng.
 function enabledFeatures(names: string[], enabled = new Set<string>()): Set<string> {
   for (const name of names) {
     if (enabled.has(name)) continue;

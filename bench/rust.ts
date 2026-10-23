@@ -73,7 +73,7 @@ if (process.argv[2] === "--generation") {
   const variants = [];
   for (const [name, features] of [
     ["fast-rng", []],
-    ["os-rng", ["--no-default-features", "--features", "os-rng"]],
+    ["os-rng", ["--no-default-features", "--features", "std,os-rng"]],
   ] as const) {
     variants.push({ name, ...(await buildCodec(features)) });
   }

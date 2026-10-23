@@ -957,7 +957,7 @@ Excluded: `uuid-tag` (changes payload bits to carry a tag, a different caller ou
 
 Benchmark direct implementations separately from wrappers. Measure text, owned bytes, caller storage and batch calls only where the crate exposes them. Also record entropy failure, clock rollback, same-millisecond behavior, allocation, contention, target support and output validity. Returned fixed-size values and caller buffers count as allocation-free outcomes, returned `String` as allocated; hidden allocator work is not claimed.
 
-**Use OS-seeded ChaCha12 to avoid an OS call for every UUID.** Each thread has its own cryptographic generator. A fresh OS seed is required before exceeding 64 KB of output and after a native process-ID change. If seeding fails, return an error without issuing a UUID. Keep direct OS draws available through `os-rng`; `rand`'s thread RNG panics on seed failure, so it cannot preserve this package's error contract.
+**Use OS-seeded ChaCha12 to avoid an OS call for every UUID.** Each thread has its own cryptographic generator. A fresh OS seed is required before exceeding 64 KB of output and after a native process-ID change. If seeding fails, return an error without issuing a UUID. Keep direct OS draws available through `os-rng`; pair it with `std` for current-time comparisons so only the entropy strategy changes. `rand`'s thread RNG panics on seed failure, so it cannot preserve this package's error contract.
 
 Apple M4 Max, macOS Arm64, Rust 1.99.1, 2026-10-16: three fresh processes per feature selection, alternating process order; each process takes five batches of 100,000 calls. Ranges below are process medians in ns/call, including current-time reads and formatting where requested:
 
