@@ -12,7 +12,7 @@ Derive internals from these requirements; do not change user-visible APIs, behav
 
 This is the sole live plan. Keep dependent repairs with their task and unrelated unfinished work below. Completion requires acceptance evidence tied to its command, revision, features, profile and target, with coverage limits. Replace superseded evidence; retain only what a remaining decision needs. Durable contracts belong in their existing owners.
 
-Finish decoder runtime-cost acceptance, the competitor report and storage comparison; then verify matching archives from the accepted tree, run final checks and audit requirements. Development archives already pass. Reuse unchanged evidence; host-load refusals justify neither repeated timing attempts nor peripheral probes. Publication stays gated.
+Finish decoder runtime-cost acceptance and storage comparison; then verify matching archives from the accepted tree, run final checks and audit requirements. Development archives and the competitor report already pass. Reuse unchanged evidence; host-load refusals justify neither repeated timing attempts nor peripheral probes. Publication stays gated.
 
 ### Performance and resource acceptance
 
