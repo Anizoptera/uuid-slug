@@ -600,6 +600,16 @@ impl UuidV7MaskingCodec {
 
     fn decode_masked(&self, slug: &str) -> Result<Uuid, Error> {
         let (bytes, tail) = crate::payload::normalize(slug)?;
+        self.decode_candidate(bytes, tail)?.ok_or_else(|| {
+            Error::new(ErrorCode::InvalidUuidSlug).with_message(
+                "No configured mask and timestamp range accepts this slug; use the codec configuration that issued it.",
+            )
+        })
+    }
+
+    // A rejected check is absence, not a callback failure. Keep those outcomes distinct so
+    // mixed-format readers can reuse the decoded bytes without swallowing external failures.
+    fn decode_candidate(&self, bytes: [u8; 16], tail: u8) -> Result<Option<Uuid>, Error> {
         for range in &self.masks {
             match crate::payload::candidate(
                 bytes,
@@ -607,14 +617,12 @@ impl UuidV7MaskingCodec {
                 &range.mask,
                 range.timestamp_range_start_unix_ms,
             ) {
-                Ok(Some(uuid)) => return Ok(Uuid::from_uuid_bytes_array(uuid)),
+                Ok(Some(uuid)) => return Ok(Some(Uuid::from_uuid_bytes_array(uuid))),
                 Ok(None) => {}
                 Err(error) => return Err(error),
             }
         }
-        Err(Error::new(ErrorCode::InvalidUuidSlug).with_message(
-            "No configured mask and timestamp range accepts this slug; use the codec configuration that issued it.",
-        ))
+        Ok(None)
     }
 
     /// Create an opt-in reader without changing this codec's writer or ordinary decoder.
