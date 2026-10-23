@@ -1016,6 +1016,10 @@ The encoding control adds exactly 500,064 allocations and 16,002,048 bytes relat
 
 The ordinary Rust implementation also passes debug/release correctness checks after `wasm-opt` 132 `-O2`: each WASI target runs 42 reduced-feature and 45 all-feature tests, and each browser runs 29,894 shared cases in both entropy-success and entropy-failure contexts. This validates those optimized builds, not other optimizer versions or presets.
 
+### Rust slug storage
+
+Keep the current storage until complete lifecycle costs justify a replacement. A release/no-default consumer of `3befd1d` on Rust 1.99.1/macOS Arm64 (2026-10-23) checks 4,096 varied UUIDs per alphabet through construction, cloning, repeated reads and conversion into `String`. Current values occupy 24 bytes plus 22/26 bytes of requested text capacity; the private inline prototype occupies 27 bytes, contiguous caller storage 22/26 bytes per value, and borrowed formatting 16 bytes plus its retained UUID input. These exclude allocator rounding and metadata. `into_string` returns the current owned field directly; inline/contiguous/borrowed prototypes materialize text instead, and borrowed reads encode again. All output matches, but the busy-host screen cannot rank throughput; safe prototype reads also include UTF-8 checks. Masked storage and independent timing remain unmeasured. Source, driver, lockfile and output: `bench/reports/rust-storage.6pqxTU`.
+
 ### Rust competitor inventory
 
 The tracked `bench/results/rust-competitors.md` report measures the current default fast RNG on 37 calls, with five rounds from each of three fresh processes (555 timing records). On macOS Arm64, Rust 1.99.1, 2026-10-23, package medians are 12.28 ns for v4 values and 32.53 ns for v7 values; observed ranges are 11.91–27.50 ns and 31.66–68.24 ns. These are batch averages under shared host scheduling, not individual-call latency or clean-host decoder acceptance. Different entropy, output and ordering contracts remain separate comparisons; raw records are in `bench/results/rust-competitors.jsonl`.
