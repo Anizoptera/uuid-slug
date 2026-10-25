@@ -1,12 +1,6 @@
 //! Encode identifier bits without accepting alternate padding spellings.
 use crate::{Error, ErrorCode, KeylessUuidText, PlainUuidSlug};
 use alloc::{format, string::String};
-use data_encoding::{BASE32_DNSSEC, BASE64URL_NOPAD, Encoding};
-
-static BASE64URL: Encoding = BASE64URL_NOPAD;
-// DNSSEC uses our exact lowercase, unpadded base32hex wire spelling. A constant avoids
-// initialization and lets consumers discard alphabet-construction code they never use.
-static BASE32HEX: Encoding = BASE32_DNSSEC;
 
 /// Supported output representations; decoding plain slugs infers this from length.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -25,27 +19,19 @@ impl UuidSlugAlphabet {
             Self::Base32Hex => 5,
         }
     }
-    fn encoding(self) -> &'static Encoding {
-        match self {
-            Self::Base64Url => &BASE64URL,
-            Self::Base32Hex => &BASE32HEX,
-        }
-    }
     fn error(self) -> Error {
         match self {
             Self::Base64Url => Error::new(ErrorCode::InvalidBase64Url),
             Self::Base32Hex => Error::new(ErrorCode::InvalidBase32Hex),
         }
     }
-    #[inline]
-    fn encode_raw(self, bytes: &[u8]) -> String {
-        self.encoding().encode(bytes)
-    }
     /// Encode exactly one 16-byte UUID payload.
-    // Keep the selected table visible across the library boundary.
+    // Keep the selected alphabet visible across the library boundary.
     #[inline]
     pub fn uuid_bytes_to_plain_slug(self, uuid_bytes: &[u8; 16]) -> PlainUuidSlug {
-        PlainUuidSlug(self.encode_raw(uuid_bytes))
+        PlainUuidSlug(crate::bit_encoding::encode_identifier_bits(
+            self, uuid_bytes, 128,
+        ))
     }
     /// Encode the 128-bit block and four external check bits without changing their wire order.
     pub(crate) fn encode_tail(
@@ -60,9 +46,9 @@ impl UuidSlugAlphabet {
         let mut full = [0; 17];
         full[..16].copy_from_slice(bytes);
         full[16] = tail << 4;
-        let mut text = self.encode_raw(&full);
-        text.truncate(132usize.div_ceil(self.bits_per_character()));
-        Ok(text)
+        Ok(crate::bit_encoding::encode_identifier_bits(
+            self, &full, 132,
+        ))
     }
     /// Decode an identifier transactionally; invalid input cannot modify the caller's bytes.
     pub(crate) fn decode_into(
@@ -72,17 +58,16 @@ impl UuidSlugAlphabet {
         tail_bits: u8,
     ) -> Result<u8, Error> {
         match tail_bits {
-            0 => self.decode_with_encoding::<0>(self.encoding(), text, out),
-            4 => self.decode_with_encoding::<4>(self.encoding(), text, out),
+            0 => self.decode_identifier::<0>(text, out),
+            4 => self.decode_identifier::<4>(text, out),
             _ => Err(self.error()),
         }
     }
 
     // Fix the wire layout independently of the caller's string container; there are only
     // plain UUID and masked payload layouts, not one decoder body per input type.
-    fn decode_with_encoding<const TAIL_BITS: u8>(
+    fn decode_identifier<const TAIL_BITS: u8>(
         self,
-        encoding: &Encoding,
         text: &str,
         out: &mut [u8; 16],
     ) -> Result<u8, Error> {
@@ -105,12 +90,14 @@ impl UuidSlugAlphabet {
                     text.as_bytes()
                 };
                 let mut decoded = [0; 16];
-                encoding.decode_mut(input, &mut decoded).map_err(|_| {
-                    self.error().with_message(format!(
-                        "Plain {} slug contains an invalid character or nonzero trailing bits.",
-                        self.name()
-                    ))
-                })?;
+                crate::bit_encoding::decode_identifier_bits(self, input, &mut decoded).map_err(
+                    |_| {
+                        self.error().with_message(format!(
+                            "Plain {} slug contains an invalid character or nonzero trailing bits.",
+                            self.name()
+                        ))
+                    },
+                )?;
                 *out = decoded;
                 Ok(0)
             }
@@ -131,14 +118,17 @@ impl UuidSlugAlphabet {
                     padded[..length].make_ascii_lowercase();
                 }
                 let mut decoded = [0; 17];
-                encoding
-                    .decode_mut(&padded[..length + 1], &mut decoded)
-                    .map_err(|_| {
-                        self.error().with_message(format!(
-                            "Masked {} slug contains an invalid character or invalid trailing bits.",
-                            self.name()
-                        ))
-                    })?;
+                crate::bit_encoding::decode_identifier_bits(
+                    self,
+                    &padded[..length + 1],
+                    &mut decoded,
+                )
+                .map_err(|_| {
+                    self.error().with_message(format!(
+                        "Masked {} slug contains an invalid character or invalid trailing bits.",
+                        self.name()
+                    ))
+                })?;
                 if decoded[16] & 15 != 0 {
                     return Err(self.error().with_message(format!(
                         "Masked {} slug has nonzero trailing bits.",
@@ -172,13 +162,8 @@ impl UuidSlugAlphabet {
         plain_uuid_slug: &Input,
     ) -> Result<[u8; 16], Error> {
         let mut decoded = [0; 16];
-        // Pass the selected table across this boundary so single-alphabet callers can
-        // discard the other encoding without requiring whole-program optimization.
-        self.decode_with_encoding::<0>(
-            self.encoding(),
-            plain_uuid_slug.as_uuid_text(),
-            &mut decoded,
-        )?;
+        // Keep plain and masked layouts specialized independently of the caller's text container.
+        self.decode_identifier::<0>(plain_uuid_slug.as_uuid_text(), &mut decoded)?;
         Ok(decoded)
     }
 

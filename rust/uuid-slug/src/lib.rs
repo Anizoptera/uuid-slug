@@ -14,6 +14,7 @@ extern crate alloc;
 extern crate std;
 
 mod alphabet;
+mod bit_encoding;
 mod error;
 mod generation;
 mod mask;

@@ -19,7 +19,6 @@ wasm-js = ["std", "os-rng", "getrandom/wasm_js", "dep:js-sys"]
 
 [dependencies]
 uuid = { version = "1.29", default-features = false }
-data-encoding = { version = "2.11", default-features = false, features = ["alloc"] }
 getrandom = { version = "0.4", default-features = false, optional = true }
 chacha20 = { version = "0.10.2", default-features = false, features = ["rng"], optional = true }
 
