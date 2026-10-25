@@ -90,6 +90,7 @@ Competitor audit: `slugid` requires `uuid ^9`, with an unresolved advisory. This
 
 Each item must keep behaviour, public API (`api/typescript.api.d.ts`), speed, resource use and bundle size.
 
+- [ ] Prepare and verify the reductions in one isolated source archive while precise timing is unavailable. Keep the working branch clean; retain one replayable patch bound to its base revision and completed correctness/type/declaration/resource evidence. Apply and commit production source only after the unchanged all-runtime performance gate passes. Preparation alone does not complete the items below.
 - [ ] In `src/payload.ts`, format known 16-byte `unmix` candidates with `formatUuidBytesUnchecked` and remove impossible error checks; preserve the migration path's native-hex performance.
 - [ ] Share text extraction in `src/slug.ts` and `src/masking-codec.ts` without adding avoidable work to string decoding; the direct conditional proposal adds a second `typeof`.
 - [ ] Merge duplicated preset-text handling in `src/v7-keyless.ts` without non-null assertions; preserve v7 text timings sensitive to wrapper shape (`bench/decisions.md`).
