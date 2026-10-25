@@ -5,6 +5,8 @@ import { command } from "./command";
 import { releaseComparisons } from "./release-history";
 import { preflightRelease } from "./release-notes";
 import { verifyIntegrity } from "./registry-integrity";
+import type { ReleaseSelection } from "./release-selection";
+import { releaseSelection, retainedReleaseSelection } from "./release-selection";
 
 const cratesUserAgent = "uuid-slug release (https://github.com/Anizoptera/uuid-slug)";
 
@@ -56,6 +58,7 @@ export interface ReleaseInputs {
   readonly version: string;
   readonly tag: string;
   readonly commit: string;
+  readonly packages: ReleaseSelection;
   readonly candidate: {
     readonly npm: RetainedArchive;
     readonly crate: RetainedArchive;
@@ -186,6 +189,7 @@ export async function collectReleaseInputs(
   candidateFiles?: { readonly npm: string; readonly crate: string },
 ): Promise<ReleaseInputs> {
   if (!candidateFiles) throw new Error("Candidate npm and crate archives are required.");
+  const requested = process.env.UUID_SLUG_RELEASE_PACKAGES;
   const { name, version, commit } = await preflightRelease(cwd, tag);
   if (!commit) throw new Error("Release preflight did not resolve a candidate commit.");
   const retained = Bun.file(join(output, "release-inputs.json"));
@@ -200,6 +204,7 @@ export async function collectReleaseInputs(
       throw new Error(
         "Retained release inputs identify a different package, version, tag, or commit.",
       );
+    retainedReleaseSelection(inputs.packages, requested);
     await Promise.all([
       ...(resolve(cwd, candidateFiles.npm) === resolve(cwd, inputs.candidate.npm.file)
         ? []
@@ -215,6 +220,7 @@ export async function collectReleaseInputs(
     ]);
     return inputs;
   }
+  const packages = releaseSelection(requested);
   const [choices, npm, crate] = await Promise.all([
     releaseComparisons(cwd, tag),
     npmHistory("https://registry.npmjs.org", name),
@@ -272,6 +278,7 @@ export async function collectReleaseInputs(
     version,
     tag,
     commit,
+    packages,
     candidate: { npm: candidate[0], crate: candidate[1] },
     comparisons,
   } satisfies ReleaseInputs;

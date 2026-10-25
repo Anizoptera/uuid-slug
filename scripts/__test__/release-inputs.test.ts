@@ -63,6 +63,7 @@ test("input retries preserve their comparison basis and reject changed candidate
       version: "1.2.3",
       tag: "v1.2.3",
       commit,
+      packages: "both",
       candidate: {
         npm: {
           file: candidate.npm,

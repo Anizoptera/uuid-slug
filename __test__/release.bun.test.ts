@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
@@ -8,6 +8,7 @@ import { inspectArtifact } from "../scripts/check-artifact";
 import { tagReleaseFixture } from "./release-fixture";
 import { releaseNotes } from "../scripts/release-notes";
 import { verifyIntegrity } from "../scripts/registry-integrity";
+import type { ReleaseReport } from "../scripts/release-report";
 
 async function rustReleaseFixture(root: string, version: string): Promise<void> {
   await Bun.write(
@@ -77,6 +78,147 @@ test("registry retries accept identical bytes and reject changed or unknown dige
   verifyIntegrity(bytes, integrity);
   expect(() => verifyIntegrity(new TextEncoder().encode("repacked"), integrity)).toThrow("differs");
   expect(() => verifyIntegrity(bytes, "sha1-unknown")).toThrow("differs");
+});
+
+test("release retry entry points preserve original intent and retained bytes", async () => {
+  const root = await mkdtemp(join(tmpdir(), "uuid-slug-release-retry-"));
+  const project = join(import.meta.dir, "..");
+  try {
+    await Bun.write(join(root, "package.json"), JSON.stringify({ name: "test", version: "1.2.3" }));
+    await Bun.write(join(root, "CHANGELOG.md"), "## [1.2.3]\n- Change.\n");
+    await Bun.write(join(root, ".gitignore"), "release-artifacts/\nrust/target/\nscripts\n");
+    await rustReleaseFixture(root, "1.2.3");
+    await symlink(join(project, "scripts"), join(root, "scripts"), "dir");
+    await symlink(join(project, ".tool-versions"), join(root, ".tool-versions"));
+    const commit = await tagReleaseFixture(root, "1.2.3");
+    const history = join(root, "release-artifacts/history");
+    const record = join(history, "release-inputs.json");
+    const npm = "release-artifacts/reviewed-npm/test.tgz";
+    const crate = "rust/target/reviewed-crate/test.crate";
+    const inputs = {
+      name: "test",
+      version: "1.2.3",
+      tag: "v1.2.3",
+      commit,
+      packages: "both",
+      candidate: {
+        npm: {
+          file: npm,
+          integrity: `sha512-${createHash("sha512").update("npm evidence").digest("base64")}`,
+        },
+        crate: {
+          file: crate,
+          integrity: `sha256-${createHash("sha256").update("crate evidence").digest("hex")}`,
+        },
+      },
+      comparisons: [],
+    };
+    await Promise.all([
+      Bun.write(join(root, npm), "npm evidence"),
+      Bun.write(join(root, crate), "crate evidence"),
+      Bun.write(
+        join(root, "release-artifacts/release-report.json"),
+        JSON.stringify({
+          release: {
+            name: "test",
+            crate: "uuid-slug",
+            version: "1.2.3",
+            repository: "https://github.com/test/release",
+          },
+          current: { npm: 12, crate: 14 },
+          comparisons: [],
+        } satisfies ReleaseReport),
+      ),
+    ]);
+    const networkGuard = join(root, "release-artifacts/no-network.mjs");
+    // Refuse transport rather than simulate registry responses; a missed guard cannot publish.
+    await Bun.write(
+      networkGuard,
+      'globalThis.fetch = () => { throw Error("NETWORK_FORBIDDEN"); };\n',
+    );
+    const run = async (script: string, args: string[], requested = "npm") => {
+      const child = Bun.spawn(
+        [process.execPath, "--preload", networkGuard, join(project, "scripts", script), ...args],
+        {
+          cwd: root,
+          env: {
+            ...process.env,
+            UUID_SLUG_RELEASE_PACKAGES: requested,
+            GITHUB_OUTPUT: join(root, "release-artifacts/output"),
+            GITHUB_REPOSITORY: "test/release",
+            GH_TOKEN: "fixture-only",
+          },
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      );
+      const [status, stdout, stderr] = await Promise.all([
+        child.exited,
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+      ]);
+      return { status, stdout, stderr };
+    };
+    const entryPoints = [
+      ["release-selection.ts", ["npm"]],
+      ["release-inputs.ts", ["v1.2.3", history, join(root, npm), join(root, crate)]],
+      ["release-report.ts", []],
+      ["release-finalize.ts", []],
+      ["release-prepare.ts", ["v1.2.3"]],
+    ] as const;
+    const verifyRejectedRetry = async (packages: string | undefined) => {
+      const retained = JSON.stringify({ ...inputs, packages });
+      await Bun.write(record, retained);
+      const results = await Promise.all(
+        entryPoints.map(([script, args]) => run(script, [...args])),
+      );
+      for (const result of results) {
+        expect(result.status).toBe(1);
+        expect(result.stderr).toContain(
+          packages ? "retry with both" : "original package selection",
+        );
+        expect(result.stderr).not.toContain("NETWORK_FORBIDDEN");
+      }
+      expect(await Bun.file(record).text()).toBe(retained);
+      expect(await Bun.file(join(root, npm)).text()).toBe("npm evidence");
+      expect(await Bun.file(join(root, crate)).text()).toBe("crate evidence");
+      expect(await Bun.file(join(root, "release-artifacts/output")).exists()).toBe(false);
+    };
+    await verifyRejectedRetry("both");
+    await verifyRejectedRetry(undefined);
+    await Bun.write(record, JSON.stringify(inputs));
+    expect(
+      (
+        await run(
+          "release-inputs.ts",
+          ["v1.2.3", history, join(root, npm), join(root, crate)],
+          "both",
+        )
+      ).status,
+    ).toBe(0);
+    expect((await run("release-selection.ts", ["both"], "both")).status).toBe(0);
+    expect(await Bun.file(join(root, "release-artifacts/output")).text()).toBe("selected=both\n");
+    const npmOnlyInputs = { ...inputs, packages: "npm" };
+    await Bun.write(record, JSON.stringify(npmOnlyInputs));
+    expect((await run("release-selection.ts", [], "")).status).toBe(0);
+    expect(await Bun.file(join(root, "release-artifacts/output")).text()).toEndWith(
+      "selected=npm\n",
+    );
+    await Bun.write(join(root, crate), "damaged evidence");
+    expect((await run("release-prepare.ts", ["v1.2.3"], "")).stderr).toContain(
+      "differs from release inputs",
+    );
+    expect(await Bun.file(join(root, crate)).text()).toBe("damaged evidence");
+    expect(await Bun.file(record).json()).toEqual(npmOnlyInputs);
+    await rm(record);
+    expect((await run("release-prepare.ts", ["v1.2.4"], "both")).stderr).toContain(
+      "does not match",
+    );
+    expect(await Bun.file(join(root, npm)).text()).toBe("npm evidence");
+    expect(await Bun.file(join(root, crate)).text()).toBe("damaged evidence");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 test("artifact validation rejects a credential-bearing repack before publication", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-identity-"));

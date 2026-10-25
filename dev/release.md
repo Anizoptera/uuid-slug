@@ -15,7 +15,7 @@ The comparisons must be distinct. If both rules select the same version, walk ba
 
 npm and crates.io provide the selected release bytes; they do not select history. A registry with no package history is a first publication and has no predecessor comparison. Once that registry has a published version, a missing selected version, outage, unreadable metadata, or disagreement between the tag and published artifact makes the comparison unavailable and stops publication. Retain selected versions and registry integrity in the release inputs so a retry cannot silently change its comparison basis.
 
-On retry, verify and reuse the retained inputs without selecting history again. If either registry already contains the candidate but those inputs are missing, restore the original evidence before proceeding; the first publication must not become its own new history. Tag pushes publish both packages unless the repository variable `RELEASE_PACKAGES_ON_TAG` is set to `npm` or `crate`. Manual dispatch selects `both`, `npm`, or `crate` directly. Selection never changes the tag, version, history, or retained evidence.
+On retry, verify and reuse the retained inputs, including the original package selection, without selecting history again. Never narrow a joint release after one registry fails. Missing original inputs or package selection require restoring that evidence before proceeding; do not infer intent from which registry already has the version. Tag pushes initially select both packages unless `RELEASE_PACKAGES_ON_TAG` is `npm` or `crate`; manual dispatch initially selects `both`, `npm`, or `crate`. Retries must retain that selection, tag, version, history and verified archives.
 
 ## Evidence and notes
 

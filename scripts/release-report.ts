@@ -22,7 +22,7 @@ import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
 import { declaredRenames, preflightRelease } from "./release-notes";
 import { taggedVersionGuidance } from "./release-version";
-import { releaseSelection } from "./release-selection";
+import { retainedReleaseSelection } from "./release-selection";
 import type { ReleaseSelection } from "./release-selection";
 import {
   cargoSurfaceDifference,
@@ -109,7 +109,7 @@ export function consumerReleaseNotes(
   report: ReleaseReport,
   selected: ReleaseSelection,
 ): string {
-  // Publication selection can change on retry; render from retained evidence, not stale notes.
+  // Notes follow the original package selection, not which destination succeeded first.
   const latest = report.comparisons.find(({ role }) => role === "immediate");
   const keys =
     selected === "npm"
@@ -425,15 +425,19 @@ async function historicalEvidence(
 async function releaseReport(cwd: string, artifacts = "release-artifacts"): Promise<void> {
   const root = resolve(cwd);
   const directory = resolve(root, artifacts);
-  const semverVersion = (await command("cargo", ["semver-checks", "--version"], root)).trim();
-  if (semverVersion !== "cargo-semver-checks 0.50.0")
-    throw new Error(`cargo-semver-checks 0.50.0 is required; found ${semverVersion}.`);
   const inputs = (await Bun.file(
     join(directory, "history/release-inputs.json"),
   ).json()) as ReleaseInputs;
   const { notes, name, version, commit } = await preflightRelease(root, inputs.tag);
   if (inputs.name !== name || inputs.version !== version || inputs.commit !== commit)
     throw new Error("Retained release inputs do not identify the checked package and commit.");
+  const selected = retainedReleaseSelection(
+    inputs.packages,
+    process.env.UUID_SLUG_RELEASE_PACKAGES,
+  );
+  const semverVersion = (await command("cargo", ["semver-checks", "--version"], root)).trim();
+  if (semverVersion !== "cargo-semver-checks 0.50.0")
+    throw new Error(`cargo-semver-checks 0.50.0 is required; found ${semverVersion}.`);
   const npm = resolve(root, inputs.candidate.npm.file);
   const crate = resolve(root, inputs.candidate.crate.file);
   const work = await mkdtemp(join(tmpdir(), "uuid-slug-release-report-"));
@@ -566,14 +570,7 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
     };
     await Promise.all([
       Bun.write(join(directory, "release-report.json"), `${JSON.stringify(report, null, 2)}\n`),
-      Bun.write(
-        join(directory, "notes.md"),
-        consumerReleaseNotes(
-          notes,
-          report,
-          releaseSelection(process.env.UUID_SLUG_RELEASE_PACKAGES),
-        ),
-      ),
+      Bun.write(join(directory, "notes.md"), consumerReleaseNotes(notes, report, selected)),
     ]);
   } finally {
     await rm(work, { recursive: true, force: true });

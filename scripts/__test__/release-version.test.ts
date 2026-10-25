@@ -6,7 +6,11 @@ import { join, resolve } from "node:path";
 import { expect, test } from "bun:test";
 import { command } from "../command";
 import { preflightRelease } from "../release-notes";
-import { releaseSelection } from "../release-selection";
+import {
+  RELEASE_SELECTIONS,
+  releaseSelection,
+  retainedReleaseSelection,
+} from "../release-selection";
 import { checkReleaseVersion, setDevelopmentVersion } from "../release-version";
 
 test(
@@ -65,6 +69,23 @@ test("release publication defaults to both packages and rejects invalid selectio
   expect(releaseSelection("npm")).toBe("npm");
   expect(releaseSelection("crate")).toBe("crate");
   expect(() => releaseSelection("other")).toThrow("both, npm, crate");
+});
+
+test("retained package selection cannot change or be guessed on retry", () => {
+  for (const original of RELEASE_SELECTIONS) {
+    expect(retainedReleaseSelection(original, undefined)).toBe(original);
+    expect(retainedReleaseSelection(original, "")).toBe(original);
+    for (const requested of RELEASE_SELECTIONS) {
+      if (requested === original)
+        expect(retainedReleaseSelection(original, requested)).toBe(original);
+      else
+        expect(() => retainedReleaseSelection(original, requested)).toThrow(
+          `retry with ${original}`,
+        );
+    }
+  }
+  for (const missing of [undefined, null, "", "unknown"])
+    expect(() => retainedReleaseSelection(missing, "both")).toThrow("Restore that evidence");
 });
 
 test("one command updates every development version owner", async () => {
