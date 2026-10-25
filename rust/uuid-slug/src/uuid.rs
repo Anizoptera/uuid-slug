@@ -424,25 +424,9 @@ pub(crate) fn range(capacity: usize, offset: usize) -> Result<core::ops::Range<u
 impl FromStr for Uuid {
     type Err = Error;
     fn from_str(text: &str) -> Result<Self, Error> {
-        let input = text.as_bytes();
-        let canonical = |value: &[u8]| {
-            value.len() == 36 && [8, 13, 18, 23].iter().all(|&index| value[index] == b'-')
-        };
-        let body = match input {
-            value if value.len() == 32 => value,
-            value if canonical(value) => value,
-            [b'{', value @ .., b'}'] if canonical(value) => value,
-            value
-                if value.len() == 45
-                    && value[..9].eq_ignore_ascii_case(b"urn:uuid:")
-                    && canonical(&value[9..]) =>
-            {
-                &value[9..]
-            }
-            _ => return Err(Error::new(ErrorCode::InvalidUuid)),
-        };
-        let body = core::str::from_utf8(body).map_err(|_| Error::new(ErrorCode::InvalidUuid))?;
-        uuid::Uuid::parse_str(body)
+        // The ASCII parser enforces our complete UUID grammar, including case-insensitive URNs.
+        // Detailed upstream diagnostics would be discarded when mapping to our typed error.
+        uuid::Uuid::try_parse_ascii(text.as_bytes())
             .map(|id| Self(*id.as_bytes()))
             .map_err(|_| Error::new(ErrorCode::InvalidUuid))
     }

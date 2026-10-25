@@ -1026,9 +1026,9 @@ The ordinary Rust implementation also passes debug/release correctness checks af
 
 ### Rust dependency replacement screen
 
-**Neither retaining nor removing `uuid` is selected.** The `05cac71` wrapper checks UUID text before `uuid::Uuid::parse_str` checks it again and builds diagnostics the wrapper discards. Calling `try_parse_ascii` directly removes those checks without owning a parser; arithmetic, lookup-table and integer-parser alternatives test whether owning the fixed-size operation earns more. Generation already uses this crate's own implementation, so removing `uuid` does not itself replace a generator. Conditions: 2026-10-25, Rust 1.99.1, macOS Arm64, ordinary release, Binaryen 132 `-O2`; precise timing is withheld on the busy host.
+**UUID dependency replacement remains undecided.** The `05cac71` wrapper checks UUID text before `uuid::Uuid::parse_str` checks it again and builds diagnostics the wrapper discards. The current parser calls `try_parse_ascii` directly, preserving UUID grammar and interoperability while removing the duplicate wrapper validation and discarded diagnostic construction. Arithmetic, lookup-table and integer-parser alternatives still test whether owning the fixed-size operation earns more. Generation already uses this crate's own implementation, so removing `uuid` does not itself replace a generator. Conditions of the resource comparison below: 2026-10-25, Rust 1.99.1, macOS Arm64, ordinary release, Binaryen 132 `-O2`; complete-call speed acceptance remains open while precise timing is withheld on the busy host.
 
-| Consumer, defaults disabled | Current WASM bytes | Thinner dependency integration | Owned implementation |
+| Consumer, defaults disabled | Baseline WASM bytes | Thinner dependency integration | Owned implementation |
 | --- | ---: | ---: | ---: |
 | UUID text → `Uuid` | 35,020 | 31,248 | 30,385, arithmetic parser |
 | `Uuid` → UUID text | 28,144 | unchanged | 28,177, nibble formatter |
