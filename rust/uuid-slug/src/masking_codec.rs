@@ -613,17 +613,17 @@ impl UuidV7MaskingCodec {
             &current.mask,
             current.timestamp_range_start_unix_ms,
         )?;
-        // Raw sentinel padding is zero, so a nonzero tag cannot collide with an old spelling.
-        if self.masked == UuidSlugAlphabet::Base64Url || (tail == 0 && !self.reserved.is_empty()) {
-            let base64 = UuidSlugAlphabet::Base64Url.encode_tail(&bytes, tail, 4)?;
-            if self.sentinel(&base64).is_some() {
-                return Err(Error::new(ErrorCode::InvalidMask).with_message(
-                    "Masked output matches a sentinel slug; use a different mask or sentinel set.",
-                ));
-            }
-            if self.masked == UuidSlugAlphabet::Base64Url {
-                return Ok(MaskedOrSentinelUuidV7Slug::Masked(MaskedUuidV7Slug(base64)));
-            }
+        // Plain base64url has zero tail bits and uniquely encodes the UUID bytes. Compare
+        // identities before formatting so base32hex never allocates an unused spelling.
+        if tail == 0
+            && self
+                .sentinels
+                .iter()
+                .any(|entry| entry.uuid.as_uuid_bytes() == &bytes)
+        {
+            return Err(Error::new(ErrorCode::InvalidMask).with_message(
+                "Masked output matches a sentinel slug; use a different mask or sentinel set.",
+            ));
         }
         self.masked
             .encode_tail(&bytes, tail, 4)
