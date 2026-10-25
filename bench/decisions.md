@@ -1020,6 +1020,27 @@ Boxed construction adds exactly 512 successful reallocation calls for masked out
 
 The ordinary Rust implementation also passes debug/release correctness checks after `wasm-opt` 132 `-O2`: each WASI target runs 42 reduced-feature and 45 all-feature tests, and each browser runs 29,894 shared cases in both entropy-success and entropy-failure contexts. This validates those optimized builds, not other optimizer versions or presets.
 
+### Rust dependency replacement screen
+
+**Neither retaining nor removing `uuid` is selected.** The `05cac71` wrapper checks UUID text before `uuid::Uuid::parse_str` checks it again and builds diagnostics the wrapper discards. Calling `try_parse_ascii` directly removes those checks without owning a parser; arithmetic, lookup-table and integer-parser alternatives test whether owning the fixed-size operation earns more. Generation already uses this crate's own implementation, so removing `uuid` does not itself replace a generator. Conditions: 2026-10-25, Rust 1.99.1, macOS Arm64, ordinary release, Binaryen 132 `-O2`; precise timing is withheld on the busy host.
+
+| Consumer, defaults disabled | Current WASM bytes | Thinner dependency integration | Owned implementation |
+| --- | ---: | ---: | ---: |
+| UUID text → `Uuid` | 35,020 | 31,248 | 30,385, arithmetic parser |
+| `Uuid` → UUID text | 28,144 | unchanged | 28,177, nibble formatter |
+| Plain base64url encode → decode | 100,600 | unchanged | 33,849 |
+| Plain base32hex encode → decode | 101,296 | unchanged | 34,642 |
+| UUID text → masked base64url → UUID | 120,977 | 125,078, direct tail writer | 52,122, owned codec; 51,656 with owned UUID text |
+| UUID text → masked base32hex → UUID | 127,484 | 130,973, direct tail writer | 57,901, owned codec; 56,612 with owned UUID text |
+
+Default-feature consumers also execute; browser integration adds JavaScript separately. All measured consumers run natively and after optimization in Chromium, Firefox and WebKit. Native file sizes include metadata/alignment and do not identify code cost. The owned UUID parser plus formatter has identical measured sizes with `uuid` required or disabled: removing that dependency changes compilation, not those retained bytes. The pair-table formatter grows WASM by 508 bytes, the nibble formatter by 33; neither saves a measured allocation.
+
+Independent native oracles cover 20,125 UUID text/bit/formatting cases per variant and 25,088 plain-slug spelling/bit/buffer cases per codec variant, with defaults enabled and disabled. Planted payload-bit and encoded-character corruptions fail. Existing unit suites exercise frozen masking, external tail bits, padding, error precedence and atomic writes. Rust 1.97 runs the UUID frontier and all codec alternatives; disabled-default portability candidates compile for `wasm32v1-none`. These finite corpora do not prove the whole input domain or other native architectures.
+
+Measured successful parsing and plain decoding allocate nothing; UUID text requests one 36-byte allocation, plain output one 22/26-byte allocation. Current masked output requests one 23/28-byte allocation; both direct-tail and owned-codec alternatives request one 22/27-byte allocation. Requested bytes are not allocator block sizes or process memory. The owned core has no normal dependencies without defaults; enabling its experimental interoperability feature adds `uuid`, while automatic generation retains the existing entropy dependencies. Feature-gating interoperability is an experiment, not an approved interface change.
+
+Retain the comparison until complete-call latency/throughput, build costs and maintenance decide it. Smaller WASM alone cannot select a replacement; the thinner upstream parser remains a live rival, and the direct-tail writer's larger output must be weighed against its one-byte saving. Executed inputs, exact substitutions, graphs and raw records: `bench/reports/rust-dependencies`. Use the existing `codec` benchmark's parse/plain/mask/unmask/returned-array/caller-buffer calls for timing after the host is available; formatting needs its own complete-call observation.
+
 ### Rust competitor inventory
 
 The tracked `bench/results/rust-competitors.md` report measures the current default fast RNG on 37 calls, with five rounds from each of three fresh processes (555 timing records). On macOS Arm64, Rust 1.99.1, 2026-10-23, package medians are 12.28 ns for v4 values and 32.53 ns for v7 values; observed ranges are 11.91–27.50 ns and 31.66–68.24 ns. These are batch averages under shared host scheduling, not individual-call latency or clean-host decoder acceptance. Different entropy, output and ordering contracts remain separate comparisons; raw records are in `bench/results/rust-competitors.jsonl`.
