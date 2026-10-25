@@ -14,6 +14,8 @@ This is the sole live plan. Keep dependent repairs with their task and unrelated
 
 Finish work independent of host load first. For queued authorized timing, check the existing host guard once; on refusal, stop without polling, sleeping or forcing busy-host timing. Machine load is measured by the guard, not a missing maintainer permission. Update tooling and competitors to latest stable releases; refresh package evidence when dependency or build inputs change. Decoder/storage timing and final regression timing remain open; missing comparisons do not block preparation (`dev/release.md` §Evidence and notes). Publication stays gated.
 
+Prioritize correctness repairs, acceptance of the integrated Rust changes, then the final all-runtime/full-check gates. The isolated TypeScript reductions below are unaccepted maintenance proposals; they must not delay those requirements or count as release progress before measured acceptance.
+
 ### Performance and resource acceptance
 
 Keep existing regression gates required. Authorized comparisons cover v4/v7 generation, parsing/formatting, both alphabets, masking, rotation, migration and mask construction; run them only when host conditions permit, without making missing comparisons a preparation gate.
@@ -47,6 +49,8 @@ Repair coupling at shared call boundaries when artifacts retain unrelated code. 
 ### Correctness, entropy and verification
 
 Use the independent oracles below when an accepted change affects their contracts; TypeScript/Rust agreement alone cannot prove correctness. Extend existing checks only for material failures they cannot expose. Construction cost, execution correctness and performance acceptance remain separate.
+
+- [ ] Reject an explicitly supplied `referenceUnixMs: null` with `invalid_timestamp` in timestamp validation. The current public text call accepts it, while finite-reference and omitted-reference controls also pass; `src/types.ts` requires a finite supplied reference. Add the regression to the shared Node/Bun boundary cases and repair undefined-only clock defaulting without repeated property reads. Prior rejected/inconclusive shapes are in `bench/decisions.md` §Canonical timestamp-validation results; preserve ordinary-call speed/resources and pass the unchanged all-runtime gate before committing source. This malformed JavaScript call does not establish harm to typed ordinary calls or a release blocker.
 
 | Contract | Oracle and failure control |
 | --- | --- |
