@@ -1,6 +1,6 @@
 //! Pack the fixed UUID wire layouts without constructing a general-purpose codec.
 use crate::UuidSlugAlphabet;
-use alloc::{string::String, vec};
+use alloc::{boxed::Box, string::String, vec};
 
 // Expose a constant caller alphabet so ordinary linking can discard the other table without LTO.
 #[inline]
@@ -8,7 +8,7 @@ pub(super) fn encode_identifier_bits(
     alphabet: UuidSlugAlphabet,
     bytes: &[u8],
     payload_bits: usize,
-) -> String {
+) -> Box<str> {
     // Callers select 128 UUID bits or 132 masked bits; zero padding must not become payload.
     let bits = alphabet.bits_per_character();
     let symbols: &[u8] = match alphabet {
@@ -27,7 +27,9 @@ pub(super) fn encode_identifier_bits(
         *symbol = symbols[((word >> (16 - bits - bit % 8)) & ((1 << bits) - 1)) as usize];
     }
     // Only the fixed ASCII tables can contribute bytes; retain safe UTF-8 validation.
-    String::from_utf8(out).expect("UUID alphabets contain only ASCII")
+    String::from_utf8(out)
+        .expect("UUID alphabets contain only ASCII")
+        .into_boxed_str()
 }
 
 pub(super) fn decode_identifier_bits(

@@ -146,7 +146,8 @@ mod tests {
             assert_eq!(
                 UuidSlugAlphabet::Base64Url
                     .encode_tail(&mixed, tail, 4)
-                    .unwrap(),
+                    .unwrap()
+                    .as_ref(),
                 case["masked"].as_str().unwrap()
             );
             let safe = UuidSlugAlphabet::Base32Hex

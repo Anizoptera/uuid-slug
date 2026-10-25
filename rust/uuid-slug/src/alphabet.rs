@@ -1,6 +1,6 @@
 //! Encode identifier bits without accepting alternate padding spellings.
 use crate::{Error, ErrorCode, KeylessUuidText, PlainUuidSlug};
-use alloc::{format, string::String};
+use alloc::{boxed::Box, format};
 
 /// Supported output representations; decoding plain slugs infers this from length.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -39,7 +39,7 @@ impl UuidSlugAlphabet {
         bytes: &[u8; 16],
         tail: u8,
         tail_bits: u8,
-    ) -> Result<String, Error> {
+    ) -> Result<Box<str>, Error> {
         if tail_bits != 4 {
             return Err(self.error());
         }

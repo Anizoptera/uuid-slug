@@ -1,6 +1,6 @@
 //! Preserve every UUID bit while accepting standard text and enforcing canonical slug spellings.
 use crate::{Error, ErrorCode, KeylessUuidText, UuidSlugAlphabet, text};
-use alloc::{format, string::String};
+use alloc::{boxed::Box, format, string::String};
 use core::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
 
 pub(crate) fn utf16_len(text: &str) -> usize {
@@ -9,7 +9,8 @@ pub(crate) fn utf16_len(text: &str) -> usize {
 
 /// A canonical unpadded base64url or lowercase base32hex spelling of all 128 UUID bits.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct PlainUuidSlug(pub(crate) String);
+// Canonical slugs never grow; boxed text omits capacity and transfers into String without copying.
+pub struct PlainUuidSlug(pub(crate) Box<str>);
 
 impl PlainUuidSlug {
     /// Borrow the canonical plain UUID slug.
@@ -19,7 +20,7 @@ impl PlainUuidSlug {
 
     /// Take ownership of the canonical plain UUID slug text.
     pub fn into_string(self) -> String {
-        self.0
+        self.0.into_string()
     }
 }
 
@@ -45,7 +46,7 @@ impl Deref for PlainUuidSlug {
 
 impl From<PlainUuidSlug> for String {
     fn from(slug: PlainUuidSlug) -> Self {
-        slug.0
+        slug.into_string()
     }
 }
 
@@ -57,7 +58,8 @@ impl fmt::Display for PlainUuidSlug {
 
 /// A canonical masked UUIDv7 payload in unpadded base64url or lowercase base32hex.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct MaskedUuidV7Slug(pub(crate) String);
+// Masked output is immutable too; retaining growable capacity would add unused state per slug.
+pub struct MaskedUuidV7Slug(pub(crate) Box<str>);
 
 impl MaskedUuidV7Slug {
     /// Borrow the canonical masked UUIDv7 slug.
@@ -67,7 +69,7 @@ impl MaskedUuidV7Slug {
 
     /// Take ownership of the canonical masked UUIDv7 slug text.
     pub fn into_string(self) -> String {
-        self.0
+        self.0.into_string()
     }
 }
 
@@ -93,7 +95,7 @@ impl Deref for MaskedUuidV7Slug {
 
 impl From<MaskedUuidV7Slug> for String {
     fn from(slug: MaskedUuidV7Slug) -> Self {
-        slug.0
+        slug.into_string()
     }
 }
 
@@ -509,8 +511,9 @@ mod tests {
     fn collections_preserve_slug_variants() {
         use std::collections::{BTreeMap, HashMap};
         let text = "AAAAAAAAAAAAAAAAAAAAAA".to_owned();
-        let masked = MaskedOrSentinelUuidV7Slug::Masked(MaskedUuidV7Slug(text.clone()));
-        let sentinel = MaskedOrSentinelUuidV7Slug::Sentinel(PlainUuidSlug(text));
+        let masked =
+            MaskedOrSentinelUuidV7Slug::Masked(MaskedUuidV7Slug(text.clone().into_boxed_str()));
+        let sentinel = MaskedOrSentinelUuidV7Slug::Sentinel(PlainUuidSlug(text.into_boxed_str()));
         let hash = HashMap::from([(masked.clone(), 1), (sentinel.clone(), 2)]);
         let ordered = BTreeMap::from([(masked.clone(), 1), (sentinel.clone(), 2)]);
         assert_eq!(hash.get(&masked), Some(&1));
