@@ -2,6 +2,8 @@
 use crate::UuidSlugAlphabet;
 use alloc::{string::String, vec};
 
+// Expose a constant caller alphabet so ordinary linking can discard the other table without LTO.
+#[inline]
 pub(super) fn encode_identifier_bits(
     alphabet: UuidSlugAlphabet,
     bytes: &[u8],
