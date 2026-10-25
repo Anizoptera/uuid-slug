@@ -66,6 +66,7 @@ Use the independent oracles below when an accepted change affects their contract
 
 ### Final checks and release holds
 
+- [ ] Synchronize the Rust competitor workspace's lockfile with the removed product encoding dependency, then pass its default/all-feature `--locked` checks and rerun the cancelled JavaScript/tooling checks. Preserve competitor versions and update the Rust dependency-change instructions so path consumers are checked before commit.
 - [ ] Run `bun run check` on the accepted code tree when the host is available; every locally executable required check must pass. Keep busy overrides and baseline changes disabled. Apply local feedback budgets and CI headroom from `bench/methods.md` §Regression protection; remote job duration remains unexecuted. Configured CI, source inspection, mutual agreement and aggregate passes cannot prove an unexecuted consumer, target or failure path. Remove passed host-probe bundles immediately.
 - [ ] After code acceptance, inspect staged hunks against the request, commit with explicit file lists, preserve unrelated changes, delete task scratch and finish with a clean tree. Keep only evidence serving a retained conclusion or unresolved decision; do not accumulate throwout reports or claim readiness while checks/setup remain unresolved.
 - [ ] Authorization required: change to the release version/create its tag only after explicit approval; run the exact-tag preparation gate and review generated release notes before any authorized push/publication.
