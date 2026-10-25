@@ -1,8 +1,13 @@
 // Profile optimized Rust and each native bridge in separate processes after compilation finishes.
 import { cpus } from "node:os";
+import { readFile } from "node:fs/promises";
+import { randomBytes, randomInt } from "node:crypto";
+import { resolve } from "node:path";
 import { buildRustBridge } from "../scripts/rust-bridge";
 import { nativeMatrix } from "../scripts/rust-native-matrix";
 import { rustToolchain } from "../scripts/rust-toolchain";
+import { refuseBusyHost } from "./host-load";
+import { codecOutput, codecTimingOutput } from "./rust-codec-output";
 
 const toolchain = await rustToolchain();
 
@@ -23,6 +28,7 @@ async function run(command: readonly string[], env: Readonly<Record<string, stri
     env: { ...toolchain.env, ...env },
     stdout: "pipe",
     stderr: "inherit",
+    timeout: 240_000,
   });
   const [status, output] = await Promise.all([child.exited, new Response(child.stdout).text()]);
   const elapsedMs = performance.now() - started;
@@ -41,12 +47,12 @@ async function run(command: readonly string[], env: Readonly<Record<string, stri
   return { elapsedMs, output, resources };
 }
 
-async function buildCodec(features: readonly string[] = []) {
+async function buildCodec(features: readonly string[] = [], manifest = "rust/Cargo.toml") {
   const build = await run([
     "cargo",
     "bench",
     "--manifest-path",
-    "rust/Cargo.toml",
+    manifest,
     "-p",
     "uuid-slug",
     "--bench",
@@ -65,7 +71,105 @@ async function buildCodec(features: readonly string[] = []) {
         entry.reason === "compiler-artifact" && entry.target.name === "codec" && entry.executable,
     );
   if (artifacts.length !== 1) throw new Error("Cargo must identify exactly one codec executable");
-  return { executable: String(artifacts[0].executable), build };
+  return {
+    executable: String(artifacts[0].executable),
+    source: String(artifacts[0].target.src_path),
+    build,
+  };
+}
+
+if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
+  const prepareOnly = process.argv[2] === "--codec-build";
+  if (!prepareOnly && process.env.UUID_SLUG_PERF_ALLOW_BUSY === "1")
+    throw new Error(
+      "Rust codec acceptance refuses UUID_SLUG_PERF_ALLOW_BUSY; remove it and use an idle host.",
+    );
+  const manifests = process.argv.slice(3);
+  if (!manifests.length) manifests.push("rust/Cargo.toml");
+  const filter =
+    process.env.UUID_SLUG_PROFILE_FILTER ??
+    "parse/,format/,plain/,mask/,unmask/,decode/,sentinel/,migration/,construct/";
+  console.log(
+    JSON.stringify({
+      host: `${process.platform}/${process.arch}`,
+      cpu: cpus()[0]?.model,
+      rust: (await run(["rustc", "-Vv"])).output.trim(),
+      filter,
+      prepareOnly,
+    }),
+  );
+  const source = await readFile("rust/uuid-slug/benches/codec.rs");
+  const variants = [];
+  for (const manifest of manifests)
+    for (const defaults of [false, true]) {
+      const build = await buildCodec(defaults ? [] : ["--no-default-features"], manifest);
+      if (!(await readFile(build.source)).equals(source))
+        throw new Error(
+          `${manifest}: copy rust/uuid-slug/benches/codec.rs into the isolated candidate before comparing; every candidate must run the same current cases.`,
+        );
+      const prepared = codecOutput(
+        (
+          await run([build.executable], {
+            UUID_SLUG_PROFILE_FILTER: filter,
+            UUID_SLUG_CODEC_PREPARE_ONLY: "1",
+          })
+        ).output,
+      );
+      if (
+        !prepared.every((row) => "preparedCalls" in row) ||
+        new Set(prepared.map((row) => row.operation)).size !== prepared.length ||
+        filter.split(",").some((term) => !prepared.some((row) => row.operation.includes(term)))
+      )
+        throw new Error(
+          `${manifest}: the prepared codec cases do not cover the requested filter ${filter}.`,
+        );
+      const first = variants[0];
+      if (first && JSON.stringify(first.prepared) !== JSON.stringify(prepared))
+        throw new Error(
+          `${manifest}: codec cases differ between candidates or feature selections.`,
+        );
+      const variant = {
+        manifest: resolve(manifest),
+        defaults,
+        executable: build.executable,
+        prepared,
+      };
+      variants.push(variant);
+      console.log(JSON.stringify({ prepared: variant }));
+    }
+  if (!prepareOnly)
+    for (let repetition = 0; repetition < 3; repetition++) {
+      for (let index = 0; index < variants.length; index++) {
+        const variant = variants[repetition % 2 ? variants.length - 1 - index : index];
+        if (!variant) throw new Error("Missing Rust codec candidate");
+        refuseBusyHost("before");
+        const result = await run([variant.executable], {
+          UUID_SLUG_PROFILE_FILTER: filter,
+          UUID_SLUG_CODEC_PREPARE_ONLY: "",
+          UUID_SLUG_TIMING_PADDING: randomBytes(randomInt(1, 2049)).toString("hex"),
+        });
+        refuseBusyHost("after");
+        const records = codecTimingOutput(result.output, variant.prepared);
+        if (
+          !result.resources ||
+          !Object.values(result.resources).every(Number.isFinite) ||
+          result.resources.maxRssBytes <= 0
+        )
+          throw new Error(
+            `${variant.manifest}: missing or invalid process resource counters; rerun with a supported Bun host.`,
+          );
+        console.log(
+          JSON.stringify({
+            manifest: variant.manifest,
+            defaults: variant.defaults,
+            repetition,
+            resources: result.resources,
+            records,
+          }),
+        );
+      }
+    }
+  process.exit(0);
 }
 
 if (process.argv[2] === "--generation") {

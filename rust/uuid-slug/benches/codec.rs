@@ -5,30 +5,46 @@ use uuid_slug::{
     derive_uuid_v7_mask,
 };
 
+const SAMPLE_ROUNDS: usize = 5;
+const CALLS_PER_ROUND: usize = 100_000;
+
 fn sample<T>(name: &str, inputs: &[Uuid], mut operation: impl FnMut(Uuid) -> T) {
     // Isolate one operation for allocation attribution without changing its workload.
     static FILTER: std::sync::LazyLock<Option<String>> =
         std::sync::LazyLock::new(|| std::env::var("UUID_SLUG_PROFILE_FILTER").ok());
+    static PREPARE_ONLY: std::sync::LazyLock<bool> = std::sync::LazyLock::new(|| {
+        std::env::var("UUID_SLUG_CODEC_PREPARE_ONLY").as_deref() == Ok("1")
+    });
     if FILTER
         .as_ref()
         .is_some_and(|filter| !filter.split(',').any(|term| name.contains(term)))
     {
         return;
     }
-    let iterations = 100_000;
     for id in inputs {
         black_box(operation(*id));
     }
-    for round in 0..5 {
+    // Exercise the same registered calls under load without reading a performance clock.
+    if *PREPARE_ONLY {
+        println!(
+            "{}",
+            serde_json::json!({
+                "operation": name, "preparedCalls": inputs.len(),
+                "rounds": SAMPLE_ROUNDS, "callsPerRound": CALLS_PER_ROUND
+            })
+        );
+        return;
+    }
+    for round in 0..SAMPLE_ROUNDS {
         let started = Instant::now();
-        for index in 0..iterations {
+        for index in 0..CALLS_PER_ROUND {
             black_box(operation(inputs[(index + round) % inputs.len()]));
         }
         println!(
             "{}",
             serde_json::json!({
-                "operation": name, "round": round, "calls": iterations,
-                "nsPerCall": started.elapsed().as_nanos() as f64 / iterations as f64
+                "operation": name, "round": round, "calls": CALLS_PER_ROUND,
+                "nsPerCall": started.elapsed().as_nanos() as f64 / CALLS_PER_ROUND as f64
             })
         );
     }
@@ -175,11 +191,17 @@ fn main() -> Result<(), Error> {
     sample("plain/base32", &ids, |id| {
         id.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex)
     });
+    sample("format/uuid/lowercase", &ids, |id| id.to_string());
+    sample("format/uuid/uppercase", &ids, |id| format!("{id:X}"));
     sample("mask/base64", &ids, |id| {
         compact.uuid_to_masked_slug(id).unwrap()
     });
     sample("mask/base32", &ids, |id| {
         safe.uuid_to_masked_slug(id).unwrap()
+    });
+    // Sentinel-enabled writers may otherwise format an unused collision-check spelling.
+    sample("mask/base32/sentinels", &ids, |id| {
+        reserved.uuid_to_masked_slug(id).unwrap()
     });
     let text: Vec<String> = ids.iter().map(ToString::to_string).collect();
     let encoded: Vec<_> = ids
