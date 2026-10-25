@@ -10,7 +10,7 @@ NEVER format or hard-wrap Markdown or other prose. Keep each paragraph on one so
 
 READ the owner before changing its subject; these references hold the detailed rules.
 
-Size reads by bytes, not lines. In a separate call BEFORE reading, check the range against both nested and outer output budgets; split oversized reads. Truncation means unread content: recover it before relying on the result. Keep this file below 32,768 bytes; place detail in its existing owner and keep the retrieval trigger here.
+BEFORE each read, measure its bytes in a separate call. Budget one token per byte plus output wrappers against BOTH nested and outer limits; split oversized reads and return batch members separately if their sum exceeds either. Truncation means UNREAD: recover before use. Keep this file below 32,768 bytes; put detail in its owner and its read trigger here.
 
 | Work | Owner |
 | --- | --- |
