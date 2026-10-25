@@ -321,9 +321,9 @@ dependencies = [
 
 [[package]]
 name = "hyperuuid"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7abd914b1c0ff7b0103d0d83c2dd02748df1abcfe1e409f4be31916645d18407"
+checksum = "e2d1757ced7132002ab168b9657d5ffdd0616142ebae42393e2d614828033cdd"
 dependencies = [
  "chacha20",
  "getrandom 0.4.3",
@@ -339,9 +339,9 @@ checksum = "a063290257f1ad185ba381a000cd6b958b6a784582329a8115ffa0b1a309b9f4"
 
 [[package]]
 name = "inout"
-version = "0.2.3"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8c0d789294fb457b791f7797a04478704788f30b407e5d0b01deaa846572d9f"
+checksum = "3b5cf4372d022092674a83b8febf5865f7a573cc0c5baec5e49c879b6a20978f"
 dependencies = [
  "hybrid-array",
 ]
@@ -383,9 +383,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.190"
+version = "0.2.191"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78"
+checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
 
 [[package]]
 name = "memchr"
@@ -453,9 +453,9 @@ dependencies = [
 
 [[package]]
 name = "qubit-id"
-version = "0.7.0"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d861eb71f4ce5e46d1a956cc631859e9f9f45a5a4dd310a2e0acb570acd34d8"
+checksum = "33fd163002632dff5e1554101e563ced9f206470041f84ae3dda15288f0ba81a"
 dependencies = [
  "getrandom 0.4.3",
  "thiserror 2.0.21",
@@ -797,9 +797,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.28.0"
+version = "1.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cc1186384beb7dd8eedea376413fd654937285ea6c9cfbb928dc3043ea4b606"
+checksum = "4a0e2d11620c50695fe12bbbfde96b3477fe606e7284c22d505c12ce51214514"
 dependencies = [
  "atomic",
  "getrandom 0.4.3",

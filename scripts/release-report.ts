@@ -436,8 +436,8 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
     process.env.UUID_SLUG_RELEASE_PACKAGES,
   );
   const semverVersion = (await command("cargo", ["semver-checks", "--version"], root)).trim();
-  if (semverVersion !== "cargo-semver-checks 0.50.0")
-    throw new Error(`cargo-semver-checks 0.50.0 is required; found ${semverVersion}.`);
+  if (semverVersion !== "cargo-semver-checks 0.51.0")
+    throw new Error(`cargo-semver-checks 0.51.0 is required; found ${semverVersion}.`);
   const npm = resolve(root, inputs.candidate.npm.file);
   const crate = resolve(root, inputs.candidate.crate.file);
   const work = await mkdtemp(join(tmpdir(), "uuid-slug-release-report-"));
