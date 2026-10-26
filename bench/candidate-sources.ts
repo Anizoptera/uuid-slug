@@ -93,6 +93,20 @@ function timestampCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      name: "captured-reference",
+      get source() {
+        return replaceOnce(
+          source,
+          "    referenceUnixMs = window.referenceUnixMs ?? Date.now();",
+          [
+            "    // Only omission selects the clock; supplied values must reach finite-number validation.",
+            "    const reference = window.referenceUnixMs;",
+            "    referenceUnixMs = reference === undefined ? Date.now() : reference;",
+          ].join("\n"),
+        );
+      },
+    },
+    {
       name: "undefined-default",
       get source() {
         return replaceOnce(
