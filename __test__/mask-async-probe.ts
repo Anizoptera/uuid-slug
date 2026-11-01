@@ -99,6 +99,7 @@ export const asyncMaskCases = [
   },
   {
     name: "pre-aborted construction does not read or copy the seed",
+    javascriptOnly: "JavaScript AbortSignal and seed getters precede Rust's borrowed seed argument",
     async run(this: void) {
       const reason = { cancelledBy: "caller" };
       const signal = AbortSignal.abort(reason);
@@ -139,6 +140,8 @@ export const asyncMaskCases = [
   },
   {
     name: "a crossed work-slice deadline yields to the host before construction continues",
+    javascriptOnly:
+      "JavaScript performance.now scheduling policy; Rust polling uses a fixed work bound",
     async run(this: void) {
       const ownNow = Object.getOwnPropertyDescriptor(performance, "now");
       let clockReads = 0;

@@ -1,4 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0
-import { test } from "vitest";
+import { sharedTest } from "./shared-test-host";
 import { legacyMaskCases } from "./legacy-mask-probe";
-for (const entry of legacyMaskCases) test(entry.name, entry.run);
+for (const entry of legacyMaskCases) sharedTest(entry);

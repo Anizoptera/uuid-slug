@@ -4,12 +4,17 @@
  * The Node half of the buffer-offset contract. `__test__/runtime.bun.test.ts` runs the identical list
  * against Bun's adapter; `buffer-contract-probe.ts` explains why one lane cannot stand for both.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect } from "vitest";
+import { sharedTest } from "./shared-test-host";
 
 import { cases } from "./buffer-contract-probe";
 
 describe("buffer offset contract", () => {
-  it.each(cases.map((entry) => [entry.name, entry] as const))("%s", (_name, entry) => {
-    expect(entry.run()).toBeUndefined();
-  });
+  for (const entry of cases)
+    sharedTest({
+      ...entry,
+      run: () => {
+        expect(entry.run()).toBeUndefined();
+      },
+    });
 });

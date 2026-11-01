@@ -219,6 +219,8 @@ export const codecBoundaryCases = [
   },
   {
     name: "mask factories reject untyped coercions before deriving keys",
+    javascriptOnly:
+      "JavaScript seed coercion and option reflection; Rust accepts byte slices and u32 iterations",
     async run() {
       let readsAfterInvalidSeed = 0;
       const options = [
@@ -258,6 +260,7 @@ export const codecBoundaryCases = [
   },
   {
     name: "codec construction returns package errors for malformed JavaScript options",
+    javascriptOnly: "Rust codec options are a typed struct, not arbitrary JavaScript values",
     run() {
       const cases = [
         { mask: UUID_V7_TEST_MASK, previousMasks: 1 },
@@ -289,6 +292,7 @@ export const codecBoundaryCases = [
   },
   {
     name: "codec construction rejects unknown caller-supplied entropy",
+    javascriptOnly: "JavaScript option getters and unknown properties",
     run() {
       const options = {
         mask: UUID_V7_TEST_MASK,
@@ -303,6 +307,8 @@ export const codecBoundaryCases = [
   },
   {
     name: "requires exactly one writer mask before reading any other codec option",
+    javascriptOnly:
+      "JavaScript shorthand options and getter order; Rust construction requires one typed mask",
     run() {
       for (const value of [undefined, null, {}, { mask: undefined }]) {
         let observed = false;
@@ -662,6 +668,7 @@ export const codecBoundaryCases = [
   },
   {
     name: "unknown runtime alphabet values return a package error",
+    javascriptOnly: "JavaScript Symbol selectors cannot be passed as Rust's alphabet enum",
     run() {
       const result = Reflect.apply(uuidStringToPlainSlug, undefined, [
         "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
@@ -673,6 +680,7 @@ export const codecBoundaryCases = [
   },
   {
     name: "universal byte inputs and slug-only readers report their own invalid domains",
+    javascriptOnly: "null, symbols and length-shaped objects cannot be passed as Rust UUID inputs",
     run() {
       const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
       const migration = unwrap(
@@ -772,6 +780,8 @@ export const codecBoundaryCases = [
   },
   {
     name: "refuses generation reentered from its entropy callback",
+    javascriptOnly:
+      "JavaScript handle reentry; Rust's exclusive mutable generator borrow excludes this call",
     run() {
       let nested: unknown;
       let reenter = true;
@@ -817,6 +827,8 @@ export const codecBoundaryCases = [
   },
   {
     name: "contains thrown and malformed injected generator results",
+    javascriptOnly:
+      "JavaScript structural generator objects, exception identity and malformed return types",
     run() {
       const cause = new Error("custom generator failed");
       const throwing = unwrap(
@@ -1046,6 +1058,7 @@ export const codecBoundaryCases = [
   },
   ...["constructor", "toString", "__proto__"].map((slugAlphabet) => ({
     name: `rejects inherited alphabet ${slugAlphabet} at construction`,
+    javascriptOnly: "inherited JavaScript object properties; Rust uses the alphabet enum",
     run() {
       const error = createCodec({
         mask: UUID_V7_TEST_MASK,

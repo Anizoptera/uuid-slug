@@ -16,6 +16,7 @@ import type { UuidV7MaskingCodecOptions } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 import { TEST_SENTINELS } from "./sentinel-fixtures";
 import { SAMPLE_V7_A, SAMPLE_V4 } from "./uuid-input-fixtures";
+import { detailedDiagnostics } from "./test-implementation";
 
 const createUuidV7MaskingCodec = (options: UuidV7MaskingCodecOptions) =>
   unwrap(createCodec(options));
@@ -83,14 +84,17 @@ describe("UUIDv7 timestamp extraction", () => {
       extractUuidV7Payload(uuid, { subMillisecondFractionBits: 13, counterBits: 0 }),
     ).toMatchObject({
       code: "invalid_options",
-      message: "subMillisecondFractionBits must be a whole number from 0 through 12; got 13.",
+      message: detailedDiagnostics
+        ? "subMillisecondFractionBits must be a whole number from 0 through 12; got 13."
+        : expect.stringContaining("13"),
     });
     expect(
       extractUuidV7Payload(uuid, { subMillisecondFractionBits: 12, counterBits: 63 }),
     ).toMatchObject({
       code: "invalid_options",
-      message:
-        "counterBits must be a whole number from 0 through 62 when subMillisecondFractionBits is 12; got 63.",
+      message: detailedDiagnostics
+        ? "counterBits must be a whole number from 0 through 62 when subMillisecondFractionBits is 12; got 63."
+        : expect.stringContaining("63"),
     });
   });
 

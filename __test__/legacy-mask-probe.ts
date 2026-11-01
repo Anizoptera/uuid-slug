@@ -277,6 +277,8 @@ export const legacyMaskCases = [
   },
   {
     name: "migration returns errors for malformed reader configuration",
+    javascriptOnly:
+      "JavaScript option bags and wrong runtime property types; Rust uses typed migration options",
     run(this: void) {
       const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
       for (const options of [

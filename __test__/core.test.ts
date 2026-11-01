@@ -53,6 +53,8 @@ import type { SlugAlphabet, UuidV7Generator, UuidV7MaskingCodecOptions } from ".
 import { unwrap } from "../dev/unwrap";
 import { TEST_SENTINELS } from "./sentinel-fixtures";
 import { SAMPLE_V7_A, MIXED_V7_A, SAMPLE_V7_B, SAMPLE_V4 } from "./uuid-input-fixtures";
+import { javascriptOnly } from "./shared-test-host";
+import { detailedDiagnostics } from "./test-implementation";
 
 const FILL_WITH_ZEROS = (bytes: Uint8Array) => {
   bytes.fill(0);
@@ -134,63 +136,71 @@ describe("UUID byte inputs", () => {
     expect(new Uint8Array(backing)).toEqual(before);
   });
 
-  it("recognizes cross-realm inputs and rejects inexact, detached, or unrelated containers", () => {
-    const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
-    const foreign = runInNewContext(
-      `(() => {
+  // JavaScript realms and detachable host containers do not exist in Rust's slice input domain.
+  javascriptOnly(
+    "recognizes cross-realm inputs and rejects inexact, detached, or unrelated containers",
+    () => {
+      const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
+      const foreign = runInNewContext(
+        `(() => {
         const buffer = new ArrayBuffer(20);
         new Uint8Array(buffer, 2, 16).set([${[...bytes].join(",")}]);
         return { buffer: buffer.slice(2, 18), view: new DataView(buffer, 2, 16) };
       })()`,
-    ) as { buffer: ArrayBuffer; view: DataView };
-    const detached = bytes.buffer.slice(0);
-    structuredClone(detached, { transfer: [detached] });
+      ) as { buffer: ArrayBuffer; view: DataView };
+      const detached = bytes.buffer.slice(0);
+      structuredClone(detached, { transfer: [detached] });
 
-    expect(bytesToUuidString(foreign.buffer)).toBe(SAMPLE_V7_A);
-    expect(bytesToUuidString(foreign.view)).toBe(SAMPLE_V7_A);
-    for (const input of [
-      new ArrayBuffer(15),
-      new ArrayBuffer(17),
-      new DataView(new ArrayBuffer(17)),
-      new SharedArrayBuffer(16),
-      new Uint16Array(8),
-      detached,
-    ]) {
-      expect(uuidToString(input as never)).toMatchObject({ code: "invalid_buffer" });
-    }
-  });
+      expect(bytesToUuidString(foreign.buffer)).toBe(SAMPLE_V7_A);
+      expect(bytesToUuidString(foreign.view)).toBe(SAMPLE_V7_A);
+      for (const input of [
+        new ArrayBuffer(15),
+        new ArrayBuffer(17),
+        new DataView(new ArrayBuffer(17)),
+        new SharedArrayBuffer(16),
+        new Uint16Array(8),
+        detached,
+      ]) {
+        expect(uuidToString(input as never)).toMatchObject({ code: "invalid_buffer" });
+      }
+    },
+  );
 });
 
 describe("error classification", () => {
-  it("accepts package errors across realms without accepting lookalike data or throwing", () => {
-    const foreign = runInNewContext(
-      'Object.assign(new Error("failure"), { name: "UuidSlugError", code: "invalid_uuid" })',
-    ) as UuidSlugError;
-    expect(isUuidSlugError(new UuidSlugError("invalid_uuid", "bad UUID"))).toBe(true);
-    expect(isUuidSlugError(foreign)).toBe(true);
-    const shadowed = new UuidSlugError("invalid_uuid", "shadowed marker");
-    Object.defineProperty(shadowed, "__failure", {
-      get() {
-        throw new Error("marker blocked");
-      },
-    });
-    expect(isUuidSlugError(shadowed)).toBe(true);
-    expect(
-      isUuidSlugError(
-        Object.assign(new Error("legacy"), { name: "UuidRuntimeError", code: "invalid_uuid" }),
-      ),
-    ).toBe(false);
-    expect(isUuidSlugError({ name: "UuidSlugError", code: "invalid_uuid" })).toBe(false);
-    expect(
-      isUuidSlugError(
-        new Proxy(new Error("hostile"), {
-          get() {
-            throw new Error("getter failed");
-          },
-        }),
-      ),
-    ).toBe(false);
-  });
+  // JavaScript Error brands and realms are distinct from Rust's typed Error value.
+  javascriptOnly(
+    "accepts package errors across realms without accepting lookalike data or throwing",
+    () => {
+      const foreign = runInNewContext(
+        'Object.assign(new Error("failure"), { name: "UuidSlugError", code: "invalid_uuid" })',
+      ) as UuidSlugError;
+      expect(isUuidSlugError(new UuidSlugError("invalid_uuid", "bad UUID"))).toBe(true);
+      expect(isUuidSlugError(foreign)).toBe(true);
+      const shadowed = new UuidSlugError("invalid_uuid", "shadowed marker");
+      Object.defineProperty(shadowed, "__failure", {
+        get() {
+          throw new Error("marker blocked");
+        },
+      });
+      expect(isUuidSlugError(shadowed)).toBe(true);
+      expect(
+        isUuidSlugError(
+          Object.assign(new Error("legacy"), { name: "UuidRuntimeError", code: "invalid_uuid" }),
+        ),
+      ).toBe(false);
+      expect(isUuidSlugError({ name: "UuidSlugError", code: "invalid_uuid" })).toBe(false);
+      expect(
+        isUuidSlugError(
+          new Proxy(new Error("hostile"), {
+            get() {
+              throw new Error("getter failed");
+            },
+          }),
+        ),
+      ).toBe(false);
+    },
+  );
 
   it("recognizes the package marker first and preserves failures through compatible calls", () => {
     const failure = new UuidSlugError("invalid_uuid", "stop here");
@@ -368,7 +378,8 @@ describe("plain UUID slugs", () => {
     expect(plainSlugToUuidString(`{${SAMPLE_V7_A}}`)).toBeInstanceOf(UuidSlugError);
   });
 
-  it("keeps normalized UUID text validation and input-error precedence", () => {
+  // This precedence concerns invalid JavaScript text-case values; Rust takes a typed formatter.
+  javascriptOnly("keeps normalized UUID text validation and input-error precedence", () => {
     const mixed = SAMPLE_V7_A.toUpperCase();
     for (let position = 0; position < mixed.length; position++) {
       for (const replacement of ["g", "\u212A", "\u0130", "\uff21", " "]) {
@@ -434,7 +445,8 @@ describe("plain UUID slugs", () => {
     );
   });
 
-  it("normalizes genuine String objects used as public controls and metadata", () => {
+  // Boxed strings with overridden coercion are JavaScript host inputs.
+  javascriptOnly("normalizes genuine String objects used as public controls and metadata", () => {
     const uppercase = boxedString(UUID_TEXT_UPPERCASE);
     const base32hex = boxedString(BASE32HEX);
     const instant = boxedString("2025-01-02T03:04:05.006Z");
@@ -639,7 +651,8 @@ describe("plain UUID slugs", () => {
     expect(generateUuidV7({ at: at as never })).toMatchObject({ code: "invalid_timestamp" });
   });
 
-  it("returns an option error when an options proxy blocks validation", () => {
+  // Rust option structs cannot be revoked proxies.
+  javascriptOnly("returns an option error when an options proxy blocks validation", () => {
     expect(generateUuidV7(revokedInput.proxy as never)).toMatchObject({
       code: "invalid_options",
     });
@@ -697,7 +710,8 @@ describe("plain UUID slugs", () => {
       });
   });
 
-  it("rejects selected-generator output before the requested precise instant", () => {
+  // This invokes a JavaScript structural generator, distinct from Rust's owned generator state.
+  javascriptOnly("rejects selected-generator output before the requested precise instant", () => {
     const source = unwrap(
       createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
         readUnixMs: () => 100,
@@ -729,46 +743,51 @@ describe("plain UUID slugs", () => {
       });
   });
 
-  it("rejects invalid selected-generator inputs before advancing external state", () => {
-    let generationCalls = 0;
-    let layoutReads = 0;
-    const generator = {
-      generateUuidV7Bytes() {
-        generationCalls += 1;
-        return new Uint8Array(16);
-      },
-      get payloadLayout() {
-        layoutReads += 1;
-        return { subMillisecondFractionBits: 13, counterBits: 0 };
-      },
-    } as never;
+  // Invalid option properties and getter effects belong to JavaScript's generator protocol.
+  javascriptOnly(
+    "rejects invalid selected-generator inputs before advancing external state",
+    () => {
+      let generationCalls = 0;
+      let layoutReads = 0;
+      const generator = {
+        generateUuidV7Bytes() {
+          generationCalls += 1;
+          return new Uint8Array(16);
+        },
+        get payloadLayout() {
+          layoutReads += 1;
+          return { subMillisecondFractionBits: 13, counterBits: 0 };
+        },
+      } as never;
 
-    expect(generatePlainUuidV7Slug({ generator })).toMatchObject({ code: "invalid_options" });
-    expect(generateUuidV7({ generator })).toMatchObject({ code: "invalid_options" });
-    expect(generateUuidV7Bytes({ generator })).toMatchObject({ code: "invalid_options" });
-    expect(layoutReads).toBe(3);
-    expect(generationCalls).toBe(0);
+      expect(generatePlainUuidV7Slug({ generator })).toMatchObject({ code: "invalid_options" });
+      expect(generateUuidV7({ generator })).toMatchObject({ code: "invalid_options" });
+      expect(generateUuidV7Bytes({ generator })).toMatchObject({ code: "invalid_options" });
+      expect(layoutReads).toBe(3);
+      expect(generationCalls).toBe(0);
 
-    const validLayoutGenerator = {
-      generateUuidV7Bytes() {
-        generationCalls += 1;
-        return new Uint8Array(16);
-      },
-      payloadLayout: { subMillisecondFractionBits: 0, counterBits: 42 },
-    } as never;
-    expect(
-      generatePlainUuidV7Slug({ at: Number.NaN, generator: validLayoutGenerator }),
-    ).toMatchObject({ code: "invalid_timestamp" });
-    expect(generateUuidV7({ at: Number.NaN, generator: validLayoutGenerator })).toMatchObject({
-      code: "invalid_timestamp",
-    });
-    expect(
-      generateUuidV7Bytes({ generator: validLayoutGenerator, output: new Uint8Array(15) }),
-    ).toMatchObject({ code: "invalid_buffer" });
-    expect(generationCalls).toBe(0);
-  });
+      const validLayoutGenerator = {
+        generateUuidV7Bytes() {
+          generationCalls += 1;
+          return new Uint8Array(16);
+        },
+        payloadLayout: { subMillisecondFractionBits: 0, counterBits: 42 },
+      } as never;
+      expect(
+        generatePlainUuidV7Slug({ at: Number.NaN, generator: validLayoutGenerator }),
+      ).toMatchObject({ code: "invalid_timestamp" });
+      expect(generateUuidV7({ at: Number.NaN, generator: validLayoutGenerator })).toMatchObject({
+        code: "invalid_timestamp",
+      });
+      expect(
+        generateUuidV7Bytes({ generator: validLayoutGenerator, output: new Uint8Array(15) }),
+      ).toMatchObject({ code: "invalid_buffer" });
+      expect(generationCalls).toBe(0);
+    },
+  );
 
-  it("protects caller-owned output from a failing selected generator", () => {
+  // Rust callbacks return typed UUID/error values; these malformed JavaScript returns are unrepresentable.
+  javascriptOnly("protects caller-owned output from a failing selected generator", () => {
     const valid = unwrap(
       createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, { readUnixMs: () => 0 }),
     );
@@ -787,7 +806,8 @@ describe("plain UUID slugs", () => {
     expect(output).toEqual(new Uint8Array(16).fill(0xaa));
   });
 
-  it("rejects an unknown UUID text case before generation work", () => {
+  // Rust's formatting choice cannot contain an unknown JavaScript property or selector.
+  javascriptOnly("rejects an unknown UUID text case before generation work", () => {
     const invalid = Symbol("titlecase") as never;
     let clockReads = 0;
     const generator = unwrap(createUuidV7Generator({ readUnixMs: () => ++clockReads }));
@@ -842,7 +862,8 @@ describe("plain UUID slugs", () => {
     );
   });
 
-  it("uses custom entropy only through explicitly named generation calls", () => {
+  // This checks JavaScript option getters on APIs whose Rust signatures have no entropy parameter.
+  javascriptOnly("uses custom entropy only through explicitly named generation calls", () => {
     const first = generateUuidV4WithRandomFill(FILL_WITH_ZEROS);
     const second = generateUuidV4WithRandomFill(FILL_WITH_ZEROS);
     expect(first).toBe(second);
@@ -887,7 +908,8 @@ describe("plain UUID slugs", () => {
     expect(nestedV7).toMatchObject({ code: "rng_unavailable" });
   });
 
-  it("rejects malformed clock rollback policies before reading the clock", () => {
+  // Rust's rollback enum excludes these JavaScript values and unknown option properties.
+  javascriptOnly("rejects malformed clock rollback policies before reading the clock", () => {
     let clockReads = 0;
     const readUnixMs = () => ++clockReads;
     const invalidPolicies = [
@@ -1067,7 +1089,8 @@ describe("plain UUID slugs", () => {
     ).toBe(true);
   });
 
-  it("returns typed failures for malformed JavaScript UUID-value calls", () => {
+  // Receiver spoofing and foreign JavaScript value protocols have no Rust Uuid equivalent.
+  javascriptOnly("returns typed failures for malformed JavaScript UUID-value calls", () => {
     expect(Reflect.apply(parseUuid, undefined, [SAMPLE_V7_A, {}])).toMatchObject({
       code: "invalid_options",
     });
@@ -1149,7 +1172,9 @@ describe("plain UUID slugs", () => {
       for (const character of ["!", "\u0130"]) {
         const invalid = `${compact.slice(0, index)}${character}${compact.slice(index + 1)}`;
         expect(uuidStringToBytes(invalid, output)).toMatchObject({
-          message: expect.stringContaining(`offset ${index - (index % 2)};`),
+          ...(detailedDiagnostics
+            ? { message: expect.stringContaining(`offset ${index - (index % 2)};`) }
+            : { code: "invalid_uuid" }),
         });
         expect(output.every((byte) => byte === 0x5a)).toBe(true);
       }
@@ -1313,7 +1338,8 @@ describe("masked UUID slugs", () => {
     expect(output).toEqual(new Uint8Array(18).fill(0x5a));
   });
 
-  it("normalizes genuine String objects at keyed slug seams", () => {
+  // Rust borrows UTF-8 strings; JavaScript boxed-string coercion stays on its host.
+  javascriptOnly("normalizes genuine String objects at keyed slug seams", () => {
     const codec = unwrap(
       Reflect.apply(createUuidV7MaskingCodec, undefined, [
         {
@@ -1501,7 +1527,8 @@ describe("masked UUID slugs", () => {
     expect(createCodec({ mask: { seed: "fine-test-seed-0000" } })).not.toBeInstanceOf(Error);
   });
 
-  it("refuses unknown custom-mask options instead of ignoring caller intent", () => {
+  // Rust supplies callbacks as typed arguments, with no JavaScript option bag.
+  javascriptOnly("refuses unknown custom-mask options instead of ignoring caller intent", () => {
     const result = Reflect.apply(createCustomUuidV7Mask, undefined, [
       {
         diagnosticLabel: "typo",
@@ -1620,7 +1647,9 @@ describe("sentinel definitions", () => {
       }),
     ).toMatchObject({
       code: "invalid_sentinel",
-      message: 'Sentinel "second" repeats the UUID of an earlier sentinel.',
+      message: detailedDiagnostics
+        ? 'Sentinel "second" repeats the UUID of an earlier sentinel.'
+        : `Sentinel "second" repeats an earlier sentinel UUID: ${SAMPLE_V7_A}.`,
     });
   });
 });

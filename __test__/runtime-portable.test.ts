@@ -7,7 +7,8 @@
  * Browser UUIDv4 text stays on the faster pooled byte path even where `randomUUID` exists;
  * `getRandomValues` remains independently available on insecure contexts.
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, vi } from "vitest";
+import { javascriptOnly } from "./shared-test-host";
 
 const nativeRandomUuid = globalThis.crypto.randomUUID.bind(globalThis.crypto);
 
@@ -30,33 +31,39 @@ afterEach(() => {
 });
 
 describe("portable runtime capability probe", () => {
-  it("returns rng_unavailable when Web Crypto entropy is absent", async () => {
+  javascriptOnly("returns rng_unavailable when Web Crypto entropy is absent", async () => {
     const runtime = await adapterWith(undefined);
     const failure = runtime.fillRandom(new Uint8Array(16));
     expect(failure).toMatchObject({ code: "rng_unavailable" });
   });
 
-  it("loads without Web Crypto when another runtime exposes a Deno-shaped global", async () => {
-    const runtime = await adapterWith(undefined, {});
-    expect(runtime.fillRandom(new Uint8Array(16))).toMatchObject({ code: "rng_unavailable" });
-  });
+  javascriptOnly(
+    "loads without Web Crypto when another runtime exposes a Deno-shaped global",
+    async () => {
+      const runtime = await adapterWith(undefined, {});
+      expect(runtime.fillRandom(new Uint8Array(16))).toMatchObject({ code: "rng_unavailable" });
+    },
+  );
 
-  it("leaves uuidV4 undefined when the page has getRandomValues but not randomUUID", async () => {
-    const runtime = await adapterWith({ getRandomValues: fill });
-    expect(runtime.uuidV4).toBeUndefined();
-    // The capability that IS present must still work: leaving `uuidV4` undefined routes callers to
-    // the byte generator, which draws through exactly this.
-    const bytes = new Uint8Array(16);
-    runtime.fillRandom(bytes);
-    expect(bytes.every((byte) => byte === 0x7f)).toBe(true);
-  });
+  javascriptOnly(
+    "leaves uuidV4 undefined when the page has getRandomValues but not randomUUID",
+    async () => {
+      const runtime = await adapterWith({ getRandomValues: fill });
+      expect(runtime.uuidV4).toBeUndefined();
+      // The capability that IS present must still work: leaving `uuidV4` undefined routes callers to
+      // the byte generator, which draws through exactly this.
+      const bytes = new Uint8Array(16);
+      runtime.fillRandom(bytes);
+      expect(bytes.every((byte) => byte === 0x7f)).toBe(true);
+    },
+  );
 
-  it("keeps the faster portable v4 route when randomUUID exists", async () => {
+  javascriptOnly("keeps the faster portable v4 route when randomUUID exists", async () => {
     const runtime = await adapterWith({ getRandomValues: fill, randomUUID: nativeRandomUuid });
     expect(runtime.uuidV4).toBeUndefined();
   });
 
-  it("executes native UUIDv4 under Deno capability selection", async () => {
+  javascriptOnly("executes native UUIDv4 under Deno capability selection", async () => {
     const runtime = await adapterWith({ getRandomValues: fill, randomUUID: nativeRandomUuid }, {});
     expect(runtime.uuidV4?.()).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
@@ -66,7 +73,8 @@ describe("portable runtime capability probe", () => {
 
 describe("portable UUID text and slug writing", () => {
   // Optional engine encoders must not change the fixed UUID wire output.
-  it.each([
+  // These cases change JavaScript runtime probes and reset its module graph, not Rust codegen.
+  javascriptOnly.each([
     [false, false],
     [false, true],
     [true, false],

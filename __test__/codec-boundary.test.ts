@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { test } from "vitest";
+import { sharedTest } from "./shared-test-host";
 import { codecBoundaryCases } from "./codec-boundary-probe";
 
-for (const entry of codecBoundaryCases) test(entry.name, entry.run);
+for (const entry of codecBoundaryCases) sharedTest(entry);

@@ -15,6 +15,7 @@ import {
 } from "./test-implementation";
 import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 import { encodeBase32hexReference } from "./base32hex-reference";
+import { javascriptOnly } from "./shared-test-host";
 
 const bytesFrom = (length: number) =>
   Uint8Array.from({ length }, (_, index) => (Math.imul(length + 1, 131) + index * 197) & 0xff);
@@ -162,12 +163,14 @@ describe("bit-packing codec", () => {
 
   it.each([
     ["rejects an empty string", "", false],
-    ["rejects null", null, false],
-    ["rejects undefined", undefined, false],
     ["rejects the wrong length", "AAAA", false],
     ["accepts a canonical slug", "AAAAAAAAcACAAAAAAAAAAA", true],
   ])("base64url UUID slug predicate %s", (_case, value, expected) => {
     expect(isPlainUuidSlug(value)).toBe(expected);
+  });
+  // Rust's &str parameter excludes absent JavaScript values before runtime.
+  javascriptOnly.each([null, undefined])("base64url UUID slug predicate rejects %s", (value) => {
+    expect(isPlainUuidSlug(value)).toBe(false);
   });
 });
 

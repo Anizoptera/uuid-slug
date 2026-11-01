@@ -16,6 +16,7 @@ import { MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS } from "../src/payload";
 import { uuidStringToBytes } from "../src/uuid";
 import { uuidStringToPlainSlug } from "../src/slug";
 import { uuidV7StringBounds } from "../src/v7-bounds";
+import { detailedDiagnostics } from "./test-implementation";
 
 /** Pads to the 16-byte seed floor, so cases can keep naming their key after what it tests. */
 const maskOrThrow = (seed: string) => {
@@ -170,7 +171,9 @@ describe("the maskable range", () => {
       createUuidV7MaskingCodec({ mask: handle, timestampRangeStartUnixMs: maxStart + 1 }),
     ).toMatchObject({
       code: "invalid_timestamp",
-      message: `timestampRangeStartUnixMs must be an integer from 0 through ${maxStart}; got ${maxStart + 1}.`,
+      message: detailedDiagnostics
+        ? `timestampRangeStartUnixMs must be an integer from 0 through ${maxStart}; got ${maxStart + 1}.`
+        : expect.stringContaining(`${maxStart}`),
     });
     expect(
       createUuidV7MaskingCodec({ mask: handle, timestampRangeStartUnixMs: 0.5 }),
@@ -182,7 +185,9 @@ describe("the maskable range", () => {
       }),
     ).toMatchObject({
       code: "invalid_timestamp",
-      message: expect.stringContaining("previousMasks[].timestampRangeStartUnixMs"),
+      message: expect.stringContaining(
+        detailedDiagnostics ? "previousMasks[].timestampRangeStartUnixMs" : "previous_masks",
+      ),
     });
   });
 });

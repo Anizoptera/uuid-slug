@@ -26,9 +26,10 @@ import {
 } from "./entropy-probe";
 import { generateUuidV4, generateUuidV4Bytes } from "../src/index";
 import { runtime as nodeRuntime } from "../src/runtime/node";
+import { javascriptOnly, usingRust } from "./shared-test-host";
 
 describe("entropy source", () => {
-  it.runIf(!process.versions.deno)(
+  it.runIf(!usingRust && !process.versions.deno)(
     "selects native UUIDv4 only when Node actually runs without the JIT",
     () => {
       // Real processes distinguish NODE_OPTIONS from CLI overrides. The V8 executable heap is an
@@ -82,7 +83,7 @@ describe("entropy source", () => {
       }
     },
   );
-  it.runIf(!process.versions.deno)(
+  it.runIf(!usingRust && !process.versions.deno)(
     "generates UUIDv4 text from the package's attributable pool on Node with the JIT",
     () => {
       // With the JIT, native text is slower than the pooled portable path, so the adapter omits it and text
@@ -94,7 +95,8 @@ describe("entropy source", () => {
     },
   );
 
-  it.each(generators)("never reaches for Math.random in %s", (_name, generate) => {
+  // JavaScript patches cannot observe Rust's OS entropy; its seed/fork fault tests own that path.
+  javascriptOnly.each(generators)("never reaches for Math.random in %s", (_name, generate) => {
     expect(insecureAmong(sourcesUsedBy(generate))).toEqual([]);
   });
 
@@ -108,15 +110,18 @@ describe("entropy source", () => {
     expect(constantBitCount(generateUuidV4Bytes)).toBe(6);
   });
 
-  it("draws its own randomness from a source that can be shown to be cryptographic", () => {
-    // `generateUuidV4Bytes` always goes through this package's `fillRandom`, so an empty result is a
-    // real finding: our own entropy could not be attributed. The delegating paths cannot make
-    // that claim — a native generator draws inside the engine, below any JavaScript patch —
-    // so they only assert the negative.
-    const used = attributedSourcesFor(generateUuidV4Bytes);
-    expect(used).not.toEqual([]);
-    expect(insecureAmong(used)).toEqual([]);
-  });
+  javascriptOnly(
+    "draws its own randomness from a source that can be shown to be cryptographic",
+    () => {
+      // `generateUuidV4Bytes` always goes through this package's `fillRandom`, so an empty result is a
+      // real finding: our own entropy could not be attributed. The delegating paths cannot make
+      // that claim — a native generator draws inside the engine, below any JavaScript patch —
+      // so they only assert the negative.
+      const used = attributedSourcesFor(generateUuidV4Bytes);
+      expect(used).not.toEqual([]);
+      expect(insecureAmong(used)).toEqual([]);
+    },
+  );
 });
 
 /**
@@ -130,7 +135,8 @@ describe("entropy source", () => {
  * process, so every other case in this file, and in the whole suite, keeps passing.
  */
 describe("import-time entropy", () => {
-  it("touches no randomness source at module load", async () => {
+  // vi.resetModules and JavaScript entropy interception do not reload a native Rust library.
+  javascriptOnly("touches no randomness source at module load", async () => {
     // A fresh module registry, or the import below returns the instance the rest of this file
     // already loaded and its module body never runs again — the test would then observe nothing
     // and pass by construction.

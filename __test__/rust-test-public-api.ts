@@ -2,6 +2,7 @@
 import { encode, decodeInto, halfSipHash, feistel16 } from "./rust-test-implementation";
 import {
   api,
+  failure,
   input,
   invoke,
   isUuidSlugError,
@@ -17,6 +18,7 @@ import {
   deriveRustMask,
   deriveRustMaskAsync,
   publicTestMask,
+  rustMaskedCandidates,
 } from "./rust-test-codec";
 import { createRustGenerator, generated } from "./rust-test-generator";
 import { parsedValue } from "./rust-test-value";
@@ -59,10 +61,14 @@ const functions: Record<string, (...args: unknown[]) => unknown> = {
           outputOffset,
         )
       : bytes(value, offsetOrOutput, outputOrOffset),
-  bytesToUuidString: (value, offsetOrCase = 0, textCase) =>
-    invoke("text", value, typeof offsetOrCase === "number" ? textCase : offsetOrCase, {
+  bytesToUuidString: (value, offsetOrCase = 0, textCase) => {
+    if (typeof offsetOrCase === "string" && !Number.isNaN(Number(offsetOrCase)))
+      return failure("invalid_buffer");
+    return invoke("text", value, typeof offsetOrCase === "number" ? textCase : offsetOrCase, {
       offset: typeof offsetOrCase === "number" ? offsetOrCase : 0,
-    }),
+      source: "bytes",
+    });
+  },
   uuidToString: (value, offsetOrCase, textCase) =>
     invoke("text", value, typeof offsetOrCase === "number" ? textCase : offsetOrCase, {
       offset: typeof offsetOrCase === "number" ? offsetOrCase : undefined,
@@ -72,6 +78,7 @@ const functions: Record<string, (...args: unknown[]) => unknown> = {
   uuidBytesToPlainSlug: (value, offsetOrAlphabet = 0, alphabet) =>
     invoke("plain", value, typeof offsetOrAlphabet === "string" ? offsetOrAlphabet : alphabet, {
       offset: typeof offsetOrAlphabet === "string" ? 0 : offsetOrAlphabet,
+      source: "bytes",
     }),
   uuidToPlainSlug: (value, offsetOrAlphabet, alphabet) =>
     invoke("plain", value, typeof offsetOrAlphabet === "number" ? alphabet : offsetOrAlphabet, {
@@ -91,6 +98,7 @@ const functions: Record<string, (...args: unknown[]) => unknown> = {
   uuidV7ByteBounds: (start, end) => bounds(start, end, undefined, true),
   deriveUuidV7Mask: deriveRustMask,
   applyMask: applyRustMask,
+  decodeMaskedCandidates: rustMaskedCandidates,
   deriveUuidV7MaskAsync: deriveRustMaskAsync,
   createCustomUuidV7Mask: customRustMask,
   createUuidV7MaskingCodec: createRustCodec,

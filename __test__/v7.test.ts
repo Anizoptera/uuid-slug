@@ -14,6 +14,7 @@ import { describe, expect, it } from "vitest";
 import { INVALID_TIMESTAMP, UuidSlugError } from "../src/index";
 import type { UuidV7Instant } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
+import { javascriptOnly } from "./shared-test-host";
 
 /** Fills with one repeated byte, so the counter seed lands on a known bound. */
 const constantFill = (byte: number) => (bytes: Uint8Array<ArrayBuffer>) => {
@@ -355,7 +356,8 @@ describe("uuidv7 readUnixMs contract", () => {
 });
 
 describe("uuidv7 buffer handling", () => {
-  it("accepts an empty options object and identifies unknown option names", () => {
+  // Unknown JavaScript properties cannot be supplied to Rust's typed generation arguments.
+  javascriptOnly("accepts an empty options object and identifies unknown option names", () => {
     const generator = createUuidV7Generator({
       readUnixMs: fixedClock(1),
       fillRandom: constantFill(0x00),

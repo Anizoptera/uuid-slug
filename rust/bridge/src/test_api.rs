@@ -36,6 +36,82 @@ fn bytes(v: &Value) -> Result<Vec<u8>, Error> {
 fn alphabet(v: &Value) -> Result<UuidSlugAlphabet, Error> {
     super::dispatch::alphabet(v)
 }
+fn fill_for_request(
+    options: &Value,
+    out: &mut [u8],
+    required: &mut Option<usize>,
+) -> Result<(), Error> {
+    if options["hostRandom"] == true {
+        return uuid_slug::fill_os_random_bytes(out);
+    }
+    if options["random"].is_null() {
+        *required = Some(out.len());
+        return Err(invalid(ErrorCode::RngUnavailable));
+    }
+    let data: Vec<u8> = serde_json::from_value(options["random"].clone())
+        .map_err(|_| invalid(ErrorCode::RngUnavailable))?;
+    if data.len() != out.len() {
+        return Err(invalid(ErrorCode::RngUnavailable));
+    }
+    out.copy_from_slice(&data);
+    Ok(())
+}
+fn with_generator<R>(
+    options: &Value,
+    generators: &mut [UuidV7Generator],
+    run: impl FnOnce(&mut UuidV7Generator) -> Result<R, Error>,
+) -> Result<R, Error> {
+    if options["stateless"] == true {
+        let bits = options["fractionBits"]
+            .as_u64()
+            .and_then(|v| u8::try_from(v).ok())
+            .ok_or_else(|| invalid(ErrorCode::InvalidOptions))?;
+        run(&mut UuidV7Generator::new().with_sub_millisecond_fraction_bits(bits)?)
+    } else {
+        run(generators
+            .get_mut(index(&options["generator"])?)
+            .ok_or_else(|| invalid(ErrorCode::InvalidOptions))?)
+    }
+}
+fn generate_into(options: &Value, generators: &mut [UuidV7Generator]) -> Result<Value, Error> {
+    let mut storage = bytes(&options["output"])?;
+    let mut required = None;
+    let fill = |out: &mut [u8]| fill_for_request(options, out, &mut required);
+    let result = index(&options["outputOffset"]).and_then(|offset| {
+        if options["version"] == 4 {
+            uuid_slug::generate_uuid_v4_into_with_random_fill(&mut storage, offset, fill)
+        } else {
+            with_generator(options, generators, |generator| {
+                if options["at"].is_object() {
+                    generator.generate_uuid_v7_at_into_with_random_fill(
+                        super::dispatch::system_time(&options["at"])?,
+                        &mut storage,
+                        offset,
+                        fill,
+                    )
+                } else {
+                    generator.generate_uuid_v7_into_with_random_fill(
+                        super::dispatch::number(&options["at"]),
+                        &mut storage,
+                        offset,
+                        fill,
+                    )
+                }
+            })
+        }
+    });
+    // Pending callback requests must expose storage too: an early write must remain observable
+    // even when the foreign entropy callback fails before a second native call.
+    if let Some(length) = required {
+        return Ok(json!({"drawRequired":length,"storage":storage}));
+    }
+    Ok(match result {
+        Ok(()) => json!({"storage":storage}),
+        Err(error) => {
+            json!({"storage":storage,"error":error.code().as_str(),"message":error.to_string()})
+        }
+    })
+}
 fn uuid(
     v: &Value,
     source: &str,
@@ -44,8 +120,20 @@ fn uuid(
     codec: Option<usize>,
 ) -> Result<Uuid, Error> {
     if v.is_object() && v.get("bytes").is_some() {
+        if source == "text" {
+            return Err(invalid(ErrorCode::InvalidUuid));
+        }
+        if source == "plain" || source == "masked" {
+            return Err(invalid(ErrorCode::InvalidUuidSlug));
+        }
         let data = bytes(v)?;
+        if offset.is_null() && data.len() != 16 {
+            return Err(invalid(ErrorCode::InvalidBuffer));
+        }
         return Uuid::from_uuid_bytes(&data, if offset.is_null() { 0 } else { index(offset)? });
+    }
+    if source == "bytes" {
+        return Err(invalid(ErrorCode::InvalidBuffer));
     }
     let text = v.as_str().ok_or_else(|| invalid(ErrorCode::InvalidUuid))?;
     match source {
@@ -94,6 +182,7 @@ fn run(request: &Value, objects: &mut Objects) -> Result<Value, Error> {
         .and_then(|v| usize::try_from(v).ok());
     match method {
         "transform" => super::primitives::mask_transform(&args[0]),
+        "generateInto" => generate_into(&args[0], &mut objects.generators),
         "reset" => {
             *objects = Objects::default();
             Ok(Value::Null)
@@ -245,37 +334,23 @@ fn run(request: &Value, objects: &mut Objects) -> Result<Value, Error> {
         "generate" => {
             let options = &args[0];
             let mut required = None;
-            let fill = |out: &mut [u8]| {
-                if options["random"].is_null() {
-                    required = Some(out.len());
-                    return Err(invalid(ErrorCode::RngUnavailable));
-                }
-                let data: Vec<u8> = serde_json::from_value(options["random"].clone())
-                    .map_err(|_| invalid(ErrorCode::RngUnavailable))?;
-                if data.len() != out.len() {
-                    return Err(invalid(ErrorCode::RngUnavailable));
-                }
-                out.copy_from_slice(&data);
-                Ok(())
-            };
+            let fill = |out: &mut [u8]| fill_for_request(options, out, &mut required);
             let result = if options["version"] == 4 {
                 uuid_slug::generate_uuid_v4_with_random_fill(fill)
             } else {
-                let generator = objects
-                    .generators
-                    .get_mut(index(&options["generator"])?)
-                    .ok_or_else(|| invalid(ErrorCode::InvalidOptions))?;
-                if options["at"].is_object() {
-                    generator.generate_uuid_v7_at_with_random_fill(
-                        super::dispatch::system_time(&options["at"])?,
-                        fill,
-                    )
-                } else {
-                    generator.generate_uuid_v7_with_random_fill(
-                        super::dispatch::number(&options["at"]),
-                        fill,
-                    )
-                }
+                with_generator(options, &mut objects.generators, |generator| {
+                    if options["at"].is_object() {
+                        generator.generate_uuid_v7_at_with_random_fill(
+                            super::dispatch::system_time(&options["at"])?,
+                            fill,
+                        )
+                    } else {
+                        generator.generate_uuid_v7_with_random_fill(
+                            super::dispatch::number(&options["at"]),
+                            fill,
+                        )
+                    }
+                })
             };
             if let Some(length) = required {
                 return Ok(json!({"drawRequired":length}));
@@ -344,6 +419,17 @@ fn run(request: &Value, objects: &mut Objects) -> Result<Value, Error> {
             )?;
             match method {
                 "bytes" => Ok(json!(uuid.as_uuid_bytes())),
+                "write" => {
+                    let mut storage = bytes(&args[1])?;
+                    let result = index(&args[2])
+                        .and_then(|offset| uuid.write_uuid_bytes(&mut storage, offset));
+                    Ok(match result {
+                        Ok(()) => json!({"storage":storage}),
+                        Err(error) => {
+                            json!({"storage":storage,"error":error.code().as_str(),"message":error.to_string()})
+                        }
+                    })
+                }
                 "text" => match args[1].as_str().unwrap_or("lowercase") {
                     "lowercase" => Ok(json!(uuid.to_string())),
                     "uppercase" => Ok(json!(format!("{uuid:X}"))),

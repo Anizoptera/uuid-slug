@@ -1,5 +1,5 @@
 // Rust owns every codec result; this boundary only serializes calls and copies returned bytes.
-import { afterAll, expect } from "vitest";
+import { afterAll, afterEach, beforeEach, expect } from "vitest";
 import { basename } from "node:path";
 import { loadRustBridge } from "../scripts/rust-bridge";
 import { BASE32HEX, BASE64URL } from "../src/alphabet";
@@ -13,6 +13,19 @@ export const detailedDiagnostics = false;
 
 const bridge = await loadRustBridge();
 let calls = 0;
+let callsBeforeCase = 0;
+let executedCases = 0;
+beforeEach(() => {
+  callsBeforeCase = calls;
+});
+afterEach((context) => {
+  if (context.task.result?.state === "fail") return;
+  if (calls === callsBeforeCase)
+    throw new Error(
+      "This case did not execute Rust. Wire its actual operation, or mark its JavaScript-only contract beside the case; fixture setup and neighboring tests are not coverage.",
+    );
+  executedCases++;
+});
 type Request = {
   op: string;
   input?: string;
@@ -206,7 +219,9 @@ afterAll(() => {
     if (!calls) throw new Error("Shared suite executed no Rust calls.");
     const file = expect.getState().testPath;
     if (!file) throw new Error("Shared suite omitted its test file identity.");
-    console.log(`${bridge.transport}: shared suite ${basename(file)} executed ${calls} Rust calls`);
+    console.log(
+      `${bridge.transport}: shared suite ${basename(file)} executed ${calls} Rust calls in ${executedCases} cases`,
+    );
   } finally {
     try {
       bridge.evaluate('[{"op":"api","method":"reset","args":[]}]');

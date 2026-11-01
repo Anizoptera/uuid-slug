@@ -1,4 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0
-import { test } from "vitest";
+import { sharedTest } from "./shared-test-host";
 import { asyncMaskCases } from "./mask-async-probe";
-for (const entry of asyncMaskCases) test(entry.name, entry.run);
+for (const entry of asyncMaskCases) sharedTest(entry);

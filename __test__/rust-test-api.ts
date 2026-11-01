@@ -115,15 +115,24 @@ export function write(value: unknown, output?: unknown, offset: unknown = 0): un
   const bytes = returnedBytes(value);
   if (bytes instanceof Error) return bytes;
   if (output === undefined) return bytes;
-  if (
-    !isUint8Array(output) ||
-    typeof offset !== "number" ||
-    !Number.isSafeInteger(offset) ||
-    offset < 0 ||
-    offset > output.length - bytes.length
-  )
+  if (!isUint8Array(output) || typeof offset !== "number" || !Number.isSafeInteger(offset))
     return failure("invalid_buffer");
-  output.set(bytes, offset);
+  return commitStorage(api("write", [input(bytes), { bytes: [...output] }, offset]), output);
+}
+
+export function commitStorage(result: unknown, output: Uint8Array): unknown {
+  if (isUuidSlugError(result)) return result;
+  const response = record(result);
+  const storage = returnedBytes(response.storage);
+  if (storage instanceof Error || storage.length !== output.length)
+    throw new Error("Rust writer changed its destination size.");
+  output.set(storage);
+  if (response.error !== undefined) {
+    const code = ERROR_CODES.find((candidate) => candidate === response.error);
+    if (!code || typeof response.message !== "string")
+      throw new Error("Malformed Rust writer failure.");
+    return failure(code, response.message);
+  }
   return output;
 }
 

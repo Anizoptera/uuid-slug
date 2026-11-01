@@ -111,9 +111,14 @@ const hasCause = (value: unknown, target: unknown): boolean =>
   (value instanceof AggregateError && value.errors.some((cause) => hasCause(cause, target))) ||
   (value instanceof Error && hasCause(value.cause, target));
 
-export const runtimeBoundaryCases: { name: string; run(this: void): void | Promise<void> }[] = [
+export const runtimeBoundaryCases: {
+  name: string;
+  javascriptOnly?: string;
+  run(this: void): void | Promise<void>;
+}[] = [
   {
     name: "custom entropy preserves recognized failures and leaves caller storage and sequence untouched",
+    javascriptOnly: "JavaScript failure markers and object identity; Rust returns its typed Error",
     run(this: void) {
       const markedFailure = Object.freeze({
         __failure: true,
@@ -178,6 +183,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "validated generator bytes remain usable when a failure marker cannot be read",
+    javascriptOnly: "JavaScript failure-marker getters on structural generator output",
     run(this: void) {
       const expected = unwrap(uuidStringToBytes(uuid));
       const generator = {
@@ -453,6 +459,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "contains structural codec callbacks without exposing immutable UUID storage",
+    javascriptOnly: "foreign JavaScript codec objects and thrown-value identity",
     run(this: void) {
       const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
       const value = unwrap(parseUuid(uuid));
@@ -616,6 +623,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "rejects generator presets before observing clocks or consuming entropy and sequence",
+    javascriptOnly: "invalid JavaScript option properties and reflective presets",
     run() {
       let clocks = 0;
       let draws = 0;
@@ -651,6 +659,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "rejects host and class generator options while accepting plain records from any realm",
+    javascriptOnly: "JavaScript object prototypes and realms; Rust takes a typed options value",
     run() {
       class Options {
         readonly marker = true;
@@ -729,6 +738,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "detaches selected generators and isolates their retained output",
+    javascriptOnly: "JavaScript method receivers and retained mutable callback arrays",
     run(this: void) {
       const source = makeGenerator();
       const valid = unwrap(source.generateUuidV7Bytes());
@@ -758,6 +768,8 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "public generators reject caller-supplied entropy",
+    javascriptOnly:
+      "unknown JavaScript entropy properties; Rust signatures select explicit callback methods",
     run(this: void) {
       const originalFill = runtime.fillRandom;
       let runtimeDraws = 0;
@@ -783,6 +795,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "generation rejects exotic option objects through every public owner",
+    javascriptOnly: "JavaScript proxies and host object brands",
     run(this: void) {
       const generator = unwrap(createSecureUuidV7Generator());
       const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
@@ -811,6 +824,8 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "public generators fail atomically when platform entropy is unavailable",
+    javascriptOnly:
+      "JavaScript runtime adapter interception; native Rust entropy has separate fault tests",
     run(this: void) {
       // Fail the platform primitive itself rather than `runtime.fillRandom`: module-level UUIDv7
       // generation binds the pooled fill once, so only the primitive reaches every public route.
@@ -898,6 +913,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "distinguishes native UUIDv4 and portable generation failures by output route",
+    javascriptOnly: "JavaScript native UUID delegation and runtime capability selection",
     run(this: void) {
       const saved = { ...runtime };
       const portableCause = new Error("portable route failed");
@@ -991,6 +1007,8 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: NATIVE_UUID_V7_DEFAULTS_CASE,
+    javascriptOnly:
+      "JavaScript runtime capability subprocesses; they do not select the Rust backend",
     async run(this: void) {
       if (process.env.UUID_SLUG_NATIVE_V7_PROBE !== "1") {
         // The fixture exposes capability before public imports; cached selection needs a fresh host.
@@ -1147,6 +1165,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "trusts native UUIDv4 output without additional validation",
+    javascriptOnly: "JavaScript host UUID string delegation; Rust generators return an owned Uuid",
     run(this: void) {
       const originalV4 = runtime.uuidV4;
       runtime.uuidV4 = () => "not-a-uuid";
@@ -1161,6 +1180,8 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "accepts cross-realm UUID byte containers and rejects detached buffers",
+    javascriptOnly:
+      "JavaScript realm and detached-buffer semantics; Rust borrows valid byte slices",
     run(this: void) {
       const bytes = vm.runInNewContext("new Uint8Array(16)") as Uint8Array;
       const buffer = vm.runInNewContext("new ArrayBuffer(16)") as ArrayBuffer;
@@ -1201,6 +1222,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "byte interfaces reject ambiguous inputs and non-Uint8Array outputs",
+    javascriptOnly: "JavaScript numeric arrays, host container brands and non-byte destinations",
     run(this: void) {
       const slug = "AR9x-wRQcSGISEhKEhISEg";
       const generator = makeGenerator();
@@ -1248,6 +1270,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "uses the marker protocol before validating unmarked legacy errors",
+    javascriptOnly: "JavaScript error markers and realm recognition",
     run(this: void) {
       const invalid = Reflect.construct(UuidSlugError, ["unknown_code", "invalid code"]);
       assert.equal(isUuidSlugError(invalid), true);
@@ -1371,6 +1394,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "never publishes a partial entropy refill and erases consumed bytes",
+    javascriptOnly: "JavaScript runtime pool refill and erasure; Rust uses a separate native RNG",
     run(this: void) {
       const cause = new Error("partial entropy draw");
       const sourceBuffers: Uint8Array[] = [];
@@ -1406,6 +1430,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "pooled draws copy every byte and erase exactly the consumed range",
+    javascriptOnly: "JavaScript pool chunk copying and erasure; Rust has no such pool",
     run(this: void) {
       let source: Uint8Array | undefined;
       const fill = pooledFill((bytes) => {
@@ -1430,6 +1455,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "refuses UUIDv4 generation reentered from its entropy source",
+    javascriptOnly: "JavaScript's shared UUIDv4 scratch and entropy callback reentry",
     run(this: void) {
       const originalFill = runtime.fillRandom;
       const originalV4 = runtime.uuidV4;
@@ -1465,6 +1491,8 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   })),
   {
     name: "rejects omitted-buffer offsets in both runtime byte methods",
+    javascriptOnly:
+      "JavaScript optional-buffer overloads; Rust writers require a destination slice",
     run(this: void) {
       const callUuidV7Bytes = generateUuidV7Bytes as (
         out?: Uint8Array,
@@ -1578,6 +1606,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
   },
   {
     name: "returns errors for malformed public generator configuration",
+    javascriptOnly: "JavaScript option bags, unknown keys and throwing getters",
     run(this: void) {
       for (const options of [null, 1, "generator", [], { readUnixMs: 1 }, { clok: Date.now }]) {
         const result = Reflect.apply(createSecureUuidV7Generator, undefined, [options]);
@@ -1599,7 +1628,9 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
     },
   },
   {
-    name: "refuses malformed and nonfinite timestamp windows",
+    name: "refuses malformed JavaScript timestamp window objects",
+    javascriptOnly:
+      "JavaScript option bags, misspelled keys and throwing accessors; Rust takes a typed window",
     run(this: void) {
       for (const options of [
         null,
@@ -1624,6 +1655,11 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
         assert.equal(result.code, "invalid_timestamp");
         assert.equal(result.cause, cause);
       }
+    },
+  },
+  {
+    name: "refuses nonfinite and negative timestamp window fields",
+    run(this: void) {
       for (const maxTimestampDeltaMs of [NaN, Infinity, -Infinity, -1]) {
         const result = validateUuidV7StringUnixMs(uuid, {
           maxTimestampDeltaMs,

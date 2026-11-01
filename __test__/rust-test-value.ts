@@ -38,7 +38,6 @@ export function parsedValue(value: unknown, options: Record<string, unknown> = {
     },
     extractV7Payload: (selected: unknown = layout) =>
       selected ? payload(invoke("payload", bytes, selected)) : failure("invalid_options"),
-    presets: Object.freeze({ maskingCodec: !!retained, payloadLayout: !!layout }),
   };
   parsedBytes.set(result, bytes);
   valueOptions.set(result, { maskingCodec: retained, payloadLayout: layout });

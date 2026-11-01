@@ -101,6 +101,7 @@ const readers: readonly (readonly [
 
 interface ProbeCase {
   readonly name: string;
+  readonly javascriptOnly?: string | undefined;
   /** The failure, or `undefined` when the entry point honoured the contract. */
   readonly run: () => string | undefined;
 }
@@ -157,6 +158,10 @@ export const cases: readonly ProbeCase[] = [
   ...writers.flatMap(([name, call]) =>
     HOSTILE_OFFSETS.map((offset) => ({
       name: `${name} refuses offset ${String(offset)} and writes nothing`,
+      javascriptOnly:
+        typeof offset === "string"
+          ? "Rust's usize offset cannot be a JavaScript string"
+          : undefined,
       run: () => {
         const buffer = new Uint8Array(BUFFER_BYTES).fill(FILL);
         return refusal(call(buffer, offset as number)) ?? untouched(buffer);
@@ -174,6 +179,10 @@ export const cases: readonly ProbeCase[] = [
   ...readers.flatMap(([name, call, offsets]) =>
     offsets.map((offset) => ({
       name: `${name} refuses offset ${String(offset)}`,
+      javascriptOnly:
+        typeof offset === "string"
+          ? "Rust's usize offset cannot be a JavaScript string"
+          : undefined,
       run: () => refusal(call(new Uint8Array(BUFFER_BYTES).fill(FILL), offset as number)),
     })),
   ),
