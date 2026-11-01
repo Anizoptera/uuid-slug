@@ -18,7 +18,7 @@ export async function runWasmSharedTests(
   );
   // Bindings load this filename synchronously; replace only their generated copy, never Cargo's input.
   await rename(processedNodeModule, join(nodeBindings, "uuid_slug_bridge_bg.wasm"));
-  console.log(JSON.stringify({ profile, sharedTests: "alphabet", optimization }));
+  console.log(JSON.stringify({ profile, sharedTests: true, optimization }));
   // Keep generated files alive until both supervised hosts have exited, including a failed sibling.
   const results = await Promise.allSettled(
     ["node", "bun"].map((runtime) =>

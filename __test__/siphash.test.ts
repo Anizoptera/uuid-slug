@@ -15,7 +15,8 @@
 import { expect, test } from "vitest";
 
 import vectors from "../rust/uuid-slug/tests/fixtures/fixtures-halfsiphash.json" with { type: "json" };
-import { halfSipHash } from "../src/siphash";
+import { halfSipHash } from "./test-implementation";
+import { verifyHashContinuationsWith } from "./siphash-probe";
 
 test("HalfSipHash-2-4 matches all 64 published reference vectors", () => {
   const out = new Int32Array(2);
@@ -32,5 +33,5 @@ test("HalfSipHash-2-4 matches all 64 published reference vectors", () => {
   expect(produced).toEqual(vectors.halfSipHash64);
 });
 
-import { verifyHashContinuations } from "./siphash-probe";
-test("interleaved hash continuations preserve every reference vector", verifyHashContinuations);
+test("interleaved hash continuations preserve every reference vector", () =>
+  verifyHashContinuationsWith(halfSipHash));

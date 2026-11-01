@@ -1,10 +1,79 @@
-//! Feed shared TypeScript wire tests into the actual private Rust bit codec.
+//! Feed shared TypeScript tests into the actual private Rust primitives.
 use serde_json::{Value, json};
 use uuid_slug::{Error, ErrorCode, UuidSlugAlphabet};
 
 // Import the production body instead of publishing test hooks or copying its algorithm.
 #[path = "../../uuid-slug/src/bit_encoding.rs"]
 mod bit_encoding;
+
+#[path = "../../uuid-slug/src/siphash.rs"]
+mod siphash;
+
+pub(super) fn hash(request: &Value) -> Result<Value, Error> {
+    let key: [u32; 2] = serde_json::from_value(request["key"].clone())
+        .map_err(|_| Error::new(ErrorCode::InvalidMask))?;
+    let bytes: Vec<u8> = serde_json::from_value(request["bytes"].clone())
+        .map_err(|_| Error::new(ErrorCode::InvalidMask))?;
+    if !request["blockLimit"].is_null() || !request["continuation"].is_null() {
+        return continue_hash(request, key, &bytes);
+    }
+    // Both production entry points must match the published oracle, including partial final words.
+    let result = if bytes.len().is_multiple_of(4) {
+        let words: Vec<u32> = bytes
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|chunk| u32::from_le_bytes(*chunk))
+            .collect();
+        siphash::hash_words(key, &words)
+    } else {
+        siphash::hash_bytes(key, &bytes)
+    };
+    Ok(json!(result))
+}
+
+fn continue_hash(request: &Value, key: [u32; 2], bytes: &[u8]) -> Result<Value, Error> {
+    let invalid = || Error::new(ErrorCode::InvalidOptions);
+    let words = bytes.as_chunks::<4>().0;
+    let (mut state, start) = if request["continuation"].is_null() {
+        (siphash::HashState::new(key), 0)
+    } else {
+        let continuation = &request["continuation"];
+        let state = serde_json::from_value(continuation["state"].clone()).map_err(|_| invalid())?;
+        let start = continuation["block"]
+            .as_u64()
+            .and_then(|n| usize::try_from(n).ok())
+            .ok_or_else(invalid)?;
+        (siphash::HashState(state), start)
+    };
+    if start > words.len() {
+        return Err(invalid());
+    }
+    let limit = if request["blockLimit"].is_null() {
+        usize::MAX
+    } else {
+        request["blockLimit"]
+            .as_u64()
+            .and_then(|n| usize::try_from(n).ok())
+            .ok_or_else(invalid)?
+    };
+    if limit == 0 {
+        return Err(invalid());
+    }
+    // Subtract first: admission proves the resumed range fits before any index addition.
+    let pending = limit <= words.len() - start;
+    let end = if pending { start + limit } else { words.len() };
+    for word in &words[start..end] {
+        state.absorb(u32::from_le_bytes(*word));
+    }
+    if pending {
+        return Ok(json!({ "state": state.0, "block": end }));
+    }
+    Ok(json!(state.finish(
+        siphash::tail_word(&bytes[words.len() * 4..]),
+        bytes.len()
+    )))
+}
 
 fn failure(alphabet: UuidSlugAlphabet) -> Error {
     Error::new(match alphabet {

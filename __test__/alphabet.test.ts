@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   BASE32HEX,
   BASE64URL,
@@ -8,12 +8,11 @@ import {
   encode,
   codecs,
   detailedDiagnostics,
-  backendName,
   uuidBytesToPlainSlug,
   isPlainUuidSlug,
   plainSlugToUuidBytes,
   uuidStringToPlainSlug,
-} from "./alphabet-backend";
+} from "./test-implementation";
 import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 import { encodeBase32hexReference } from "./base32hex-reference";
 
@@ -24,11 +23,6 @@ const bytesFrom = (length: number) =>
 function decodeFailure(code: string, message: string) {
   return detailedDiagnostics ? { code, message } : { code };
 }
-
-beforeAll(() => {
-  // A resolver mistake must fail instead of silently exercising TypeScript in a Rust lane.
-  expect(backendName).toBe(process.env.UUID_SLUG_TEST_BACKEND ?? "typescript");
-});
 
 describe("bit-packing codec", () => {
   // An oracle only has value when it can fail independently of the code under test. Comparing

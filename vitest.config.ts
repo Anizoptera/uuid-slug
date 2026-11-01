@@ -14,13 +14,13 @@ export default defineConfig({
     alias:
       backend === "rust"
         ? {
-            "./alphabet-backend": fileURLToPath(
-              new URL("./__test__/alphabet-rust-backend.ts", import.meta.url),
+            "./test-implementation": fileURLToPath(
+              new URL("./__test__/rust-test-implementation.ts", import.meta.url),
             ),
             ...(wasm
               ? {
                   "../scripts/rust-bridge": fileURLToPath(
-                    new URL("./__test__/alphabet-wasm-bridge.ts", import.meta.url),
+                    new URL("./__test__/wasm-test-bridge.ts", import.meta.url),
                   ),
                 }
               : {}),
@@ -33,6 +33,9 @@ export default defineConfig({
     setupFiles: ["./__test__/runtime-host.ts"],
     // Bun-specific files run under `bun test`; Node cannot resolve their `bun:test` imports.
     exclude: ["__test__/**/*.bun.test.ts"],
-    include: backend === "rust" ? ["__test__/alphabet.test.ts"] : ["__test__/**/*.test.ts"],
+    include:
+      backend === "rust"
+        ? ["__test__/alphabet.test.ts", "__test__/siphash.test.ts"]
+        : ["__test__/**/*.test.ts"],
   },
 });

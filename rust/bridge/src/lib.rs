@@ -6,7 +6,7 @@ extern crate alloc;
 use uuid_slug::UuidSlugAlphabet;
 
 mod dispatch;
-mod wire_test;
+mod primitives;
 
 fn evaluate_caught(input: &str) -> Result<String, &'static str> {
     std::panic::catch_unwind(|| dispatch::evaluate(input)).map_err(|_| "Rust bridge panicked")

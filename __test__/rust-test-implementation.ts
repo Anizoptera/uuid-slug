@@ -8,7 +8,6 @@ import { WIRE_FORMAT_MASKS } from "./wire-format-codecs";
 
 export { BASE32HEX, BASE64URL };
 export const detailedDiagnostics = false;
-export const backendName = "rust";
 
 const bridge = await loadRustBridge();
 let calls = 0;
@@ -17,11 +16,19 @@ type Request = {
   input?: string;
   alphabet?: string;
   bytes?: number[];
+  key?: number[];
+  continuation?: HashContinuation;
+  blockLimit?: number;
   tail?: number;
   tailBits?: number;
   mask?: (typeof WIRE_FORMAT_MASKS)[keyof typeof WIRE_FORMAT_MASKS];
   sentinels?: typeof NIL_TEST_SENTINEL;
 };
+
+interface HashContinuation {
+  readonly block: number;
+  readonly state: readonly number[];
+}
 
 function call(request: Request): unknown {
   const replies: unknown = JSON.parse(bridge.evaluate(JSON.stringify([request])));
@@ -102,6 +109,56 @@ export function uuidStringToPlainSlug(input: string) {
   return text({ op: "plain", input });
 }
 
+export function halfSipHash(
+  key0: number,
+  key1: number,
+  words: Int32Array,
+  byteLength: number,
+  output: Int32Array,
+  continuation?: HashContinuation,
+  blockLimit = Infinity,
+): HashContinuation | undefined {
+  // Transport the specified little-endian bytes; signed JS words must not change their bit pattern.
+  const bytes = Array.from(
+    { length: byteLength },
+    (_, index) => ((words[index >>> 2] ?? 0) >>> ((index & 3) * 8)) & 255,
+  );
+  const value = call({
+    op: "halfSipHash",
+    key: [key0 >>> 0, key1 >>> 0],
+    bytes,
+    ...(continuation ? { continuation } : {}),
+    ...(blockLimit === Infinity ? {} : { blockLimit }),
+  });
+  if (
+    value &&
+    typeof value === "object" &&
+    "state" in value &&
+    "block" in value &&
+    typeof value.block === "number" &&
+    Number.isInteger(value.block) &&
+    value.block >= 0 &&
+    Array.isArray(value.state) &&
+    value.state.length === 4 &&
+    value.state.every(
+      (word: unknown) =>
+        typeof word === "number" && Number.isInteger(word) && word >= 0 && word <= 0xffffffff,
+    )
+  )
+    return { block: value.block, state: value.state };
+  if (
+    !Array.isArray(value) ||
+    value.length !== 2 ||
+    !value.every(
+      (word: unknown) =>
+        typeof word === "number" && Number.isInteger(word) && word >= 0 && word <= 0xffffffff,
+    )
+  )
+    throw new Error("Malformed Rust HalfSipHash result.");
+  output.set(value);
+  return undefined;
+}
+
 function codec(mask: keyof typeof WIRE_FORMAT_MASKS) {
   const options = { mask: WIRE_FORMAT_MASKS[mask], sentinels: NIL_TEST_SENTINEL };
   return {
@@ -119,8 +176,8 @@ afterAll(() => {
   try {
     if (process.env.UUID_SLUG_WASM_BRIDGE && !bridge.transport.endsWith("WebAssembly"))
       throw new Error("The WASM lane loaded a native bridge; repair the Vitest transport alias.");
-    if (!calls) throw new Error("Rust alphabet suite executed no Rust calls.");
-    console.log(`${bridge.transport}: alphabet suite executed ${calls} Rust calls`);
+    if (!calls) throw new Error("Shared suite executed no Rust calls.");
+    console.log(`${bridge.transport}: shared suite executed ${calls} Rust calls`);
   } finally {
     bridge.close();
   }

@@ -1,7 +1,7 @@
 //! HalfSipHash-2-4 preserves the published 32-bit, little-endian wire primitive.
 
 #[derive(Clone, Copy)]
-pub(crate) struct HashState([u32; 4]);
+pub(crate) struct HashState(pub(crate) [u32; 4]);
 
 impl HashState {
     pub(crate) fn new(key: [u32; 2]) -> Self {
