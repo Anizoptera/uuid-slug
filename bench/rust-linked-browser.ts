@@ -12,7 +12,15 @@ export function retainedAlphabetTables(bytes: Buffer) {
   function decoder(symbols: string) {
     const values = Buffer.alloc(256, 255);
     for (let index = 0; index < symbols.length; index++) values[symbols.charCodeAt(index)] = index;
-    return bytes.includes(values);
+    if (bytes.includes(values)) return true;
+    // Older readers fold case before lookup; direct base32 readers keep aliases in the table.
+    if (symbols === base32hex) {
+      const uppercase = symbols.toUpperCase();
+      for (let index = 0; index < symbols.length; index++)
+        values[uppercase.charCodeAt(index)] = index;
+      return bytes.includes(values);
+    }
+    return false;
   }
   return {
     base64url: bytes.includes(base64url),
