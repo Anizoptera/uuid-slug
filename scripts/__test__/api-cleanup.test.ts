@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdir, mkdtemp, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { rejects } from "node:assert/strict";
 import { verificationTimeoutMs } from "../test-bun";
 
 const root = resolve(import.meta.dir, "../..");
@@ -19,7 +20,11 @@ test.each(vitestHosts)(
       await mkdir(files);
       await symlink(join(root, "node_modules"), join(scratch, "node_modules"), "junction");
       const config = join(scratch, "vitest.config.mjs");
-      await writeFile(config, 'export default { test: { include: ["worker.test.ts"] } };');
+      const unownedCache = join(scratch, "outside-runner-cache");
+      await writeFile(
+        config,
+        `export default { test: { include: ["worker.test.ts"], fsModuleCache: true, fsModuleCachePath: ${JSON.stringify(unownedCache)} } };`,
+      );
       await writeFile(
         join(scratch, "worker.test.ts"),
         [
@@ -53,6 +58,8 @@ test.each(vitestHosts)(
         expect(
           (await readdir(files, { recursive: true })).some((file) => file.endsWith("probe.mjs")),
         ).toBe(true);
+        // A clean temporary directory proves nothing if the worker wrote its cache outside it.
+        await rejects(readdir(unownedCache), { code: "ENOENT" });
         // Under Deno, Vitest's own SIGTERM handler logs an unhandled
         // `RangeError: The value of "code" is out of range ... Received NaN`: it falls back to
         // `Number(signal)` when no signal number arrives, and Deno's `process` passes none. The

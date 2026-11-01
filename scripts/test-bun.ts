@@ -11,12 +11,15 @@ export function verificationTimeoutMs(localTimeoutMs: number): number {
   return localTimeoutMs * (process.env.CI ? 15 : 1);
 }
 
-export async function runBunInScratch(args: readonly string[]): Promise<number> {
+export async function runBunInScratch(
+  args: readonly string[] | ((scratch: string) => readonly string[]),
+): Promise<number> {
   // A terminated child cannot run its finally blocks. The surviving parent removes files in
-  // the runner's temporary directory after it exits; reusable caches stay outside.
+  // the runner's temporary directory after it exits; toolchain caches stay outside.
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-runner-"));
   try {
-    const child = Bun.spawn([process.execPath, "--no-orphans", ...args], {
+    const preparedArgs = typeof args === "function" ? args(scratch) : args;
+    const child = Bun.spawn([process.execPath, "--no-orphans", ...preparedArgs], {
       // Isolate this runner's group so interruption reaches native extraction children too.
       // Windows retains Bun's no-orphans supervision; POSIX signals only this new group.
       detached: USE_PROCESS_GROUP,

@@ -1,4 +1,5 @@
 import { runBunInScratch, verificationTimeoutMs } from "./test-bun";
+import { join } from "node:path";
 
 // Supervision owns scratch, while the selected external host owns Vitest's runtime semantics.
 const runtime = process.env.UUID_SLUG_TEST_RUNTIME ?? "node";
@@ -16,7 +17,7 @@ if (
   !selected.every((part: unknown) => typeof part === "string" && part.length > 0)
 )
   throw new Error("UUID_SLUG_TEST_COMMAND must be a nonempty JSON array of executable arguments.");
-process.exitCode = await runBunInScratch([
+process.exitCode = await runBunInScratch((scratch) => [
   "run",
   ...selected,
   "node_modules/vitest/vitest.mjs",
@@ -25,4 +26,6 @@ process.exitCode = await runBunInScratch([
   "--testTimeout=" + verificationTimeoutMs(5000),
   "--hookTimeout=" + verificationTimeoutMs(10000),
   ...process.argv.slice(2),
+  // Shared caches are cleared during startup; concurrent hosts must own separate directories.
+  "--fsModuleCachePath=" + join(scratch, "vitest-cache"),
 ]);
