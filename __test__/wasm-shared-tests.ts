@@ -3,6 +3,7 @@ import { rename } from "node:fs/promises";
 import { join } from "node:path";
 import { optimizeWasm } from "../scripts/wasm-opt";
 import { runRustSharedSuites } from "./shared-suite-runner";
+import { browserEngines } from "../scripts/browser-engines";
 
 export async function runWasmSharedTests(
   options: { artifact: string; cli: string; directory: string; profile: "debug" | "release" },
@@ -34,4 +35,10 @@ export async function runWasmSharedTests(
     }),
   );
   for (const result of results) if (result.status === "rejected") throw result.reason;
+  const browserWitnesses = await runRustSharedSuites(
+    { UUID_SLUG_WASM_BROWSER: directory },
+    Object.keys(browserEngines).map((name) => `${name} WebAssembly`),
+    "vitest.browser.config.ts",
+  );
+  for (const witness of browserWitnesses) console.log(witness);
 }

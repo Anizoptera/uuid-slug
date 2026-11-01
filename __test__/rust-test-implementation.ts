@@ -1,6 +1,5 @@
 // Rust owns every codec result; this boundary only serializes calls and copies returned bytes.
 import { afterAll, afterEach, beforeEach, expect } from "vitest";
-import { basename } from "node:path";
 import { loadRustBridge } from "../scripts/rust-bridge";
 import { BASE32HEX, BASE64URL } from "../src/alphabet";
 import type { Alphabet } from "../src/alphabet";
@@ -15,8 +14,9 @@ const bridge = await loadRustBridge();
 let calls = 0;
 let callsBeforeCase = 0;
 let executedCases = 0;
-beforeEach(() => {
+beforeEach((context) => {
   callsBeforeCase = calls;
+  context.task.meta.rustTransport = bridge.transport;
 });
 afterEach((context) => {
   if (context.task.result?.state === "fail") return;
@@ -220,7 +220,7 @@ afterAll(() => {
     const file = expect.getState().testPath;
     if (!file) throw new Error("Shared suite omitted its test file identity.");
     console.log(
-      `${bridge.transport}: shared suite ${basename(file)} executed ${calls} Rust calls in ${executedCases} cases`,
+      `${bridge.transport}: shared suite ${file.split(/[\\/]/).at(-1)} executed ${calls} Rust calls in ${executedCases} cases`,
     );
   } finally {
     try {

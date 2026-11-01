@@ -3,6 +3,7 @@ import { test } from "vitest";
 declare module "vitest" {
   interface TaskMeta {
     javascriptOnly?: boolean;
+    rustTransport?: string;
   }
 }
 export const usingRust = process.env.UUID_SLUG_TEST_BACKEND === "rust";

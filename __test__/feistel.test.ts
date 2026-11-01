@@ -73,6 +73,7 @@ describe("feistel mixing", () => {
     feistel16(framed, 5, KEYS, "mask", out, 3);
     expect([...out.subarray(3, 19)]).toEqual([...apply(source, "mask")]);
     expect([...out.subarray(0, 3)]).toEqual([0xaa, 0xaa, 0xaa]);
+    expect([...out.subarray(19)]).toEqual([0xaa, 0xaa, 0xaa, 0xaa, 0xaa]);
   });
 
   // The whole reason this replaces permute+XOR. A construction that mixed poorly would still be

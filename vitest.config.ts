@@ -5,6 +5,7 @@ import TEST_DISCOVERY from "./__test__/shared-test-suites.json" with { type: "js
 const runtime = process.env.UUID_SLUG_TEST_RUNTIME ?? "node";
 const backend = process.env.UUID_SLUG_TEST_BACKEND ?? "typescript";
 const wasm = process.env.UUID_SLUG_WASM_BRIDGE;
+const browser = process.env.UUID_SLUG_WASM_BROWSER;
 if (backend !== "typescript" && backend !== "rust")
   throw new Error(`Unknown test backend: ${backend}; use typescript or rust.`);
 
@@ -33,8 +34,8 @@ export default defineConfig({
   test: {
     fsModuleCache: true,
     setupFiles: [
-      "./__test__/runtime-host.ts",
-      ...(backend === "rust" ? ["./__test__/rust-test-implementation.ts"] : []),
+      browser ? "./__test__/browser-host.ts" : "./__test__/runtime-host.ts",
+      ...(backend === "rust" ? ["./__test__/rust-test-setup.ts"] : []),
     ],
     // Bun-specific files run under `bun test`; Node cannot resolve their `bun:test` imports.
     ...TEST_DISCOVERY,
