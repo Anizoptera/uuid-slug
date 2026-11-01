@@ -62,7 +62,7 @@ try {
     ],
     process.cwd(),
     undefined,
-    { timeoutMs: Math.max(1, deadline - performance.now()) },
+    { timeoutMs: Math.max(1, Math.ceil(deadline - performance.now())) },
   );
   const report: unknown = JSON.parse(await readFile(reportPath, "utf8"));
   if (!isRecord(report) || !isRecord(report.verification_results))
