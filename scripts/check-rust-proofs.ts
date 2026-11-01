@@ -12,6 +12,10 @@ const decodingAssertions = [
   "a non-alphabet byte must fail",
 ];
 const harnesses = [
+  {
+    name: "feistel_contract::inverts_every_block_and_key",
+    assertions: ["unmask must invert every block and key"],
+  },
   ...[
     "identifier_bits::base64_uuid_bits",
     "identifier_bits::base32_uuid_bits",
