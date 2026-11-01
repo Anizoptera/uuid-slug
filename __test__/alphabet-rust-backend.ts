@@ -117,6 +117,8 @@ export const codecs = {
 
 afterAll(() => {
   try {
+    if (process.env.UUID_SLUG_WASM_BRIDGE && !bridge.transport.endsWith("WebAssembly"))
+      throw new Error("The WASM lane loaded a native bridge; repair the Vitest transport alias.");
     if (!calls) throw new Error("Rust alphabet suite executed no Rust calls.");
     console.log(`${bridge.transport}: alphabet suite executed ${calls} Rust calls`);
   } finally {

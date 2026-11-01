@@ -61,6 +61,30 @@ export async function prepareNativeConformance() {
             `${label} did not report fallback=${requiredFallback}. Repair verifyNativeLoading in __test__/native-bridge-probe.ts with UUID_SLUG_RUST_TRANSPORT absent; forced-route conformance cannot cover automatic loading. Output: ${output}`,
           );
         console.log(`${label}: ${output}`);
+        const runtime = lane.expectedTransport.startsWith("Bun")
+          ? "bun"
+          : lane.expectedTransport.startsWith("Deno")
+            ? "deno"
+            : "node";
+        const tests = await run(["bun", "scripts/test-vitest.ts", "--reporter=verbose"], {
+          ...env,
+          UUID_SLUG_RUST_PROFILE: profile,
+          UUID_SLUG_TEST_RUNTIME: runtime,
+          UUID_SLUG_TEST_BACKEND: "rust",
+          ...(lane.command.includes("--experimental-ffi")
+            ? {
+                NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --experimental-ffi --disable-warning=ExperimentalWarning`,
+              }
+            : {}),
+        });
+        const witness = tests.match(
+          /(?:Bun|Node|Deno) (?:FFI|Node-API): alphabet suite executed [1-9]\d* Rust calls/,
+        )?.[0];
+        if (!witness?.startsWith(`${lane.expectedTransport}: `))
+          throw new Error(
+            `${label} did not execute the shared alphabet suite through ${lane.expectedTransport}: ${tests}`,
+          );
+        console.log(`${label}: ${witness}`);
       }),
     );
     for (const result of results) if (result.status === "rejected") throw result.reason;

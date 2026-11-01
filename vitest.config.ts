@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 
 const runtime = process.env.UUID_SLUG_TEST_RUNTIME ?? "node";
 const backend = process.env.UUID_SLUG_TEST_BACKEND ?? "typescript";
+const wasm = process.env.UUID_SLUG_WASM_BRIDGE;
 if (backend !== "typescript" && backend !== "rust")
   throw new Error(`Unknown test backend: ${backend}; use typescript or rust.`);
 
@@ -16,6 +17,13 @@ export default defineConfig({
             "./alphabet-backend": fileURLToPath(
               new URL("./__test__/alphabet-rust-backend.ts", import.meta.url),
             ),
+            ...(wasm
+              ? {
+                  "../scripts/rust-bridge": fileURLToPath(
+                    new URL("./__test__/alphabet-wasm-bridge.ts", import.meta.url),
+                  ),
+                }
+              : {}),
           }
         : {},
   },

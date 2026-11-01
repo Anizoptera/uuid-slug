@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { browserEngines } from "./browser-engines";
 import { rustToolchain } from "./rust-toolchain";
 import { optimizeWasm } from "./wasm-opt";
+import { runWasmSharedTests } from "../__test__/wasm-shared-tests";
 import {
   compare,
   contractRequests,
@@ -19,11 +20,11 @@ if (profile !== "debug" && profile !== "release")
 const profileArgs = profile === "release" ? ["--release"] : [];
 const toolchain = await rustToolchain();
 
-async function run(argv: string[]): Promise<void> {
+async function run(argv: string[], env: Readonly<Record<string, string>> = {}): Promise<void> {
   const selected =
     argv[0] === "cargo" ? [toolchain.cargo, ...toolchain.cargoArgs, ...argv.slice(1)] : argv;
   const child = Bun.spawn(selected, {
-    env: toolchain.env,
+    env: { ...toolchain.env, ...env },
     stdout: "inherit",
     stderr: "inherit",
     timeout: 300_000,
@@ -161,6 +162,15 @@ try {
   ]);
   const optimized = join(directory, "optimized.wasm");
   const optimization = await optimizeWasm(join(directory, "uuid_slug_bridge_bg.wasm"), optimized);
+  await runWasmSharedTests(
+    {
+      artifact: `rust/target/wasm32-unknown-unknown/${profile}/uuid_slug_bridge.wasm`,
+      cli,
+      directory,
+      profile,
+    },
+    run,
+  );
   const files = new Map([
     ["/bridge.js", Bun.file(join(directory, "uuid_slug_bridge.js"))],
     ["/uuid_slug_bridge_bg.wasm", Bun.file(optimized)],
