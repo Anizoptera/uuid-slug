@@ -2,6 +2,7 @@
 
 use crate::{
     Error, ErrorCode,
+    feistel::{Direction, feistel},
     siphash::{HashState, hash_bytes, hash_words, tail_word},
 };
 use alloc::{format, string::String, sync::Arc, vec::Vec};
@@ -19,12 +20,6 @@ use std::sync::LazyLock;
 const CHAIN_A: [u32; 2] = [0x6469_7575, 0x4167_6c73];
 const CHAIN_B: [u32; 2] = [0x6469_7575, 0x4267_6c73];
 const PUBLIC_SEED: &[u8] = b"anizoptera.uuid-slug.default-mask.v1";
-#[derive(Clone, Copy)]
-enum Direction {
-    UuidV7Mask,
-    Unmask,
-}
-
 type Mixer = dyn Fn([u8; 16], Direction) -> Result<[u8; 16], Error> + Send + Sync;
 
 #[derive(Clone)]
@@ -181,27 +176,6 @@ fn from_keys(label: String, keys: [u32; 8]) -> UuidV7Mask {
         label,
         implementation: Implementation::Feistel(keys),
     }
-}
-
-fn feistel(bytes: [u8; 16], keys: &[u32; 8], direction: Direction) -> [u8; 16] {
-    let mut words = [0; 4];
-    for (word, bytes) in words.iter_mut().zip(bytes.as_chunks::<4>().0) {
-        *word = u32::from_be_bytes(*bytes);
-    }
-    let [mut l0, mut l1, mut r0, mut r1] = words;
-    for round in 0..4 {
-        let index = match direction {
-            Direction::UuidV7Mask => round,
-            Direction::Unmask => 3 - round,
-        } * 2;
-        let [f0, f1] = hash_words([keys[index], keys[index + 1]], &[r0, r1]);
-        (l0, l1, r0, r1) = (r0, r1, l0 ^ f0, l1 ^ f1);
-    }
-    let mut out = [0; 16];
-    for (chunk, word) in out.as_chunks_mut::<4>().0.iter_mut().zip([r0, r1, l0, l1]) {
-        chunk.copy_from_slice(&word.to_be_bytes());
-    }
-    out
 }
 
 /// Shared cancellation for cooperative derivation; dropping the future also stops all work.
