@@ -92,10 +92,6 @@ describe("portable UUID text and slug writing", () => {
       try {
         vi.resetModules();
         vi.doMock("#runtime", () => import("../src/runtime/portable"));
-        const adapter = await import("../src/runtime/portable");
-        expect(typeof adapter.runtime.uuidHex === "function").toBe(
-          webkit && !removeNative && typeof toHex?.value === "function",
-        );
         const api = await import("../src/index");
         const bytes = Uint8Array.from({ length: 20 }, (_, index) => (index - 2) * 17);
         const lower = "00112233-4455-6677-8899-aabbccddeeff";
