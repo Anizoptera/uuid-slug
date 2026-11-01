@@ -1,0 +1,17 @@
+[package]
+name = "uuid-slug-proofs"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+# Kani supplies its own compiler; keep proof artifacts outside the native workspace.
+[workspace]
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+uuid-slug = { path = "../uuid-slug", default-features = false }
+
+[lints.rust]
+unexpected_cfgs = { level = "deny", check-cfg = ['cfg(kani)'] }
