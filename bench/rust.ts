@@ -6,7 +6,6 @@ import { resolve } from "node:path";
 import { buildRustBridge } from "../scripts/rust-bridge";
 import { nativeMatrix } from "../scripts/rust-native-matrix";
 import { rustToolchain } from "../scripts/rust-toolchain";
-import { refuseBusyHost } from "./host-load";
 import { codecOutput, codecTimingOutput } from "./rust-codec-output";
 
 const toolchain = await rustToolchain();
@@ -92,8 +91,6 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
       rust: (await run(["rustc", "-Vv"])).output.trim(),
       filter,
       prepareOnly,
-      // The shared host guard owns refusal and warnings; forced measurements stay identifiable.
-      busyHostOverride: process.env.UUID_SLUG_PERF_ALLOW_BUSY === "1",
     }),
   );
   const source = await readFile("rust/uuid-slug/benches/codec.rs");
@@ -140,13 +137,11 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
       for (let index = 0; index < variants.length; index++) {
         const variant = variants[repetition % 2 ? variants.length - 1 - index : index];
         if (!variant) throw new Error("Missing Rust codec candidate");
-        refuseBusyHost("before");
         const result = await run([variant.executable], {
           UUID_SLUG_PROFILE_FILTER: filter,
           UUID_SLUG_CODEC_PREPARE_ONLY: "",
           UUID_SLUG_TIMING_PADDING: randomBytes(randomInt(1, 2049)).toString("hex"),
         });
-        refuseBusyHost("after");
         const records = codecTimingOutput(result.output, variant.prepared);
         if (
           !result.resources ||

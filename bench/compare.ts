@@ -2,7 +2,6 @@
 
 import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { refuseBusyHost } from "./host-load";
 import { dirname, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
@@ -517,7 +516,6 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
 }
 
 async function main(): Promise<void> {
-  refuseBusyHost("before");
   for (const runtime of selectedRuntimes) {
     if (isBrowserRuntime(runtime)) continue;
     const executable = runtime === "bun" || runtime === "deno" ? runtime : nodeExecutable;
@@ -714,7 +712,6 @@ async function main(): Promise<void> {
           }
         }
       }
-      refuseBusyHost("after");
       emitSummary(observations);
     } finally {
       await server?.stop(true);
