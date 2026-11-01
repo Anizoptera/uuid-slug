@@ -95,3 +95,51 @@ fn base64_masked_bits() {
 fn base32_masked_bits() {
     verify_decoding::<17, 28, 5>(UuidSlugAlphabet::Base32Hex, BASE32HEX);
 }
+
+fn verify_encoding<
+    const BYTES: usize,
+    const CHARS: usize,
+    const BITS: usize,
+    const INPUT: usize,
+    const OUTPUT: usize,
+>(
+    symbols: &[u8],
+) {
+    let mut payload: [u8; BYTES] = kani::any();
+    if BYTES == 17 {
+        payload[BYTES - 1] &= 0xf0;
+    }
+    let reference = if BITS == 6 { BASE64URL } else { BASE32HEX };
+    let (expected, _) = reference_spelling::<BYTES, CHARS, BITS>(&payload, reference);
+    let mut encoded = [0; CHARS];
+    // Check the real block writer and its actual tables, without symbolic allocation machinery.
+    crate::bit_encoding::encode_blocks::<INPUT, OUTPUT, BITS>(symbols, &payload, &mut encoded);
+    assert_eq!(
+        encoded, expected,
+        "encoding must preserve every payload bit and canonical padding"
+    );
+}
+
+#[kani::proof]
+#[kani::unwind(65)]
+fn encoding_base64_uuid_bits() {
+    verify_encoding::<16, 22, 6, 3, 4>(crate::bit_encoding::BASE64URL_SYMBOLS);
+}
+
+#[kani::proof]
+#[kani::unwind(65)]
+fn encoding_base32_uuid_bits() {
+    verify_encoding::<16, 26, 5, 5, 8>(crate::bit_encoding::BASE32HEX_SYMBOLS);
+}
+
+#[kani::proof]
+#[kani::unwind(65)]
+fn encoding_base64_masked_bits() {
+    verify_encoding::<17, 22, 6, 3, 4>(crate::bit_encoding::BASE64URL_SYMBOLS);
+}
+
+#[kani::proof]
+#[kani::unwind(65)]
+fn encoding_base32_masked_bits() {
+    verify_encoding::<17, 27, 5, 5, 8>(crate::bit_encoding::BASE32HEX_SYMBOLS);
+}

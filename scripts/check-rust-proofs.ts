@@ -1,25 +1,37 @@
-// Prove the production decoder's fixed domains; missing evidence must fail, even at exit zero.
+// Prove the production codec kernels; missing evidence must fail, even at exit zero.
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { command } from "./command";
 import { rustToolchain } from "./rust-toolchain";
 
-const harnesses = [
-  "identifier_bits::base64_uuid_bits",
-  "identifier_bits::base32_uuid_bits",
-  "identifier_bits::base64_masked_bits",
-  "identifier_bits::base32_masked_bits",
-];
-const assertions = [
+const decodingAssertions = [
   "canonical text must decode",
   "every payload bit must survive decoding",
   "nonzero decoder padding must fail",
   "a non-alphabet byte must fail",
 ];
+const harnesses = [
+  ...[
+    "identifier_bits::base64_uuid_bits",
+    "identifier_bits::base32_uuid_bits",
+    "identifier_bits::base64_masked_bits",
+    "identifier_bits::base32_masked_bits",
+  ].map((name) => ({ name, assertions: decodingAssertions })),
+  ...[
+    "identifier_bits::encoding_base64_uuid_bits",
+    "identifier_bits::encoding_base32_uuid_bits",
+    "identifier_bits::encoding_base64_masked_bits",
+    "identifier_bits::encoding_base32_masked_bits",
+  ].map((name) => ({
+    name,
+    assertions: ["encoding must preserve every payload bit and canonical padding"],
+  })),
+];
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+const deadline = performance.now() + 300_000;
 const toolchain = await rustToolchain();
 await command(
   toolchain.cargo,
@@ -39,7 +51,7 @@ try {
       "rust/proofs/Cargo.toml",
       "--lib",
       "-j",
-      ...harnesses.flatMap((name) => ["--harness", name]),
+      ...harnesses.flatMap(({ name }) => ["--harness", name]),
       "--exact",
       "--output-format",
       "terse",
@@ -50,7 +62,7 @@ try {
     ],
     process.cwd(),
     undefined,
-    { timeoutMs: 300_000 },
+    { timeoutMs: Math.max(1, deadline - performance.now()) },
   );
   const report: unknown = JSON.parse(await readFile(reportPath, "utf8"));
   if (!isRecord(report) || !isRecord(report.verification_results))
@@ -66,7 +78,7 @@ try {
     results.length !== harnesses.length
   )
     throw new Error("Kani did not complete every required harness successfully.");
-  for (const name of harnesses) {
+  for (const { name, assertions } of harnesses) {
     const matching = results.filter(isRecord).filter((result) => result.harness_id === name);
     const result = matching[0];
     if (matching.length !== 1 || !result || result.status !== "Success")
