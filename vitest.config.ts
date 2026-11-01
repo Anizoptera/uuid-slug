@@ -1,5 +1,7 @@
 import { defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
+// Native config loaders accept this data directly; discovery and execution share the same list.
+import SHARED_TEST_SUITES from "./__test__/shared-test-suites.json" with { type: "json" };
 
 const runtime = process.env.UUID_SLUG_TEST_RUNTIME ?? "node";
 const backend = process.env.UUID_SLUG_TEST_BACKEND ?? "typescript";
@@ -35,7 +37,7 @@ export default defineConfig({
     exclude: ["__test__/**/*.bun.test.ts"],
     include:
       backend === "rust"
-        ? ["__test__/alphabet.test.ts", "__test__/siphash.test.ts", "__test__/feistel.test.ts"]
+        ? SHARED_TEST_SUITES.map((file) => `__test__/${file}`)
         : ["__test__/**/*.test.ts"],
   },
 });
