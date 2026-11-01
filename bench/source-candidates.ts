@@ -206,19 +206,6 @@ const groups = {
     names: ["value.toString", "value.toBytes", "value.toBytes.into", "value.toMaskedSlug"],
     tests: ["__test__/core.test.ts"],
   },
-  timestamp: {
-    names: [
-      "timestamp.uuid",
-      "timestamp.uuid.now",
-      "timestamp.slug",
-      "timestamp.slug.base32",
-      "timestamp.slug.base32.uppercase",
-      "timestamp.masked",
-      "timestamp.masked.base32",
-      "timestamp.masked.base32.uppercase",
-    ],
-    tests: ["__test__/runtime-boundary.test.ts"],
-  },
 } satisfies Record<CandidateGroup, { names: readonly string[]; tests: readonly string[] }>;
 const filename = CANDIDATE_FILES[group];
 const { names: expectedNames } = groups[group];

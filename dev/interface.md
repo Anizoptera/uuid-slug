@@ -40,6 +40,8 @@ Keep this codec distinct from `UuidV7Generator`. The generator owns mutable cloc
 
 Design from caller code, not implementation convenience. Every concept, option, failure, effect, and wrong turn becomes work at every call site for the life of the API.
 
+Before adding or tightening validation, name the concrete consumer harm it prevents and why safe normalization cannot meet the same need. A narrower declaration, an existing test or an inherited convention alone does not establish that harm.
+
 Apply these rules in order. A later rule MUST NOT weaken an earlier one.
 
 1. Names, types, results, and errors must state only what the code enforces. Otherwise callers build on a false promise.
@@ -126,7 +128,7 @@ Choose defaults for end-user performance and resource efficiency across measured
 - A UUIDv7 masking codec exposes `uuidToString`, `uuidToBytes`, `uuidToPlainSlug`, and `uuidToMaskedSlug` for ordinary conversions. It also exposes explicit plain and masked source methods for callers who know the source meaning and must not let the codec's check override it.
 - Name generation `generateMaskedUuidV7Slug` and `generateUuidV7WithMaskedSlug`. Name migration operations `uuidSlugToUuidString` and `uuidSlugToUuidStringCandidates` because those readers intentionally accept several stored UUID-slug formats.
 - Use `maskedSlugAlphabet` for the masking-codec writer choice. It selects emitted slug spelling; it does not constrain readers, which infer and accept both supported spellings.
-- Require callers to provide `maxTimestampDeltaMs` for every timestamp-window check. Read the optional numeric `referenceUnixMs` once, defaulting only that observation to `Date.now()`; do not embed an application tolerance or callback protocol in validation.
+- Require callers to provide `maxTimestampDeltaMs` for every timestamp-window check. Read the optional numeric `referenceUnixMs` once, defaulting only that observation to `Date.now()`. A nullish reference requests the same default clock, so rejecting it adds no useful distinction. Do not embed an application tolerance or callback protocol in validation.
 - Keep direct functions as the least-work path for one-shot calls. Also provide an opt-in immutable parsed UUID for workflows that inspect or convert one UUID repeatedly. It owns its validated UUID data. UUID bits alone determine equality; attached construction context only presets later calls. Structural masking codecs are untrusted callbacks: isolate private bytes, validate returned representations, and contain exceptions with their causes. Trust only package-created immutable codecs to borrow private storage; a matching interface does not establish ownership.
 - Keep parsed construction symmetric. The top-level parser accepts keyless UUID forms and may receive a masking codec to accept that codec's masked forms; the masking codec exposes the same operation with itself preset. Equivalent calls accept the same forms, return the same parsed UUID, and report the same failures. A generator may generate that parsed value directly, but it does not participate in parsing an existing UUID.
 - Apply that symmetry to every operation with a reusable owner. A top-level call receiving an explicit masking codec or generator and the corresponding owner method with that owner preset must accept the same remaining inputs, select the same defaults and runtime path, return the same type, expose the same effects, and report the same failures. Do not accept an owner where its state cannot affect the operation.

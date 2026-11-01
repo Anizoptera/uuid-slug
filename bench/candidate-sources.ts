@@ -24,7 +24,6 @@ export const CANDIDATE_GROUPS = [
   "value",
   "value-options",
   "pool",
-  "timestamp",
   "parsed-value",
 ] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
@@ -41,7 +40,6 @@ export const CANDIDATE_FILES = {
   value: "src/v7-value.ts",
   "value-options": "src/v7-value-options.ts",
   pool: "src/runtime/pool.ts",
-  timestamp: "src/timestamp.ts",
   "parsed-value": "src/uuid-value.ts",
 } as const satisfies Record<CandidateGroup, string>;
 
@@ -65,7 +63,6 @@ export function createSourceCandidates(
     value: valueCandidates,
     "value-options": valueOptionCandidates,
     pool: poolCandidates,
-    timestamp: timestampCandidates,
     "parsed-value": parsedValueCandidates,
   } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
   return builders[group](source);
@@ -82,37 +79,6 @@ function parsedValueCandidates(source: string): readonly SourceCandidate[] {
           source,
           "    if (!output) return new Uint8Array(bytes);",
           "    if (output === undefined) return new Uint8Array(bytes);",
-        );
-      },
-    },
-  ];
-}
-
-function timestampCandidates(source: string): readonly SourceCandidate[] {
-  // Substitute only clock defaulting so other pending configuration changes cannot affect timing.
-  return [
-    { name: "baseline", source },
-    {
-      name: "captured-reference",
-      get source() {
-        return replaceOnce(
-          source,
-          "    referenceUnixMs = window.referenceUnixMs ?? Date.now();",
-          [
-            "    // Only omission selects the clock; supplied values must reach finite-number validation.",
-            "    const reference = window.referenceUnixMs;",
-            "    referenceUnixMs = reference === undefined ? Date.now() : reference;",
-          ].join("\n"),
-        );
-      },
-    },
-    {
-      name: "undefined-default",
-      get source() {
-        return replaceOnce(
-          source,
-          "    maxTimestampDeltaMs = window.maxTimestampDeltaMs;\n    referenceUnixMs = window.referenceUnixMs ?? Date.now();",
-          "    ({ maxTimestampDeltaMs, referenceUnixMs = Date.now() } = window);",
         );
       },
     },

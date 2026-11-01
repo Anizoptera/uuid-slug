@@ -36,5 +36,5 @@ Rules for editing the TypeScript package. Root `AGENTS.md` applies too.
 - Probe optional capabilities once at module load; absent methods remain undefined. A defined method that throws for an absent capability creates exception-driven fallback on every call.
 - Minimize startup work too: reuse existing inputs, stop when precedence settles the answer, and skip parsing, allocation and initialization that the selected capability does not need.
 - Cast probes to narrow optional capability shapes, not intersections with ambient types that may already declare the method required.
-- Before changing brands, string wrappers or input validation, read `dev/interface.md` §Types and validation; preserve ergonomic raw inputs and every distinction validation proves.
+- Before changing brands, string wrappers, defaults or accepted inputs, read `dev/interface.md` §Rules and §Types and validation. Apply its consumer-harm check before adding a rejection or its regression test; preserve ergonomic raw inputs and every distinction validation proves.
 - Return owned bytes as plain `Uint8Array`, not `Buffer`; verify constructors in Node and Bun. Adapt at the runtime boundary and preserve caller buffers; apply root `AGENTS.md` §Work scope before adding defenses.

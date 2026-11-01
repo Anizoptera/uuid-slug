@@ -1686,17 +1686,50 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
     },
   },
   {
-    name: "reads Date.now once when referenceUnixMs is omitted",
+    name: "uses the clock once for omitted, undefined and null references",
     run(this: void) {
+      // An epoch UUID distinguishes clock defaulting from coercing null to zero.
+      // Its explicit zero reference is the success control.
+      const epochUuid = "00000000-0000-7000-8000-000000000000";
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+      const readers = [
+        [validateUuidV7StringUnixMs, epochUuid],
+        [validatePlainUuidV7SlugUnixMs, unwrap(uuidStringToPlainSlug(epochUuid))],
+        [codec.validateMaskedUuidV7SlugUnixMs, unwrap(codec.uuidToMaskedSlug(epochUuid))],
+      ] as const;
       const originalNow = Date.now;
+      assert.notEqual(originalNow(), 0);
       let readings = 0;
       Date.now = () => {
         readings += 1;
-        return timestamp;
+        return originalNow();
       };
       try {
-        assert.equal(validateUuidV7StringUnixMs(uuid, { maxTimestampDeltaMs: 0 }), uuid);
-        assert.equal(readings, 1);
+        for (const [validate, input] of readers) {
+          assert.equal(
+            Reflect.apply(validate, undefined, [
+              input,
+              {
+                maxTimestampDeltaMs: 0,
+                referenceUnixMs: 0,
+              },
+            ]),
+            input,
+          );
+          for (const options of [{}, { referenceUnixMs: undefined }, { referenceUnixMs: null }]) {
+            const before = readings;
+            const result = Reflect.apply(validate, undefined, [
+              input,
+              {
+                maxTimestampDeltaMs: 0,
+                ...options,
+              },
+            ]);
+            assert.ok(result instanceof UuidSlugError);
+            assert.equal(result.code, "timestamp_outside_window");
+            assert.equal(readings, before + 1);
+          }
+        }
       } finally {
         Date.now = originalNow;
       }

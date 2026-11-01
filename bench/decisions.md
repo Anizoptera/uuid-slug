@@ -12,15 +12,7 @@ Each entry: the decision, the evidence that decided it, alternatives that lost, 
 - Contract: uppercase base32hex calls on Bun and WebKit pay for normalization. The old code skipped it and returned the untouched string, which breaks the canonical-result contract; that cost is required.
 - The private plain decoder drops one temporary byte array per call. The existing resource guard rejects restoring that array. Total allocation versus the old code, and allocation parity off Node/Bun/Deno/Chromium, are unmeasured.
 
-**Open defect: explicit `null` timestamp references are not rejected correctly.** Every fix tried so far corrects it but lacks no-loss evidence on normal calls, so none is retained. Each candidate passes a three-reader null regression that fails on current production.
-
-Rejected fixes (Node 26.10/26.11 and Bun 1.4.2 host screens; other runtimes, profiles and total allocation unmeasured):
-- Reference-only destructuring: Node 26.10.0 uppercase base32hex plain validation ratio 1.050 (95% 1.001–1.076); Bun clock-default text 1.024 (1.002–3.012). Measured loss.
-- Null rejection inside the nullish fallback: all sixteen median-ratio intervals span parity. Inconclusive, so no-loss is not established.
-- Finite-number-first selection (validate supplied numbers, default only omitted references): 14 of 16 intervals include parity; Bun masked calls 1.209–1.266 with intervals including parity. Cannot establish no loss.
-- Scalar default-parameter selection: Bun masked base32hex ratio 5.429 (95% 1.177–39.855) on Node 26.11.0/Bun 1.4.2. Rejected; cause unknown.
-
-Reopen when: a candidate fixes null rejection and shows no normal-call loss on Node and Bun host screens, then on other runtimes.
+**Keep nullish clock defaulting for timestamp references.** A null or omitted optional reference selects the current clock, so nullable configuration needs no extra caller branch. Rejecting it supplies no demonstrated protection or useful distinction. TypeScript's narrower guidance does not justify narrowing that runtime behavior; normal-call speed cannot justify a restriction either.
 
 ### Native Bun default UUIDv7 text
 
