@@ -8,13 +8,14 @@ import { loadRustBridge, rustBridgeFiles } from "../scripts/rust-bridge";
 const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000";
 const slug = "AZChssPUfl-KmwwdLj8AAA";
 
-export async function verifyNativeLoading(profile: "debug" | "release"): Promise<void> {
+export async function verifyNativeLoading(profile: "debug" | "release") {
   const bun = process.versions.bun !== undefined;
   // Deno has separate forced coverage. Older Node has no experimental FFI fallback.
-  if (process.versions.deno || (!bun && Number(process.versions.node.split(".")[0]) < 26)) return;
+  if (process.versions.deno || (!bun && Number(process.versions.node.split(".")[0]) < 26))
+    return undefined;
   const primary = bun ? "ffi" : "napi";
   const forced = process.env.UUID_SLUG_RUST_TRANSPORT;
-  if (forced !== undefined && forced !== primary) return;
+  if (forced !== undefined && forced !== primary) return undefined;
   const preferred = await loadRustBridge({ transport: "auto" });
   try {
     strictEqual(preferred.transport, bun ? "Bun FFI" : "Node Node-API");
@@ -47,6 +48,7 @@ export async function verifyNativeLoading(profile: "debug" | "release"): Promise
       loadRustBridge({ directory: join(directory, "missing"), transport: "auto" }),
       (failure: Error) => failure instanceof AggregateError && failure.errors.length === 2,
     );
+    return selected.transport;
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

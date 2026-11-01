@@ -3,8 +3,11 @@ import { buildRustBridge } from "./rust-bridge";
 import { nativeMatrix } from "./rust-native-matrix";
 
 async function run(command: readonly string[], env: Readonly<Record<string, string>>) {
+  const environment = { ...process.env, ...env };
+  // Automatic lanes must observe absence even when the parent forced another research route.
+  if (!Object.hasOwn(env, "UUID_SLUG_RUST_TRANSPORT")) delete environment.UUID_SLUG_RUST_TRANSPORT;
   const child = Bun.spawn([...command], {
-    env: { ...process.env, ...env },
+    env: environment,
     stderr: "inherit",
     stdout: "pipe",
   });
@@ -29,19 +32,35 @@ export async function prepareNativeConformance() {
     {},
   );
   const lanes = await nativeMatrix("scripts/rust-conform.ts", "rust/target/conform.mjs");
+  // Forced rows cannot exercise omission; derive automatic rows from the same host commands.
+  const checks = lanes.flatMap((lane) => {
+    const supportsAutomaticControl =
+      lane.expectedTransport === "Bun FFI" ||
+      (lane.expectedTransport === "Node Node-API" && lane.command.includes("--experimental-ffi"));
+    return (supportsAutomaticControl ? [false, true] : [false]).map((automatic) => ({
+      lane,
+      automatic,
+    }));
+  });
   return async (profile: "debug" | "release"): Promise<void> => {
     // Report each verified host immediately, but drain every child before surfacing a failure.
     const results = await Promise.allSettled(
-      lanes.map(async (lane) => {
+      checks.map(async ({ lane, automatic }) => {
+        const env = { ...lane.env };
+        if (automatic) delete env.UUID_SLUG_RUST_TRANSPORT;
+        const label = automatic ? `${lane.host} automatic` : lane.label;
         const output = await run(lane.command, {
-          ...lane.env,
+          ...env,
           UUID_SLUG_RUST_PROFILE: profile,
         });
         if (!output.startsWith(`${lane.expectedTransport}: `) || !output.endsWith(" passed"))
+          throw new Error(`${label} expected ${lane.expectedTransport} but returned: ${output}`);
+        const requiredFallback = lane.expectedTransport === "Bun FFI" ? "Bun Node-API" : "Node FFI";
+        if (automatic && !output.includes(`; fallback=${requiredFallback}; `))
           throw new Error(
-            `${lane.host} ${lane.transport} returned an unexpected result: ${output}`,
+            `${label} did not report fallback=${requiredFallback}. Repair verifyNativeLoading in __test__/native-bridge-probe.ts with UUID_SLUG_RUST_TRANSPORT absent; forced-route conformance cannot cover automatic loading. Output: ${output}`,
           );
-        console.log(`${lane.label}: ${output}`);
+        console.log(`${label}: ${output}`);
       }),
     );
     for (const result of results) if (result.status === "rejected") throw result.reason;

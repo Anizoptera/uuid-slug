@@ -781,7 +781,7 @@ export async function verifyNativeContracts(): Promise<void> {
   const profile = process.env.UUID_SLUG_RUST_PROFILE ?? "release";
   if (profile !== "debug" && profile !== "release")
     throw new Error(`Unknown Rust profile: ${profile}`);
-  await verifyNativeLoading(profile);
+  const fallback = await verifyNativeLoading(profile);
   probeUuidV7TimePrecision(ts);
   const requests = await contractRequests();
   const bridge = await loadRustBridge();
@@ -800,7 +800,7 @@ export async function verifyNativeContracts(): Promise<void> {
       throw new Error(`${bridge.transport} plain conversion diverged from its wire vector.`);
     throws(() => bridge.plain("not a UUID"), /invalid_uuid|invalid length 0/);
     console.log(
-      `${bridge.transport}: exact SystemTime nanoseconds=${fineSystemTime}; ${requests.length} shared contract observations passed`,
+      `${bridge.transport}: exact SystemTime nanoseconds=${fineSystemTime}; fallback=${fallback ?? "not exercised"}; ${requests.length} shared contract observations passed`,
     );
   } finally {
     bridge.close();
