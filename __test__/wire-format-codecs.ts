@@ -14,6 +14,7 @@
 import { createCustomUuidV7Mask, createUuidV7MaskingCodec, UUID_V7_TEST_MASK } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
+import { WIRE_FORMAT_MASKS } from "./wire-format-masks";
 
 /**
  * A caller-supplied mixing step, standing in for a consumer who brings their own cipher. It is
@@ -54,13 +55,6 @@ const customMix = unwrap(
     },
   }),
 );
-
-// Bridge requests and TypeScript fixtures must select the same retained producer configuration.
-export const WIRE_FORMAT_MASKS = {
-  "custom-mix": "custom-mix",
-  default: null,
-  "seeded-v2": { seed: "golden-vector-seed-v3" },
-} as const;
 
 export const WIRE_FORMAT_CODECS = {
   "custom-mix": unwrap(createUuidV7MaskingCodec({ mask: customMix, sentinels: NIL_TEST_SENTINEL })),

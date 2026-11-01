@@ -5,7 +5,7 @@ import { loadRustBridge } from "../scripts/rust-bridge";
 import { BASE32HEX, BASE64URL } from "../src/alphabet";
 import type { Alphabet } from "../src/alphabet";
 import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
-import { WIRE_FORMAT_MASKS } from "./wire-format-codecs";
+import { WIRE_FORMAT_MASKS } from "./wire-format-masks";
 
 export { BASE32HEX, BASE64URL };
 export { FEISTEL_KEY_WORDS } from "../src/feistel";
@@ -34,8 +34,14 @@ interface HashContinuation {
   readonly state: readonly number[];
 }
 
-function call(request: Request): unknown {
-  const replies: unknown = JSON.parse(bridge.evaluate(JSON.stringify([request])));
+export function call(request: object): unknown {
+  const replies: unknown = JSON.parse(
+    bridge.evaluate(
+      JSON.stringify([request], (_key, value: unknown) =>
+        typeof value === "number" && !Number.isFinite(value) ? String(value) : value,
+      ),
+    ),
+  );
   if (!Array.isArray(replies) || replies.length !== 1)
     throw new Error("Rust alphabet bridge must return exactly one result per call.");
   const reply: unknown = replies[0];
@@ -202,6 +208,10 @@ afterAll(() => {
     if (!file) throw new Error("Shared suite omitted its test file identity.");
     console.log(`${bridge.transport}: shared suite ${basename(file)} executed ${calls} Rust calls`);
   } finally {
-    bridge.close();
+    try {
+      bridge.evaluate('[{"op":"api","method":"reset","args":[]}]');
+    } finally {
+      bridge.close();
+    }
   }
 });

@@ -12,6 +12,21 @@ pub(crate) mod siphash;
 #[path = "../../uuid-slug/src/feistel.rs"]
 mod feistel;
 
+#[path = "../../uuid-slug/src/mask_keys.rs"]
+mod mask_keys;
+
+pub(super) fn mask_transform(request: &Value) -> Result<Value, Error> {
+    let invalid = || Error::new(ErrorCode::InvalidMask);
+    let seed: Vec<u8> =
+        serde_json::from_value(request["mask"]["bytes"].clone()).map_err(|_| invalid())?;
+    let iterations = request["mask"]["iterations"]
+        .as_u64()
+        .and_then(|v| u32::try_from(v).ok())
+        .ok_or_else(invalid)?;
+    let keys = mask_keys::derive(&seed, iterations);
+    mix(&json!({"bytes":request["bytes"],"keys":keys,"direction":request["direction"]}))
+}
+
 pub(super) fn mix(request: &Value) -> Result<Value, Error> {
     let invalid = || Error::new(ErrorCode::InvalidMask);
     let bytes: [u8; 16] =

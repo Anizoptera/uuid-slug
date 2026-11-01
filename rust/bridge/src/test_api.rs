@@ -93,6 +93,7 @@ fn run(request: &Value, objects: &mut Objects) -> Result<Value, Error> {
         .as_u64()
         .and_then(|v| usize::try_from(v).ok());
     match method {
+        "transform" => super::primitives::mask_transform(&args[0]),
         "reset" => {
             *objects = Objects::default();
             Ok(Value::Null)
