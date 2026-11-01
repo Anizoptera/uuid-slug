@@ -20,6 +20,8 @@ TypeScript uses directional text/binary names because raw byte containers requir
 
 Run shared cases through each implementation from its first increment; check nonzero execution per adapter, because an aggregate pass can hide one that ran nothing. Keep native ownership and callback checks; map JS UTF-16 explicitly rather than pretending Rust strings cover its full domain.
 
+Reuse the TypeScript test suite against native Rust and WebAssembly rather than maintaining a smaller parallel behavioral suite. Native test loading prefers Bun FFI with Node-API fallback, and Node-API with experimental Node FFI fallback on Node. Keep forced transport checks and report the selected backend; neither a fallback nor an unsupported test may silently count as Rust execution. JavaScript-only host behavior and native ownership still need their own checks.
+
 ## Rust call sites
 
 Use `UuidV7MaskingCodec::parse_uuid(&str)` for mixed UUID text, plain slugs and this codec's masked slugs. Registered sentinels win first; ambiguous base64url tries masks in configured order before accepting canonical plain bytes. Callback errors stop decoding. Keep `Uuid::from_plain_uuid_slug` and `masked_slug_to_uuid` for known source meanings; a parsed Rust `Uuid` owns only its bytes and does not retain the codec or its keys.

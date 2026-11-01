@@ -107,7 +107,7 @@ export async function nativeMatrix(
     ffiArguments: [],
     name: "Bun",
     source: true,
-    transports: ["napi", "ffi"],
+    transports: ["ffi", "napi"],
     version: bunVersion,
   });
   if (denoVersion)
@@ -123,11 +123,7 @@ export async function nativeMatrix(
 
   return hosts.flatMap((host) =>
     host.transports.map((transport) => ({
-      command: [
-        ...host.executable,
-        ...(transport === "ffi" ? host.ffiArguments : []),
-        host.source ? sourceEntry : bundledEntry,
-      ],
+      command: [...host.executable, ...host.ffiArguments, host.source ? sourceEntry : bundledEntry],
       env: { ...host.env, UUID_SLUG_RUST_TRANSPORT: transport },
       expectedTransport: `${host.name} ${transport === "ffi" ? "FFI" : "Node-API"}` as const,
       host: `${host.name} ${host.version}`,

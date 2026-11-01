@@ -14,7 +14,11 @@ This is the sole live plan. Keep dependent repairs with their task and unrelated
 
 Never wait for an idle device for relative comparisons. Use repeated fresh paired runs and reversed order to judge stability; host load does not gate execution. Update tooling and competitors to latest stable releases; refresh package evidence when dependency or build inputs change. Decoder/storage timing and final regression timing remain open; missing comparisons do not block preparation (`dev/release.md` §Evidence and notes). Publication stays gated.
 
-Prioritize correctness repairs, acceptance of the integrated Rust changes, then the final all-runtime/full-check gates. The isolated TypeScript reductions below are unaccepted maintenance proposals; they must not delay those requirements or count as release progress before measured acceptance.
+Prioritize shared TypeScript test reuse for Rust/WASM and correctness repairs, acceptance of the integrated Rust changes, then the final all-runtime/full-check gates. The isolated TypeScript reductions below are unaccepted maintenance proposals; they must not delay those requirements or count as release progress before measured acceptance.
+
+- [ ] Reuse the TypeScript tests against Rust and WASM through the existing development bridge. Study the sibling adapter design without copying its parked imports. Bun selects FFI then Node-API; Node selects Node-API then experimental FFI. Retain forced lanes, prove real fallback after primary-load failure, and reject silent TypeScript substitution or empty coverage. Inventory host-only/private tests explicitly; the existing request corpus alone does not close suite reuse.
+  - [x] Implement ordered native loading with real libraries and unavailable-primary controls. `bun scripts/rust-conform-matrix.ts` passes all eight installed host/transport lanes; automatic Bun and Node 26 selection, missing-primary fallback, both-missing failure and closed-handle rejection pass. Removing fallback makes `bun scripts/rust-conform.ts` fail at the missing-primary load, and restoration passes. TypeScript and Bun project checks and lint pass. These results establish loading and the existing corpus, not full-suite reuse.
+  - [ ] Route existing behavioral tests to the selected implementation, then run native and optimized WASM profiles with per-backend execution evidence.
 
 ### Performance and resource acceptance
 

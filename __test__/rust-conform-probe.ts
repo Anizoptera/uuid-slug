@@ -17,6 +17,7 @@ import { NIL_TEST_SENTINEL } from "../__test__/sentinel-fixtures";
 import { probeUuidV7TimePrecision } from "../__test__/consumer-probe";
 import { candidates as generationCandidates } from "../bench/candidates";
 import { loadRustBridge } from "../scripts/rust-bridge";
+import { verifyNativeLoading } from "./native-bridge-probe";
 
 type Request = Record<string, unknown> & { op: string; input?: string };
 type Outcome = { value: unknown } | { error: string };
@@ -777,6 +778,10 @@ export function compare(requests: Request[], actual: unknown): void {
 }
 
 export async function verifyNativeContracts(): Promise<void> {
+  const profile = process.env.UUID_SLUG_RUST_PROFILE ?? "release";
+  if (profile !== "debug" && profile !== "release")
+    throw new Error(`Unknown Rust profile: ${profile}`);
+  await verifyNativeLoading(profile);
   probeUuidV7TimePrecision(ts);
   const requests = await contractRequests();
   const bridge = await loadRustBridge();

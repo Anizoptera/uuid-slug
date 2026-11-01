@@ -8,14 +8,14 @@ import { rustToolchain } from "./rust-toolchain";
 // The lane runs from the checkout root; bundled scripts must not resolve relative to their bundle.
 const root = process.cwd();
 const target = resolve(root, "rust/target");
-function bridgeFiles(profile: "debug" | "release") {
+export function rustBridgeFiles(profile: "debug" | "release", directory = target) {
   return {
     source: resolve(
-      target,
+      directory,
       profile,
       `${process.platform === "win32" ? "" : "lib"}uuid_slug_bridge.${process.platform === "darwin" ? "dylib" : process.platform === "win32" ? "dll" : "so"}`,
     ),
-    addon: resolve(target, profile, "uuid_slug_bridge.node"),
+    addon: resolve(directory, profile, "uuid_slug_bridge.node"),
   };
 }
 
@@ -46,7 +46,7 @@ export async function buildRustBridge(profile: "debug" | "release" = "release"):
       code === 0 ? done() : reject(new Error(`Rust bridge build failed: ${signal ?? code}`)),
     );
   });
-  const { source, addon } = bridgeFiles(profile);
+  const { source, addon } = rustBridgeFiles(profile);
   await copyFile(source, addon);
 }
 
@@ -158,21 +158,47 @@ function plainBridge(
 }
 
 /** These synchronous calls belong in conformance/benchmark workers, not product event loops. */
-export async function loadRustBridge(): Promise<RustBridge> {
+export async function loadRustBridge(
+  options: { directory?: string; transport?: "auto" | "ffi" | "napi" } = {},
+): Promise<RustBridge> {
   const profile = process.env.UUID_SLUG_RUST_PROFILE ?? "release";
   if (profile !== "debug" && profile !== "release")
     throw new Error(`UUID_SLUG_RUST_PROFILE must be debug or release; received ${profile}`);
   const host = runtime();
-  const transport = process.env.UUID_SLUG_RUST_TRANSPORT ?? "napi";
-  if (transport !== "ffi" && transport !== "napi")
-    throw new Error(`UUID_SLUG_RUST_TRANSPORT must be ffi or napi; received ${transport}`);
-  const files = bridgeFiles(profile);
+  const transport = options.transport ?? process.env.UUID_SLUG_RUST_TRANSPORT ?? "auto";
+  if (transport !== "auto" && transport !== "ffi" && transport !== "napi")
+    throw new Error(`UUID_SLUG_RUST_TRANSPORT must be auto, ffi or napi; received ${transport}`);
+  const files = rustBridgeFiles(profile, options.directory);
+  // Forced research lanes must fail rather than conceal a broken adapter behind fallback.
+  if (transport !== "auto") return loadTransport(host, transport, files);
+  const failures: unknown[] = [];
+  for (const candidate of host === "Bun"
+    ? (["ffi", "napi"] as const)
+    : (["napi", "ffi"] as const)) {
+    try {
+      return await loadTransport(host, candidate, files);
+    } catch (failure) {
+      failures.push(failure);
+    }
+  }
+  throw new AggregateError(
+    failures,
+    `${host} could not load either Rust transport. Build the development bridge before running its tests; Node FFI also needs --experimental-ffi.`,
+  );
+}
 
+async function loadTransport(
+  host: ReturnType<typeof runtime>,
+  transport: "ffi" | "napi",
+  files: ReturnType<typeof rustBridgeFiles>,
+): Promise<RustBridge> {
   if (transport === "napi") {
     const native = createRequire(import.meta.url)(files.addon) as Pick<
       RustBridge,
       "evaluate" | "plain"
     >;
+    if (typeof native.evaluate !== "function" || typeof native.plain !== "function")
+      throw new Error(`Rust Node-API library ${files.addon} is missing its development exports.`);
     let closed = false;
     return {
       evaluate(input) {
