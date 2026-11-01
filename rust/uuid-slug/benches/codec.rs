@@ -225,7 +225,8 @@ fn main() -> Result<(), Error> {
         cursor = (cursor + 1) % encoded_base32.len();
         safe.masked_slug_to_uuid(&encoded_base32[cursor]).unwrap()
     });
-    sample("construct/default", &ids, |_| {
+    // Reduced builds derive the explicit public test key here; this is not codec-only setup.
+    sample("construct/public-test-mask-and-codec", &ids, |_| {
         UuidV7MaskingCodec::new(uuid_slug::uuid_v7_test_mask())
     });
     let plain_uuid_slugs: Vec<_> = ids
