@@ -162,6 +162,7 @@ fn run(request: &Value) -> Result<Value, Error> {
         "wireEncode" => crate::primitives::encode(request, alphabet(&request["alphabet"])?),
         "wireDecode" => crate::primitives::decode(request, alphabet(&request["alphabet"])?),
         "halfSipHash" => crate::primitives::hash(request),
+        "feistel" => crate::primitives::mix(request),
         "plainUuidBytes" => Ok(json!(Uuid::from_plain_uuid_slug(input)?.as_uuid_bytes())),
         "plainFromBytes" => {
             let bytes: [u8; 16] = serde_json::from_value(request["bytes"].clone())

@@ -35,7 +35,7 @@ export default defineConfig({
     exclude: ["__test__/**/*.bun.test.ts"],
     include:
       backend === "rust"
-        ? ["__test__/alphabet.test.ts", "__test__/siphash.test.ts"]
+        ? ["__test__/alphabet.test.ts", "__test__/siphash.test.ts", "__test__/feistel.test.ts"]
         : ["__test__/**/*.test.ts"],
   },
 });

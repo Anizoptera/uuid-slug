@@ -14,3 +14,4 @@ export { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
 
 export const detailedDiagnostics = true;
 export { halfSipHash } from "../src/siphash";
+export { FEISTEL_KEY_WORDS, feistel16 } from "../src/feistel";

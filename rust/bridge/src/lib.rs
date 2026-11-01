@@ -7,6 +7,7 @@ use uuid_slug::UuidSlugAlphabet;
 
 mod dispatch;
 mod primitives;
+use primitives::siphash;
 
 fn evaluate_caught(input: &str) -> Result<String, &'static str> {
     std::panic::catch_unwind(|| dispatch::evaluate(input)).map_err(|_| "Rust bridge panicked")

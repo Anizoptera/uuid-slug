@@ -1,5 +1,6 @@
 // Rust owns every codec result; this boundary only serializes calls and copies returned bytes.
-import { afterAll } from "vitest";
+import { afterAll, expect } from "vitest";
+import { basename } from "node:path";
 import { loadRustBridge } from "../scripts/rust-bridge";
 import { BASE32HEX, BASE64URL } from "../src/alphabet";
 import type { Alphabet } from "../src/alphabet";
@@ -7,6 +8,7 @@ import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
 import { WIRE_FORMAT_MASKS } from "./wire-format-codecs";
 
 export { BASE32HEX, BASE64URL };
+export { FEISTEL_KEY_WORDS } from "../src/feistel";
 export const detailedDiagnostics = false;
 
 const bridge = await loadRustBridge();
@@ -17,6 +19,8 @@ type Request = {
   alphabet?: string;
   bytes?: number[];
   key?: number[];
+  keys?: number[];
+  direction?: "mask" | "unmask";
   continuation?: HashContinuation;
   blockLimit?: number;
   tail?: number;
@@ -49,6 +53,36 @@ function text(request: Request): string | Error {
   throw new Error(`Rust ${request.op} returned a non-text value.`);
 }
 
+function uuidBytes(value: unknown): value is number[] {
+  return (
+    Array.isArray(value) &&
+    value.length === 16 &&
+    value.every(
+      (byte: unknown) =>
+        typeof byte === "number" && Number.isInteger(byte) && byte >= 0 && byte <= 255,
+    )
+  );
+}
+
+export function feistel16(
+  input: Uint8Array,
+  inputOffset: number,
+  keys: Int32Array,
+  direction: "mask" | "unmask",
+  output: Uint8Array,
+  outputOffset: number,
+): void {
+  // Copy the input range before writing so in-place calls retain the real transform's semantics.
+  const value = call({
+    op: "feistel",
+    bytes: [...input.subarray(inputOffset, inputOffset + 16)],
+    keys: [...keys].map((key) => key >>> 0),
+    direction,
+  });
+  if (!uuidBytes(value)) throw new Error("Malformed Rust Feistel output.");
+  output.set(value, outputOffset);
+}
+
 export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {
   const value = text({ op: "wireEncode", bytes: [...bytes], alphabet: alpha.name, tail, tailBits });
   if (value instanceof Error) throw value;
@@ -69,13 +103,8 @@ export function decodeInto(
     typeof value !== "object" ||
     !("bytes" in value) ||
     !("tail" in value) ||
-    !Array.isArray(value.bytes) ||
-    value.bytes.length !== 16 ||
-    typeof value.tail !== "number" ||
-    !value.bytes.every(
-      (byte: unknown) =>
-        typeof byte === "number" && Number.isInteger(byte) && byte >= 0 && byte <= 255,
-    )
+    !uuidBytes(value.bytes) ||
+    typeof value.tail !== "number"
   )
     throw new Error("Malformed Rust decoded UUID bytes or check tail.");
   output.set(value.bytes, offset);
@@ -89,15 +118,7 @@ export function uuidBytesToPlainSlug(bytes: Uint8Array) {
 export function plainSlugToUuidBytes(input: string) {
   const value = call({ op: "plainUuidBytes", input });
   if (value instanceof Error) return value;
-  if (
-    !Array.isArray(value) ||
-    value.length !== 16 ||
-    !value.every(
-      (byte: unknown) =>
-        typeof byte === "number" && Number.isInteger(byte) && byte >= 0 && byte <= 255,
-    )
-  )
-    throw new Error("Malformed Rust plain UUID bytes.");
+  if (!uuidBytes(value)) throw new Error("Malformed Rust plain UUID bytes.");
   return Uint8Array.from(value);
 }
 
@@ -177,7 +198,9 @@ afterAll(() => {
     if (process.env.UUID_SLUG_WASM_BRIDGE && !bridge.transport.endsWith("WebAssembly"))
       throw new Error("The WASM lane loaded a native bridge; repair the Vitest transport alias.");
     if (!calls) throw new Error("Shared suite executed no Rust calls.");
-    console.log(`${bridge.transport}: shared suite executed ${calls} Rust calls`);
+    const file = expect.getState().testPath;
+    if (!file) throw new Error("Shared suite omitted its test file identity.");
+    console.log(`${bridge.transport}: shared suite ${basename(file)} executed ${calls} Rust calls`);
   } finally {
     bridge.close();
   }

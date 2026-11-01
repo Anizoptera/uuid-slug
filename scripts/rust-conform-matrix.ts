@@ -77,14 +77,19 @@ export async function prepareNativeConformance() {
               }
             : {}),
         });
-        const witness = tests.match(
-          /(?:Bun|Node|Deno) (?:FFI|Node-API): shared suite executed [1-9]\d* Rust calls/,
-        )?.[0];
-        if (!witness?.startsWith(`${lane.expectedTransport}: `))
+        const witnesses = [
+          ...tests.matchAll(
+            /(?:Bun|Node|Deno) (?:FFI|Node-API): shared suite [\w.-]+\.test\.ts executed [1-9]\d* Rust calls/g,
+          ),
+        ].map(([witness]) => witness);
+        if (
+          !witnesses.length ||
+          witnesses.some((witness) => !witness.startsWith(`${lane.expectedTransport}: `))
+        )
           throw new Error(
             `${label} did not execute shared tests through ${lane.expectedTransport}: ${tests}`,
           );
-        console.log(`${label}: ${witness}`);
+        for (const witness of witnesses) console.log(`${label}: ${witness}`);
       }),
     );
     for (const result of results) if (result.status === "rejected") throw result.reason;

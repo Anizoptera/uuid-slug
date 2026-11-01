@@ -7,7 +7,23 @@ use uuid_slug::{Error, ErrorCode, UuidSlugAlphabet};
 mod bit_encoding;
 
 #[path = "../../uuid-slug/src/siphash.rs"]
-mod siphash;
+pub(crate) mod siphash;
+
+#[path = "../../uuid-slug/src/feistel.rs"]
+mod feistel;
+
+pub(super) fn mix(request: &Value) -> Result<Value, Error> {
+    let invalid = || Error::new(ErrorCode::InvalidMask);
+    let bytes: [u8; 16] =
+        serde_json::from_value(request["bytes"].clone()).map_err(|_| invalid())?;
+    let keys: [u32; 8] = serde_json::from_value(request["keys"].clone()).map_err(|_| invalid())?;
+    let direction = match request["direction"].as_str() {
+        Some("mask") => feistel::Direction::UuidV7Mask,
+        Some("unmask") => feistel::Direction::Unmask,
+        _ => return Err(invalid()),
+    };
+    Ok(json!(feistel::feistel(bytes, &keys, direction)))
+}
 
 pub(super) fn hash(request: &Value) -> Result<Value, Error> {
     let key: [u32; 2] = serde_json::from_value(request["key"].clone())

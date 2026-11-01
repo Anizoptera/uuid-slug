@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, expect, it } from "vitest";
-import { FEISTEL_KEY_WORDS, feistel16 } from "../src/feistel";
+import { FEISTEL_KEY_WORDS, feistel16 } from "./test-implementation";
 
 const keysFrom = (seed: number) => {
   const keys = new Int32Array(FEISTEL_KEY_WORDS);
