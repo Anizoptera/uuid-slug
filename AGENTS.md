@@ -14,6 +14,7 @@ BEFORE each read, measure its bytes in a separate call. Store and size generated
 
 | Work | Owner |
 | --- | --- |
+| Tests or test runners | `__test__/AGENTS.md` |
 | ANY public TypeScript or Rust interface, type, error or declaration comment | `dev/interface.md` in full |
 | TypeScript source, types, JSDoc, emitted modules or runtime capabilities, including README API text written without opening `src/` | `src/AGENTS.md` (auto-loads only when a `src/` file is opened) |
 | Masking, keys, sentinels or identifier formats | `docs/design.md` and `docs/security.md` |

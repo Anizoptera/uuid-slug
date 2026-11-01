@@ -44,6 +44,16 @@ The size of a host process's environment shifts its timings, in either direction
 
 Set `UUID_SLUG_PROFILE_LATENCY_SAMPLES` to a positive call count for a separate sampled-latency pass in `bench:profile`. Select successful scalar or byte results with a narrow filter; object results need a separate consumer workload. Each observation brackets one call; result consumption follows the ending timestamp. The report retains acquisition order, an adjacent-clock control, zero counts and empirical p50/p99. These instrumented timings include clock overhead and quantization; do not subtract control percentiles or treat calls from one process as independent confidence samples. This pass does not change the throughput measurement or run by default. An observed zero p99 is below clock resolution, not a zero-cost call; the report labels it explicitly.
 
+## Compiler and WebAssembly optimization
+
+Choose compiler and optimizer settings from the complete calls in the final consumer artifact, not from a preset number or an aggregate score. Source structure, Rust compilation and WebAssembly passes can interact; vary one mechanism at a time and retain identical-input hashes, tool versions, flags, feature selection, profile and execution order. Keep size, build cost, startup and hot-call measurements separate.
+
+Use a same-binary A/A control before attributing a small timing difference to generated code. If identical artifacts produce changing ratios, inspect individual batches and runtime compilation behavior; do not repair source from that symptom alone. A forced compiler tier is a diagnostic condition, not ordinary-runtime acceptance. Never use a fixed delay as evidence that compilation has settled, discard inconvenient batches or wait for an idle host.
+
+Check each protected operation and supported runtime separately. A gain must not conceal a loss in another call, feature selection or artifact. A WASI benchmark result does not establish browser speed or the cost of a separately linked consumer. Execute the optimized files through the owning correctness and ownership checks before retention; raw output and source-level proofs cannot certify optimizer behavior.
+
+Keep the simplest pipeline that meets those requirements. Test source layout, inlining boundaries and targeted pass controls when evidence identifies their cost; do not add permanent tuning knobs or brittle function-name rules merely to preserve an experimental result.
+
 ## Regression protection
 
 Keep routine verification fast enough for ordinary development without weakening its evidence. Use `bun run test:bun` for the Bun lane: its parent removes files in the runner's temporary directory after failure or interruption; killing that parent forcibly cannot run cleanup. Run packed-artifact verification after repository builds and tests exit; filesystem traversal can race their temporary cache files even when those files are excluded from the package.
