@@ -552,6 +552,8 @@ export const runtimeBoundaryCases: {
   },
   {
     name: "normalizes boxed selectors without reading tags or reentering scratch conversion",
+    javascriptOnly:
+      "Rust selectors have no JavaScript boxes, property getters or reentrant coercion",
     run() {
       const other = "ffffffff-ffff-4fff-bfff-ffffffffffff";
       let tags = 0;
@@ -1205,6 +1207,7 @@ export const runtimeBoundaryCases: {
   },
   {
     name: "accepts cross-realm Uint8Array custom transform results",
+    javascriptOnly: "Rust callback slices have no JavaScript realm identity",
     run(this: void) {
       const copy = vm.runInNewContext("(input) => new Uint8Array(input)") as (
         input: Uint8Array,
@@ -1288,6 +1291,7 @@ export const runtimeBoundaryCases: {
   },
   {
     name: "preserves a generator error from another realm",
+    javascriptOnly: "Rust typed errors have no JavaScript realm identity",
     run(this: void) {
       const foreignError = vm.runInNewContext(
         `Object.assign(new Error("foreign generator failed"), {

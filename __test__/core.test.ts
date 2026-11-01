@@ -202,51 +202,61 @@ describe("error classification", () => {
     },
   );
 
-  it("recognizes the package marker first and preserves failures through compatible calls", () => {
-    const failure = new UuidSlugError("invalid_uuid", "stop here");
-    const foreignFailure = runInNewContext(
-      'Object.assign(new Error("stop there"), { name: "UuidSlugError", code: "invalid_uuid" })',
-    ) as UuidSlugError;
-    expect(failure["__failure"]).toBe(true);
-    expect(isUuidSlugError({ __failure: true })).toBe(true);
+  // Rust's Result input types exclude JavaScript failure markers and foreign Error objects.
+  javascriptOnly(
+    "recognizes the package marker first and preserves failures through compatible calls",
+    () => {
+      const failure = new UuidSlugError("invalid_uuid", "stop here");
+      const foreignFailure = runInNewContext(
+        'Object.assign(new Error("stop there"), { name: "UuidSlugError", code: "invalid_uuid" })',
+      ) as UuidSlugError;
+      expect(failure["__failure"]).toBe(true);
+      expect(isUuidSlugError({ __failure: true })).toBe(true);
 
-    const output = new Uint8Array(32).fill(0x5a);
-    expect(uuidStringToPlainSlug(failure)).toBe(failure);
-    expect(uuidToString(failure)).toBe(failure);
-    expect(uuidBytesToPlainSlug(failure)).toBe(failure);
-    expect(bytesToUuidString(failure)).toBe(failure);
-    expect(uuidStringToBytes(failure, output, 8)).toBe(failure);
-    expect(plainSlugToUuidBytes(failure, output, 8)).toBe(failure);
-    expect(uuidStringToPlainSlug(foreignFailure)).toBe(foreignFailure);
-    expect(uuidToString(foreignFailure)).toBe(foreignFailure);
-    expect(output.every((byte) => byte === 0x5a)).toBe(true);
+      const output = new Uint8Array(32).fill(0x5a);
+      expect(uuidStringToPlainSlug(failure)).toBe(failure);
+      expect(uuidToString(failure)).toBe(failure);
+      expect(uuidBytesToPlainSlug(failure)).toBe(failure);
+      expect(bytesToUuidString(failure)).toBe(failure);
+      expect(uuidStringToBytes(failure, output, 8)).toBe(failure);
+      expect(plainSlugToUuidBytes(failure, output, 8)).toBe(failure);
+      expect(uuidStringToPlainSlug(foreignFailure)).toBe(foreignFailure);
+      expect(uuidToString(foreignFailure)).toBe(foreignFailure);
+      expect(output.every((byte) => byte === 0x5a)).toBe(true);
 
-    const codec = createCodec({ mask: UUID_V7_TEST_MASK });
-    if (isUuidSlugError(codec)) throw codec;
-    expect(createCodec({ mask: failure })).toBe(failure);
-    expect(createCodec({ mask: UUID_V7_TEST_MASK, previousMasks: [failure] })).toBe(failure);
-    expect(codec.uuidToMaskedSlug(failure)).toBe(failure);
-    expect(codec.uuidToString(failure)).toBe(failure);
-    expect(codec.uuidToBytes(failure, output, 8)).toBe(failure);
-    expect(codec.uuidToString(foreignFailure)).toBe(foreignFailure);
-    expect(codec.extractMaskedUuidV7UnixMs(failure)).toBe(failure);
-    expect(codec.validateMaskedUuidV7SlugUnixMs(failure, { maxTimestampDeltaMs: 0 })).toBe(failure);
-    expect(codec.createUuidSlugMigrationDecoder().uuidSlugToUuidString(failure)).toBe(failure);
-    expect(codec.createUuidSlugMigrationDecoder().uuidSlugToUuidStringCandidates(failure)).toBe(
-      failure,
-    );
-    expect(output.every((byte) => byte === 0x5a)).toBe(true);
-  });
+      const codec = createCodec({ mask: UUID_V7_TEST_MASK });
+      if (isUuidSlugError(codec)) throw codec;
+      expect(createCodec({ mask: failure })).toBe(failure);
+      expect(createCodec({ mask: UUID_V7_TEST_MASK, previousMasks: [failure] })).toBe(failure);
+      expect(codec.uuidToMaskedSlug(failure)).toBe(failure);
+      expect(codec.uuidToString(failure)).toBe(failure);
+      expect(codec.uuidToBytes(failure, output, 8)).toBe(failure);
+      expect(codec.uuidToString(foreignFailure)).toBe(foreignFailure);
+      expect(codec.extractMaskedUuidV7UnixMs(failure)).toBe(failure);
+      expect(codec.validateMaskedUuidV7SlugUnixMs(failure, { maxTimestampDeltaMs: 0 })).toBe(
+        failure,
+      );
+      expect(codec.createUuidSlugMigrationDecoder().uuidSlugToUuidString(failure)).toBe(failure);
+      expect(codec.createUuidSlugMigrationDecoder().uuidSlugToUuidStringCandidates(failure)).toBe(
+        failure,
+      );
+      expect(output.every((byte) => byte === 0x5a)).toBe(true);
+    },
+  );
 
-  it("does not inspect the error marker on a valid byte input", () => {
+  // Rust byte slices have no JavaScript property getters.
+  javascriptOnly("does not inspect the error marker on a valid byte input", () => {
     const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
+    let markerReads = 0;
     Object.defineProperty(bytes, "__failure", {
       get() {
+        markerReads++;
         throw new Error("success reached the error detector");
       },
     });
     const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
     expect(codec.uuidToMaskedSlug(bytes)).toBe(codec.uuidToMaskedSlug(SAMPLE_V7_A));
+    expect(markerReads).toBe(0);
   });
 });
 
@@ -404,7 +414,8 @@ describe("plain UUID slugs", () => {
     });
   });
 
-  it("normalizes genuine String objects without invoking caller coercion", () => {
+  // Boxed-string slots and caller coercion belong to JavaScript, before Rust receives UTF-8.
+  javascriptOnly("normalizes genuine String objects without invoking caller coercion", () => {
     const wrappedUuid = boxedString(SAMPLE_V7_A);
     const plainSlug = unwrap(uuidStringToPlainSlug(SAMPLE_V7_A));
     const wrappedPlainSlug = new String(plainSlug);
@@ -625,24 +636,29 @@ describe("plain UUID slugs", () => {
     );
   });
 
-  it("generates UUIDv7 from cross-realm and structural instant values", () => {
+  it("generates UUIDv7 from structural instant values", () => {
     const unixMs = 1_789_475_696_789;
-    const crossRealmDate = runInNewContext(`new Date(${unixMs})`) as Date;
-    const crossRealmDateWithHostileProperty = runInNewContext(
-      `Object.defineProperty(new Date(${unixMs}), "epochMilliseconds", { get() { throw new Error("must not read Date properties") } })`,
-    ) as Date;
     const inputs = [
-      crossRealmDate,
-      crossRealmDateWithHostileProperty,
       { epochMilliseconds: BigInt(unixMs) },
       { epochNanoseconds: BigInt(unixMs) * 1_000_000n },
       { seconds: 1_789_475_696n, nanoseconds: 789_000_000 },
     ] as const;
 
     for (const at of inputs) expect(extractUuidV7UnixMs(generateUuidV7({ at }))).toBe(unixMs);
+    expect(extractUuidV7UnixMs(generateUuidV7({ at: { epochNanoseconds: 1n } }))).toBe(0);
+  });
+
+  // Rust receives normalized timestamps, not JavaScript realm objects or their property getters.
+  javascriptOnly("generates UUIDv7 from cross-realm dates and options", () => {
+    const unixMs = 1_789_475_696_789;
+    const crossRealmDate = runInNewContext(`new Date(${unixMs})`) as Date;
+    const crossRealmDateWithHostileProperty = runInNewContext(
+      `Object.defineProperty(new Date(${unixMs}), "epochMilliseconds", { get() { throw new Error("must not read Date properties") } })`,
+    ) as Date;
+    for (const at of [crossRealmDate, crossRealmDateWithHostileProperty])
+      expect(extractUuidV7UnixMs(generateUuidV7({ at }))).toBe(unixMs);
     const crossRealmOptions = runInNewContext(`({ at: ${unixMs} })`) as { at: number };
     expect(extractUuidV7UnixMs(generateUuidV7(crossRealmOptions))).toBe(unixMs);
-    expect(extractUuidV7UnixMs(generateUuidV7({ at: { epochNanoseconds: 1n } }))).toBe(0);
   });
 
   it.each([
