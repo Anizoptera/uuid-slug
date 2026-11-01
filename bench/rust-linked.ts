@@ -53,6 +53,9 @@ const consumers: Record<string, LinkedRustConsumer> = {
   "encode-base32": consumer(
     'let id = Uuid::from_uuid_bytes_array(black_box([0; 16])); assert_eq!(id.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex).as_str(), "00000000000000000000000000");',
   ),
+  "encode-both": consumer(
+    'let id = Uuid::from_uuid_bytes_array(black_box([0; 16])); for (alphabet, expected) in [(UuidSlugAlphabet::Base64Url, "AAAAAAAAAAAAAAAAAAAAAA"), (UuidSlugAlphabet::Base32Hex, "00000000000000000000000000")] { assert_eq!(id.to_plain_uuid_slug(black_box(alphabet)).as_str(), expected); }',
+  ),
   "decode-base32": consumer(
     'assert_eq!(UuidSlugAlphabet::Base32Hex.plain_slug_to_uuid_bytes(black_box("00000000000000000000000000")).unwrap(), [0; 16]);',
   ),

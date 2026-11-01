@@ -63,6 +63,8 @@ pub(super) fn encode_blocks<const BYTES: usize, const CHARS: usize, const BITS: 
     }
 }
 
+// Keep the selected decoder visible so a consumer need not retain the other alphabet's table.
+#[inline]
 pub(super) fn decode_identifier_bits(
     alphabet: UuidSlugAlphabet,
     input: &[u8],
@@ -80,8 +82,9 @@ fn decode_base64(input: &[u8], out: &mut [u8]) -> Result<(), ()> {
         return Err(());
     }
     let (groups, tail) = input.as_chunks::<4>();
+    let (output_groups, output_tail) = out.as_chunks_mut::<3>();
     // Valid digits use six bits; one combined high-bit check rejects any invalid table entry.
-    for (input, output) in groups.iter().zip(out.chunks_exact_mut(3)) {
+    for (input, output) in groups.iter().zip(output_groups) {
         let [a, b, c, d] = input.map(|byte| BASE64URL_VALUES[usize::from(byte)]);
         if (a | b | c | d) & 0xc0 != 0 {
             return Err(());
@@ -90,7 +93,7 @@ fn decode_base64(input: &[u8], out: &mut [u8]) -> Result<(), ()> {
         output[1] = (b << 4) | (c >> 2);
         output[2] = (c << 6) | d;
     }
-    let output = &mut out[groups.len() * 3..];
+    let output = output_tail;
     // The partial group carries either one or two bytes; its remaining low bits must be zero.
     match tail {
         [] => Ok(()),
