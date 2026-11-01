@@ -1,5 +1,5 @@
 // Measure linked consumer programs, not an rlib or the development bridge's broad exports.
-import { mkdir, stat } from "node:fs/promises";
+import { copyFile, mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { command } from "./command";
 import { rustToolchain } from "./rust-toolchain";
@@ -26,6 +26,8 @@ export async function buildLinkedConsumer(
   const driver = join(work, `driver-${label}`);
   const target = join(work, `target-${label}`);
   await mkdir(join(driver, "src"), { recursive: true });
+  // Resolve shared dependencies from the measured checkout, including the bindgen CLI schema.
+  await copyFile(join(cwd, "rust/Cargo.lock"), join(driver, "Cargo.lock"));
   await Promise.all([
     Bun.write(
       join(driver, "Cargo.toml"),
