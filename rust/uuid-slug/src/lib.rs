@@ -19,6 +19,7 @@ mod error;
 mod feistel;
 mod generation;
 mod mask;
+mod mask_keys;
 mod masking_codec;
 mod payload;
 #[cfg(feature = "fast-rng")]

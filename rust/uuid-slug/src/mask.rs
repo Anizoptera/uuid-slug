@@ -3,7 +3,8 @@
 use crate::{
     Error, ErrorCode,
     feistel::{Direction, feistel},
-    siphash::{HashState, hash_bytes, hash_words, tail_word},
+    mask_keys::{CHAIN_A, CHAIN_B, derive, expand},
+    siphash::{HashState, tail_word},
 };
 use alloc::{format, string::String, sync::Arc, vec::Vec};
 use core::{
@@ -16,9 +17,6 @@ use core::{
 #[cfg(feature = "std")]
 use std::sync::LazyLock;
 
-// Changing these keys, four rounds, or word indices changes every issued identifier.
-const CHAIN_A: [u32; 2] = [0x6469_7575, 0x4167_6c73];
-const CHAIN_B: [u32; 2] = [0x6469_7575, 0x4267_6c73];
 const PUBLIC_SEED: &[u8] = b"anizoptera.uuid-slug.default-mask.v1";
 type Mixer = dyn Fn([u8; 16], Direction) -> Result<[u8; 16], Error> + Send + Sync;
 
@@ -146,29 +144,6 @@ pub fn derive_uuid_v7_mask(
         diagnostic_label.into(),
         derive(mask_seed, key_derivation_iterations),
     ))
-}
-
-fn derive(seed: &[u8], iterations: u32) -> [u32; 8] {
-    let mut a = CHAIN_A;
-    let mut b = CHAIN_B;
-    for _ in 0..iterations {
-        a = hash_bytes(a, seed);
-    }
-    for _ in 0..iterations {
-        b = hash_bytes(b, seed);
-    }
-    expand(a, b)
-}
-
-fn expand(a: [u32; 2], b: [u32; 2]) -> [u32; 8] {
-    let mut keys = [0; 8];
-    for word in (0..8).step_by(2) {
-        let aa = hash_words(a, &[word as u32]);
-        let bb = hash_words(b, &[word as u32]);
-        keys[word] = aa[0] ^ bb[0];
-        keys[word + 1] = aa[1] ^ bb[1];
-    }
-    keys
 }
 
 fn from_keys(label: String, keys: [u32; 8]) -> UuidV7Mask {
