@@ -21,10 +21,17 @@ import {
   generateUuidV7Bytes,
   generatePlainUuidV7Slug,
   generateUuidV7WithPlainSlug,
+  isUuidSlugError,
 } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 
 const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+
+// A failed draw supplies no RNG evidence, including package errors from another realm.
+function requireGenerationResult<Value>(value: Value) {
+  if (isUuidSlugError(value)) throw value;
+  return unwrap(value);
+}
 
 /**
  * A fixed instant for the timestamped entry points. It is a constant rather than `Date.now()` so
@@ -71,7 +78,7 @@ export function sourcesUsedBy(generate: () => unknown, calls = 100): string[] {
   const sources = instrument();
   try {
     sources.reset();
-    for (let i = 0; i < calls; i += 1) generate();
+    for (let i = 0; i < calls; i += 1) requireGenerationResult(generate());
     return sources.used();
   } finally {
     sources.restore();
@@ -97,7 +104,7 @@ export function attributedSourcesFor(generate: () => unknown, attempts = 20_000)
   try {
     sources.reset();
     for (let i = 0; i < attempts; i += 1) {
-      for (let call = 0; call < 100; call += 1) generate();
+      for (let call = 0; call < 100; call += 1) requireGenerationResult(generate());
       const used = sources.used();
       if (used.length > 0) return used;
     }
@@ -124,8 +131,7 @@ export function attributedSourcesFor(generate: () => unknown, attempts = 20_000)
 export function constantBitCount(generate: () => Error | Uint8Array, calls = 256): number {
   const ones = new Uint32Array(128);
   for (let draw = 0; draw < calls; draw += 1) {
-    const bytes = generate();
-    if (bytes instanceof Error) throw bytes;
+    const bytes = requireGenerationResult(generate());
     for (let bit = 0; bit < 128; bit += 1)
       ones[bit] = (ones[bit] as number) + (((bytes[bit >> 3] as number) >>> (7 - (bit & 7))) & 1);
   }

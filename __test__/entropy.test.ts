@@ -14,6 +14,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { spawnSync } from "node:child_process";
+import { runInNewContext } from "node:vm";
 
 import { instrument } from "./instrument";
 import {
@@ -24,11 +25,35 @@ import {
   insecureAmong,
   sourcesUsedBy,
 } from "./entropy-probe";
-import { generateUuidV4, generateUuidV4Bytes } from "../src/index";
+import { generateUuidV4, generateUuidV4Bytes, generateUuidV4WithRandomFill } from "../src/index";
 import { runtime as nodeRuntime } from "../src/runtime/node";
 import { javascriptOnly, usingRust } from "./shared-test-host";
 
 describe("entropy source", () => {
+  // These observers patch JavaScript sources; a failed draw must not become RNG evidence.
+  javascriptOnly.each([
+    ["source observation", sourcesUsedBy],
+    ["pooled source attribution", attributedSourcesFor],
+  ] as const)("rejects a returned generation failure in observer %s", ([_name, observe]) => {
+    const random = Math.random;
+    const foreignFailure: unknown = runInNewContext(
+      'Object.assign(new Error("foreign entropy failure"), { name: "UuidSlugError", code: "rng_unavailable" })',
+    );
+    for (const failure of [new Error("entropy draw failed"), foreignFailure]) {
+      let draws = 0;
+      const generate = () =>
+        Reflect.apply(generateUuidV4WithRandomFill, undefined, [
+          () => {
+            draws++;
+            return failure;
+          },
+        ]);
+      // One window is enough: rejection must happen on its first failed draw.
+      expect(() => observe(generate, 1)).toThrow();
+      expect(draws).toBe(1);
+      expect(Math.random).toBe(random);
+    }
+  });
   it.runIf(!usingRust && !process.versions.deno)(
     "selects native UUIDv4 only when Node actually runs without the JIT",
     { meta: { javascriptOnly: true } },
