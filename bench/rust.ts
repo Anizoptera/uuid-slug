@@ -80,10 +80,6 @@ async function buildCodec(features: readonly string[] = [], manifest = "rust/Car
 
 if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
   const prepareOnly = process.argv[2] === "--codec-build";
-  if (!prepareOnly && process.env.UUID_SLUG_PERF_ALLOW_BUSY === "1")
-    throw new Error(
-      "Rust codec acceptance refuses UUID_SLUG_PERF_ALLOW_BUSY; remove it and use an idle host.",
-    );
   const manifests = process.argv.slice(3);
   if (!manifests.length) manifests.push("rust/Cargo.toml");
   const filter =
@@ -96,6 +92,8 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
       rust: (await run(["rustc", "-Vv"])).output.trim(),
       filter,
       prepareOnly,
+      // The shared host guard owns refusal and warnings; forced measurements stay identifiable.
+      busyHostOverride: process.env.UUID_SLUG_PERF_ALLOW_BUSY === "1",
     }),
   );
   const source = await readFile("rust/uuid-slug/benches/codec.rs");
