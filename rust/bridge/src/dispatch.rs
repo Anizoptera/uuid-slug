@@ -159,6 +159,16 @@ fn masking_codec(request: &Value) -> Result<UuidV7MaskingCodec, Error> {
 fn run(request: &Value) -> Result<Value, Error> {
     let input = request["input"].as_str().unwrap_or("");
     match text(request, "op")? {
+        "wireEncode" => crate::wire_test::encode(request, alphabet(&request["alphabet"])?),
+        "wireDecode" => crate::wire_test::decode(request, alphabet(&request["alphabet"])?),
+        "plainUuidBytes" => Ok(json!(Uuid::from_plain_uuid_slug(input)?.as_uuid_bytes())),
+        "plainFromBytes" => {
+            let bytes: [u8; 16] = serde_json::from_value(request["bytes"].clone())
+                .map_err(|_| Error::new(ErrorCode::InvalidBuffer))?;
+            Ok(json!(alphabet(&request["alphabet"])?
+                .uuid_bytes_to_plain_slug(&bytes)
+                .into_string()))
+        }
         "preservesSystemTimeNanoseconds" => {
             // Neither bridge conversion nor generation may decide its own fine-case coverage.
             let epoch = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);

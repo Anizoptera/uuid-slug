@@ -5,7 +5,7 @@ const runtime = process.env.UUID_SLUG_TEST_RUNTIME ?? "node";
 const command =
   runtime === "deno"
     ? ["deno", "run", "--allow-all", "--node-modules-dir=manual", "--cached-only"]
-    : ["node"];
+    : [runtime === "bun" ? "bun" : "node"];
 process.exitCode = await runBunInScratch([
   "run",
   ...command,

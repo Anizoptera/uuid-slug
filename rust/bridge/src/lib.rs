@@ -1,7 +1,12 @@
 //! Development hosts run the same dispatcher without publishing a native ABI.
 #![deny(unsafe_op_in_unsafe_fn)]
 
+extern crate alloc;
+
+use uuid_slug::UuidSlugAlphabet;
+
 mod dispatch;
+mod wire_test;
 
 fn evaluate_caught(input: &str) -> Result<String, &'static str> {
     std::panic::catch_unwind(|| dispatch::evaluate(input)).map_err(|_| "Rust bridge panicked")

@@ -1,19 +1,34 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { describe, expect, it } from "vitest";
-import { BASE32HEX, BASE64URL, decodeInto, encode } from "../src/alphabet";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
+  BASE32HEX,
+  BASE64URL,
+  decodeInto,
+  encode,
+  codecs,
+  detailedDiagnostics,
+  backendName,
   uuidBytesToPlainSlug,
   isPlainUuidSlug,
   plainSlugToUuidBytes,
   uuidStringToPlainSlug,
-} from "../src/index";
-import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
+} from "./alphabet-backend";
 import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 import { encodeBase32hexReference } from "./base32hex-reference";
 
 const bytesFrom = (length: number) =>
   Uint8Array.from({ length }, (_, index) => (Math.imul(length + 1, 131) + index * 197) & 0xff);
+
+// Stable failure codes are shared; character-offset messages belong to the TypeScript API.
+function decodeFailure(code: string, message: string) {
+  return detailedDiagnostics ? { code, message } : { code };
+}
+
+beforeAll(() => {
+  // A resolver mistake must fail instead of silently exercising TypeScript in a Rust lane.
+  expect(backendName).toBe(process.env.UUID_SLUG_TEST_BACKEND ?? "typescript");
+});
 
 describe("bit-packing codec", () => {
   // An oracle only has value when it can fail independently of the code under test. Comparing
@@ -47,10 +62,12 @@ describe("bit-packing codec", () => {
     for (const character of ["!", "\u0141"])
       for (let index = 0; index < encoded.length; index += 1) {
         const invalid = `${encoded.slice(0, index)}${character}${encoded.slice(index + 1)}`;
-        expect(decodeInto(invalid, BASE64URL, new Uint8Array(16), 0)).toMatchObject({
-          code: "invalid_base64url",
-          message: `Invalid base64url character ${JSON.stringify(character)} at offset ${index}.`,
-        });
+        expect(decodeInto(invalid, BASE64URL, new Uint8Array(16), 0)).toMatchObject(
+          decodeFailure(
+            "invalid_base64url",
+            `Invalid base64url character ${JSON.stringify(character)} at offset ${index}.`,
+          ),
+        );
       }
   });
 
@@ -61,11 +78,12 @@ describe("bit-packing codec", () => {
       expect(decodeInto(encode(bytes, BASE64URL, tail, 4), BASE64URL, out, 0, 4)).toBe(tail);
       expect(out).toEqual(bytes);
     }
-    expect(decodeInto(`${"A".repeat(21)}B`, BASE64URL, new Uint8Array(16), 0)).toMatchObject({
-      code: "invalid_base64url",
-      message:
+    expect(decodeInto(`${"A".repeat(21)}B`, BASE64URL, new Uint8Array(16), 0)).toMatchObject(
+      decodeFailure(
+        "invalid_base64url",
         "base64url value has non-canonical trailing bits; a masked slug of this length decodes only through its codec.",
-    });
+      ),
+    );
   });
 
   it("decodes varied 16-byte base32hex payloads from a bit-level reference", () => {
@@ -85,10 +103,12 @@ describe("bit-packing codec", () => {
     for (const character of ["w", "\u0130"])
       for (let index = 0; index < encoded.length; index += 1) {
         const invalid = `${encoded.slice(0, index)}${character}${encoded.slice(index + 1)}`;
-        expect(decodeInto(invalid, BASE32HEX, new Uint8Array(16), 0)).toMatchObject({
-          code: "invalid_base32hex",
-          message: `Invalid base32hex character ${JSON.stringify(character)} at offset ${index}.`,
-        });
+        expect(decodeInto(invalid, BASE32HEX, new Uint8Array(16), 0)).toMatchObject(
+          decodeFailure(
+            "invalid_base32hex",
+            `Invalid base32hex character ${JSON.stringify(character)} at offset ${index}.`,
+          ),
+        );
       }
   });
 
@@ -105,23 +125,23 @@ describe("bit-packing codec", () => {
     }
     const valid = encodeBase32hexReference(bytes, 5, 4);
     expect(decodeInto(`${valid.slice(0, 26)}1`, BASE32HEX, new Uint8Array(16), 0, 4)).toMatchObject(
-      {
-        message: "base32hex value has non-canonical trailing bits.",
-      },
+      decodeFailure("invalid_base32hex", "base32hex value has non-canonical trailing bits."),
     );
     for (const character of ["w", "\u0130"])
       expect(
         decodeInto(`${valid.slice(0, 26)}${character}`, BASE32HEX, new Uint8Array(16), 0, 4),
-      ).toMatchObject({
-        message: `Invalid base32hex character ${JSON.stringify(character)} at offset 26.`,
-      });
+      ).toMatchObject(
+        decodeFailure(
+          "invalid_base32hex",
+          `Invalid base32hex character ${JSON.stringify(character)} at offset 26.`,
+        ),
+      );
   });
 
   it("rejects non-canonical plain base32hex tails", () => {
-    expect(decodeInto(`${"0".repeat(25)}1`, BASE32HEX, new Uint8Array(16), 0)).toMatchObject({
-      code: "invalid_base32hex",
-      message: "base32hex value has non-canonical trailing bits.",
-    });
+    expect(decodeInto(`${"0".repeat(25)}1`, BASE32HEX, new Uint8Array(16), 0)).toMatchObject(
+      decodeFailure("invalid_base32hex", "base32hex value has non-canonical trailing bits."),
+    );
   });
 
   // The spare bits are what let the masked check ride along at no cost in length: a base64url

@@ -55,6 +55,13 @@ const customMix = unwrap(
   }),
 );
 
+// Bridge requests and TypeScript fixtures must select the same retained producer configuration.
+export const WIRE_FORMAT_MASKS = {
+  "custom-mix": "custom-mix",
+  default: null,
+  "seeded-v2": { seed: "golden-vector-seed-v3" },
+} as const;
+
 export const WIRE_FORMAT_CODECS = {
   "custom-mix": unwrap(createUuidV7MaskingCodec({ mask: customMix, sentinels: NIL_TEST_SENTINEL })),
   default: unwrap(
@@ -62,7 +69,7 @@ export const WIRE_FORMAT_CODECS = {
   ),
   "seeded-v2": unwrap(
     createUuidV7MaskingCodec({
-      mask: { seed: "golden-vector-seed-v3" },
+      mask: WIRE_FORMAT_MASKS["seeded-v2"],
       sentinels: NIL_TEST_SENTINEL,
     }),
   ),
