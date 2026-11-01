@@ -8,20 +8,28 @@ import { rustToolchain } from "./rust-toolchain";
 const decodingAssertions = [
   "canonical text must decode",
   "every payload bit must survive decoding",
-  "nonzero decoder padding must fail",
   "a non-alphabet byte must fail",
 ];
+const paddingAssertion = "nonzero decoder padding must fail";
+const tailAssertion = "decoded tail must fit four bits";
 const harnesses = [
   {
     name: "feistel_contract::inverts_every_block_and_key",
     assertions: ["unmask must invert every block and key"],
   },
-  ...[
-    "identifier_bits::base64_uuid_bits",
-    "identifier_bits::base32_uuid_bits",
-    "identifier_bits::base64_masked_bits",
-    "identifier_bits::base32_masked_bits",
-  ].map((name) => ({ name, assertions: decodingAssertions })),
+  ...["identifier_bits::base64_uuid_bits", "identifier_bits::base32_uuid_bits"].map((name) => ({
+    name,
+    assertions: [...decodingAssertions, paddingAssertion],
+  })),
+  {
+    name: "identifier_bits::base64_masked_bits",
+    // Every bit in 22 base64url digits is payload; the decoder must preserve the whole tail.
+    assertions: [...decodingAssertions, tailAssertion],
+  },
+  {
+    name: "identifier_bits::base32_masked_bits",
+    assertions: [...decodingAssertions, paddingAssertion, tailAssertion],
+  },
   ...[
     "identifier_bits::encoding_base64_uuid_bits",
     "identifier_bits::encoding_base32_uuid_bits",

@@ -1,11 +1,15 @@
 //! Pack the fixed UUID wire layouts without constructing a general-purpose codec.
 use crate::UuidSlugAlphabet;
-use alloc::{boxed::Box, string::String, vec};
+use alloc::{boxed::Box, string::String};
 
 // Symbol order defines issued identifiers; both directions derive from these fixed alphabets.
 pub(super) const BASE64URL_SYMBOLS: &[u8] =
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 pub(super) const BASE32HEX_SYMBOLS: &[u8] = b"0123456789abcdefghijklmnopqrstuv";
+
+const _: () = {
+    assert!(BASE64URL_SYMBOLS.is_ascii() && BASE32HEX_SYMBOLS.is_ascii());
+};
 
 const fn decoding_table(symbols: &[u8]) -> [u8; 256] {
     let mut values = [u8::MAX; 256];
@@ -18,7 +22,16 @@ const fn decoding_table(symbols: &[u8]) -> [u8; 256] {
 }
 
 const BASE64URL_VALUES: [u8; 256] = decoding_table(BASE64URL_SYMBOLS);
-const BASE32HEX_VALUES: [u8; 256] = decoding_table(BASE32HEX_SYMBOLS);
+// Base32hex accepts both ASCII cases; aliases avoid copying and folding every input.
+const BASE32HEX_VALUES: [u8; 256] = {
+    let mut values = decoding_table(BASE32HEX_SYMBOLS);
+    let mut index = 0;
+    while index < BASE32HEX_SYMBOLS.len() {
+        values[BASE32HEX_SYMBOLS[index].to_ascii_uppercase() as usize] = index as u8;
+        index += 1;
+    }
+    values
+};
 
 // Expose a constant caller alphabet so ordinary linking can discard the other table without LTO.
 #[inline]
@@ -33,32 +46,44 @@ pub(super) fn encode_identifier_bits(
         UuidSlugAlphabet::Base64Url => BASE64URL_SYMBOLS,
         UuidSlugAlphabet::Base32Hex => BASE32HEX_SYMBOLS,
     };
-    let mut out = vec![0; payload_bits.div_ceil(bits)];
+    let length = payload_bits.div_ceil(bits);
+    let mut out = String::with_capacity(length);
+    // Expose the checked ASCII range so String::push need not handle multibyte characters.
+    let mut write = |symbol| out.push(char::from(symbol & 0x7f));
     match alphabet {
-        UuidSlugAlphabet::Base64Url => encode_blocks::<3, 4, 6>(symbols, bytes, &mut out),
-        UuidSlugAlphabet::Base32Hex => encode_blocks::<5, 8, 5>(symbols, bytes, &mut out),
+        UuidSlugAlphabet::Base64Url => {
+            encode_blocks::<3, 4, 6, _>(symbols, bytes, length, &mut write)
+        }
+        UuidSlugAlphabet::Base32Hex => {
+            encode_blocks::<5, 8, 5, _>(symbols, bytes, length, &mut write)
+        }
     }
-    // Only the fixed ASCII tables can contribute bytes; retain safe UTF-8 validation.
-    String::from_utf8(out)
-        .expect("UUID alphabets contain only ASCII")
-        .into_boxed_str()
+    // Append into the final owned string; safe character writes avoid a separate UTF-8 pass.
+    out.into_boxed_str()
 }
 
 #[inline]
-pub(super) fn encode_blocks<const BYTES: usize, const CHARS: usize, const BITS: usize>(
+pub(super) fn encode_blocks<
+    const BYTES: usize,
+    const CHARS: usize,
+    const BITS: usize,
+    Write: FnMut(u8),
+>(
     symbols: &[u8],
     input: &[u8],
-    output: &mut [u8],
+    output_length: usize,
+    mut write: Write,
 ) {
     // Aligned blocks reuse each input byte; a partial final block is zero-padded at the low end.
-    for (input, output) in input.chunks(BYTES).zip(output.chunks_mut(CHARS)) {
+    for (input, offset) in input.chunks(BYTES).zip((0..output_length).step_by(CHARS)) {
         let mut word = 0u64;
         for (index, &byte) in input.iter().enumerate() {
             word |= u64::from(byte) << (8 * (BYTES - index - 1));
         }
-        for (index, symbol) in output.iter_mut().enumerate() {
-            *symbol =
-                symbols[((word >> (BYTES * 8 - BITS * (index + 1))) & ((1 << BITS) - 1)) as usize];
+        for index in 0..CHARS.min(output_length - offset) {
+            write(
+                symbols[((word >> (BYTES * 8 - BITS * (index + 1))) & ((1 << BITS) - 1)) as usize],
+            );
         }
     }
 }
@@ -70,11 +95,54 @@ pub(super) fn decode_identifier_bits(
     input: &[u8],
     out: &mut [u8],
 ) -> Result<(), ()> {
-    // The alphabet owner checks text length and supplies private 16/17-byte scratch storage.
+    // Decode into private scratch; owners commit caller storage only after all input succeeds.
     match alphabet {
         UuidSlugAlphabet::Base64Url => decode_base64(input, out),
         UuidSlugAlphabet::Base32Hex => decode_blocks::<8, 5>(&BASE32HEX_VALUES, input, out),
     }
+}
+
+// Preserve the alphabet adapter's distinct invalid-character and padding diagnostics.
+#[derive(Debug)]
+pub(super) enum MaskedDecodeError {
+    InvalidCharacter,
+    NonzeroPadding,
+}
+
+pub(super) fn decode_masked_base64(input: &[u8; 22]) -> Result<([u8; 16], u8), MaskedDecodeError> {
+    let mut bytes = [0; 16];
+    decode_identifier_bits(UuidSlugAlphabet::Base64Url, &input[..20], &mut bytes[..15])
+        .map_err(|()| MaskedDecodeError::InvalidCharacter)?;
+    let (a, b) = (
+        BASE64URL_VALUES[usize::from(input[20])],
+        BASE64URL_VALUES[usize::from(input[21])],
+    );
+    if (a | b) & 0xc0 != 0 {
+        return Err(MaskedDecodeError::InvalidCharacter);
+    }
+    // All 132 bits are payload: the final four bits are the check tail, not padding.
+    bytes[15] = (a << 2) | (b >> 4);
+    Ok((bytes, b & 15))
+}
+
+pub(super) fn decode_masked_base32(input: &[u8; 27]) -> Result<([u8; 16], u8), MaskedDecodeError> {
+    let mut bytes = [0; 16];
+    decode_identifier_bits(UuidSlugAlphabet::Base32Hex, &input[..24], &mut bytes[..15])
+        .map_err(|()| MaskedDecodeError::InvalidCharacter)?;
+    let (a, b, c) = (
+        BASE32HEX_VALUES[usize::from(input[24])],
+        BASE32HEX_VALUES[usize::from(input[25])],
+        BASE32HEX_VALUES[usize::from(input[26])],
+    );
+    if (a | b | c) & 0xe0 != 0 {
+        return Err(MaskedDecodeError::InvalidCharacter);
+    }
+    if c & 7 != 0 {
+        return Err(MaskedDecodeError::NonzeroPadding);
+    }
+    // Fifteen final bits carry eight UUID bits, four check bits and three zero padding bits.
+    bytes[15] = (a << 3) | (b >> 2);
+    Ok((bytes, ((b & 3) << 2) | (c >> 3)))
 }
 
 fn decode_base64(input: &[u8], out: &mut [u8]) -> Result<(), ()> {

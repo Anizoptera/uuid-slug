@@ -81,62 +81,48 @@ impl UuidSlugAlphabet {
                         text.len()
                     )));
                 }
-                let mut normalized = [0; 26];
-                let input = if self == Self::Base32Hex {
-                    normalized.copy_from_slice(text.as_bytes());
-                    normalized.make_ascii_lowercase();
-                    normalized.as_slice()
-                } else {
-                    text.as_bytes()
-                };
                 let mut decoded = [0; 16];
-                crate::bit_encoding::decode_identifier_bits(self, input, &mut decoded).map_err(
-                    |_| {
+                crate::bit_encoding::decode_identifier_bits(self, text.as_bytes(), &mut decoded)
+                    .map_err(|_| {
                         self.error().with_message(format!(
                             "Plain {} slug contains an invalid character or nonzero trailing bits.",
                             self.name()
                         ))
-                    },
-                )?;
+                    })?;
                 *out = decoded;
                 Ok(0)
             }
             4 => {
                 let length = 132usize.div_ceil(self.bits_per_character());
-                if text.len() != length {
-                    return Err(self.error().with_message(format!(
+                let length_error = || {
+                    self.error().with_message(format!(
                         "Masked {} slug must contain {length} ASCII characters; got {} UTF-8 bytes.",
                         self.name(),
                         text.len()
-                    )));
-                }
-                // Restore the omitted zero character to decode 17 bytes; the low nibble is not payload.
-                let zero = if self == Self::Base64Url { b'A' } else { b'0' };
-                let mut padded = [zero; 28];
-                padded[..length].copy_from_slice(text.as_bytes());
-                if self == Self::Base32Hex {
-                    padded[..length].make_ascii_lowercase();
-                }
-                let mut decoded = [0; 17];
-                crate::bit_encoding::decode_identifier_bits(
-                    self,
-                    &padded[..length + 1],
-                    &mut decoded,
-                )
-                .map_err(|_| {
-                    self.error().with_message(format!(
-                        "Masked {} slug contains an invalid character or invalid trailing bits.",
-                        self.name()
                     ))
-                })?;
-                if decoded[16] & 15 != 0 {
-                    return Err(self.error().with_message(format!(
-                        "Masked {} slug has nonzero trailing bits.",
-                        self.name()
-                    )));
+                };
+                let (decoded, tail) = match self {
+                    Self::Base64Url => crate::bit_encoding::decode_masked_base64(
+                        text.as_bytes().try_into().map_err(|_| length_error())?,
+                    ),
+                    Self::Base32Hex => crate::bit_encoding::decode_masked_base32(
+                        text.as_bytes().try_into().map_err(|_| length_error())?,
+                    ),
                 }
-                out.copy_from_slice(&decoded[..16]);
-                Ok(decoded[16] >> 4)
+                .map_err(|failure| {
+                    self.error().with_message(match failure {
+                        crate::bit_encoding::MaskedDecodeError::InvalidCharacter => format!(
+                            "Masked {} slug contains an invalid character or invalid trailing bits.",
+                            self.name()
+                        ),
+                        crate::bit_encoding::MaskedDecodeError::NonzeroPadding => format!(
+                            "Masked {} slug has nonzero trailing bits.",
+                            self.name()
+                        ),
+                    })
+                })?;
+                *out = decoded;
+                Ok(tail)
             }
             _ => Err(self.error()),
         }
