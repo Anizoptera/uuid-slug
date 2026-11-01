@@ -7,6 +7,8 @@ use uuid_slug::UuidSlugAlphabet;
 
 mod dispatch;
 mod primitives;
+mod test_api;
+mod test_callbacks;
 use primitives::siphash;
 
 fn evaluate_caught(input: &str) -> Result<String, &'static str> {

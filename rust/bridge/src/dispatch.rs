@@ -13,7 +13,7 @@ fn text<'a>(value: &'a Value, key: &str) -> Result<&'a str, Error> {
         .ok_or_else(|| Error::new(ErrorCode::InvalidUuid))
 }
 
-fn alphabet(value: &Value) -> Result<UuidSlugAlphabet, Error> {
+pub(super) fn alphabet(value: &Value) -> Result<UuidSlugAlphabet, Error> {
     match value.as_str().unwrap_or("base64url") {
         "base64url" => Ok(UuidSlugAlphabet::Base64Url),
         "base32hex" => Ok(UuidSlugAlphabet::Base32Hex),
@@ -21,7 +21,7 @@ fn alphabet(value: &Value) -> Result<UuidSlugAlphabet, Error> {
     }
 }
 
-fn number(value: &Value) -> f64 {
+pub(super) fn number(value: &Value) -> f64 {
     match value.as_str() {
         Some("NaN") => f64::NAN,
         Some("Infinity") => f64::INFINITY,
@@ -30,7 +30,7 @@ fn number(value: &Value) -> f64 {
     }
 }
 
-fn system_time(value: &Value) -> Result<std::time::SystemTime, Error> {
+pub(super) fn system_time(value: &Value) -> Result<std::time::SystemTime, Error> {
     let seconds = value["seconds"]
         .as_u64()
         .ok_or_else(|| Error::new(ErrorCode::InvalidTimestamp))?;
@@ -67,7 +67,7 @@ fn custom_mix_reverse(input: [u8; 16]) -> Result<[u8; 16], Error> {
     Ok(output)
 }
 
-fn mask(value: &Value) -> Result<UuidV7Mask, Error> {
+pub(super) fn mask(value: &Value) -> Result<UuidV7Mask, Error> {
     if value.is_null() {
         return Ok(uuid_v7_test_mask());
     }
@@ -159,6 +159,7 @@ fn masking_codec(request: &Value) -> Result<UuidV7MaskingCodec, Error> {
 fn run(request: &Value) -> Result<Value, Error> {
     let input = request["input"].as_str().unwrap_or("");
     match text(request, "op")? {
+        "api" => Ok(crate::test_api::evaluate(request)),
         "wireEncode" => crate::primitives::encode(request, alphabet(&request["alphabet"])?),
         "wireDecode" => crate::primitives::decode(request, alphabet(&request["alphabet"])?),
         "halfSipHash" => crate::primitives::hash(request),
