@@ -8,7 +8,7 @@ import { command } from "../scripts/command";
 import { buildLinkedConsumer, maskingConsumer } from "../scripts/rust-linked";
 import type { LinkedRustConsumer } from "../scripts/rust-linked";
 import { rustToolchain } from "../scripts/rust-toolchain";
-import { runLinkedWasm } from "./rust-linked-browser";
+import { retainedAlphabetTables, runLinkedWasm } from "./rust-linked-browser";
 
 const crate = process.argv[2];
 if (!crate)
@@ -55,6 +55,9 @@ const consumers: Record<string, LinkedRustConsumer> = {
   ),
   "decode-base32": consumer(
     'assert_eq!(UuidSlugAlphabet::Base32Hex.plain_slug_to_uuid_bytes(black_box("00000000000000000000000000")).unwrap(), [0; 16]);',
+  ),
+  "decode-both": consumer(
+    'for (alphabet, text) in [(UuidSlugAlphabet::Base64Url, "AAAAAAAAAAAAAAAAAAAAAA"), (UuidSlugAlphabet::Base32Hex, "00000000000000000000000000")] { assert_eq!(black_box(alphabet).plain_slug_to_uuid_bytes(black_box(text)).unwrap(), [0; 16]); }',
   ),
   "decode-base64-into": consumer(
     'let mut output = [0xa5; 18]; assert_eq!(UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes_into(black_box("AAAAAAAAAAAAAAAAAAAAAA"), &mut output, black_box(1)).unwrap(), &[0; 16]); assert_eq!(output[0], 0xa5); assert_eq!(output[17], 0xa5);',
@@ -103,6 +106,9 @@ try {
             defaultFeatures,
             native: (await stat(paths.native)).size,
             nativeExecuted: true,
+            nativeAlphabetBytes: retainedAlphabetTables(
+              Buffer.from(await Bun.file(paths.native).arrayBuffer()),
+            ),
             ...wasm,
             symbols: symbols.trim().split("\n"),
           }),

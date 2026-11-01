@@ -5,6 +5,23 @@ import type { Browser } from "playwright";
 import { command } from "../scripts/command";
 import { optimizeWasm } from "../scripts/wasm-opt";
 
+/** Identify exact alphabet data; single-alphabet negatives need the both-alphabet control. */
+export function retainedAlphabetTables(bytes: Buffer) {
+  const base64url = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  const base32hex = "0123456789abcdefghijklmnopqrstuv";
+  function decoder(symbols: string) {
+    const values = Buffer.alloc(256, 255);
+    for (let index = 0; index < symbols.length; index++) values[symbols.charCodeAt(index)] = index;
+    return bytes.includes(values);
+  }
+  return {
+    base64url: bytes.includes(base64url),
+    base32hex: bytes.includes(base32hex),
+    base64urlDecoder: decoder(base64url),
+    base32hexDecoder: decoder(base32hex),
+  };
+}
+
 export async function runLinkedWasm(
   rawWasm: string,
   directory: string,
@@ -75,13 +92,8 @@ catch (error) { document.body.dataset.result = String(error); }
       javascript: javascriptBytes,
       optimization,
       wasmFunctions: functionMap.trim().split("\n"),
-      // Absence is meaningful only when matching encoder controls retain these bytes.
-      wasmAlphabetBytes: {
-        base64url: wasmBytes.includes(
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
-        ),
-        base32hex: wasmBytes.includes("0123456789abcdefghijklmnopqrstuv"),
-      },
+      // Absence is meaningful only when the matching both-alphabet control retains these bytes.
+      wasmAlphabetBytes: retainedAlphabetTables(wasmBytes),
       wasmSha256: new Bun.CryptoHasher("sha256").update(wasmBytes).digest("hex"),
       wasmExecuted: browsers.map(({ name }) => name),
       imports: WebAssembly.Module.imports(module),
