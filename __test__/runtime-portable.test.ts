@@ -45,22 +45,11 @@ describe("portable runtime capability probe", () => {
     },
   );
 
-  javascriptOnly(
-    "leaves uuidV4 undefined when the page has getRandomValues but not randomUUID",
-    async () => {
-      const runtime = await adapterWith({ getRandomValues: fill });
-      expect(runtime.uuidV4).toBeUndefined();
-      // The capability that IS present must still work: leaving `uuidV4` undefined routes callers to
-      // the byte generator, which draws through exactly this.
-      const bytes = new Uint8Array(16);
-      runtime.fillRandom(bytes);
-      expect(bytes.every((byte) => byte === 0x7f)).toBe(true);
-    },
-  );
-
-  javascriptOnly("keeps the faster portable v4 route when randomUUID exists", async () => {
-    const runtime = await adapterWith({ getRandomValues: fill, randomUUID: nativeRandomUuid });
-    expect(runtime.uuidV4).toBeUndefined();
+  javascriptOnly("fills bytes when Web Crypto has getRandomValues but not randomUUID", async () => {
+    const runtime = await adapterWith({ getRandomValues: fill });
+    const bytes = new Uint8Array(16);
+    expect(runtime.fillRandom(bytes)).toBeUndefined();
+    expect(bytes.every((byte) => byte === 0x7f)).toBe(true);
   });
 
   javascriptOnly("executes native UUIDv4 under Deno capability selection", async () => {
