@@ -15,6 +15,7 @@ extern crate std;
 
 mod alphabet;
 mod bit_encoding;
+mod buffer_range;
 mod error;
 mod feistel;
 mod generation;

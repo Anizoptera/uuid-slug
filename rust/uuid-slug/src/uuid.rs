@@ -413,14 +413,11 @@ impl Uuid {
     }
 }
 pub(crate) fn range(capacity: usize, offset: usize) -> Result<core::ops::Range<usize>, Error> {
-    let end = offset
-        .checked_add(16)
-        .filter(|&end| end <= capacity)
-        .ok_or_else(|| {
-            Error::new(ErrorCode::InvalidBuffer).with_message(format!(
-                "Buffer needs 16 bytes at offset {offset}, but holds {capacity}."
-            ))
-        })?;
+    let end = crate::buffer_range::uuid_end(capacity, offset).ok_or_else(|| {
+        Error::new(ErrorCode::InvalidBuffer).with_message(format!(
+            "Buffer needs 16 bytes at offset {offset}, but holds {capacity}."
+        ))
+    })?;
     Ok(offset..end)
 }
 impl FromStr for Uuid {
