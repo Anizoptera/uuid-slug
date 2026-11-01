@@ -1,5 +1,6 @@
 import { defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
+import TEST_DISCOVERY from "./__test__/shared-test-suites.json" with { type: "json" };
 
 const runtime = process.env.UUID_SLUG_TEST_RUNTIME ?? "node";
 const backend = process.env.UUID_SLUG_TEST_BACKEND ?? "typescript";
@@ -36,8 +37,7 @@ export default defineConfig({
       ...(backend === "rust" ? ["./__test__/rust-test-implementation.ts"] : []),
     ],
     // Bun-specific files run under `bun test`; Node cannot resolve their `bun:test` imports.
-    exclude: ["__test__/**/*.bun.test.ts"],
-    include: ["__test__/**/*.test.ts"],
+    ...TEST_DISCOVERY,
   },
 });
 // Redirect test consumers in one pass; original modules supply metadata, never fallback functions.

@@ -31,6 +31,7 @@ import { javascriptOnly, usingRust } from "./shared-test-host";
 describe("entropy source", () => {
   it.runIf(!usingRust && !process.versions.deno)(
     "selects native UUIDv4 only when Node actually runs without the JIT",
+    { meta: { javascriptOnly: true } },
     () => {
       // Real processes distinguish NODE_OPTIONS from CLI overrides. The V8 executable heap is an
       // independent observation of the process mode, not a copy of the adapter's flag parser.
@@ -85,6 +86,7 @@ describe("entropy source", () => {
   );
   it.runIf(!usingRust && !process.versions.deno)(
     "generates UUIDv4 text from the package's attributable pool on Node with the JIT",
+    { meta: { javascriptOnly: true } },
     () => {
       // With the JIT, native text is slower than the pooled portable path, so the adapter omits it and text
       // must draw through `fillRandom`, where the source can be attributed.
@@ -96,7 +98,7 @@ describe("entropy source", () => {
   );
 
   // JavaScript patches cannot observe Rust's OS entropy; its seed/fork fault tests own that path.
-  javascriptOnly.each(generators)("never reaches for Math.random in %s", (_name, generate) => {
+  javascriptOnly.each(generators)("never reaches for Math.random in %s", ([_name, generate]) => {
     expect(insecureAmong(sourcesUsedBy(generate))).toEqual([]);
   });
 

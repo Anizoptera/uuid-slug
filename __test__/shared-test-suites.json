@@ -1,1 +1,1 @@
-["alphabet.test.ts", "siphash.test.ts", "feistel.test.ts"]
+{ "include": ["__test__/**/*.test.ts"], "exclude": ["__test__/**/*.bun.test.ts"] }

@@ -2,6 +2,7 @@
 import { rename } from "node:fs/promises";
 import { join } from "node:path";
 import { optimizeWasm } from "../scripts/wasm-opt";
+import { runRustSharedSuites } from "./shared-suite-runner";
 
 export async function runWasmSharedTests(
   options: { artifact: string; cli: string; directory: string; profile: "debug" | "release" },
@@ -21,13 +22,16 @@ export async function runWasmSharedTests(
   console.log(JSON.stringify({ profile, sharedTests: true, optimization }));
   // Keep generated files alive until both supervised hosts have exited, including a failed sibling.
   const results = await Promise.allSettled(
-    ["node", "bun"].map((runtime) =>
-      run(["bun", "scripts/test-vitest.ts", "--reporter=verbose"], {
-        UUID_SLUG_TEST_RUNTIME: runtime,
-        UUID_SLUG_TEST_BACKEND: "rust",
-        UUID_SLUG_WASM_BRIDGE: join(nodeBindings, "uuid_slug_bridge.js"),
-      }),
-    ),
+    ["node", "bun"].map(async (runtime) => {
+      const witnesses = await runRustSharedSuites(
+        {
+          UUID_SLUG_TEST_RUNTIME: runtime,
+          UUID_SLUG_WASM_BRIDGE: join(nodeBindings, "uuid_slug_bridge.js"),
+        },
+        `${runtime === "bun" ? "Bun" : "Node"} WebAssembly`,
+      );
+      for (const witness of witnesses) console.log(witness);
+    }),
   );
   for (const result of results) if (result.status === "rejected") throw result.reason;
 }

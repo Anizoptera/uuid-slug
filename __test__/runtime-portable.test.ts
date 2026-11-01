@@ -81,7 +81,7 @@ describe("portable UUID text and slug writing", () => {
     [true, true],
   ])(
     "writes canonical text and slugs with native removal %s and WebKit selection %s",
-    async (removeNative, webkit) => {
+    async ([removeNative, webkit]) => {
       vi.stubGlobal("navigator", { vendor: webkit ? "Apple Computer, Inc." : "" });
       const toHex = Object.getOwnPropertyDescriptor(Uint8Array.prototype, "toHex");
       const toBase64 = Object.getOwnPropertyDescriptor(Uint8Array.prototype, "toBase64");

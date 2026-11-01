@@ -378,13 +378,22 @@ describe("plain UUID slugs", () => {
     expect(plainSlugToUuidString(`{${SAMPLE_V7_A}}`)).toBeInstanceOf(UuidSlugError);
   });
 
-  // This precedence concerns invalid JavaScript text-case values; Rust takes a typed formatter.
-  javascriptOnly("keeps normalized UUID text validation and input-error precedence", () => {
+  it("rejects malformed normalized UUID text at every position", () => {
     const mixed = SAMPLE_V7_A.toUpperCase();
     for (let position = 0; position < mixed.length; position++) {
       for (const replacement of ["g", "\u212A", "\u0130", "\uff21", " "]) {
         const input = mixed.slice(0, position) + replacement + mixed.slice(position + 1);
         expect(uuidToString(input)).toMatchObject({ code: "invalid_uuid" });
+      }
+    }
+  });
+
+  // Rust takes a typed formatter; an invalid JavaScript selector cannot be supplied.
+  javascriptOnly("keeps malformed UUID input ahead of an invalid text-case option", () => {
+    const mixed = SAMPLE_V7_A.toUpperCase();
+    for (let position = 0; position < mixed.length; position++) {
+      for (const replacement of ["g", "\u212A", "\u0130", "\uff21", " "]) {
+        const input = mixed.slice(0, position) + replacement + mixed.slice(position + 1);
         expect(
           Reflect.apply(uuidToString, undefined, [input, Symbol("invalid case")]),
         ).toMatchObject({ code: "invalid_uuid" });

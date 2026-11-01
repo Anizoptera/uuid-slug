@@ -1,7 +1,7 @@
 // Run one contract corpus through every native transport exposed by installed hosts.
 import { buildRustBridge } from "./rust-bridge";
 import { nativeMatrix } from "./rust-native-matrix";
-import SHARED_TEST_SUITES from "../__test__/shared-test-suites.json" with { type: "json" };
+import { runRustSharedSuites } from "../__test__/shared-suite-runner";
 
 async function run(command: readonly string[], env: Readonly<Record<string, string>>) {
   const environment = { ...process.env, ...env };
@@ -67,39 +67,25 @@ export async function prepareNativeConformance() {
           : lane.expectedTransport.startsWith("Deno")
             ? "deno"
             : "node";
-        const tests = await run(["bun", "scripts/test-vitest.ts", "--reporter=verbose"], {
-          ...env,
-          UUID_SLUG_RUST_PROFILE: profile,
-          UUID_SLUG_TEST_RUNTIME: runtime,
-          UUID_SLUG_TEST_VERSION: lane.host.slice(lane.host.indexOf(" ") + 1),
-          UUID_SLUG_TEST_COMMAND: JSON.stringify([
-            ...lane.command
-              .slice(0, -1)
-              .filter((argument) => runtime !== "deno" || !argument.startsWith("--allow-")),
-            // Vitest uses the same local permissions and locked package mode as its Deno launcher.
-            ...(runtime === "deno"
-              ? ["--allow-all", "--node-modules-dir=manual", "--cached-only"]
-              : []),
-          ]),
-          UUID_SLUG_TEST_BACKEND: "rust",
-        });
-        const witnesses = [
-          ...tests.matchAll(
-            /((?:Bun|Node|Deno) (?:FFI|Node-API)): shared suite ([\w.-]+\.test\.ts) executed [1-9]\d* Rust calls/g,
-          ),
-        ];
-        for (const file of SHARED_TEST_SUITES) {
-          const observed = witnesses.filter(
-            ([, transport, name]) => transport === lane.expectedTransport && name === file,
-          );
-          if (observed.length !== 1)
-            throw new Error(
-              `${label}: ${file} needs exactly one nonzero execution through ${lane.expectedTransport}; received ${observed.length}. Remove unintended filters and repair the selected test backend. Output: ${tests}`,
-            );
-        }
-        if (witnesses.length !== SHARED_TEST_SUITES.length)
-          throw new Error(`${label}: unexpected shared-suite executions: ${tests}`);
-        for (const [witness] of witnesses) console.log(`${label}: ${witness}`);
+        const witnesses = await runRustSharedSuites(
+          {
+            ...env,
+            UUID_SLUG_RUST_PROFILE: profile,
+            UUID_SLUG_TEST_RUNTIME: runtime,
+            UUID_SLUG_TEST_VERSION: lane.host.slice(lane.host.indexOf(" ") + 1),
+            UUID_SLUG_TEST_COMMAND: JSON.stringify([
+              ...lane.command
+                .slice(0, -1)
+                .filter((argument) => runtime !== "deno" || !argument.startsWith("--allow-")),
+              // Vitest uses the same local permissions and locked package mode as its Deno launcher.
+              ...(runtime === "deno"
+                ? ["--allow-all", "--node-modules-dir=manual", "--cached-only"]
+                : []),
+            ]),
+          },
+          lane.expectedTransport,
+        );
+        for (const witness of witnesses) console.log(`${label}: ${witness}`);
       }),
     );
     for (const result of results) if (result.status === "rejected") throw result.reason;
