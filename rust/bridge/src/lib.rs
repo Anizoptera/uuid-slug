@@ -11,6 +11,13 @@ mod test_api;
 mod test_callbacks;
 use primitives::siphash;
 
+// FFI callers copy a short response synchronously on the same thread, without redispatching.
+// One pending response bounds retention; the next request discards an abandoned response.
+#[cfg(not(target_arch = "wasm32"))]
+thread_local! {
+    static PENDING_OUTPUT: std::cell::RefCell<Vec<u8>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
 fn evaluate_caught(input: &str) -> Result<String, &'static str> {
     std::panic::catch_unwind(|| dispatch::evaluate(input)).map_err(|_| "Rust bridge panicked")
 }
@@ -54,6 +61,7 @@ unsafe fn write_into(
     operation: fn(&str) -> Result<String, &'static str>,
 ) -> usize {
     std::panic::catch_unwind(|| {
+        PENDING_OUTPUT.with_borrow_mut(|pending| *pending = Vec::new());
         if input.is_null()
             || output.is_null()
             || input_length > isize::MAX as usize
@@ -71,6 +79,7 @@ unsafe fn write_into(
         };
         let required = output_bytes.len();
         if capacity < required {
+            PENDING_OUTPUT.with_borrow_mut(|pending| *pending = output_bytes);
             return required;
         }
         // SAFETY: the caller promises writable, non-overlapping storage of at least `capacity`.
@@ -82,7 +91,8 @@ unsafe fn write_into(
 
 /// Evaluate into caller storage and return the required byte count, or zero on failure.
 ///
-/// A short output buffer is left unchanged and the returned count sizes the retry.
+/// A short output buffer is unchanged; copy the prepared response with
+/// [`uuid_slug_copy_output_into`] on this thread before another request.
 ///
 /// # Safety
 ///
@@ -119,9 +129,80 @@ pub unsafe extern "C" fn uuid_slug_plain_into(
     unsafe { write_into(input, input_length, output, capacity, plain_caught) }
 }
 
+/// Copy and release the last short response without repeating its stateful operation.
+/// An insufficient buffer stays unchanged; zero means no response or invalid storage.
+///
+/// # Safety
+/// `output` must be caller-owned and writable for `capacity` bytes. Call synchronously
+/// on the request's thread, before starting another request through this library.
+#[cfg(not(target_arch = "wasm32"))]
+#[allow(unsafe_code)]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn uuid_slug_copy_output_into(output: *mut u8, capacity: usize) -> usize {
+    if output.is_null() || capacity > isize::MAX as usize {
+        return 0;
+    }
+    std::panic::catch_unwind(|| {
+        PENDING_OUTPUT.with_borrow_mut(|pending| {
+            let required = pending.len();
+            if capacity < required {
+                return required;
+            }
+            // SAFETY: caller-owned output cannot alias the retained Rust response and has room.
+            unsafe { std::ptr::copy_nonoverlapping(pending.as_ptr(), output, required) };
+            *pending = Vec::new();
+            required
+        })
+    })
+    .unwrap_or(0)
+}
+
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[allow(unsafe_code)]
 mod ffi_tests {
+    #[test]
+    fn short_stateful_response_executes_once_and_is_released_after_copy() {
+        super::evaluate_caught(r#"[{"op":"api","method":"reset","args":[]}]"#).unwrap();
+        let input = br#"[{"op":"api","method":"createGenerator","args":[{}]}]"#;
+        let mut short = [0xa5; 1];
+        // SAFETY: the slices stay live and separate; retries run on this test's thread.
+        let required = unsafe {
+            super::uuid_slug_evaluate_into(
+                input.as_ptr(),
+                input.len(),
+                short.as_mut_ptr(),
+                short.len(),
+            )
+        };
+        assert!(required > short.len());
+        assert_eq!(short, [0xa5]);
+        // SAFETY: the short destination is valid but must remain unchanged.
+        assert_eq!(
+            unsafe { super::uuid_slug_copy_output_into(short.as_mut_ptr(), short.len()) },
+            required
+        );
+        assert_eq!(short, [0xa5]);
+        let mut output = vec![0; required];
+        // SAFETY: the destination has the exact requested capacity.
+        assert_eq!(
+            unsafe { super::uuid_slug_copy_output_into(output.as_mut_ptr(), output.len()) },
+            required
+        );
+        assert_eq!(output, br#"[{"value":{"result":0}}]"#);
+        let before = output.clone();
+        // SAFETY: the destination remains valid; a consumed response must not write again.
+        assert_eq!(
+            unsafe { super::uuid_slug_copy_output_into(output.as_mut_ptr(), output.len()) },
+            0
+        );
+        assert_eq!(output, before);
+        assert_eq!(
+            super::evaluate_caught(str::from_utf8(input).unwrap()).unwrap(),
+            r#"[{"value":{"result":1}}]"#
+        );
+        super::evaluate_caught(r#"[{"op":"api","method":"reset","args":[]}]"#).unwrap();
+    }
+
     #[test]
     fn output_is_atomic_and_invalid_utf8_is_rejected() {
         let input = br#"[{"op":"plain","input":"0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000"}]"#;
@@ -140,14 +221,8 @@ mod ffi_tests {
 
         let mut output = vec![0; required];
         // SAFETY: both slices remain live and non-overlapping for the call.
-        let written = unsafe {
-            super::uuid_slug_evaluate_into(
-                input.as_ptr(),
-                input.len(),
-                output.as_mut_ptr(),
-                output.len(),
-            )
-        };
+        let written =
+            unsafe { super::uuid_slug_copy_output_into(output.as_mut_ptr(), output.len()) };
         assert_eq!(written, required);
         assert_eq!(
             output,

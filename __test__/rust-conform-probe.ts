@@ -17,7 +17,7 @@ import { NIL_TEST_SENTINEL } from "../__test__/sentinel-fixtures";
 import { probeUuidV7TimePrecision } from "../__test__/consumer-probe";
 import { candidates as generationCandidates } from "../bench/candidates";
 import { loadRustBridge } from "../scripts/rust-bridge";
-import { verifyNativeLoading } from "./native-bridge-probe";
+import { verifyNativeLoading, verifySingleExecution } from "./native-bridge-probe";
 
 type Request = Record<string, unknown> & { op: string; input?: string };
 type Outcome = { value: unknown } | { error: string };
@@ -786,6 +786,7 @@ export async function verifyNativeContracts(): Promise<void> {
   const requests = await contractRequests();
   const bridge = await loadRustBridge();
   try {
+    verifySingleExecution(bridge);
     const precision = JSON.parse(bridge.evaluate(JSON.stringify([systemTimePrecisionProbe])));
     if (
       !Array.isArray(precision) ||

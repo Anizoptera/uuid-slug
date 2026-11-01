@@ -81,6 +81,10 @@ type DenoRuntime = {
         readonly parameters: readonly ["buffer", "usize", "buffer", "usize"];
         readonly result: "usize";
       };
+      readonly uuid_slug_copy_output_into: {
+        readonly parameters: readonly ["buffer", "usize"];
+        readonly result: "usize";
+      };
     },
   ): {
     readonly symbols: {
@@ -96,6 +100,7 @@ type DenoRuntime = {
         output: Uint8Array,
         outputLength: number,
       ): number | bigint;
+      uuid_slug_copy_output_into(output: Uint8Array, outputLength: number): number | bigint;
     };
     close(): void;
   };
@@ -109,6 +114,7 @@ function plainBridge(
       (input: Uint8Array, inputLength: number, output: Uint8Array) => number
     >
   >,
+  copyOutput: (output: Uint8Array) => number,
   closeNative: () => void,
 ): RustBridge {
   const encoder = new TextEncoder();
@@ -134,7 +140,8 @@ function plainBridge(
       );
     if (written > outputBuffer.length) {
       outputBuffer = new Uint8Array(written);
-      written = calls[operation](inputBuffer, encoded.written, outputBuffer);
+      // Stateful dispatch has already happened; copying must not generate or allocate handles again.
+      written = copyOutput(outputBuffer);
     }
     if (!Number.isSafeInteger(written) || written <= 0 || written > outputBuffer.length)
       throw new Error(
@@ -227,6 +234,7 @@ async function loadTransport(
         args: ["buffer", "usize", "buffer", "usize"],
         returns: "usize",
       },
+      uuid_slug_copy_output_into: { args: ["buffer", "usize"], returns: "usize" },
     });
     return plainBridge(
       "Bun FFI",
@@ -236,6 +244,7 @@ async function loadTransport(
         plain: (input, length, output) =>
           Number(native.symbols.uuid_slug_plain_into(input, length, output, output.length)),
       },
+      (output) => Number(native.symbols.uuid_slug_copy_output_into(output, output.length)),
       () => native.close(),
     );
   }
@@ -251,6 +260,7 @@ async function loadTransport(
         parameters: ["buffer", "usize", "buffer", "usize"],
         result: "usize",
       },
+      uuid_slug_copy_output_into: { parameters: ["buffer", "usize"], result: "usize" },
     });
     return plainBridge(
       "Deno FFI",
@@ -260,6 +270,7 @@ async function loadTransport(
         plain: (input, length, output) =>
           Number(native.symbols.uuid_slug_plain_into(input, length, output, output.length)),
       },
+      (output) => Number(native.symbols.uuid_slug_copy_output_into(output, output.length)),
       () => native.close(),
     );
   }
@@ -276,6 +287,7 @@ async function loadTransport(
       arguments: ["buffer", "uint64", "buffer", "uint64"],
       return: "uint64",
     },
+    uuid_slug_copy_output_into: { arguments: ["buffer", "uint64"], return: "uint64" },
   });
   return plainBridge(
     "Node FFI",
@@ -299,6 +311,7 @@ async function loadTransport(
           ),
         ),
     },
+    (output) => Number(native.functions.uuid_slug_copy_output_into(output, BigInt(output.length))),
     () => native.lib.close(),
   );
 }

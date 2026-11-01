@@ -8,6 +8,27 @@ import { loadRustBridge, rustBridgeFiles } from "../scripts/rust-bridge";
 const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000";
 const slug = "AZChssPUfl-KmwwdLj8AAA";
 
+export function verifySingleExecution(
+  bridge: Pick<Awaited<ReturnType<typeof loadRustBridge>>, "evaluate">,
+) {
+  const reset = '[{"op":"api","method":"reset","args":[]}]';
+  const create = { op: "api", method: "createGenerator", args: [{}] };
+  bridge.evaluate(reset);
+  try {
+    // The serialized response exceeds the initial transport buffer, forcing its copy retry.
+    const batch = Array.from({ length: 32 }, () => create);
+    deepStrictEqual(
+      JSON.parse(bridge.evaluate(JSON.stringify(batch))),
+      batch.map((_, result) => ({ value: { result } })),
+    );
+    deepStrictEqual(JSON.parse(bridge.evaluate(JSON.stringify([create]))), [
+      { value: { result: batch.length } },
+    ]);
+  } finally {
+    bridge.evaluate(reset);
+  }
+}
+
 export async function verifyNativeLoading(profile: "debug" | "release") {
   const bun = process.versions.bun !== undefined;
   // Deno has separate forced coverage. Older Node has no experimental FFI fallback.
