@@ -147,24 +147,22 @@ pub(super) fn decode(request: &Value, alphabet: UuidSlugAlphabet) -> Result<Valu
     if input.len() != expected {
         return Err(failure(alphabet));
     }
-    let mut text = input.as_bytes().to_vec();
-    if alphabet == UuidSlugAlphabet::Base32Hex {
-        text.make_ascii_lowercase();
-    }
-    if tail_bits != 0 {
-        // The production alphabet restores the omitted zero digit before reading 17 bytes.
-        text.push(if alphabet == UuidSlugAlphabet::Base64Url {
-            b'A'
-        } else {
-            b'0'
-        });
-    }
-    let mut decoded = [0; 17];
-    let length = if tail_bits == 0 { 16 } else { 17 };
-    bit_encoding::decode_identifier_bits(alphabet, &text, &mut decoded[..length])
-        .map_err(|()| failure(alphabet))?;
-    if decoded[16] & 15 != 0 {
-        return Err(failure(alphabet));
-    }
-    Ok(json!({ "bytes": &decoded[..16], "tail": decoded[16] >> 4 }))
+    let (decoded, tail) = if tail_bits == 0 {
+        let mut decoded = [0; 16];
+        bit_encoding::decode_identifier_bits(alphabet, input.as_bytes(), &mut decoded)
+            .map_err(|()| failure(alphabet))?;
+        (decoded, 0)
+    } else {
+        // Keep the real wire length and tail so shared cases reach production rejection guards.
+        match alphabet {
+            UuidSlugAlphabet::Base64Url => bit_encoding::decode_masked_base64(
+                input.as_bytes().try_into().map_err(|_| failure(alphabet))?,
+            ),
+            UuidSlugAlphabet::Base32Hex => bit_encoding::decode_masked_base32(
+                input.as_bytes().try_into().map_err(|_| failure(alphabet))?,
+            ),
+        }
+        .map_err(|_| failure(alphabet))?
+    };
+    Ok(json!({ "bytes": decoded, "tail": tail }))
 }
