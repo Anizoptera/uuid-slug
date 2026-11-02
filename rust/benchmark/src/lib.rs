@@ -22,21 +22,32 @@ fn clock_ms() -> f64 {
 
 /// Return batch observations; setup, correctness checks and serialization are outside timing.
 #[cfg_attr(all(target_arch = "wasm32", target_os = "unknown"), wasm_bindgen)]
-pub fn benchmark(samples: u32, duration_ms: f64, warmup_ms: f64, filter: &str) -> String {
+pub fn benchmark(
+    samples: u32,
+    duration_ms: f64,
+    warmup_ms: f64,
+    filter: &str,
+    batch_ticks: u32,
+) -> String {
     assert!(samples > 0 && duration_ms > 0.0 && warmup_ms > 0.0);
     let probe_start = clock_ms();
     let mut previous = probe_start;
     let mut quantum = f64::INFINITY;
-    while clock_ms() - probe_start < warmup_ms {
+    loop {
         let now = clock_ms();
         if now > previous {
             quantum = quantum.min(now - previous);
         }
         previous = now;
+        if now - probe_start >= warmup_ms {
+            break;
+        }
     }
     assert!(quantum.is_finite(), "clock never advanced");
-    let duration_ms = duration_ms.max(quantum * 100.0);
+    assert!(batch_ticks > 0);
+    let duration_ms = duration_ms.max(quantum * f64::from(batch_ticks));
     let mut recorder = Measurements {
+        quantum_ms: quantum,
         samples,
         duration_ms,
         warmup_ms,
@@ -49,6 +60,7 @@ pub fn benchmark(samples: u32, duration_ms: f64, warmup_ms: f64, filter: &str) -
 }
 
 struct Measurements<'a> {
+    quantum_ms: f64,
     samples: u32,
     duration_ms: f64,
     warmup_ms: f64,
@@ -82,36 +94,35 @@ impl cases::Recorder for Measurements<'_> {
         };
         // Calibrate against the actual host clock; elapsed time bounds work, never readiness.
         let mut count = inputs.len();
+        let mut calibration = Vec::new();
+        let mut resolved = 0;
         let warmup = clock_ms();
-        while clock_ms() - warmup < warmup_ms {
+        while clock_ms() - warmup < warmup_ms || resolved < 2 {
             let start = clock_ms();
             batch(count);
-            if clock_ms() - start < duration_ms {
+            let elapsed = clock_ms() - start;
+            calibration.push(serde_json::json!({"count": count, "elapsedMs": elapsed}));
+            if elapsed < duration_ms {
                 count = count.checked_mul(2).expect("batch overflow");
+                resolved = 0;
+            } else {
+                resolved += 1;
             }
         }
         let mut ns = Vec::new();
-        let mut calibration = Vec::new();
         let mut operations = 0usize;
         for _ in 0..samples {
-            let elapsed = loop {
-                let start = clock_ms();
-                batch(count);
-                let elapsed = clock_ms() - start;
-                assert!(elapsed.is_finite() && elapsed >= 0.0, "invalid timer");
-                if elapsed >= duration_ms {
-                    break elapsed;
-                }
-                calibration.push(serde_json::json!({"count": count, "elapsedMs": elapsed}));
-                count = count.checked_mul(2).expect("unresolved timer");
-            };
+            let start = clock_ms();
+            batch(count);
+            let elapsed = clock_ms() - start;
+            assert!(elapsed.is_finite() && elapsed > 0.0, "unresolved timer");
             ns.push(elapsed * 1e6 / count as f64);
             operations = operations
                 .checked_add(count)
                 .expect("operation count overflow");
         }
         self.rows.push(
-            serde_json::json!({"name": name, "ns": ns, "operations": operations, "calibration": calibration}),
+            serde_json::json!({"name": name, "ns": ns, "operations": operations, "calibration": calibration, "clockQuantumMs": self.quantum_ms, "targetBatchMs": duration_ms}),
         );
     }
 }

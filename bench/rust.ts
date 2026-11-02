@@ -2,7 +2,7 @@
 import { cpus } from "node:os";
 import { readFile } from "node:fs/promises";
 import { randomBytes, randomInt } from "node:crypto";
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { buildRustBridge } from "../scripts/rust-bridge";
 import { nativeMatrix } from "../scripts/rust-native-matrix";
 import { rustToolchain } from "../scripts/rust-toolchain";
@@ -93,15 +93,22 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
       prepareOnly,
     }),
   );
-  const source = await readFile("rust/uuid-slug/benches/codec.rs");
+  const sources = await Promise.all(
+    ["codec.rs", "codec/cases.rs", "codec/inspection.rs"].map(async (name) => ({
+      name,
+      bytes: await readFile(join("rust/uuid-slug/benches", name)),
+    })),
+  );
   const variants = [];
   for (const manifest of manifests)
     for (const defaults of [false, true]) {
       const build = await buildCodec(defaults ? [] : ["--no-default-features"], manifest);
-      if (!(await readFile(build.source)).equals(source))
-        throw new Error(
-          `${manifest}: copy rust/uuid-slug/benches/codec.rs into the isolated candidate before comparing; every candidate must run the same current cases.`,
-        );
+      for (const source of sources) {
+        if (!(await readFile(join(dirname(build.source), source.name))).equals(source.bytes))
+          throw new Error(
+            `${manifest}: copy rust/uuid-slug/benches/codec.rs and its codec/ directory into the isolated candidate before comparing; every candidate must run the same current cases.`,
+          );
+      }
       const prepared = codecOutput(
         (
           await run([build.executable], {
