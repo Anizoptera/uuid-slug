@@ -31,10 +31,7 @@ export interface ImplementationReport {
   exposure?: "randomized";
   settings: Settings;
   blocks: number;
-  lanes: Pick<
-    Lane,
-    "id" | "family" | "version" | "hash" | "reference" | "filter" | "requiresEntropy"
-  >[];
+  lanes: Pick<Lane, "id" | "family" | "version" | "hash" | "reference" | "requiresEntropy">[];
   measurements: Measurement[];
 }
 
@@ -73,7 +70,9 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
   }
   // Raw batches and calibration belong on disk; each process median is computed only once.
   const indexed = new Map<string, Map<string, number>>();
-  const inventory = new Map<string, string>();
+  const inventory = new Map<string, readonly string[]>();
+  // Intern ordered lists for exact, constant-time context checks without delimiter collisions.
+  const workloads = new Map<string, readonly string[]>();
   const windows = new Map<number, { identity: string; orientation: number }>();
   let sequence = 0;
   function append(
@@ -120,16 +119,20 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       throw new Error("Unbalanced acquisition window; retain adjacent ABBA/BAAB process order.");
     windows.set(window, { identity, orientation });
     const rows = validateRows(record.rows, report.settings.samples);
-    const names = rows
-      .map((row) => row.name)
-      // eslint-disable-next-line unicorn/no-array-sort -- Sort a private list under the ES2022 library floor.
-      .sort()
-      .join("\n");
     const inventoryKey = `${record.subject}:${record.role}`;
     const prior = inventory.get(inventoryKey);
-    if (prior && prior !== names)
+    if (
+      prior !== undefined &&
+      (prior.length !== rows.length || rows.some((row, index) => row.name !== prior[index]))
+    )
       throw new Error(`Workload changed between processes: ${record.lane}`);
-    inventory.set(inventoryKey, names);
+    if (prior === undefined) {
+      const names = rows.map((row) => row.name);
+      const workloadKey = JSON.stringify(names);
+      const shared = workloads.get(workloadKey) ?? names;
+      if (shared === names) workloads.set(workloadKey, names);
+      inventory.set(inventoryKey, shared);
+    }
     indexed.set(key, new Map(rows.map((row) => [row.name, sampleMedian(row.ns)])));
     const { rows: _rows, entropy: _entropy, ...identityFields } = record;
     return { ...identityFields, rows, ...(entropy ? { entropy } : {}) };
@@ -148,31 +151,55 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       ? undefined
       : Math.sqrt((first / before) * (second / after));
   };
-  const normalized = (lane: string, block: number, name: string): number | undefined => {
+  const native = report.lanes.find((lane) => lane.id === "rust/native/release/fast-rng");
+  const bridge = report.lanes.find((lane) => lane.id === "cross-language/rust-native");
+  const matchedBridge =
+    native &&
+    bridge &&
+    bridge.hash === native.hash &&
+    bridge.version === native.version &&
+    bridge.reference === "ts/node";
+  const normalized = (
+    lane: string,
+    block: number,
+    name: string,
+  ): { referenceLane: string; cost: number } | undefined => {
     if (read(lane, block, 0, name) === undefined) return undefined;
-    if (lane === "ts/node") return 1;
-    const anchor = localRatio("cross-language/rust-native", block, name);
-    if (lane === "rust/native/release/fast-rng")
-      return (
-        anchor ??
-        (report.lanes.find((item) => item.id === lane)?.reference === "ts/node"
-          ? localRatio(lane, block, name)
-          : 1)
-      );
-    const value = localRatio(lane, block, name);
-    if (value === undefined) return undefined;
+    if (lane === "ts/node") return { referenceLane: lane, cost: 1 };
     const reference =
       report.lanes.find((item) => item.id === lane)?.reference ??
       (lane.startsWith("ts/") ? "ts/node" : "rust/native/release/fast-rng");
-    return reference === "rust/native/release/fast-rng" && anchor !== undefined
-      ? value * anchor
-      : value;
+    // A different preceding job sequence can change VM state despite the same timed operation name.
+    const sameReferenceContext =
+      inventory.get(`${lane}:reference`) === inventory.get(`${reference}:candidate`);
+    if (lane === "rust/native/release/fast-rng") {
+      const anchor =
+        matchedBridge &&
+        inventory.get("cross-language/rust-native:candidate") === inventory.get(`${lane}:candidate`)
+          ? normalized("cross-language/rust-native", block, name)?.cost
+          : undefined;
+      const direct =
+        anchor ??
+        (reference === "ts/node" && sameReferenceContext
+          ? localRatio(lane, block, name)
+          : undefined);
+      return direct === undefined
+        ? { referenceLane: lane, cost: 1 }
+        : { referenceLane: "ts/node", cost: direct };
+    }
+    if (!sameReferenceContext) return undefined;
+    const value = localRatio(lane, block, name);
+    if (value === undefined) return undefined;
+    // Keep the scale with the cost: disconnected reference graphs cannot imply equal timings.
+    if (reference === "ts/node") return { referenceLane: reference, cost: value };
+    if (reference !== "rust/native/release/fast-rng") return undefined;
+    const base = normalized(reference, block, name);
+    return base && { referenceLane: base.referenceLane, cost: value * base.cost };
   };
-  function render(baseline = "ts/node", blocks = report.blocks): string {
+  function render(baseline = "ts/node"): string {
+    const blocks = report.blocks;
     if (!report.lanes.some((lane) => lane.id === baseline))
       throw new Error(`Unknown reference lane: ${baseline}`);
-    if (!Number.isSafeInteger(blocks) || blocks < 1 || blocks > report.blocks)
-      throw new Error("Invalid completed block count");
     for (const lane of report.lanes)
       for (let block = 0; block < blocks; block++)
         for (let repeat = 0; repeat < 2; repeat++) {
@@ -180,19 +207,38 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
             if (!indexed.has(`${lane.id}:${block}:${repeat}:${role}`))
               throw new Error(`Missing process: ${lane.id}/${block}/${repeat}/${role}`);
         }
+    const referenceOrder = [
+      ...new Set([
+        baseline,
+        "ts/node",
+        "rust/native/release/fast-rng",
+        ...report.lanes.map((lane) => lane.id),
+      ]),
+    ];
+    const references = new Map<string, string | undefined>();
+    const referenceForJob = (name: string) => {
+      if (!references.has(name))
+        references.set(
+          name,
+          referenceOrder.find((lane) => normalized(lane, 0, name) !== undefined),
+        );
+      return references.get(name);
+    };
     const relative = (lane: string, name: string): string => {
-      const reference =
-        read(baseline, 0, 0, name) === undefined ? "rust/native/release/fast-rng" : baseline;
-      if (normalized(lane, 0, name) === undefined || normalized(reference, 0, name) === undefined)
-        return "unavailable";
+      if (read(lane, 0, 0, name) === undefined) return "unavailable";
+      const reference = referenceForJob(name);
+      const value = normalized(lane, 0, name);
+      const against = reference && normalized(reference, 0, name);
+      if (!value || !against || value.referenceLane !== against.referenceLane) return "uncompared";
       if (lane === reference) return "reference";
       return ratio(
-        Array.from(
-          { length: blocks },
-          (_, block) =>
-            (normalized(lane, block, name) as number) /
-            (normalized(reference, block, name) as number),
-        ),
+        Array.from({ length: blocks }, (_, block) => {
+          const candidate = normalized(lane, block, name);
+          const control = normalized(reference, block, name);
+          if (!candidate || !control || candidate.referenceLane !== control.referenceLane)
+            throw new Error(`Comparison lost its measured reference: ${lane}/${name}/${block}`);
+          return candidate.cost / control.cost;
+        }),
       );
     };
     const lines = [
@@ -204,11 +250,11 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
         ? "**Wiring check only. These samples are not performance evidence.**"
         : "Relative batch cost: smaller is faster. Brackets are distribution-free 95% intervals for the median of paired fresh-process ratios, conditional on independent blocks drawn from a common comparison distribution. They are not per-call latency percentiles or simultaneous confidence across the whole report.",
       "",
-      `Reference: \`${baseline}\`; Rust-only jobs use \`rust/native/release/fast-rng\`. Each candidate has adjacent ABBA or BAAB runs. ${report.exposure === "randomized" ? "Lane order within each block and each window's orientation were independently randomized before timing." : "Windows reverse in alternate blocks; lane exposure was not randomized."} Ratios combine the two neighboring pairs geometrically; Rust reaches Node through the measured native Rust anchor. ${blocks} fresh-process blocks, ${report.settings.samples} batches per process. A missing interval is unresolved. Retained JSON Lines keep every batch and acquisition order.`,
+      `Requested reference: \`${baseline}\`. Each job names its actual reference: the requested lane when available, otherwise Node, native release Rust, then another connected measured lane. Each comparison runs reference/candidate/candidate/reference or the reverse. ${report.exposure === "randomized" ? "Lane order within each block and each window's orientation were independently randomized before timing." : "Windows reverse in alternate blocks; lane exposure was not randomized."} Ratios combine the two neighboring pairs geometrically. Native Rust connects to Node only through a matching artifact, version record and ordered workload. ${blocks} fresh-process blocks, ${report.settings.samples} batches per process. A missing interval is unresolved. Retained JSON Lines keep every batch and acquisition order.`,
       "",
       "Rust rows time complete compiled application calls with result consumption in the native or WASM loop; they exclude a JS crossing per identifier. JS rows include their result witness and errors-as-values checks. Rust owns fixed-array values where JavaScript owns heap arrays. These are consumer-path comparisons, not isolated language or compiler effects. No overall winner is calculated.",
       "",
-      "JavaScript graphs are warmed and minified. Rust uses release optimization level 3, ThinLTO and one code-generation unit, with native CPU tuning for this machine; WASM then uses the maintained Binaryen O2 pipeline. Debug and disabled-JIT runs are excluded. Browser workers use cross-origin isolation. Unavailable cells mean the job is absent in that language or feature selection, not zero cost. Installed Node patches are represented by the newest installed patch per major plus the checkout's selected Node.",
+      "JavaScript graphs are warmed and minified. Rust uses release optimization level 3, ThinLTO and one code-generation unit, with native CPU tuning for this machine; WASM then uses the maintained Binaryen O2 pipeline. Debug and disabled-JIT runs are excluded. Browser workers use cross-origin isolation. “Unavailable” means no measured result for that job in the lane; it does not establish missing API support. “Uncompared” means a measured result lacks a connection to the reference under matching conditions. Neither means zero cost. Installed Node patches are represented by the newest installed patch per major plus the checkout's selected Node.",
       "",
       "workerd labels identify requested compatibility settings, not an absence of Node APIs. These are local workerd measurements, not deployed Workers latency. Warm-up executes real work before sampling; it does not prove a globally optimal compiler or JIT state.",
       "",
@@ -229,6 +275,7 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       table([
         ["Lane", ...common],
         ["---", ...common.map(() => "---:")],
+        ["Reference", ...common.map((name) => referenceForJob(name) ?? "none")],
         ...report.lanes
           .filter((lane) => lane.family !== "Cross-language anchor")
           .map((lane) => [lane.id].concat(common.map((name) => relative(lane.id, name)))),
@@ -242,7 +289,7 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       ["---", "---", "---", "---"],
     ];
     for (const lane of report.lanes) {
-      const names = inventory.get(`${lane.id}:candidate`)?.split("\n") ?? [];
+      const names = inventory.get(`${lane.id}:candidate`) ?? [];
       // Report the most displaced job, not a cross-job average that could cancel drift.
       let worst = { name: "", distance: -1, values: [] as number[] };
       for (const name of names) {
@@ -276,17 +323,20 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
     for (const family of families) {
       const lanes = report.lanes.filter((lane) => lane.family === family);
       const names = [
-        ...new Set(
-          lanes.flatMap((lane) => inventory.get(`${lane.id}:candidate`)?.split("\n") ?? []),
-        ),
+        ...new Set(lanes.flatMap((lane) => inventory.get(`${lane.id}:candidate`) ?? [])),
         // eslint-disable-next-line unicorn/no-array-sort -- Sort a private list under the ES2022 library floor.
       ].sort();
       lines.push("", `## ${family}`, "");
       const rows = [
-        ["Caller job", ...lanes.map((lane) => lane.id)],
-        ["---", ...lanes.map(() => "---:")],
+        ["Caller job", "Reference", ...lanes.map((lane) => lane.id)],
+        ["---", "---", ...lanes.map(() => "---:")],
       ];
-      for (const name of names) rows.push([name, ...lanes.map((lane) => relative(lane.id, name))]);
+      for (const name of names)
+        rows.push([
+          name,
+          referenceForJob(name) ?? "none",
+          ...lanes.map((lane) => relative(lane.id, name)),
+        ]);
       lines.push(table(rows));
     }
     return `${lines.join("\n")}\n`;

@@ -24,7 +24,6 @@ export interface Lane {
   environment?: Record<string, string | undefined>;
   edge?: boolean;
   reference?: string;
-  filter?: string;
   requiresEntropy?: boolean;
   entropyModule?: string;
 }
@@ -389,7 +388,6 @@ export async function prepareImplementations(
     id: "cross-language/rust-native",
     family: "Cross-language anchor",
     reference: "ts/node",
-    filter: "/",
   });
   return lanes;
 }

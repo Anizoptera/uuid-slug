@@ -33,6 +33,10 @@ Update and commit only one canonical Markdown comparison report. Keep progress i
   - [ ] Remove experimental builder controls and task scratch after their retained evidence and consumers are settled. Active scratch: `/var/folders/fh/5p3dywss4w53y0mr9f6ftnwc0000gn/T/uuid-slug-final-check.jsJEFaXC94`; no full acquisition is running.
 - [ ] Falsify reporting with identical controls, reversed comparisons, missing lanes and invalid measurements; run the complete selected matrix without overlapping timing workloads.
 - [ ] Review the generated report against raw records, document rerun controls and limits, commit the results and remove owned scratch.
+  - [x] Preserve JavaScript-only and Rust-only jobs when the selected reference lacks them; show each job's actual reference and distinguish absent measurements from unconnected comparisons. Both one-language-only cases run through report regressions.
+  - [x] Keep the reference identity with normalized costs; a regression rejects the prior invented 1× result for disconnected Node and Rust scales.
+  - [x] Remove the anchor's separate filter and reject connections across different artifacts, version records, reference edges or ordered job inventories. Eight targeted `prove-guard.ts` mutations fail their regressions and restore the source byte for byte. The earlier 2-versus-46 Node and 6-versus-81 Rust wiring contexts require reacquisition under the shared filter.
+    - [x] Intern structured ordered job lists without delimiter collisions; the multiline-name regression rejects the prior false 2× cross-language comparison.
 
 ## Joint Rust and TypeScript release preparation
 

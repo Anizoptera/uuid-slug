@@ -2,6 +2,14 @@
 
 Each entry: the decision, the evidence that decided it, alternatives that lost, and what would reopen it.
 
+## Cross-language comparison conditions
+
+Keep one acquisition filter and preserve the reference's ordered job inventory; a shared operation name does not establish the same preceding VM workload.
+
+The 2026-11-02 wiring capture used 2 jobs in the ordinary Node reference but 46 in the cross-language reference, and 6 jobs in native Rust but 81 in the connecting candidate. The anchor's separate filter overrode the shared selection. Those observations remain wiring evidence; they do not qualify the indirect comparison under the matching-corpus rule. They do not establish the cause of the earlier timing noise.
+
+Normalized costs retain their reference identity. Without a matching artifact, version record and ordered workload connecting Rust to Node, their separate values of 1 are different scales, not evidence of equal costs. Keep measured but unconnected results visible as uncompared; when a selected reference lacks a job, use another measured reference and name it beside that job. Reconsider the collection shape only with evidence that a cheaper method preserves those comparison conditions.
+
 ## Implementation report retention
 
 Keep raw batches on disk and retain only per-process medians for report generation; streaming avoids retaining calibration histories and recomputing the same medians for each table cell.

@@ -22,10 +22,8 @@ const root = process.cwd();
 process.env.NODE_ENV = "production";
 async function acquire(
   lane: Lane,
-  configuration: Settings,
+  settings: Settings,
 ): Promise<{ rows: unknown; entropy?: unknown }> {
-  const settings =
-    lane.filter === undefined ? configuration : { ...configuration, filter: lane.filter };
   let input: unknown;
   if (lane.edge !== undefined) {
     if (!lane.script) throw new Error(`Missing edge script for ${lane.id}`);
@@ -262,10 +260,7 @@ if (reportIndex >= 0) {
         const reference = lanes.find((item) => item.id === referenceId);
         if (!reference) throw new Error(`Missing comparison reference: ${referenceId}`);
         for (const step of steps) {
-          const selected =
-            step.role === "candidate"
-              ? lane
-              : { ...reference, ...(lane.filter === undefined ? {} : { filter: lane.filter }) };
+          const selected = step.role === "candidate" ? lane : reference;
           console.log(`Block ${block + 1}/${blocks}: ${lane.id}; ${step.role} ${step.repeat + 1}`);
           const capture = await acquire(selected, settings);
           const record = reporter.append({

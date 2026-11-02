@@ -60,12 +60,132 @@ function evidence(): ImplementationReport {
   };
 }
 
+function nativeReferenceEvidence() {
+  const report = evidence();
+  const native = report.lanes.find((lane) => lane.id === "rust/native/release/fast-rng");
+  if (!native) throw new Error("Fixture omitted its native reference");
+  native.reference = native.id;
+  const records = report.measurements.filter((record) => record.subject === native.id);
+  for (const record of records) if (record.role === "reference") record.lane = native.id;
+  return { report, native };
+}
+
+function bridgedEvidence(): ImplementationReport {
+  const { report, native } = nativeReferenceEvidence();
+  const records = report.measurements.filter((record) => record.subject === native.id);
+  const bridge = { ...native, id: "cross-language/rust-native", reference: "ts/node" };
+  report.lanes.push(bridge);
+  const offset = report.measurements.length;
+  report.measurements.push(
+    ...records.map((record, index) =>
+      Object.assign({}, record, {
+        subject: bridge.id,
+        lane: record.role === "reference" ? "ts/node" : bridge.id,
+        sequence: offset + index,
+        rows: record.rows.map((row) => Object.assign({}, row)),
+      }),
+    ),
+  );
+  return report;
+}
+
 test("paired process medians resist one paused batch and reverse with the reference", () => {
   const report = evidence();
   expect(renderImplementationReport(report)).toContain("2× [2–2]");
   expect(renderImplementationReport(report, "rust/native/release/fast-rng")).toContain(
     "0.5× [0.5–0.5]",
   );
+});
+
+test("a Rust reference cannot hide measured JavaScript-only jobs", () => {
+  const report = evidence();
+  for (const record of report.measurements)
+    if (record.lane === "ts/node")
+      record.rows.push({ name: "async.mask.derive", ns: [500, 600, 900], operations: 300 });
+  const rendered = renderImplementationReport(report, "rust/native/release/fast-rng");
+  const row = rendered.split("\n").find((line) => line.startsWith("| async.mask.derive |"));
+  expect(row).toContain("reference");
+});
+
+test("disconnected Node and native Rust scales cannot imply equal implementation costs", () => {
+  const { report } = nativeReferenceEvidence();
+  const rendered = renderImplementationReport(report);
+  const row = rendered.split("\n").find((line) => line.startsWith("| plain/base64 |"));
+  expect(row).toContain("uncompared");
+});
+
+test("a Node reference cannot hide measured Rust-only jobs", () => {
+  const { report, native } = nativeReferenceEvidence();
+  for (const record of report.measurements)
+    if (record.lane === native.id)
+      record.rows.push({ name: "rust-only/inspect", ns: [1, 1, 1], operations: 300 });
+  const row = renderImplementationReport(report)
+    .split("\n")
+    .find((line) => line.startsWith("| rust-only/inspect |"));
+  expect(row).toContain(native.id);
+  expect(row).toContain("reference");
+});
+
+test("cross-language normalization requires matching artifacts, version records and both workloads", () => {
+  expect(renderImplementationReport(bridgedEvidence())).toContain("2× [2–2]");
+  for (const changed of ["hash", "version", "edge", "reference", "candidate"] as const) {
+    const report = bridgedEvidence();
+    const bridge = report.lanes.find((lane) => lane.id === "cross-language/rust-native");
+    if (!bridge) throw new Error("Fixture omitted its connecting comparison");
+    if (changed === "hash") bridge.hash = "b".repeat(64);
+    else if (changed === "version") bridge.version = "different execution settings";
+    else if (changed === "edge") {
+      bridge.reference = "rust/native/release/fast-rng";
+      for (const record of report.measurements)
+        if (record.subject === bridge.id && record.role === "reference")
+          record.lane = bridge.reference;
+    } else
+      for (const record of report.measurements)
+        if (record.subject === bridge.id && record.role === changed)
+          record.rows.push({ name: "extra-context-work", ns: [1, 1, 1], operations: 300 });
+    const row = renderImplementationReport(report)
+      .split("\n")
+      .find((line) => line.startsWith("| plain/base64 |"));
+    expect(row).toContain("uncompared");
+  }
+});
+
+test("reordering the same jobs cannot pass as the same process workload", () => {
+  const report = evidence();
+  for (const record of report.measurements)
+    record.rows.push({ name: "second-job", ns: [1, 1, 1], operations: 300 });
+  const final = report.measurements.at(-1);
+  const first = final?.rows[0];
+  const second = final?.rows[1];
+  if (!final || !first || !second) throw new Error("Fixture omitted its ordered workload");
+  final.rows = [second, first];
+  expect(() => renderImplementationReport(report)).toThrow("Workload changed");
+});
+
+test("a newline inside one job name cannot impersonate two preceding jobs", () => {
+  const report = bridgedEvidence();
+  for (const record of report.measurements) {
+    if (record.subject === "rust/native/release/fast-rng")
+      record.rows.unshift(
+        ...["alpha\nbeta", "alpha", "beta"].map((name) => ({
+          name,
+          ns: [1, 1, 1],
+          operations: 300,
+        })),
+      );
+    if (record.subject === "cross-language/rust-native" && record.role === "candidate")
+      record.rows.unshift(
+        ...["alpha", "beta\nalpha", "beta"].map((name) => ({
+          name,
+          ns: [1, 1, 1],
+          operations: 300,
+        })),
+      );
+  }
+  const row = renderImplementationReport(report)
+    .split("\n")
+    .find((line) => line.startsWith("| plain/base64 |"));
+  expect(row).toContain("uncompared");
 });
 
 test("reversing a reference preserves reciprocal summaries for varied even-sized samples", () => {
