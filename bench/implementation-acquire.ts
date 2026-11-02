@@ -8,12 +8,8 @@ import { command } from "../scripts/command";
 import { runWorkerdConsumer } from "../scripts/check-workerd-consumer";
 import { prepareImplementations } from "./implementation-build";
 import type { Lane } from "./implementation-build";
-import {
-  comparisonWindow,
-  renderImplementationReport,
-  validateRows,
-  validateEntropyEvidence,
-} from "./implementation-report";
+import { comparisonWindow, renderImplementationReport } from "./implementation-report";
+import { validateRows, validateEntropyEvidence } from "./implementation-evidence";
 import type { ImplementationReport, Measurement } from "./implementation-report";
 import type { Settings } from "./implementation-worker";
 

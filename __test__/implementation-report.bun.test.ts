@@ -1,6 +1,7 @@
 // A complete-looking table must not hide lost processes, duplicate rows or inverted ratios.
 import { expect, test } from "bun:test";
-import { renderImplementationReport, validateRows } from "../bench/implementation-report";
+import { renderImplementationReport } from "../bench/implementation-report";
+import { validateRows } from "../bench/implementation-evidence";
 import type { ImplementationReport } from "../bench/implementation-report";
 import { secureEntropySources } from "../bench/implementation-entropy";
 import { medianRatio } from "../bench/statistics";
