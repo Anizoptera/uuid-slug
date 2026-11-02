@@ -113,7 +113,18 @@ export function validateRows(input: unknown, samples: number): Observation[] {
         calibration.push({ count: attempt.count, elapsedMs: attempt.elapsedMs });
       }
     }
-    const clocks: Pick<Observation, "clockQuantumMs" | "targetBatchMs"> = {};
+    const clocks: Pick<Observation, "clockQuantumMs" | "targetBatchMs" | "threadCpuNs"> = {};
+    if ("threadCpuNs" in row) {
+      if (
+        !Array.isArray(row.threadCpuNs) ||
+        row.threadCpuNs.length !== samples ||
+        !row.threadCpuNs.every(
+          (value: unknown) => typeof value === "number" && Number.isFinite(value) && value > 0,
+        )
+      )
+        throw new Error("Invalid caller-thread CPU observations");
+      clocks.threadCpuNs = row.threadCpuNs;
+    }
     if ("clockQuantumMs" in row) {
       if (
         typeof row.clockQuantumMs !== "number" ||

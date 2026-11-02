@@ -35,7 +35,10 @@ export async function sha256(file: string): Promise<string> {
     .digest("hex");
 }
 
-async function buildJs(directory: string, target: "bun" | "node" | "browser" | "deno" | "edge") {
+export async function buildJs(
+  directory: string,
+  target: "bun" | "node" | "browser" | "deno" | "edge",
+) {
   const runtime = target === "edge" ? "browser" : target;
   const entry =
     runtime === "bun"

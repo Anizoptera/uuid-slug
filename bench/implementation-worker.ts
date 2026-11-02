@@ -21,7 +21,23 @@ export interface Observation {
   clockQuantumMs?: number;
   targetBatchMs?: number;
   calibration?: { count: number; elapsedMs: number }[];
+  threadCpuNs?: number[];
 }
+
+function threadClock() {
+  // Some browser-compatible process shims expose a method that rejects execution.
+  if (typeof process === "undefined") return undefined;
+  const read = (
+    process as { threadCpuUsage?: (previous?: NodeJS.CpuUsage) => NodeJS.CpuUsage }
+  ).threadCpuUsage?.bind(process);
+  try {
+    read?.();
+    return read;
+  } catch {
+    return undefined;
+  }
+}
+const threadCpuUsage = threadClock();
 
 function clockQuantum(settings: Settings): number {
   let previous = performance.now();
@@ -77,13 +93,18 @@ function measure(
       if (!Number.isSafeInteger(count)) throw new Error("Benchmark batch count overflow");
     }
     const ns: number[] = [];
+    const threadCpuNs: number[] = [];
     let operations = 0;
     for (let sample = 0; sample < settings.samples; sample++) {
+      // Counter reads stay outside elapsed timing; CPU still includes the clock and witness work.
+      const cpuStart = threadCpuUsage?.();
       const start = performance.now();
       batch(operation, count);
       const elapsed = performance.now() - start;
+      const cpu = cpuStart && threadCpuUsage?.(cpuStart);
       if (!(elapsed > 0)) throw new Error(`Unresolved clock for ${name}`);
       ns.push((elapsed * 1e6) / count);
+      if (cpu) threadCpuNs.push(((cpu.user + cpu.system) * 1e3) / count);
       operations += count;
     }
     rows.push({
@@ -93,6 +114,7 @@ function measure(
       calibration,
       clockQuantumMs: quantum,
       targetBatchMs: duration,
+      ...(threadCpuNs.length ? { threadCpuNs } : {}),
     });
   }
   // Observable output keeps result reads live without serializing inside timed work.

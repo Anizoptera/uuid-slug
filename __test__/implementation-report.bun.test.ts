@@ -98,6 +98,13 @@ test("duplicate observations and unresolved timers cannot become zero-cost winne
   expect(() => validateRows([{ name: "job", ns: [1, 0, 2], operations: 3 }], 3)).toThrow();
   expect(() => validateRows([{ name: "job", ns: [1, 2], operations: 3 }], 3)).toThrow();
   expect(() => validateRows([], 3)).toThrow("Empty benchmark lane");
+  expect(() =>
+    validateRows([{ name: "job", ns: [1, 2, 3], operations: 3, threadCpuNs: [1] }], 3),
+  ).toThrow("caller-thread CPU");
+  expect(
+    validateRows([{ name: "job", ns: [1, 2, 3], operations: 3, threadCpuNs: [1, 1, 2] }], 3)[0]
+      ?.threadCpuNs,
+  ).toEqual([1, 1, 2]);
 });
 
 test("valid timings cannot hide an unbalanced process window or wrong reference", () => {
