@@ -255,6 +255,14 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
         mask: api.UUID_V7_TEST_MASK,
       }),
     );
+    const binary = unwrap(codec.uuidToMaskedBytes(uuid));
+    equal(binary.length, 16, "masked binary width");
+    equal(codec.maskedBytesToUuidString(binary), uuid, "packed masked binary decoding");
+    const storage = new Uint8Array(20).fill(0x55);
+    equal(codec.maskedBytesToUuidBytes(binary, storage, 2), storage, "binary caller storage");
+    equal(api.bytesToUuidString(storage, 2), uuid, "binary decoded caller bytes");
+    equal(storage[0], 0x55, "binary caller prefix");
+    equal(storage[19], 0x55, "binary caller suffix");
     equal(
       unwrap(codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true })).uuidSlugToUuidString(
         slug,

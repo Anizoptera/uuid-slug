@@ -12,6 +12,8 @@ import {
   returnedBytes,
   stringInput,
   write,
+  commitStorage,
+  isUint8Array,
 } from "./rust-test-api";
 import { generated } from "./rust-test-generator";
 import { parsedValue, valueOptions } from "./rust-test-value";
@@ -185,6 +187,33 @@ export function createRustCodec(configuration: unknown, generator?: unknown): un
     invoke(method, value, option, { ...context, source });
   const nativeBytes = (value: unknown, source = "universal") =>
     returnedBytes(read("bytes", value, undefined, source));
+  const binaryWrite = (
+    operation: "mask" | "unmask",
+    value: unknown,
+    output?: unknown,
+    offset: unknown = 0,
+  ) => {
+    if (isUuidSlugError(value)) return value;
+    if (output === undefined)
+      return returnedBytes(
+        read(
+          operation === "mask" ? "maskBytes" : "bytes",
+          value,
+          undefined,
+          operation === "mask" ? "universal" : "masked-bytes",
+        ),
+      );
+    if (!isUint8Array(output) || typeof offset !== "number" || !Number.isSafeInteger(offset))
+      return failure("invalid_buffer");
+    return commitStorage(
+      api(
+        operation === "mask" ? "writeMaskedBytes" : "writeUnmaskedBytes",
+        [input(value), { bytes: [...output] }, offset],
+        context,
+      ),
+      output,
+    );
+  };
   const codec = {
     sentinels: Array.isArray(result.sentinels)
       ? Object.freeze(result.sentinels.map((value) => Object.freeze(record(value))))
@@ -215,6 +244,12 @@ export function createRustCodec(configuration: unknown, generator?: unknown): un
     maskedToPlainUuidSlug: (value: unknown, alphabet?: unknown) =>
       read("plain", value, alphabet, "masked"),
     uuidToMaskedSlug: (value: unknown) => read("mask", value),
+    uuidToMaskedBytes: (value: unknown, output?: unknown, offset?: unknown) =>
+      binaryWrite("mask", value, output, offset),
+    maskedBytesToUuidBytes: (value: unknown, output?: unknown, offset?: unknown) =>
+      binaryWrite("unmask", value, output, offset),
+    maskedBytesToUuidString: (value: unknown, textCase?: unknown) =>
+      read("text", value, textCase, "masked-bytes"),
     plainToMaskedUuidSlug: (value: unknown) => read("mask", value, undefined, "plain"),
     maskedSlugToUuidString: (value: unknown, textCase?: unknown) =>
       read("text", value, textCase, "masked"),

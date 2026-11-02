@@ -32,6 +32,9 @@ import {
   uuidToPlainSlug,
   uuidToString,
   UuidSlugError,
+  BASE32HEX,
+  BASE64URL,
+  UUID_TEXT_UPPERCASE,
 } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
 import { createUuidV7MaskingCodecWithGenerator } from "../src/masking-codec";
@@ -61,6 +64,151 @@ function bits(text: string, alphabet: string, width: number) {
 }
 
 export const codecBoundaryCases = [
+  {
+    name: "masked binary preserves source forms, sentinel ranges and caller-owned writes",
+    run() {
+      const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+      const farSentinel = "ffffffff-ffff-7fff-bfff-ffffffffffff";
+      for (const maskedSlugAlphabet of [BASE64URL, BASE32HEX] as const) {
+        const codec = createUuidV7MaskingCodec({
+          mask: UUID_V7_TEST_MASK,
+          maskedSlugAlphabet,
+          sentinels: [{ name: "far", uuid: farSentinel }],
+        });
+        const expected = unwrap(codec.uuidToMaskedBytes(uuid));
+        const sources = [
+          uuid,
+          uuid.toUpperCase(),
+          `urn:uuid:${uuid}`,
+          `{${uuid}}`,
+          unwrap(uuidStringToBytes(uuid)),
+          unwrap(uuidStringToPlainSlug(uuid, BASE32HEX)),
+          unwrap(codec.uuidToMaskedSlug(uuid)),
+        ];
+        for (const source of sources)
+          assert.deepEqual(unwrap(codec.uuidToMaskedBytes(source)), expected);
+        const output = new Uint8Array(24).fill(0xa5);
+        assert.equal(codec.uuidToMaskedBytes(uuid, output, 4), output);
+        assert.deepEqual(output.subarray(4, 20), expected);
+        assert.deepEqual(
+          [...output.subarray(0, 4), ...output.subarray(20)],
+          Array.from({ length: 8 }, () => 0xa5),
+        );
+        assert.equal(codec.maskedBytesToUuidBytes(expected, output, 4), output);
+        assert.equal(bytesToUuidString(output, 4), uuid);
+        const aliased = new Uint8Array(unwrap(uuidStringToBytes(uuid)));
+        assert.equal(codec.uuidToMaskedBytes(aliased, aliased), aliased);
+        assert.deepEqual(aliased, expected);
+        assert.equal(codec.maskedBytesToUuidBytes(aliased, aliased), aliased);
+        assert.equal(bytesToUuidString(aliased), uuid);
+        assert.equal(
+          codec.maskedBytesToUuidString(expected, UUID_TEXT_UPPERCASE),
+          uuid.toUpperCase(),
+        );
+        assert.equal(
+          codec.maskedBytesToUuidString(new DataView(expected.buffer, expected.byteOffset, 16)),
+          uuid,
+        );
+        const sentinel = unwrap(codec.uuidToMaskedBytes(farSentinel));
+        assert.deepEqual(sentinel, unwrap(uuidStringToBytes(farSentinel)));
+        assert.equal(codec.maskedBytesToUuidString(sentinel), farSentinel);
+      }
+    },
+  },
+  {
+    name: "masked binary checks every inner-check field and commits no failed write",
+    run() {
+      const identity = unwrap(
+        createCustomUuidV7Mask({
+          diagnosticLabel: "binary-check",
+          mask: (bytes) => bytes,
+          unmask: (bytes) => bytes,
+        }),
+      );
+      const codec = createUuidV7MaskingCodec({ mask: identity });
+      const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+      const good = unwrap(codec.uuidToMaskedBytes(uuid));
+      assert.equal(codec.maskedBytesToUuidString(good), uuid);
+      for (const [offset, bit] of [
+        [6, 0x10],
+        [8, 0x40],
+        [0, 0x04],
+      ] as const) {
+        const bad = new Uint8Array(good);
+        bad[offset] = (bad[offset] as number) ^ bit;
+        const output = new Uint8Array(20).fill(0xa5);
+        const failed = codec.maskedBytesToUuidBytes(bad, output, 2);
+        assert.ok(failed instanceof Error);
+        assert.equal(failed.code, "invalid_uuid_slug");
+        assert.deepEqual(output, new Uint8Array(20).fill(0xa5));
+      }
+      for (const length of [0, 15, 17]) {
+        const failed = codec.maskedBytesToUuidBytes(new Uint8Array(length));
+        assert.ok(failed instanceof Error);
+        assert.equal(failed.code, "invalid_buffer");
+      }
+      const short = new Uint8Array(15).fill(0xa5);
+      assert.ok(codec.uuidToMaskedBytes(uuid, short) instanceof Error);
+      assert.deepEqual(short, new Uint8Array(15).fill(0xa5));
+      const prior = new UuidSlugError("invalid_mask", "upstream");
+      assert.equal(codec.uuidToMaskedBytes(prior, short), prior);
+      assert.equal(codec.maskedBytesToUuidBytes(prior, short), prior);
+      assert.equal(codec.maskedBytesToUuidString(prior), prior);
+    },
+  },
+  {
+    name: "masked binary retains configured key ranges and stops on callback failures",
+    run() {
+      const uuid = "ffffffff-ffff-7abc-9def-000000000001";
+      const start = 2 ** 48 - 2 ** 42;
+      const oldMask = unwrap(deriveUuidV7Mask({ seed: "old-binary-mask-seed" }));
+      const old = createUuidV7MaskingCodec({ mask: oldMask, timestampRangeStartUnixMs: start });
+      const bytes = unwrap(old.uuidToMaskedBytes(uuid));
+      const rotated = createUuidV7MaskingCodec({
+        mask: UUID_V7_TEST_MASK,
+        previousMasks: [{ mask: oldMask, timestampRangeStartUnixMs: start }],
+      });
+      assert.equal(rotated.maskedBytesToUuidString(bytes), uuid);
+      const outOfRange = rotated.uuidToMaskedBytes(uuid);
+      assert.ok(outOfRange instanceof Error);
+      assert.equal(outOfRange.code, "invalid_timestamp");
+      let fail = false;
+      const broken = unwrap(
+        createCustomUuidV7Mask({
+          diagnosticLabel: "binary-failure",
+          mask: (input) => (fail ? new UuidSlugError("invalid_mask", "mask failed") : input),
+          unmask: (input) => (fail ? new UuidSlugError("invalid_mask", "unmask failed") : input),
+        }),
+      );
+      const codec = createUuidV7MaskingCodec({ mask: broken, previousMasks: [oldMask] });
+      fail = true;
+      const output = new Uint8Array(20).fill(0xa5);
+      const failed = codec.maskedBytesToUuidBytes(bytes, output, 2);
+      assert.ok(failed instanceof Error);
+      assert.equal(failed.code, "invalid_mask");
+      assert.deepEqual(output, new Uint8Array(20).fill(0xa5));
+      assert.ok(
+        codec.uuidToMaskedBytes("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051", output, 2) instanceof Error,
+      );
+      assert.deepEqual(output, new Uint8Array(20).fill(0xa5));
+    },
+  },
+  {
+    name: "masked binary owns storage independently of decoded buffers and codec scratch",
+    run() {
+      const codec = createUuidV7MaskingCodec({ mask: { seed: "golden-vector-seed-v3" } });
+      const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+      const masked = unwrap(codec.uuidToMaskedBytes(uuid));
+      const expected = new Uint8Array(masked);
+      assert.equal(masked.constructor, Uint8Array);
+      const decoded = unwrap(codec.maskedBytesToUuidBytes(masked));
+      assert.equal(bytesToUuidString(decoded), uuid);
+      decoded.fill(0);
+      assert.deepEqual(masked, expected);
+      masked.fill(0);
+      assert.deepEqual(unwrap(codec.uuidToMaskedBytes(uuid)), expected);
+    },
+  },
   {
     name: "captures a sentinel UUID accessor once before validation",
     run() {

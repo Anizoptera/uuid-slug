@@ -41,7 +41,7 @@ Competitor audit: `slugid` requires `uuid ^9`, with an unresolved advisory. This
 - [ ] Resolve the upstream-relative Node base32 gap: its median stays about 3% higher; one full lane fails at 1.031 [1.0033, 1.1382], while the unchanged replay and seven-runtime matrix pass. The pre-reduction control also has a higher median; a direct comparison finds no resolved loss from the four reductions. Cause and parity remain unproved; preserve both outcomes and the full filter (`bench/decisions.md` §Historical base32 slowdown).
 - [ ] Implement 16-byte masked binary conversion in the existing TypeScript and Rust codecs; retain every UUID payload bit, the configured timestamp range, sentinel priority, key order and failure propagation. Keep existing text paths unchanged; reject reserved-value collisions rather than decode to another identity.
   - [x] Correct owning wire/security/interface guidance and remove superseded proposal gates before code; keep the general prevention at the auto-loaded owner.
-  - [ ] Add the binary codec operations and types through shared masking primitives, with caller-buffer writes that commit only on success and explicit masked provenance.
+  - [x] Add the binary codec operations and types through shared masking primitives, with caller-buffer writes that commit only on success and explicit masked provenance.
   - [ ] Extend shared contract cases and adapters for fixed wire bytes, both text alphabets, sentinels, rotation, range boundaries, callback errors and ownership; test packaged types and ordinary-call regressions, then run the complete lane.
 
 ## Code reduction

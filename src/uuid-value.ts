@@ -27,6 +27,7 @@ import {
 } from "./types.ts";
 import type {
   KeylessUuidInput,
+  UnmaskedUuidInput,
   MaskedOrSentinelUuidV7Slug,
   PlainUuidSlugForVersion,
   ParsedUuidResult,
@@ -279,7 +280,7 @@ export function parseUuid<Input extends UuidInput>(
  * thrown exceptions remain available as the error's `cause`.
  */
 export function parseUuid<Input extends UuidInput>(
-  uuid: Input,
+  uuid: UnmaskedUuidInput<Input>,
   maskingCodec: UuidV7MaskingCodec,
 ): ParsedUuidResult<Input, true> | UuidSlugError;
 export function parseUuid(

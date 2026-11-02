@@ -82,6 +82,7 @@ import type {
   UuidV7Mask,
   MaskedUuidV7Slug,
   MaskedOrSentinelUuidV7Slug,
+  MaskedOrSentinelUuidV7Bytes,
   UuidBytes,
   UuidByteInput,
   PlainUuidSlug,
@@ -521,6 +522,26 @@ generatePlainUuidV7Slug({ generator: { generateUuidV7Bytes: () => new Uint8Array
 // @ts-expect-error Masked pair options reject work unrelated to generation or text spelling.
 codec.generateUuidV7WithMaskedSlug({ alphabet: BASE32HEX });
 expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(codec.uuidToMaskedSlug(versionedBytes));
+const maskedBinary = codec.uuidToMaskedBytes(generateUuidV7());
+expectType<MaskedOrSentinelUuidV7Bytes | UuidSlugError>()(maskedBinary);
+expectType<UuidV7Bytes | UuidSlugError>()(codec.maskedBytesToUuidBytes(maskedBinary));
+expectType<UppercaseUuidV7String | UuidSlugError>()(
+  codec.maskedBytesToUuidString(maskedBinary, UUID_TEXT_UPPERCASE),
+);
+const binaryStorage = new Uint8Array(24);
+expectType<typeof binaryStorage | UuidSlugError>()(
+  codec.uuidToMaskedBytes(generateUuidV7(), binaryStorage, 4),
+);
+// @ts-expect-error Known mixed blocks require the explicitly masked byte reader.
+uuidToString(maskedBinary);
+// @ts-expect-error A codec cannot infer masked provenance from sixteen bytes either.
+codec.uuidToBytes(maskedBinary);
+// @ts-expect-error Caller storage does not change the meaning of mixed input bytes.
+codec.uuidToBytes(maskedBinary, binaryStorage);
+// @ts-expect-error A known raw UUID byte value is not a mixed block.
+codec.maskedBytesToUuidBytes(versionedBytes);
+// @ts-expect-error Binary masking remains UUIDv7-only.
+codec.uuidToMaskedBytes(generatedV4);
 expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(
   codec.uuidToMaskedSlug(generateUuidV7Bytes()),
 );

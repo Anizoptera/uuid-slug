@@ -24,6 +24,7 @@ Use `BASE64URL`, `BASE32HEX`, `UUID_TEXT_LOWERCASE`, `UUID_TEXT_UPPERCASE`, `NIL
 | `SentinelUuidV7Slug` | A reserved plain UUIDv7 slug, also usable wherever `PlainUuidV7Slug` is accepted. |
 | `MaskedOrSentinelUuidV7Slug` | Masked or sentinel: what a masking call returns. |
 | `UuidBytes`, `UuidV4Bytes`, `UuidV7Bytes` | `UuidBytes` proves the 16-byte shape; v4/v7 brands also prove version and variant bits. |
+| `MaskedUuidV7Bytes`, `SentinelUuidV7Bytes`, `MaskedOrSentinelUuidV7Bytes` | A 16-byte mixed block, registered raw UUIDv7 sentinel bytes, and their binary writer result union. |
 | `UuidByteInput`, `UuidInput` | The byte forms and complete keyless input domain accepted by generic conversion helpers. |
 | `SlugAlphabet` | `"base64url"` or `"base32hex"`. |
 | `GeneratedUuidV7`, `UuidStringResult`, `UuidBytesResult`, `PlainUuidSlugResult` | The paired generation result and version-preserving result types for typed wrapper functions. |
@@ -188,6 +189,9 @@ A masking codec holds immutable masking keys, sentinels, rotation, and writer se
 | `uuidToBytes(uuid, output?, outputOffset?)` / `(bytes, byteOffset, output?, outputOffset?)` | UUID bytes from any supported UUID form, or from one UUID inside a larger array. |
 | `uuidToPlainSlug(uuid, alphabet?)` / `(bytes, byteOffset, alphabet?)` | A plain slug from any supported UUID form, or from one UUID inside a larger array. |
 | `uuidToMaskedSlug(uuid)` | A masked or sentinel slug from any supported UUIDv7 form. |
+| `uuidToMaskedBytes(uuid, output?, outputOffset?)` | The 16-byte mixed block, or raw bytes for a registered sentinel. |
+| `maskedBytesToUuidBytes(maskedUuidBytes, output?, outputOffset?)` | UUIDv7 bytes from an explicitly masked binary value. |
+| `maskedBytesToUuidString(maskedUuidBytes, textCase?)` | UUIDv7 text from an explicitly masked binary value. |
 | `plainToMaskedUuidSlug(plainUuidSlug)` | A `MaskedOrSentinelUuidV7Slug` from either plain UUIDv7 slug spelling. |
 | `maskedToPlainUuidSlug(maskedUuidSlug, alphabet?)` | A plain UUIDv7 slug from a masked slug or registered sentinel. |
 | `maskedSlugToUuidString(maskedUuidSlug, textCase?)` | UUIDv7 text when the caller knows the slug is masked. |
@@ -214,11 +218,13 @@ function createEventGenerator(readUnixMs: () => number) {
 }
 ```
 
-Both masking entry points return a raw sentinel slug when the UUID is registered as a sentinel. Their result type is `MaskedOrSentinelUuidV7Slug`, the union of masked and sentinel slugs.
+Slug masking returns a raw sentinel slug when the UUID is registered as a sentinel. Its result type is `MaskedOrSentinelUuidV7Slug`, the union of masked and sentinel slugs. Binary masking returns `MaskedOrSentinelUuidV7Bytes`, preserving raw sentinel bytes instead.
 
 The byte decoder returns a new plain `Uint8Array` branded as `UuidV7Bytes` when storage is omitted. When storage is supplied, it validates and decodes before writing, then returns that exact array; an error leaves the array unchanged.
 
-Each decoder accepts every value that a supported matching encoder can produce. Masked decoding always accepts both alphabets, sentinels, and current or previous masks. Migration adds only the old formats you enable. Forms no supported encoder produces are invalid.
+Masked binary accepts an exact 16-byte `Uint8Array`, `ArrayBuffer`, or `DataView` range. It preserves the slug's payload, keys, timestamp range and first-passing-key order, but checks 12 inner bits rather than text's 16. Read it explicitly: ordinary UUID byte readers cannot infer its provenance. To recover masked text, decode with `maskedBytesToUuidBytes`, then call `uuidToMaskedSlug`; keyless base64 encoding cannot reconstruct the four outer check bits. Binary writes that collide with a registered raw sentinel return `invalid_mask` rather than decode to the wrong identity.
+
+Each decoder accepts every value that a supported matching encoder can produce. Masked-slug decoding always accepts both alphabets, sentinels, and current or previous masks. Migration adds only the old formats you enable. Forms no supported encoder produces are invalid.
 
 ### Constructors and guards
 

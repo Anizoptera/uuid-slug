@@ -60,6 +60,7 @@ Native and WASI Rust use `SystemTime` for configured fraction bits. Browser WebA
 | Sync/async masks and custom transforms | `derive_uuid_v7_mask`, `derive_uuid_v7_mask_async`, `UuidV7Mask::from_permutation_functions` |
 | Explicit public mask | `UUID_V7_TEST_MASK`; `uuid_v7_test_mask()` |
 | Key rotation, masked conversion and sentinels | `UuidV7MaskingCodecOptions::new`, `uuid_to_masked_slug`, `masked_slug_to_uuid`, `sentinels` |
+| Masked binary and caller storage | `UuidV7MaskingCodec::uuid_to_masked_bytes`, `masked_bytes_to_uuid`, `uuid_to_masked_bytes_into`, `masked_bytes_to_uuid_bytes_into` |
 | Known/mixed-format migration and candidates | `create_uuid_slug_migration_decoder`, `uuid_slug_to_uuid`, `uuid_slug_to_uuid_candidates`, `UuidSlugMigrationOptions` |
 | Plain timestamp window | Parse the plain slug, then `UuidV7TimestampWindow::validate_uuid_v7`; lowercase accepted base32hex text and preserve case-sensitive base64url |
 | Masked timestamp window | `UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms` |

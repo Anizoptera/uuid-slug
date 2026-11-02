@@ -108,7 +108,7 @@ else console.error(uuid.message);
 
 ## Representations
 
-A masking codec holds the keys and settings to encode and decode UUIDv7 slugs.
+A masking codec holds the keys and settings to encode and decode UUIDv7 slugs and masked bytes.
 
 All examples encode the same UUIDv7; sizes are characters except for bytes.
 
@@ -120,6 +120,7 @@ All examples encode the same UUIDv7; sizes are characters except for bytes.
 | Plain base32hex slug | 26 | `06canj8i6htbp7ff04hkaps9lc` | 28% shorter than UUID text; keyless, lossless; writes lowercase, accepts mixed case; UUIDv7 sorts by timestamp in ASCII order |
 | Masked base64url UUIDv7 slug | 22 | `ap225Qa_y6wN5LQCJgwH0z` | 39% shorter than UUID text; opaque, case-sensitive, unordered; 16-bit check; requires its codec to decode |
 | Masked base32hex UUIDv7 slug | 27 | `daerdp86nv5qo3f4mg12c307qco` | 25% shorter than UUID text; opaque, unordered; writes lowercase, accepts mixed case; requires its codec to decode |
+| Masked UUIDv7 bytes | 16 | `6a 9d b6 e5 06 bf cb ac 0d e4 b4 02 26 0c 07 d3` | The same mixed block without text encoding; 12-bit check; requires its codec to decode |
 
 Parsers accept mixed-case canonical or compact hexadecimal text, brace-wrapped canonical text and UUID URNs. See [input examples](docs/api.md#uuid-text-input). Masked examples use the public `UUID_V7_TEST_MASK`; use a private seed for your IDs.
 
@@ -196,6 +197,8 @@ else console.log(result); // The same record, with its ID at bytes 8 through 23.
 ```
 
 Write directly into your database or protocol buffer with `uuidStringToBytes`, `plainSlugToUuidBytes` or `maskingCodec.maskedSlugToUuidBytes`. Pass the array and offset; the call returns your array and leaves other bytes unchanged. Failed validation leaves the buffer unchanged. See [buffer examples and accepted byte forms](docs/api.md#work-with-uuid-bytes).
+
+For client-visible binary IDs, use `maskingCodec.uuidToMaskedBytes(uuid, record, offset)` or omit storage for an owned 16-byte result. Read with `maskedBytesToUuidBytes` or `maskedBytesToUuidString`. Raw UUID bytes have the same length, so ordinary UUID readers never infer masking. Binary preserves the slug's UUID payload and settings, with a 12-bit check instead of text's 16-bit check; neither authorizes access. Registered sentinels retain their raw UUID bytes.
 
 ## Parse once for repeated work
 
@@ -322,6 +325,7 @@ Use the [TypeScript reference](docs/api.md) for [types](docs/api.md#types), [cal
 | Derive UUIDv7 masks, with optional async cancellation | `deriveUuidV7Mask`, `deriveUuidV7MaskAsync` |
 | Use an application-defined reversible masking transform | [`createCustomUuidV7Mask`](docs/api.md#masking-codec-options) |
 | Mask, unmask, rotate keys, or reserve sentinels | `createUuidV7MaskingCodec` and its methods |
+| Transfer masked UUIDv7 as 16 bytes | `maskingCodec.uuidToMaskedBytes`, `maskedBytesToUuidBytes`, `maskedBytesToUuidString` |
 | Read explicitly enabled old formats | `maskingCodec.createUuidSlugMigrationDecoder` |
 
 Types catch UUID-version and plain/masked mix-ups; results retain text case and buffer ownership. Generator, masking-codec and migration methods need no `this` binding.

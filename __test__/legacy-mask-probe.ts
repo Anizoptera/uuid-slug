@@ -21,6 +21,29 @@ function mix(mask: UuidV7Mask, input: Uint8Array, direction: "mask" | "unmask") 
 
 export const legacyMaskCases = [
   {
+    name: "binary rotation retains the first passing key rather than guessing its producer",
+    run() {
+      const { seeds, slug, uuids } = fixtures.keyOverlap;
+      const masks = seeds.map((seed) => unwrap(deriveUuidV7Mask({ seed })));
+      const bytes = new Uint8Array(16);
+      assert.equal(typeof decodeInto(slug, BASE64URL, bytes, 0, 4), "number");
+      for (const reversed of [false, true]) {
+        const ordered = reversed
+          ? masks.reduceRight<UuidV7Mask[]>((result, mask) => {
+              result.push(mask);
+              return result;
+            }, [])
+          : masks;
+        const first = ordered[0];
+        assert.ok(first);
+        const codec = unwrap(
+          createUuidV7MaskingCodec({ mask: first, previousMasks: ordered.slice(1) }),
+        );
+        assert.equal(codec.maskedBytesToUuidString(bytes), reversed ? uuids.at(-1) : uuids[0]);
+      }
+    },
+  },
+  {
     name: "migration captures a matching UUID before another callback mutates its bytes",
     run(this: void) {
       const { seeds, slug, uuids } = fixtures.keyOverlap;
@@ -105,6 +128,16 @@ export const legacyMaskCases = [
       if (slug instanceof Error) throw slug;
       assert.notEqual(slug, sentinel.slug);
       assert.equal(codec.uuidToString(slug), uuid);
+      // The text tail separates these identities; binary has no tail and must reject the collision.
+      const output = new Uint8Array(20).fill(0xa5);
+      const binary = codec.uuidToMaskedBytes(uuid, output, 2);
+      assert.ok(binary instanceof Error);
+      assert.equal(binary.code, "invalid_mask");
+      assert.deepEqual(output, new Uint8Array(20).fill(0xa5));
+      assert.equal(
+        codec.maskedBytesToUuidString(unwrap(codec.uuidToMaskedBytes(sentinel.uuid))),
+        sentinel.uuid,
+      );
       const reader = unwrap(
         codec.createUuidSlugMigrationDecoder({
           acceptFixedMask: true,

@@ -10,6 +10,8 @@ import type {
   GenerateUuidV7WithMaskedSlugOptions,
   MaskingCodecUuidInput,
   MaskedOrSentinelUuidV7Slug,
+  MaskedOrSentinelUuidV7Bytes,
+  MaskedUuidBytesInput,
   PlainUuidSlug,
   PlainUuidSlugResult,
   PlainUuidV7Slug,
@@ -18,6 +20,7 @@ import type {
   SlugStringInput,
   Uuid,
   UuidBytesResult,
+  UuidByteInput,
   UuidInput,
   UuidSlugMigrationDecoder,
   UuidSlugMigrationOptions,
@@ -36,6 +39,7 @@ import type {
   UuidV7StringFor,
   UuidV7TimestampWindow,
   UuidV7ValueInput,
+  UnmaskedUuidInput,
 } from "./types.ts";
 
 /** Key rotation, sentinel, and output options shared by both ways of supplying the writer mask. */
@@ -51,7 +55,8 @@ export interface UuidV7MaskingCodecSharedOptions {
   /**
    * Decode-only masks tried after the writer mask, in caller order. Each item accepts a mask or its
    * derivation options. A returned `UuidSlugError` passes through unchanged. Keep the list short:
-   * every mask adds decoding work and another chance for a random input to pass its 16-bit check.
+   * every mask adds decoding work and another chance for a random input to pass its check
+   * (16 bits for text, 12 for binary).
    *
    * @defaultValue No previous masks.
    */
@@ -128,7 +133,7 @@ export interface UuidV7MaskingCodec {
   /** Parse any accepted UUID form, retain this codec and preserve an existing payload layout. A plain-v4 slug brand cannot exclude a masked-v7 reading. */
   parseUuid<Input extends UuidInput>(
     this: void,
-    uuid: Input,
+    uuid: UnmaskedUuidInput<Input>,
   ): ParsedUuidResult<Input, true> | UuidSlugError;
   /**
    * Convert any accepted UUID form to normalized UUID text. A 22-character slug is read as masked
@@ -137,7 +142,7 @@ export interface UuidV7MaskingCodec {
    */
   uuidToString<Input extends UuidInput, Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
-    uuid: Input,
+    uuid: UnmaskedUuidInput<Input>,
     ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringResult<MaskingCodecUuidInput<Input>, Case>;
   /**
@@ -158,12 +163,12 @@ export interface UuidV7MaskingCodec {
    */
   uuidToBytes<Input extends UuidInput>(
     this: void,
-    uuid: Input,
+    uuid: UnmaskedUuidInput<Input>,
   ): UuidBytesResult<MaskingCodecUuidInput<Input>>;
   /** Convert any accepted UUID form into caller-owned storage after complete validation. */
-  uuidToBytes<Output extends Uint8Array>(
+  uuidToBytes<Output extends Uint8Array, Input extends UuidInput = UuidInput>(
     this: void,
-    uuid: UuidInput,
+    uuid: UnmaskedUuidInput<Input>,
     output: Output,
     outputOffset?: number,
   ): UuidOutput<Output> | UuidSlugError;
@@ -188,7 +193,7 @@ export interface UuidV7MaskingCodec {
    */
   uuidToPlainSlug<Input extends UuidInput>(
     this: void,
-    uuid: Input,
+    uuid: UnmaskedUuidInput<Input>,
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugResult<MaskingCodecUuidInput<Input>>;
   /**
@@ -265,6 +270,50 @@ export interface UuidV7MaskingCodec {
     this: void,
     uuid: UuidV7ValueInput<Input>,
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
+  /**
+   * Convert UUIDv7 text, raw bytes, a parsed UUID, or a plain or masked slug to 16 masked bytes.
+   * Registered sentinels retain raw UUID bytes and their full timestamp range. Binary carries 12 inner check bits;
+   * current masked text carries four more. Returns owned plain bytes or an unchanged prior error.
+   * Range, version and mask failures follow masked-slug conversion. A mixed block matching a
+   * registered raw sentinel returns `invalid_mask` instead of losing the original UUID.
+   */
+  uuidToMaskedBytes<Input extends UuidInput>(
+    this: void,
+    uuid: UuidV7ValueInput<Input>,
+  ): MaskedOrSentinelUuidV7Bytes | UuidSlugError;
+  /** Write 16 masked bytes at `outputOffset` (default zero); preserve output identity and all bytes on failure. */
+  uuidToMaskedBytes<Input extends UuidInput, Output extends Uint8Array>(
+    this: void,
+    uuid: UuidV7ValueInput<Input>,
+    output: Output,
+    outputOffset?: number,
+  ): UuidOutput<Output> | UuidSlugError;
+  /**
+   * Read exactly 16 masked bytes using registered-sentinel priority and current-first key order.
+   * A 12-bit check can accept a wrong key by chance; it is not authorization. Input remains unchanged
+   * unless it is also the supplied output storage.
+   * A preceding error propagates unchanged; malformed storage or no passing key returns a package error.
+   */
+  maskedBytesToUuidBytes<Input extends UuidByteInput | UuidSlugError>(
+    this: void,
+    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+  ): UuidV7Bytes | UuidSlugError;
+  /** Write the decoded UUID at `outputOffset` (default zero), preserving output identity and bytes on failure. */
+  maskedBytesToUuidBytes<Input extends UuidByteInput | UuidSlugError, Output extends Uint8Array>(
+    this: void,
+    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+    output: Output,
+    outputOffset?: number,
+  ): UuidOutput<Output> | UuidSlugError;
+  /** Read masked bytes as UUIDv7 text; `textCase` defaults to lowercase. Uses the same keys, checks and failures as the byte reader. */
+  maskedBytesToUuidString<
+    Input extends UuidByteInput | UuidSlugError,
+    Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+  >(
+    this: void,
+    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+    ...textCase: UuidTextCaseArguments<Case>
+  ): UuidV7StringFor<Case> | UuidSlugError;
   /**
    * Convert either plain UUIDv7 slug spelling to this codec's current masked or sentinel spelling.
    * TypeScript rejects known UUIDv4 slugs. Other UUIDv4 input returns `invalid_uuid_version`;

@@ -162,6 +162,13 @@ export type SentinelUuidV7Slug = Brand<PlainUuidV7Slug, "SentinelUuidV7Slug">;
 /** A masking result: either a masked UUIDv7 or a registered plain sentinel. */
 export type MaskedOrSentinelUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 
+/** An owned 16-byte mixed UUIDv7 block with its 12-bit inner check; not raw UUID bytes. */
+export type MaskedUuidV7Bytes = Brand<Uint8Array, "MaskedUuidV7Bytes">;
+/** A registered sentinel's unmasked UUIDv7 bytes. */
+export type SentinelUuidV7Bytes = Brand<UuidV7Bytes, "SentinelUuidV7Bytes">;
+/** Binary masking output: a mixed block or a registered sentinel's raw UUID bytes. */
+export type MaskedOrSentinelUuidV7Bytes = MaskedUuidV7Bytes | SentinelUuidV7Bytes;
+
 /** One generated UUIDv7 in the selected text case and one selected slug made from the same bytes. */
 export interface GeneratedUuidV7<
   Slug extends PlainUuidV7Slug | MaskedOrSentinelUuidV7Slug,
@@ -333,6 +340,15 @@ type RejectKnownInput<Input, Invalid> = [Extract<Exclude<Input, UuidSlugError>, 
   ? Input
   : never;
 
+/** Raw UUID readers cannot infer masked provenance from the identical 16-byte shape. */
+export type UnmaskedUuidInput<Input> = RejectKnownInput<Input, MaskedUuidV7Bytes>;
+/** Masked-byte readers accept external bytes but reject a known ordinary UUID byte value. */
+export type MaskedUuidBytesInput<Input extends UuidByteInput | UuidSlugError> = [
+  Extract<Exclude<Input, UuidSlugError | SentinelUuidV7Bytes>, UuidBytes>,
+] extends [never]
+  ? Input
+  : never;
+
 /** Reject a known slug; the operation parses UUID text. A bare string is validated at runtime. */
 export type UuidStringInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
@@ -369,7 +385,11 @@ export type UuidV7BytesInput<Input extends UuidByteInput | UuidSlugError> = Reje
 /** Reject known non-v7 values; a masking codec accepts every UUIDv7 form. */
 export type UuidV7ValueInput<Input extends UuidInput> = RejectKnownInput<
   Input,
-  UuidV4Text | UuidV4Bytes | PlainUuidV4Slug | AnyUuidForVersion<Exclude<UuidVersion, 7>>
+  | UuidV4Text
+  | UuidV4Bytes
+  | PlainUuidV4Slug
+  | MaskedUuidV7Bytes
+  | AnyUuidForVersion<Exclude<UuidVersion, 7>>
 >;
 /** Exactly 16 validated UUID bytes. Package-owned values are plain `Uint8Array`. */
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
@@ -380,7 +400,7 @@ export type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
 
 // Writers preserve the array and its methods, but prior UUID facts describe the replaced bytes.
 // Strip only the package brand; erasing every subtype would also discard useful caller storage APIs.
-export type UuidOutput<Output extends Uint8Array> = Output extends UuidBytes
+export type UuidOutput<Output extends Uint8Array> = Output extends UuidBytes | MaskedUuidV7Bytes
   ? Omit<Output, typeof brand>
   : Output;
 
@@ -409,9 +429,9 @@ export type ParsedUuidResult<Input, WithCodec extends boolean = false> = Uuid<
  * implementations also normalize genuine `String` objects; TypeScript uses primitive strings.
  */
 export type UuidInput = string | UuidByteInput | AnyUuid | UuidSlugError;
-/** Reject a branded masked slug where no masking codec is available. */
+/** Reject branded masked slugs or bytes where no masking codec is available. */
 export type KeylessUuidInput<Input> = [
-  Extract<Exclude<Input, UuidSlugError>, MaskedUuidV7Slug>,
+  Extract<Exclude<Input, UuidSlugError>, MaskedUuidV7Slug | MaskedUuidV7Bytes>,
 ] extends [never]
   ? Input
   : never;

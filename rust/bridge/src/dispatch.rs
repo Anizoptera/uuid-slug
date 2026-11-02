@@ -376,6 +376,16 @@ fn run(request: &Value) -> Result<Value, Error> {
                 .uuid_to_masked_slug(Uuid::from_uuid_string(input)?)?
                 .into_string()
         )),
+        "maskBytes" => Ok(json!(
+            masking_codec(request)?
+                .uuid_to_masked_bytes(Uuid::from_uuid_string(input)?)?
+                .as_masked_uuid_bytes()
+        )),
+        "unmaskBytes" => {
+            let bytes: Vec<u8> = serde_json::from_value(request["bytes"].clone())
+                .map_err(|_| Error::new(ErrorCode::InvalidBuffer))?;
+            Ok(json!(masking_codec(request)?.masked_bytes_to_uuid(&bytes)?.to_string()))
+        }
         "unmask" => {
             let masking_codec = masking_codec(request)?;
             let uuid = if request["acceptPlain"] == true {

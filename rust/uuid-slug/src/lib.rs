@@ -44,9 +44,9 @@ pub use mask::{
     uuid_v7_test_mask,
 };
 pub use masking_codec::{
-    UuidSlugMigrationDecoder, UuidSlugMigrationFormat, UuidSlugMigrationOptions,
-    UuidV7MaskingCodec, UuidV7MaskingCodecOptions, UuidV7PreviousMask, UuidV7Sentinel,
-    UuidV7TimestampWindow,
+    MaskedOrSentinelUuidV7Bytes, MaskedUuidV7Bytes, UuidSlugMigrationDecoder,
+    UuidSlugMigrationFormat, UuidSlugMigrationOptions, UuidV7MaskingCodec,
+    UuidV7MaskingCodecOptions, UuidV7PreviousMask, UuidV7Sentinel, UuidV7TimestampWindow,
 };
 pub use payload::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
 pub use text::KeylessUuidText;

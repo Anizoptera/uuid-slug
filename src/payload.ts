@@ -153,6 +153,29 @@ const INNER_TAG_BITS = 12;
 const OUTER_TAG_BITS = 4;
 const TAG_BITS = INNER_TAG_BITS + OUTER_TAG_BITS;
 
+/** Mutate one owned UUIDv7 block; the returned outer check belongs only to text encodings. */
+export function maskUuidV7Block(
+  raw: Uint8Array,
+  mask: UuidV7Mask,
+  timestampRangeStartUnixMs: number,
+): number | UuidSlugError {
+  // Truncation would map different UUIDs to one value in every representation.
+  const timestamp = readUnixMs(raw);
+  const timestampOffset = timestamp - timestampRangeStartUnixMs;
+  if (timestampOffset < 0 || timestampOffset > MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS)
+    return new UuidSlugError(
+      INVALID_TIMESTAMP,
+      `Masking accepts UUIDv7 timestamps from Unix millisecond ${timestampRangeStartUnixMs} through ${timestampRangeStartUnixMs + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS}; got ${timestamp}.`,
+    );
+  const tag = tagFor(raw, TAG_BITS);
+  writeUnixMs(raw, timestampOffset);
+  injectTag(raw, tag >>> OUTER_TAG_BITS);
+  // Built-in transforms read all words before writing; custom transforms copy input, so private
+  // in-place output avoids another array without exposing caller bytes.
+  const failed = applyMix(mask, raw, raw, MASK_DIRECTION);
+  return failed ?? tag & ((1 << OUTER_TAG_BITS) - 1);
+}
+
 /**
  * Mask a private block in place. Callers must own `raw`: tag injection destroys its UUID bytes.
  * This separate entry keeps mutation impossible on the ordinary caller-owned byte path while a
@@ -165,23 +188,8 @@ export function ownedUuidV7BytesToMaskedSlug(
   reserved?: { readonly size: number; has(slug: string): boolean },
   timestampRangeStartUnixMs = 0,
 ): MaskedUuidV7Slug | UuidSlugError {
-  // Truncating instead would make encoding non-injective — two UUIDs would share one slug, and no
-  // decoder could ever tell which was meant. Refusing is the only recoverable answer.
-  const timestamp = readUnixMs(raw);
-  const timestampOffset = timestamp - timestampRangeStartUnixMs;
-  if (timestampOffset < 0 || timestampOffset > MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS)
-    return new UuidSlugError(
-      INVALID_TIMESTAMP,
-      `Masking accepts UUIDv7 timestamps from Unix millisecond ${timestampRangeStartUnixMs} through ${timestampRangeStartUnixMs + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS}; got ${timestamp}.`,
-    );
-  const tag = tagFor(raw, TAG_BITS);
-  writeUnixMs(raw, timestampOffset);
-  injectTag(raw, tag >>> OUTER_TAG_BITS);
-  // Every mask receives an isolated block. Reusing that block as output removes a second
-  // allocation; built-in transforms read all words before writing and custom transforms copy input.
-  const failed = applyMix(mask, raw, raw, MASK_DIRECTION);
-  if (failed) return failed;
-  const tail = tag & ((1 << OUTER_TAG_BITS) - 1);
+  const tail = maskUuidV7Block(raw, mask, timestampRangeStartUnixMs);
+  if (typeof tail !== "number") return tail;
   // Raw sentinels have zero outer bits. Only that tail can collide with retained base64 reads;
   // other writes need neither a second encoding nor a lookup for a collision that cannot occur.
   // Skipping the lookup matters: on V8 it hashed and flattened every base64url slug
@@ -305,9 +313,9 @@ export function decodeMaskedCandidates(
   return candidates;
 }
 
-function unmix(
+export function unmix(
   mixed: Uint8Array,
-  outerTag: number,
+  outerTag: number | undefined,
   range: UuidV7MaskRange,
 ): Uint8Array | undefined | UuidSlugError {
   // `mixed` is already private to this mask attempt, so the same alias-safe transform contract
@@ -316,9 +324,16 @@ function unmix(
   if (failed) return failed;
   // Both halves come out of the same decryption, so a wrong key garbles the observed check as
   // thoroughly as the payload: the tag needs no key of its own to tell keys apart.
-  const foundTag = (extractTag(mixed) << OUTER_TAG_BITS) | outerTag;
+  const innerTag = extractTag(mixed);
   restoreV7(mixed);
   writeUnixMs(mixed, readUnixMs(mixed) + range.timestampRangeStartUnixMs);
-  if (tagFor(mixed, TAG_BITS) !== foundTag) return undefined;
+  const expectedTag = tagFor(mixed, TAG_BITS);
+  // Binary omits only the text tail; both readers restore and check the same UUID block.
+  if (
+    outerTag === undefined
+      ? expectedTag >>> OUTER_TAG_BITS !== innerTag
+      : expectedTag !== ((innerTag << OUTER_TAG_BITS) | outerTag)
+  )
+    return undefined;
   return mixed;
 }

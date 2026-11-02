@@ -204,6 +204,14 @@ function codec(mask: keyof typeof WIRE_FORMAT_MASKS) {
   return {
     uuidToMaskedSlug: (input: string) => text({ op: "mask", input, ...options }),
     uuidToString: (input: string) => text({ op: "unmask", input, ...options }),
+    uuidToMaskedBytes(input: string) {
+      const value = call({ op: "maskBytes", input, ...options });
+      if (value instanceof Error) return value;
+      if (!uuidBytes(value)) throw new Error("Rust binary encoder returned malformed bytes.");
+      return Uint8Array.from(value);
+    },
+    maskedBytesToUuidString: (bytes: Uint8Array) =>
+      text({ op: "unmaskBytes", bytes: [...bytes], ...options }),
   };
 }
 export const codecs = {

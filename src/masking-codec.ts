@@ -32,6 +32,7 @@ import type { UuidV7MaskRange } from "./payload.ts";
 import { MAX_UUID_V7_UNIX_MS } from "./v7-timestamp.ts";
 import { createMigration } from "./migration.ts";
 import { findSentinel } from "./sentinel.ts";
+import { createMaskedByteMethods } from "./masked-bytes.ts";
 import { registerMaskingCodec } from "./masking-codec-protocol.ts";
 import { isMaskHandle } from "./mask-handle.ts";
 import { deriveUuidV7Mask } from "./mask.ts";
@@ -898,6 +899,7 @@ function buildUuidSlugCodec(
   }
 
   const maskingCodec: UuidV7MaskingCodec = {
+    ...createMaskedByteMethods(decodeUuid, current, previousMasks, sentinels.encoded),
     sentinels: sentinels.sentinels,
     generateUuidV7Value,
     parseUuid: (uuid) => parseUuid(uuid, maskingCodec),

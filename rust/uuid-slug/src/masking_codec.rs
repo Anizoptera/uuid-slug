@@ -1,5 +1,8 @@
 //! A UUIDv7 masking codec owns its keys and reserved identities so keyed operations cannot use another codec's key.
 
+mod masked_bytes;
+pub use masked_bytes::{MaskedOrSentinelUuidV7Bytes, MaskedUuidV7Bytes};
+
 use crate::{
     Error, ErrorCode, MaskedOrSentinelUuidV7Slug, MaskedUuidV7Slug, PlainUuidSlug, Uuid,
     UuidSlugAlphabet, UuidV7Mask, UuidV7Payload, UuidV7PayloadLayout,

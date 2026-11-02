@@ -46,6 +46,8 @@ let masking_codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
 })?;
 let masked = masking_codec.uuid_to_masked_slug(uuid)?;
 assert_eq!(masking_codec.masked_slug_to_uuid(&masked)?, uuid);
+let binary = masking_codec.uuid_to_masked_bytes(uuid)?;
+assert_eq!(masking_codec.masked_bytes_to_uuid(binary.as_ref())?, uuid);
 assert_eq!(masking_codec.parse_uuid(&masked)?, uuid);
 assert_eq!(masking_codec.parse_uuid(&filename)?, uuid);
 # Ok(())
@@ -60,9 +62,11 @@ Use `UuidV7MaskingCodec::new(mask)` for base64url output with no sentinels or pr
 
 Use `masking_codec.parse_uuid(text)?` when input may be UUID text, a plain slug or a masked slug. Registered sentinels take priority. For ambiguous 22-character text, the first passing mask decides the UUID; plain decoding applies only when every mask rejects it. Callback failures are returned, not retried as plain text. Use `Uuid::from_plain_uuid_slug` or `masked_slug_to_uuid` when you know the source. The returned `Uuid` owns its bytes without retaining the codec or keys.
 
-Plain slugs preserve all 128 UUID bits without version, variant or timestamp limits. Masked slugs preserve the 132-bit payload. Decoding infers the representation and rejects nonzero padding.
+Plain slugs preserve all 128 UUID bits without version, variant or timestamp limits. Masked slugs preserve the 132-bit payload. Slug decoding infers the alphabet and rejects nonzero padding.
 
-Masking supports UUIDv7 only. It replaces the recognizable UUIDv7 layout, including its timestamp, with a keyed reversible payload. Its cryptographic strength is not established. An incorrect key can pass the 16-bit check and return the wrong UUID; look up decoded records and check caller access. Each read key adds that risk. Use `uuid_v7_test_mask()` only for examples and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs. Masking stores a timestamp offset from `timestamp_range_start_unix_ms` and restores the UUID's timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`; plain slugs retain the full UUIDv7 timestamp range. Registered sentinels are always plain slugs and are never masked.
+Masked binary is the same 16-byte mixed block without text encoding. `uuid_to_masked_bytes` returns `MaskedOrSentinelUuidV7Bytes`; borrow its bytes with `as_ref()` for transport and read with `masked_bytes_to_uuid`. Registered sentinels retain raw UUID bytes. Binary checks 12 inner bits rather than text's 16; neither check authorizes access. Use `uuid_to_masked_bytes_into` and `masked_bytes_to_uuid_bytes_into` for caller-owned storage; failure leaves the entire buffer unchanged. Raw and masked bytes share the same length, so choose the reader from the known format.
+
+Masking supports UUIDv7 only. It replaces the recognizable UUIDv7 layout, including its timestamp, with a keyed reversible payload. Its cryptographic strength is not established. An incorrect key can pass the check and return the wrong UUID; look up decoded records and check caller access. Each read key adds that risk. Use `uuid_v7_test_mask()` only for examples and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs. Masking stores a timestamp offset from `timestamp_range_start_unix_ms` and restores the UUID's timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`; plain slugs retain the full UUIDv7 timestamp range. Registered sentinels are never masked.
 
 ## Interoperability
 

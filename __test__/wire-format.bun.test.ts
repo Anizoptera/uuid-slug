@@ -26,6 +26,10 @@ describe("wire format is identical across runtimes", () => {
       equal(uuidStringToPlainSlug(vector.uuid), vector.plain);
       equal(codec.uuidToMaskedSlug(vector.uuid), vector.masked);
       equal(codec.uuidToString(vector.masked), vector.uuid);
+      const binary = codec.uuidToMaskedBytes(vector.uuid);
+      if (binary instanceof Error) throw binary;
+      equal(Buffer.from(binary).toString("hex"), vector.maskedBytes);
+      equal(codec.maskedBytesToUuidString(binary), vector.uuid);
     });
   }
 

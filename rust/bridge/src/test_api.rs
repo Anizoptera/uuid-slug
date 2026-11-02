@@ -119,6 +119,13 @@ fn uuid(
     objects: &Objects,
     codec: Option<usize>,
 ) -> Result<Uuid, Error> {
+    if source == "masked-bytes" {
+        return objects
+            .codecs
+            .get(codec.ok_or_else(|| invalid(ErrorCode::InvalidOptions))?)
+            .ok_or_else(|| invalid(ErrorCode::InvalidOptions))?
+            .masked_bytes_to_uuid(&bytes(v)?);
+    }
     if v.is_object() && v.get("bytes").is_some() {
         if source == "text" {
             return Err(invalid(ErrorCode::InvalidUuid));
@@ -181,6 +188,31 @@ fn run(request: &Value, objects: &mut Objects) -> Result<Value, Error> {
         .as_u64()
         .and_then(|v| usize::try_from(v).ok());
     match method {
+        "writeMaskedBytes" | "writeUnmaskedBytes" => {
+            let selected = objects
+                .codecs
+                .get(codec.ok_or_else(|| invalid(ErrorCode::InvalidOptions))?)
+                .ok_or_else(|| invalid(ErrorCode::InvalidOptions))?;
+            let mut storage = bytes(&args[1])?;
+            let result = index(&args[2]).and_then(|offset| {
+                if method == "writeMaskedBytes" {
+                    let value = uuid(&args[0], "universal", &Value::Null, objects, codec)?;
+                    selected.uuid_to_masked_bytes_into(value, &mut storage, offset)
+                } else {
+                    selected.masked_bytes_to_uuid_bytes_into(
+                        &bytes(&args[0])?,
+                        &mut storage,
+                        offset,
+                    )
+                }
+            });
+            Ok(match result {
+                Ok(()) => json!({"storage":storage}),
+                Err(error) => {
+                    json!({"storage":storage,"error":error.code().as_str(),"message":error.to_string()})
+                }
+            })
+        }
         "transform" => super::primitives::mask_transform(&args[0]),
         "generateInto" => generate_into(&args[0], &mut objects.generators),
         "reset" => {
@@ -443,6 +475,14 @@ fn run(request: &Value, objects: &mut Objects) -> Result<Value, Error> {
                         .ok_or_else(|| invalid(ErrorCode::InvalidOptions))?
                         .uuid_to_masked_slug(uuid)?
                         .as_str()
+                )),
+                "maskBytes" => Ok(json!(
+                    objects
+                        .codecs
+                        .get(codec.ok_or_else(|| invalid(ErrorCode::InvalidOptions))?)
+                        .ok_or_else(|| invalid(ErrorCode::InvalidOptions))?
+                        .uuid_to_masked_bytes(uuid)?
+                        .as_masked_uuid_bytes()
                 )),
                 "timestamp" => Ok(json!(uuid.extract_uuid_v7_unix_ms()?)),
                 "version" => Ok(json!(uuid.uuid_version())),

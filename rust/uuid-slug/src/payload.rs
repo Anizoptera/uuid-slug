@@ -1,4 +1,4 @@
-//! Store a fixed 16-bit check beside UUIDv7 content without losing timestamp or random bits.
+//! Share the UUIDv7 mixed block; text adds four outer check bits to binary's twelve inner bits.
 use crate::{Error, ErrorCode, alphabet::UuidSlugAlphabet, mask::UuidV7Mask, uuid::utf16_len};
 use alloc::format;
 
@@ -86,6 +86,24 @@ pub(crate) fn candidate(
     mask: &UuidV7Mask,
     timestamp_range_start_unix_ms: u64,
 ) -> Result<Option<[u8; 16]>, Error> {
+    candidate_with_check::<true>(mixed, outer, mask, timestamp_range_start_unix_ms)
+}
+
+/// Binary has no outer text nibble, so only the existing inner check can select a key.
+pub(crate) fn candidate_bytes(
+    mixed: [u8; 16],
+    mask: &UuidV7Mask,
+    timestamp_range_start_unix_ms: u64,
+) -> Result<Option<[u8; 16]>, Error> {
+    candidate_with_check::<false>(mixed, 0, mask, timestamp_range_start_unix_ms)
+}
+
+fn candidate_with_check<const TEXT: bool>(
+    mixed: [u8; 16],
+    outer: u8,
+    mask: &UuidV7Mask,
+    timestamp_range_start_unix_ms: u64,
+) -> Result<Option<[u8; 16]>, Error> {
     let mut raw = mask.unmask(mixed)?;
     let inner = (raw[6] >> 4) as u16 | ((raw[8] >> 6) as u16) << 4 | ((raw[0] >> 2) as u16) << 6;
     raw[6] = (raw[6] & 15) | 0x70;
@@ -93,7 +111,13 @@ pub(crate) fn candidate(
     raw[0] &= 3;
     let timestamp = unix_ms(&raw) + timestamp_range_start_unix_ms;
     write_unix_ms(&mut raw, timestamp);
-    Ok((tag(&raw) == (inner << 4) | outer as u16).then_some(raw))
+    // Monomorphization keeps representation selection out of each compiled check path.
+    let valid = if TEXT {
+        tag(&raw) == (inner << 4) | outer as u16
+    } else {
+        tag(&raw) >> 4 == inner
+    };
+    Ok(valid.then_some(raw))
 }
 
 #[cfg(test)]

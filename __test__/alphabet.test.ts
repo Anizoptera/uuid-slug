@@ -183,6 +183,10 @@ describe("wire format compatibility", () => {
     expect(uuidStringToPlainSlug(vector.uuid)).toBe(vector.plain);
     expect(codec.uuidToMaskedSlug(vector.uuid)).toBe(vector.masked);
     expect(codec.uuidToString(vector.masked)).toBe(vector.uuid);
+    const binary = codec.uuidToMaskedBytes(vector.uuid);
+    if (binary instanceof Error) throw binary;
+    expect(Buffer.from(binary).toString("hex")).toBe(vector.maskedBytes);
+    expect(codec.maskedBytesToUuidString(binary)).toBe(vector.uuid);
   });
 });
 

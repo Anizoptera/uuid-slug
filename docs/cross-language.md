@@ -20,6 +20,7 @@ Rust uses `Uuid` values, ownership and `Result` where TypeScript uses directiona
 | --- | --- |
 | `uuidStringToBytes` / `bytesToUuidString`; bytes and offsets | `Uuid::from_uuid_string`, `from_uuid_bytes`, `as_uuid_bytes`, `write_uuid_bytes`, `Display` |
 | Plain slug conversion | `Uuid::to_plain_uuid_slug`, `Uuid::from_plain_uuid_slug` |
+| Masked binary and caller storage | `UuidV7MaskingCodec::uuid_to_masked_bytes`, `masked_bytes_to_uuid`, `uuid_to_masked_bytes_into`, `masked_bytes_to_uuid_bytes_into` |
 | UUID version and generic/v4/v7 guards | Parse once, then `Uuid::uuid_version`, `is_uuid_v4`, `is_uuid_v7`, `is_rfc_uuid_variant` |
 | Canonical nil and max UUID values | `NIL_UUID`, `MAX_UUID` |
 | Base64url UUID payload | `UuidSlugAlphabet::Base64Url.uuid_bytes_to_plain_slug`, `plain_slug_to_uuid_bytes`, `plain_slug_to_uuid_bytes_into` |
