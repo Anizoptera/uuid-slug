@@ -402,6 +402,7 @@ dependencies = [
 name = "uuid-slug-benchmark"
 version = "0.6.0-dev"
 dependencies = [
+ "getrandom",
  "serde_json",
  "uuid-slug",
  "wasm-bindgen",

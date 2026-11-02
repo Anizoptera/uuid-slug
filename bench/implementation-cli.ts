@@ -8,4 +8,4 @@ const settings: Settings = JSON.parse(input);
 const host = globalThis as typeof globalThis & { Deno?: { version: { deno: string } } };
 const runtimeVersion =
   typeof Bun !== "undefined" ? Bun.version : (host.Deno?.version.deno ?? process.version);
-console.log(JSON.stringify({ runtimeVersion, rows: await run(settings) }));
+console.log(JSON.stringify({ runtimeVersion, ...(await run(settings)) }));

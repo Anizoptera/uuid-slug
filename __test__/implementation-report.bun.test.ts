@@ -89,4 +89,11 @@ test("valid timings cannot hide an unbalanced process window or wrong reference"
   if (!reference) throw new Error("Fixture omitted its reference");
   reference.lane = "rust/native/release/fast-rng";
   expect(() => renderImplementationReport(wrong)).toThrow("wrong reference artifact");
+  const unqualified = evidence();
+  const lane = unqualified.lanes[0];
+  if (!lane) throw new Error("Fixture omitted its JavaScript lane");
+  lane.requiresEntropy = true;
+  expect(() => renderImplementationReport(unqualified)).toThrow(
+    "secure-source success/failure evidence",
+  );
 });

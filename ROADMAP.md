@@ -4,9 +4,10 @@
 
 Compare every maintained TypeScript runtime, native Rust feature variant and WASM variant on equivalent API jobs, warmed and optimized for performance: minified JavaScript and release Rust/WASM, without debug artifacts or disabled JITs. Cover API variants and common scenarios, retain raw evidence, and generate a rerunnable Markdown report centered on relative differences and uncertainty. Keep small fluctuations out of rankings. Benchmark work is authorized; product changes, publication and remote writes are not.
 
-- [x] Map existing workloads and runtime/build variants; identify missing API jobs and distinguish direct calls from transport overhead.
+- [ ] Cover each distinct Rust capability selection, including reduced browser WASM, std-only and OS entropy without std; prove unavailable combinations rather than inferring them from labels.
+- [ ] Trace and fault-test secure entropy selection in JavaScript and browser Rust/WASM before timing; exclude insecure generation from every candidate and reference.
 - [x] Reuse the measurement and correctness corpus across runtime variants; add missing jobs without changing product behavior.
-- [x] Implement one rerun command, raw evidence validation and a generated relative report with explicit coverage and uncertainty.
+- [ ] Keep one rerun command and validated relative report; reuse process supervision so interruption stops descendants and removes disposable binaries while completed observations survive.
 - [x] Pair adjacent fresh-process reference/candidate repeats, retain comparison edges, and include both workerd modes without mixing HTTP dispatch into per-call timing.
 - [ ] Falsify reporting with identical controls, reversed comparisons, missing lanes and invalid measurements; run the complete selected matrix without overlapping timing workloads.
 - [ ] Review the generated report against raw records, document rerun controls and limits, commit the results and remove owned scratch.

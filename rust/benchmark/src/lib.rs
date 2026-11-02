@@ -59,6 +59,26 @@ pub fn benchmark(
     serde_json::to_string(&recorder.rows).expect("serialize observations")
 }
 
+/// Expose real provider outcomes so hosts can reject weak fallback without timing fault injection.
+#[cfg_attr(all(target_arch = "wasm32", target_os = "unknown"), wasm_bindgen)]
+pub fn entropy_probe() -> String {
+    // Return failed draws as data so qualification can verify recovery without a trap.
+    #[cfg(feature = "os-rng")]
+    {
+        let mut bytes = [0; 16];
+        serde_json::json!({
+            "provider": uuid_slug::fill_os_random_bytes(&mut bytes).is_ok(),
+            "uuidV4": uuid_slug::generate_uuid_v4().is_ok(),
+            "uuidV7": uuid_slug::UuidV7Generator::new().generate_uuid_v7_with_random_fill(
+                1_725_000_000_000.0, uuid_slug::fill_os_random_bytes,
+            ).is_ok(),
+        })
+        .to_string()
+    }
+    #[cfg(not(feature = "os-rng"))]
+    "{}".to_owned()
+}
+
 struct Measurements<'a> {
     quantum_ms: f64,
     samples: u32,

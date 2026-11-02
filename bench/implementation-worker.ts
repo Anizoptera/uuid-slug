@@ -1,5 +1,8 @@
 // One portable timed loop serves every JS engine; imports and corpus validation precede timing.
 import { implementationCases } from "./implementation-cases";
+import * as api from "../src/index";
+import { qualifyEntropy } from "./implementation-entropy";
+import type { EntropyEvidence } from "./implementation-entropy";
 import { ASYNC_JOBS, measureAsync } from "./implementation-async";
 import { assertProfileOutcome, uuidObjectChecksum, selectProfileCases } from "./profile-case";
 import type { ProfileCase } from "./profile-case";
@@ -97,8 +100,16 @@ function measure(
   return rows;
 }
 
-export async function run(settings: Settings): Promise<Observation[]> {
-  const cases = implementationCases();
+export async function run(
+  settings: Settings,
+): Promise<{ rows: Observation[]; entropy: EntropyEvidence }> {
+  const probeOutput = new Uint8Array(16);
+  const qualified = qualifyEntropy(() => {
+    const v4 = api.generateUuidV4Bytes(probeOutput);
+    const v7 = api.generateUuidV7Bytes(probeOutput);
+    return { uuidV4: !(v4 instanceof Error), uuidV7: !(v7 instanceof Error) };
+  }, implementationCases);
+  const cases = qualified.value;
   const names = [...Object.keys(cases), ...ASYNC_JOBS.map((job) => job.name)];
   const selected = new Set(
     selectProfileCases(Object.fromEntries(names.map((name) => [name, true])), settings.filter).map(
@@ -111,18 +122,23 @@ export async function run(settings: Settings): Promise<Observation[]> {
     ...settings,
     duration: Math.max(settings.duration, quantum * settings.batchTicks),
   };
-  return [
-    ...measure(
-      calibrated,
-      quantum,
-      Object.entries(cases).filter(([name]) => selected.has(name)),
-    ),
-    ...(await measureAsync(calibrated, quantum, selected)),
-  ];
+  return {
+    entropy: qualified.entropy,
+    rows: [
+      ...measure(
+        calibrated,
+        quantum,
+        Object.entries(cases).filter(([name]) => selected.has(name)),
+      ),
+      ...(await measureAsync(calibrated, quantum, selected)),
+    ],
+  };
 }
 const host = globalThis as typeof globalThis & { uuidSlugBenchmark?: typeof run };
 host.uuidSlugBenchmark = run;
-function postWorkerResult(message: Observation[] | string | { failure: string }): void {
+function postWorkerResult(
+  message: Awaited<ReturnType<typeof run>> | string | { failure: string },
+): void {
   // eslint-disable-next-line unicorn/require-post-message-target-origin -- Dedicated workers post to their owner, not a Window origin.
   globalThis.postMessage(message);
 }

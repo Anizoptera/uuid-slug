@@ -25,6 +25,8 @@ export interface Lane {
   edge?: boolean;
   reference?: string;
   filter?: string;
+  requiresEntropy?: boolean;
+  entropyModule?: string;
 }
 
 export async function sha256(file: string): Promise<string> {
@@ -88,6 +90,18 @@ export async function prepareImplementations(
   await mkdir(directory, { recursive: true });
   const root = process.cwd();
   const lanes: Lane[] = [];
+  const entropyBuild = await Bun.build({
+    check: true,
+    entrypoints: ["bench/implementation-entropy.ts"],
+    target: "browser",
+    format: "esm",
+    minify: true,
+    outdir: directory,
+    naming: "entropy.mjs",
+  });
+  if (!entropyBuild.success)
+    throw new AggregateError(entropyBuild.logs, "Entropy qualifier build failed");
+  const entropyModule = join(directory, "entropy.mjs");
   await command("bun", ["run", "build"], root);
   const [node, bun, browser, deno, edge] = await Promise.all([
     buildJs(directory, "node"),
@@ -172,20 +186,19 @@ export async function prepareImplementations(
   const rust = await rustToolchain();
   const compiler = (await command(rust.rustc, ["-Vv"], root, rust.env)).trim();
   for (const profile of ["release"]) {
-    for (const feature of ["fast-rng", "os-rng", "reduced"]) {
-      const features =
-        feature === "fast-rng"
-          ? []
-          : [
-              "--no-default-features",
-              ...(feature === "os-rng" ? ["--features", "std,os-rng"] : []),
-            ];
-      for (const target of [
-        "native",
-        "wasm32-wasip1",
-        "wasm32-wasip2",
-        ...(feature === "reduced" ? [] : ["wasm32-unknown-unknown"]),
-      ]) {
+    for (const [feature, enabled] of Object.entries({
+      "fast-rng": ["fast-rng"],
+      "os-rng": ["std", "os-rng"],
+      "os-rng-no-std": ["os-rng"],
+      std: ["std"],
+      reduced: [],
+    })) {
+      const requiresEntropy = enabled.some((name) => name === "os-rng" || name === "fast-rng");
+      const features = [
+        "--no-default-features",
+        ...(enabled.length ? ["--features", enabled.join(",")] : []),
+      ];
+      for (const target of ["native", "wasm32-wasip1", "wasm32-wasip2", "wasm32-unknown-unknown"]) {
         const wasmJs = target === "wasm32-unknown-unknown";
         console.log(`Build: ${target}/${profile}/${feature}`);
         const build = await command(
@@ -211,7 +224,9 @@ export async function prepareImplementations(
             ...(wasmJs ? ["--lib"] : ["--bin", "uuid-slug-benchmark"]),
             "--release",
             ...features,
-            ...(wasmJs ? ["--features", "wasm-js"] : []),
+            ...(wasmJs && requiresEntropy
+              ? ["--features", feature === "os-rng-no-std" ? "browser-entropy" : "wasm-js"]
+              : []),
             ...(target === "native" ? [] : ["--target", target]),
           ],
           root,
@@ -228,6 +243,7 @@ export async function prepareImplementations(
                 target?: { name: string };
                 executable?: string;
                 filenames?: string[];
+                profile?: { opt_level: string; debug_assertions: boolean };
               },
           );
         const artifact = artifacts.find(
@@ -239,6 +255,16 @@ export async function prepareImplementations(
           ? artifact?.filenames?.find((file) => file.endsWith(".wasm"))
           : artifact?.executable;
         if (!input) throw new Error(`Cargo omitted ${profile}/${feature}/${target}`);
+        // A release label is insufficient when ambient Cargo settings can change its profile.
+        for (const built of [
+          artifact,
+          artifacts.find((entry) => entry.target?.name === "uuid_slug"),
+        ]) {
+          if (built?.profile?.opt_level !== "3" || built.profile.debug_assertions)
+            throw new Error(
+              `Unoptimized benchmark artifact: ${target}/${feature}; require opt-level=3 and disabled debug assertions.`,
+            );
+        }
         const name = `rust/${target}/${profile}/${feature}`;
         const destination = join(directory, name.replaceAll("/", "-"));
         if (target === "native") {
@@ -289,7 +315,7 @@ export async function prepareImplementations(
           const edgeEntry = join(destination, "edge-entry.js");
           await writeFile(
             edgeEntry,
-            `import {initSync,benchmark} from "./module.js"; globalThis.uuidSlugBenchmark=s=>{initSync({module:globalThis.uuidSlugBenchmarkWasm});return JSON.parse(benchmark(s.samples,s.duration,s.warmup,s.filter,s.batchTicks));};`,
+            `import {initSync,benchmark,entropy_probe} from "./module.js"; import {qualifyEntropy} from ${JSON.stringify(entropyModule)}; globalThis.uuidSlugBenchmark=s=>{initSync({module:globalThis.uuidSlugBenchmarkWasm});const q=qualifyEntropy(()=>JSON.parse(entropy_probe()),()=>undefined,${requiresEntropy});return {rows:JSON.parse(benchmark(s.samples,s.duration,s.warmup,s.filter,s.batchTicks)),entropy:q.entropy};};`,
           );
           const edgeBuild = await Bun.build({
             check: true,
@@ -312,6 +338,7 @@ export async function prepareImplementations(
               script: join(destination, "edge-benchmark.js"),
               wasm,
               command: [workerd],
+              requiresEntropy,
             });
           for (const ts of lanes.filter(
             (lane) => lane.family === "TypeScript" && !lane.id.endsWith("node-jitless"),
@@ -326,9 +353,11 @@ export async function prepareImplementations(
                 browser: ts.browser,
                 script,
                 wasm,
+                requiresEntropy,
+                entropyModule,
               });
             else {
-              const source = `import init,{benchmark} from ${JSON.stringify(pathToFileURL(script).href)}; import {readFile} from "node:fs/promises"; await init({module_or_path:await readFile(${JSON.stringify(wasm)})}); console.log(benchmark(${settings.samples},${settings.duration},${settings.warmup},${JSON.stringify(settings.filter)},${settings.batchTicks}));`;
+              const source = `import init,{benchmark,entropy_probe} from ${JSON.stringify(pathToFileURL(script).href)}; import {qualifyEntropy} from ${JSON.stringify(pathToFileURL(entropyModule).href)}; import {readFile} from "node:fs/promises"; await init({module_or_path:await readFile(${JSON.stringify(wasm)})});const q=qualifyEntropy(()=>JSON.parse(entropy_probe()),()=>undefined,${requiresEntropy}); console.log(JSON.stringify({rows:JSON.parse(benchmark(${settings.samples},${settings.duration},${settings.warmup},${JSON.stringify(settings.filter)},${settings.batchTicks})),entropy:q.entropy}));`;
               const worker = join(destination, `${ts.id.slice(3)}.mjs`);
               await writeFile(worker, source);
               const prefix = ts.command?.slice(0, -1);
@@ -339,6 +368,7 @@ export async function prepareImplementations(
                 version: `${compiler}\nHost: ${ts.version}`,
                 hash,
                 command: [...prefix, worker],
+                requiresEntropy,
               });
             }
           }
@@ -346,6 +376,7 @@ export async function prepareImplementations(
       }
     }
   }
+  for (const lane of lanes) if (lane.id.startsWith("ts/")) lane.requiresEntropy = true;
   const native = lanes.find((lane) => lane.id === "rust/native/release/fast-rng");
   if (!native) throw new Error("Missing native Rust comparison anchor");
   lanes.push({

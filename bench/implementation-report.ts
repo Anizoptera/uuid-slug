@@ -2,6 +2,7 @@
 import { medianConfidence95, sampleMedian } from "./statistics";
 import type { Lane } from "./implementation-build";
 import type { Observation, Settings } from "./implementation-worker";
+import type { EntropyEvidence } from "./implementation-entropy";
 
 export interface Measurement {
   lane: string;
@@ -11,6 +12,7 @@ export interface Measurement {
   rows: Observation[];
   block: number;
   repeat: number;
+  entropy?: EntropyEvidence;
 }
 
 export function comparisonWindow(block: number): readonly Pick<Measurement, "role" | "repeat">[] {
@@ -27,8 +29,41 @@ export interface ImplementationReport {
   smoke: boolean;
   settings: Settings;
   blocks: number;
-  lanes: Pick<Lane, "id" | "family" | "version" | "hash" | "reference" | "filter">[];
+  lanes: Pick<
+    Lane,
+    "id" | "family" | "version" | "hash" | "reference" | "filter" | "requiresEntropy"
+  >[];
   measurements: Measurement[];
+}
+
+export function validateEntropyEvidence(input: unknown, required: boolean): EntropyEvidence {
+  if (
+    !input ||
+    typeof input !== "object" ||
+    !("required" in input) ||
+    input.required !== required ||
+    !("rejectedSourceCalls" in input) ||
+    typeof input.rejectedSourceCalls !== "number" ||
+    !Number.isSafeInteger(input.rejectedSourceCalls) ||
+    input.rejectedSourceCalls < (required ? 1 : 0) ||
+    !("secureSourceCalls" in input) ||
+    typeof input.secureSourceCalls !== "number" ||
+    !Number.isSafeInteger(input.secureSourceCalls) ||
+    input.secureSourceCalls < (required ? 1 : 0) ||
+    !("sources" in input) ||
+    !Array.isArray(input.sources) ||
+    input.sources.some((source: unknown) => typeof source !== "string") ||
+    (required && !input.sources.length)
+  )
+    throw new Error(
+      "Missing secure-source success/failure evidence; refuse generation comparisons.",
+    );
+  return {
+    required,
+    rejectedSourceCalls: input.rejectedSourceCalls,
+    secureSourceCalls: input.secureSourceCalls,
+    sources: input.sources,
+  };
 }
 
 export function validateRows(input: unknown, samples: number): Observation[] {
@@ -134,6 +169,9 @@ export function renderImplementationReport(
   const windows = new Map<number, string>();
   let sequence = 0;
   for (const record of report.measurements) {
+    const actual = report.lanes.find((lane) => lane.id === record.lane);
+    if (actual?.requiresEntropy !== undefined)
+      validateEntropyEvidence(record.entropy, actual.requiresEntropy);
     const subject = report.lanes.find((lane) => lane.id === record.subject);
     const reference =
       subject?.reference ??
@@ -253,6 +291,8 @@ export function renderImplementationReport(
     "JavaScript graphs are warmed and minified. Rust uses release optimization level 3, ThinLTO and one code-generation unit, with native CPU tuning for this machine; WASM then uses the maintained Binaryen O2 pipeline. Debug and disabled-JIT runs are excluded. Browser workers use cross-origin isolation. Unavailable cells mean the job is absent in that language or feature selection, not zero cost. Installed Node patches are represented by the newest installed patch per major plus the checkout's selected Node.",
     "",
     "workerd labels identify requested compatibility settings, not an absence of Node APIs. These are local workerd measurements, not deployed Workers latency. Warm-up executes real work before sampling; it does not prove a globally optimal compiler or JIT state.",
+    "",
+    "Browser OS entropy without std uses a harness-selected getrandom JS backend; the product's std feature stays disabled. Reduced and std-only browser builds retain operations that need no entropy. Native results cover this host only; other operating systems and CPU architectures are not measured by this run.",
     "",
     "## Common caller jobs",
     "",
