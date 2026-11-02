@@ -2,7 +2,7 @@
 
 import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 import { chromium, firefox, webkit } from "playwright";
@@ -43,21 +43,25 @@ const smoke = process.argv.includes("--smoke");
 const regressionCheck = process.argv.includes("--check");
 const sourceOptions = process.argv
   .slice(2)
-  .filter((value) => value.startsWith("--source-candidate="));
+  .filter(
+    (value) => value.startsWith("--source-candidate=") || value.startsWith("--source-patch="),
+  );
 if (sourceOptions.length > 1) throw new Error("Choose one source candidate per packed comparison.");
-const sourceOption = sourceOptions[0];
+const sourceOption = sourceOptions.find((value) => value.startsWith("--source-candidate="));
+const patchOption = sourceOptions.find((value) => value.startsWith("--source-patch="));
+if (patchOption === "--source-patch=") throw new Error("--source-patch requires a patch file.");
 const positional = process.argv
   .slice(2)
-  .filter((value) => value !== "--smoke" && value !== "--check" && value !== sourceOption);
+  .filter((value) => value !== "--smoke" && value !== "--check" && !sourceOptions.includes(value));
 if (positional.some((value) => value.startsWith("--")))
   throw new Error(
-    "Unknown comparison option; use --smoke, --check or --source-candidate=group:name",
+    "Unknown comparison option; use --smoke, --check, --source-candidate=group:name or --source-patch=file",
   );
 const baselineRef = positional[0] ?? "HEAD^";
 const candidateRef = positional[1];
 if (positional.length > 2)
   throw new Error(
-    "Usage: bun bench/compare.ts [baseline-ref] [candidate-ref] [--smoke] [--check] [--source-candidate=group:name]",
+    "Usage: bun bench/compare.ts [baseline-ref] [candidate-ref] [--smoke] [--check] [--source-candidate=group:name | --source-patch=file]",
   );
 const sourceParts = sourceOption?.slice("--source-candidate=".length).split(":");
 if (
@@ -526,7 +530,8 @@ async function main(): Promise<void> {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-compare-"));
   let passed = false;
   const baselineRoot = join(scratch, "baseline");
-  const isolatedCandidate = candidateRef !== undefined || sourceParts !== undefined;
+  const isolatedCandidate =
+    candidateRef !== undefined || sourceParts !== undefined || patchOption !== undefined;
   const candidateRoot = isolatedCandidate ? join(scratch, "candidate") : project;
   let sourceReport: string | undefined;
   try {
@@ -597,6 +602,26 @@ async function main(): Promise<void> {
       }
       console.error(`Packed source candidate evidence: ${report}`);
     }
+    if (patchOption) {
+      // One captured patch can span existing owners without adding permanent candidate builders.
+      // Apply only inside the extracted checkout; failed anchors must stop before any timing.
+      const patch = resolve(project, patchOption.slice("--source-patch=".length));
+      const reportRoot = join(project, "bench/reports");
+      await mkdir(reportRoot, { recursive: true });
+      sourceReport = await mkdtemp(join(reportRoot, "packed-source-"));
+      const capture = join(sourceReport, "candidate.patch");
+      await copyFile(patch, capture);
+      await command("git", ["apply", capture], candidateRoot);
+      await Bun.write(
+        join(sourceReport, "manifest.json"),
+        JSON.stringify({
+          baselineRef,
+          candidateRef: candidateRef ?? "HEAD",
+          patch: "candidate.patch",
+        }),
+      );
+      console.error(`Packed source candidate evidence: ${sourceReport}`);
+    }
     const baselineOut = join(scratch, "baseline-artifacts");
     const candidateOut = join(scratch, "candidate-artifacts");
     const driverRoot = project;
@@ -605,7 +630,7 @@ async function main(): Promise<void> {
       packArtifacts(candidateRoot, candidateOut),
     ]);
     // Explicit source experiments still run, including byte-identical timing controls.
-    if (regressionCheck && !sourceParts) {
+    if (regressionCheck && !sourceParts && !patchOption) {
       const identity = await compareArtifacts(baseline.root, candidate.root);
       // Custom conditions or loaders may select source. Only normal Node execution can use
       // compiled identity; source and browser comparisons retain the full-file requirement.
