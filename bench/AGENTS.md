@@ -34,6 +34,7 @@ Apply `../AGENTS.md` §Work scope before starting experiments; keep required reg
 
 ## Drivers and evidence
 
+- On macOS, archive evidence with `COPYFILE_DISABLE=1` and compare every archive file with its intended input before deleting scratch. AppleDouble `._` entries are metadata, not extra observations; reject unexpected archive members rather than counting them as evidence.
 - Before measuring consumer compilation cost, select features separately for each target and inspect the resolved Cargo graph. A native default lane must not inherit optional browser features from a shared matrix; record any extra capabilities explicitly so the measurement describes the consumer's actual build.
 - Use optimized WASM for size and execution evidence; read `../dev/cross-language.md` §Distribution and dependencies first. Native symbols prove native retention only. WASM imports expose host dependencies, not unused pure code: inspect optimized WASM code/data with positive controls before claiming removal. Keep full function maps; filtering package names can hide retained dependency code.
 - When a backend changes a table layout, check that the recognizer still finds it in that backend's both-alphabet consumer for each profile and target. A missing positive invalidates the related absence claims; repair the recognizer or report them unverified before deciding removal.
