@@ -3,6 +3,7 @@ import { medianConfidence95, sampleMedian } from "./statistics";
 import type { Lane } from "./implementation-build";
 import type { Observation, Settings } from "./implementation-worker";
 import type { EntropyEvidence } from "./implementation-entropy";
+import { secureEntropySources } from "./implementation-entropy";
 
 export interface Measurement {
   lane: string;
@@ -52,7 +53,9 @@ export function validateEntropyEvidence(input: unknown, required: boolean): Entr
     input.secureSourceCalls < (required ? 1 : 0) ||
     !("sources" in input) ||
     !Array.isArray(input.sources) ||
-    input.sources.some((source: unknown) => typeof source !== "string") ||
+    input.sources.some(
+      (source: unknown) => !Object.values(secureEntropySources).some((secure) => secure === source),
+    ) ||
     (required && !input.sources.length)
   )
     throw new Error(
@@ -164,6 +167,13 @@ export function renderImplementationReport(
     throw new Error("Invalid comparison dimensions; regenerate from a complete benchmark run.");
   if (!report.lanes.some((lane) => lane.id === baseline))
     throw new Error(`Unknown reference lane: ${baseline}`);
+  for (const lane of report.lanes) {
+    if (
+      (lane.id.startsWith("ts/") && lane.requiresEntropy !== true) ||
+      (lane.id.includes("wasm32-unknown-unknown") && typeof lane.requiresEntropy !== "boolean")
+    )
+      throw new Error("Missing secure-source qualification policy for JavaScript host lane.");
+  }
   const indexed = new Map<string, Map<string, Observation>>();
   const inventory = new Map<string, string>();
   const windows = new Map<number, string>();

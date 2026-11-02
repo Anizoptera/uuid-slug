@@ -1,4 +1,9 @@
 // Qualification runs before timing and restores host functions; timed calls keep native entropy costs.
+export const secureEntropySources = {
+  web: "crypto.getRandomValues",
+  node: "node:crypto.randomFillSync",
+} as const;
+
 export interface EntropyEvidence {
   required: boolean;
   rejectedSourceCalls: number;
@@ -73,8 +78,8 @@ export function qualifyEntropy<Value>(
         rejectedSourceCalls,
         secureSourceCalls: webCalls + nodeCalls - rejectedSourceCalls,
         sources: [
-          ...(webCalls ? ["crypto.getRandomValues"] : []),
-          ...(nodeCalls ? ["node:crypto.randomFillSync"] : []),
+          ...(webCalls ? [secureEntropySources.web] : []),
+          ...(nodeCalls ? [secureEntropySources.node] : []),
         ],
       },
     };

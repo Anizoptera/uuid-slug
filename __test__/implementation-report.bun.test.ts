@@ -2,6 +2,7 @@
 import { expect, test } from "bun:test";
 import { renderImplementationReport, validateRows } from "../bench/implementation-report";
 import type { ImplementationReport } from "../bench/implementation-report";
+import { secureEntropySources } from "../bench/implementation-entropy";
 
 function evidence(): ImplementationReport {
   const lanes = ["ts/node", "rust/native/release/fast-rng"].map((id) => ({
@@ -10,6 +11,7 @@ function evidence(): ImplementationReport {
     version: "fixture",
     hash: "a".repeat(64),
     reference: "ts/node",
+    requiresEntropy: true,
   }));
   return {
     revision: "fixture",
@@ -30,6 +32,13 @@ function evidence(): ImplementationReport {
           role,
           block,
           repeat: Number(position >= 2),
+          // Protocol fixtures test report rejection; a separate real worker tests the providers.
+          entropy: {
+            required: true,
+            rejectedSourceCalls: 1,
+            secureSourceCalls: 1,
+            sources: [secureEntropySources.web],
+          },
           rows: [
             {
               name: "plain/base64",
@@ -51,6 +60,21 @@ test("paired process medians resist one paused batch and reverse with the refere
   expect(renderImplementationReport(report)).toContain("2× [2–2]");
   expect(renderImplementationReport(report, "rust/native/release/fast-rng")).toContain(
     "0.5× [0.5–0.5]",
+  );
+});
+
+test("report regeneration refuses omitted entropy policy and insecure source labels", () => {
+  const omitted = evidence();
+  const lane = omitted.lanes[0];
+  if (!lane) throw new Error("Fixture omitted its JavaScript lane");
+  delete lane.requiresEntropy;
+  expect(() => renderImplementationReport(omitted)).toThrow("qualification policy");
+  const insecure = evidence();
+  const entropy = insecure.measurements[0]?.entropy;
+  if (!entropy) throw new Error("Fixture omitted its qualification receipt");
+  entropy.sources = ["Math.random"];
+  expect(() => renderImplementationReport(insecure)).toThrow(
+    "secure-source success/failure evidence",
   );
 });
 
@@ -93,6 +117,9 @@ test("valid timings cannot hide an unbalanced process window or wrong reference"
   const lane = unqualified.lanes[0];
   if (!lane) throw new Error("Fixture omitted its JavaScript lane");
   lane.requiresEntropy = true;
+  const capture = unqualified.measurements[0];
+  if (!capture) throw new Error("Fixture omitted its first process");
+  delete capture.entropy;
   expect(() => renderImplementationReport(unqualified)).toThrow(
     "secure-source success/failure evidence",
   );
