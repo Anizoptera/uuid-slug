@@ -105,6 +105,7 @@ Use the independent oracles below when an accepted change affects their contract
 ### Documentation and exact-artifact release preparation
 
 - [x] Refresh the development crate from `4b169a4`; its SHA-256 is `dbd8015d967654dea928b6ffeabd51a9c7580d3cced3b5233827e83276f3faec`, with 22 shipped files matched to source. The unchanged npm archive matches every public manifest field, README, license and all 152 source/built code files. The current pair, hashes, metadata, reduced dependency graph and successful extracted Rust 1.97 tests/docs/portability commands remain in `bench/reports/joint-current-artifacts.LihLzb/refresh.json`. These bytes serve development review; hosted docs.rs and stable-tag preparation remain unverified. Treat crates.io as a first publication; keep internal API comparisons out of consumer notes.
+  - [x] Revalidate retained evidence against the resumed working tree: both archive SHA-256 values match `refresh.json`, and all 22 crate source entries match both archive bytes and current files. `git diff --name-only 4b169a4 -- src package.json bun.lock rust/uuid-slug rust/bridge rust/proofs scripts api .github` is empty. Existing execution evidence therefore still covers those unchanged inputs; this establishes no new runtime, platform or timing result.
 
 ### Final checks and release holds
 
