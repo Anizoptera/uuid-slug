@@ -42,13 +42,13 @@ Competitor audit: `slugid` requires `uuid ^9`, with an unresolved advisory. This
 
 Each item must keep behaviour, public API (`api/typescript.api.d.ts`), speed, resource use and bundle size.
 
-These are unaccepted maintenance proposals, not release blockers. `bench/reports/ts-reductions/manifest.json` binds the prepared patch and checks to `e465685`; resource counters do not prove speed or total allocation. Compare each candidate with that same base, then pass the unchanged all-runtime performance/resource gate before applying and committing it. A published baseline can hide offsetting losses. Do not wait for an idle host; use fresh reversed pairs under `bench/methods.md`.
+The six candidates are decided in `bench/decisions.md` §Internal reduction candidates. Independent packed comparisons use `c698f57`, whose implementation hashes match the prepared `e465685` sources. The four retained reductions pass the unchanged all-runtime performance/resource gate; this does not establish parity or large-seed speed. Reopen rejected candidates only when new evidence changes their mechanism or consequence.
 
 Keep rejected reductions excluded: primitive-string forwarding adds classification without removing decoder work; the configured-tail helper slows Node explicit-time and Deno calls (`bench/decisions.md` §Remaining gaps and their causes); shared RFC checks add dispatch across different v4/v7 paths; CLI and quoted `NODE_OPTIONS` scans need different normalization, and CLI precedence already skips environment parsing. Reopen only with evidence changing those mechanisms.
 
-- [ ] In `src/payload.ts`, format known 16-byte `unmix` candidates with `formatUuidBytesUnchecked` and remove impossible error checks; preserve the migration path's native-hex performance.
-- [ ] Evaluate the second-argument case predicate once in each `src/migration.ts` reader; preserve timing and zero-discarded-error budgets. Keep reader-local normalization rather than allocating a tuple or adding callback dispatch to share its few statements.
-- [ ] Share `ownedUuidV7BytesToMaskedSlug` after copying into scratch in `src/masking-codec.ts`; reject split-guard shapes that slow Bun `masked.encode.bytes`.
-- [ ] Reuse `writeTimestampWords` in `src/v7-bounds.ts` endpoints; keep the keyless owned-bytes copy inline.
-- [ ] Share construction-only `seedWordView` between sync/cooperative derivation in `src/mask.ts`.
-- [ ] Fold the large-buffer native-hex rule into `formatUuidBytesUnchecked` in `src/uuid.ts`; preserve its measured WebKit/Chromium benefit.
+- [x] In `src/payload.ts`, format private 16-byte `unmix` candidates directly; retain callback isolation and key order.
+- [x] Evaluate the second-argument case predicate once per `src/migration.ts` reader; keep normalization local and preserve failure propagation.
+- [x] Share the masked writer in `src/masking-codec.ts` after the borrowed-byte copy; retain common validation and sentinel priority.
+- [x] Reject timestamp-writer extraction: independent JITless bounds screens resolve losses of about 8% and 10%. Keep the fixed write and its reason in `src/v7-bounds.ts`.
+- [x] Share construction-only `seedWordView` in `src/mask.ts`; preserve endian interpretation, padded tails and pre-suspension snapshots.
+- [x] Reject native-hex folding: fixed-size formatting would gain general range-selection work without a consistent complete-call benefit. Keep the rule at the public buffer boundary in `src/uuid.ts`.
