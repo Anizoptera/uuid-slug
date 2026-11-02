@@ -1,5 +1,7 @@
 # Shared tests and backend coverage
 
+Discover focused test paths with `rg --files __test__` before invoking a runner, then check its executed-file summary: both runners can ignore nonexistent path filters when another filter matches.
+
 Read `../dev/cross-language.md` §Parity before changing implementation selection; it owns the required native loader order and reuse of TypeScript tests for Rust and WebAssembly.
 
 - Reuse test bodies and independent expected results. A separately generated conformance corpus is additional evidence, never evidence that the TypeScript suite ran against Rust. Record the selected implementation and nonzero execution for each backend. Keep JavaScript host-only checks explicit; never count TypeScript fallback or an unsupported case as Rust execution.
