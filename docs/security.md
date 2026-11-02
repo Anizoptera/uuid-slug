@@ -41,6 +41,8 @@ async function findAuthorizedRecord<Record>(
 }
 ```
 
+Masked binary carries the existing 16-byte block and its 12 inner check bits; the text representation carries four additional outer check bits. A wrong key can therefore pass a binary check by chance, about once in 4,096 under the same random-output model, versus once in 65,536 for text. Neither check authenticates a client or authorizes access. Binary readers use the same current-first key order and registered-sentinel priority.
+
 ## Failures
 
 Generator entropy failures report `rng_unavailable`; caller buffers and sequence state remain unchanged. Rust retains the entropy provider's error. In browsers, `getrandom` reports its Web Crypto error code rather than retaining the original JavaScript exception. TypeScript retains that exception. This diagnostic difference does not permit a failed draw to produce an identifier.

@@ -6,6 +6,7 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ### Added
 
+- The masked-binary contract specifies the existing 16-byte mixed block for client-visible transport, with the same UUID payload and codec configuration. Binary carries 12 inner check bits; existing masked text retains its 16-bit check.
 - Rust supports `no_std` with `alloc` when default features are disabled. Enable `std` for standard-library time and thread-local conveniences; `os-rng` remains independent, while `fast-rng` and `wasm-js` include `std`. Defaults retain their existing behavior.
 - Rust `UuidV7MaskingCodec::parse_uuid` accepts UUID text, both plain and masked slug alphabets, and registered sentinels. Ambiguous base64url reads masked first, matching TypeScript; callback failures remain errors.
 - Rust `Uuid` converts directly to and from `uuid::Uuid` and `[u8; 16]` without allocation or text conversion. `TryFrom<&[u8]>` accepts exactly 16 bytes and reports `InvalidBuffer` for other lengths.
