@@ -1,9 +1,7 @@
 // One serial scheduler owns process blocks, progress, retained observations and report regeneration.
-import { mkdir, mkdtemp, writeFile, appendFile, rm } from "node:fs/promises";
-import { createReadStream } from "node:fs";
-import { createInterface } from "node:readline";
+import { mkdtemp, open, rm } from "node:fs/promises";
 import { tmpdir, cpus, platform, arch } from "node:os";
-import { join, resolve, dirname } from "node:path";
+import { join, resolve } from "node:path";
 import { randomBytes, randomInt } from "node:crypto";
 import { browserEngines } from "../scripts/browser-engines";
 import { command } from "../scripts/command";
@@ -13,6 +11,11 @@ import type { Lane } from "./implementation-build";
 import { comparisonWindow, createImplementationReporter } from "./implementation-report";
 import type { ImplementationReport } from "./implementation-report";
 import type { Settings } from "./implementation-worker";
+import {
+  openImplementationOutput,
+  resolveImplementationEvidence,
+  writeImplementationReport,
+} from "./implementation-output";
 
 const root = process.cwd();
 // Bun's implicit development condition otherwise outranks the published Node adapter.
@@ -171,27 +174,25 @@ const destination = resolve(
 );
 if (reportIndex >= 0) {
   const source = args[reportIndex + 1];
-  if (!source) throw new Error("--report requires the retained JSON Lines file");
-  const input = createInterface({ input: createReadStream(source), crlfDelay: Infinity });
+  if (!source) throw new Error("--report requires the Markdown report or its retained .jsonl file");
+  const evidence = await resolveImplementationEvidence(source);
   let reporter: ReturnType<typeof createImplementationReporter> | undefined;
   let complete = false;
-  try {
-    for await (const line of input) {
-      if (complete) throw new Error("Unexpected data after acquisition completion");
-      if (!reporter) reporter = createImplementationReporter(JSON.parse(line));
-      else if (line === '{"complete":true}') complete = true;
-      else reporter.append(JSON.parse(line));
-    }
-  } finally {
-    input.close();
+  await using input = await open(evidence, "r");
+  for await (const line of input.readLines()) {
+    if (complete) throw new Error("Unexpected data after acquisition completion");
+    if (!reporter) reporter = createImplementationReporter(JSON.parse(line));
+    else if (line === '{"complete":true}') complete = true;
+    else reporter.append(JSON.parse(line));
   }
   if (!reporter || !complete)
     throw new Error(
       "Incomplete acquisition; rerun the comparison before publishing a final report.",
     );
-  await writeFile(
+  await writeImplementationReport(
     destination,
     reporter.render(baselineIndex >= 0 ? args[baselineIndex + 1] : undefined),
+    evidence,
   );
   console.log(destination);
 } else {
@@ -222,9 +223,6 @@ if (reportIndex >= 0) {
       "Blocks and batches must be positive integers; timing windows must be finite positive milliseconds",
     );
   const directory = await mkdtemp(join(tmpdir(), "uuid-slug-implementations-"));
-  await mkdir(dirname(destination), { recursive: true });
-  const raw = destination.replace(/\.md$/, ".jsonl");
-  if (raw === destination) throw new Error("Report destination must end with .md");
   const report: Omit<ImplementationReport, "measurements"> = {
     revision: (await command("git", ["rev-parse", "HEAD"], root)).trim(),
     captured: new Date().toISOString(),
@@ -235,7 +233,7 @@ if (reportIndex >= 0) {
     blocks,
     lanes: [],
   };
-  let complete = false;
+  let output: Awaited<ReturnType<typeof openImplementationOutput>> | undefined;
   try {
     console.log("Preparing every implementation before timing...");
     const lanes = await prepareImplementations(directory, settings);
@@ -254,7 +252,7 @@ if (reportIndex >= 0) {
       return order.map((lane) => ({ lane, steps: comparisonWindow(randomInt(2)) }));
     });
     // Append each capture once; rewriting the growing history makes checkpoint I/O quadratic.
-    await writeFile(raw, `${JSON.stringify(report)}\n`);
+    output = await openImplementationOutput(destination, report);
     let sequence = 0;
     for (const [block, windows] of schedule.entries()) {
       for (const { lane, steps } of windows) {
@@ -279,22 +277,15 @@ if (reportIndex >= 0) {
             sequence: sequence++,
             ...capture,
           });
-          await appendFile(raw, `${JSON.stringify(record)}\n`);
+          await output.append(record);
         }
       }
-      await writeFile(
-        destination.replace(/\.md$/, ".partial.md"),
-        `**IN PROGRESS: ${block + 1}/${blocks} blocks.**\n\n${reporter.render(undefined, block + 1)}`,
-      );
     }
-    await appendFile(raw, '{"complete":true}\n');
-    await writeFile(destination, reporter.render());
-    await rm(destination.replace(/\.md$/, ".partial.md"), { force: true });
-    complete = true;
+    const raw = await output.publish(reporter.render());
     console.log(`Report: ${destination}\nRaw observations: ${raw}`);
   } finally {
     // Successful observations keep hashes, counts and versions; disposable binaries do not need indefinite retention.
     await rm(directory, { recursive: true, force: true });
-    if (!complete) console.error(`Incomplete comparison; retained observations: ${raw}`);
+    await output?.close();
   }
 }

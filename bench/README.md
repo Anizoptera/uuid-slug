@@ -37,7 +37,7 @@ Comparisons show each call's runtime, fastest library and native reference, rela
 
 Raw measurements, profiles and captured inputs go to `bench/reports/`. Git ignores that folder, so its files exist only on the machine that ran them.
 
-`bun run bench:implementations` writes `bench/results/implementations.md` and its `.jsonl` evidence. Rerender without timing with `bun run bench:implementations --report bench/results/implementations.jsonl`; add `--baseline <lane>` to change the reference. Set `UUID_SLUG_IMPLEMENTATION_FILTER` to comma-separated job substrings or `UUID_SLUG_IMPLEMENTATION_REPORT` to another `.md` path. Smoke uses the same runtime matrix with fewer samples; it establishes wiring only.
+`bun run bench:implementations` updates the single report at `bench/results/implementations.md`; that report links to its raw evidence. Rerender the same report without timing with `bun run bench:implementations --report bench/results/implementations.md`; add `--baseline <lane>` to change the reference. Explicit `.jsonl` inputs still work. Set `UUID_SLUG_IMPLEMENTATION_FILTER` to comma-separated job substrings or `UUID_SLUG_IMPLEMENTATION_REPORT` to select the canonical `.md` path. Acquisition progress stays in the CLI; no provisional or per-runtime Markdown reports are generated. Keep raw evidence only for the current report or an unresolved investigation. Smoke uses the same runtime matrix with fewer samples; it establishes wiring only.
 
 ## More controls
 

@@ -34,6 +34,7 @@ Apply `../AGENTS.md` §Work scope before starting experiments; keep required reg
 
 ## Drivers and evidence
 
+- Implementation comparisons update one canonical Markdown report. Never generate or commit provisional, per-runtime or duplicate Markdown reports; show acquisition progress in the CLI. Keep raw evidence only for the current report or an unresolved comparison, and follow `methods.md` §Cross-runtime implementation comparisons for safe replacement.
 - On macOS, archive evidence with `COPYFILE_DISABLE=1` and compare every archive file with its intended input before deleting scratch. AppleDouble `._` entries are metadata, not extra observations; reject unexpected archive members rather than counting them as evidence.
 - Before measuring consumer compilation cost, select features separately for each target and inspect the resolved Cargo graph. A native default lane must not inherit optional browser features from a shared matrix; record any extra capabilities explicitly so the measurement describes the consumer's actual build. Pure conversions need no entropy backend: do not exclude reduced browser WASM or enable an entropy feature merely to obtain a binding.
 - For native thread-local memory, inspect the selected consumer's emitted TLS sections and keep payload bytes separate from descriptors and OS thread costs. Mach-O `llvm-nm --print-size` reports zero sizes; use section data instead, with a generation caller as the positive control for a conversion-only caller's removal claim.
