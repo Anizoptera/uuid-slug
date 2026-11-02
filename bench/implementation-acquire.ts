@@ -228,6 +228,7 @@ if (reportIndex >= 0) {
     captured: new Date().toISOString(),
     host: `${platform()}/${arch()}; ${cpus()[0]?.model ?? "CPU unreported"}`,
     smoke,
+    exposure: "randomized",
     settings,
     blocks,
     lanes: [],
@@ -238,19 +239,30 @@ if (reportIndex >= 0) {
     console.log("Preparing every implementation before timing...");
     const lanes = await prepareImplementations(directory, settings);
     report.lanes = lanes.map(({ environment: _environment, ...lane }) => lane);
+    // Fix the small randomized schedule before timing; growing results cannot change exposure.
+    const schedule = Array.from({ length: blocks }, () => {
+      const order = [...lanes];
+      for (const [index, lane] of order.entries()) {
+        const swap = randomInt(index + 1);
+        const previous = order[swap];
+        if (!previous) throw new Error("Missing lane during exposure randomization");
+        order[index] = previous;
+        order[swap] = lane;
+      }
+      return order.map((lane) => ({ lane, steps: comparisonWindow(randomInt(2)) }));
+    });
     // Append each capture once; rewriting the growing history makes checkpoint I/O quadratic.
     const { measurements: _measurements, ...metadata } = report;
     await writeFile(raw, `${JSON.stringify(metadata)}\n`);
     let sequence = 0;
-    for (let block = 0; block < blocks; block++) {
-      const rotated = lanes.map((_, index) => lanes[(index + block) % lanes.length] as Lane);
-      for (const lane of rotated) {
+    for (const [block, windows] of schedule.entries()) {
+      for (const { lane, steps } of windows) {
         const referenceId =
           lane.reference ??
           (lane.id.startsWith("ts/") ? "ts/node" : "rust/native/release/fast-rng");
         const reference = lanes.find((item) => item.id === referenceId);
         if (!reference) throw new Error(`Missing comparison reference: ${referenceId}`);
-        for (const step of comparisonWindow(block)) {
+        for (const step of steps) {
           const selected =
             step.role === "candidate"
               ? lane

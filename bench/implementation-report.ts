@@ -28,6 +28,7 @@ export interface ImplementationReport {
   captured: string;
   host: string;
   smoke: boolean;
+  exposure?: "randomized";
   settings: Settings;
   blocks: number;
   lanes: Pick<
@@ -77,7 +78,7 @@ export function renderImplementationReport(
   }
   const indexed = new Map<string, Map<string, Observation>>();
   const inventory = new Map<string, string>();
-  const windows = new Map<number, string>();
+  const windows = new Map<number, { identity: string; orientation: number }>();
   let sequence = 0;
   for (const record of report.measurements) {
     const actual = report.lanes.find((lane) => lane.id === record.lane);
@@ -105,16 +106,19 @@ export function renderImplementationReport(
       throw new Error(
         "Process acquisition order is missing or changed; regenerate from a complete current benchmark run.",
       );
-    const expected = comparisonWindow(record.block)[record.sequence % 4];
     const window = Math.floor(record.sequence / 4);
     const identity = `${record.subject}:${record.block}`;
+    const orientation =
+      windows.get(window)?.orientation ??
+      (report.exposure === "randomized" ? Number(record.role === "candidate") : record.block);
+    const expected = comparisonWindow(orientation)[record.sequence % 4];
     if (
       expected?.role !== record.role ||
       expected.repeat !== record.repeat ||
-      (windows.has(window) && windows.get(window) !== identity)
+      (windows.has(window) && windows.get(window)?.identity !== identity)
     )
       throw new Error("Unbalanced acquisition window; retain adjacent ABBA/BAAB process order.");
-    windows.set(window, identity);
+    windows.set(window, { identity, orientation });
     const rows = validateRows(record.rows, report.settings.samples);
     const names = rows
       .map((row) => row.name)
@@ -193,9 +197,9 @@ export function renderImplementationReport(
     "",
     report.smoke
       ? "**Wiring check only. These samples are not performance evidence.**"
-      : "Relative batch cost: smaller is faster. Brackets are distribution-free 95% intervals for the median of paired fresh-process ratios, conditional on independent blocks. They are not per-call latency percentiles or simultaneous confidence across the whole report.",
+      : "Relative batch cost: smaller is faster. Brackets are distribution-free 95% intervals for the median of paired fresh-process ratios, conditional on independent blocks drawn from a common comparison distribution. They are not per-call latency percentiles or simultaneous confidence across the whole report.",
     "",
-    `Reference: \`${baseline}\`; Rust-only jobs use \`rust/native/release/fast-rng\`. Each candidate has adjacent reference/candidate/candidate/reference runs, reversed in alternate blocks. Ratios combine the two neighboring pairs geometrically; Rust reaches Node through the measured native Rust anchor. ${report.blocks} fresh-process blocks, ${report.settings.samples} batches per process. A missing interval is unresolved. Retained JSON Lines keep every batch and acquisition order.`,
+    `Reference: \`${baseline}\`; Rust-only jobs use \`rust/native/release/fast-rng\`. Each candidate has adjacent ABBA or BAAB runs. ${report.exposure === "randomized" ? "Lane order within each block and each window's orientation were independently randomized before timing." : "Windows reverse in alternate blocks; lane exposure was not randomized."} Ratios combine the two neighboring pairs geometrically; Rust reaches Node through the measured native Rust anchor. ${report.blocks} fresh-process blocks, ${report.settings.samples} batches per process. A missing interval is unresolved. Retained JSON Lines keep every batch and acquisition order.`,
     "",
     "Rust rows time complete compiled application calls with result consumption in the native or WASM loop; they exclude a JS crossing per identifier. JS rows include their result witness and errors-as-values checks. Rust owns fixed-array values where JavaScript owns heap arrays. These are consumer-path comparisons, not isolated language or compiler effects. No overall winner is calculated.",
     "",

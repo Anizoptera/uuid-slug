@@ -155,3 +155,22 @@ test("valid timings cannot hide an unbalanced process window or wrong reference"
     "secure-source success/failure evidence",
   );
 });
+
+test("randomized exposure accepts either balanced orientation without accepting a broken window", () => {
+  const report = evidence();
+  report.exposure = "randomized";
+  // Reverse only the first window: unlike fixed alternation, its orientation is not block parity.
+  // eslint-disable-next-line unicorn/no-array-reverse -- Reverse a private copy under the ES2022 library floor.
+  const reversed = report.measurements.slice(0, 4).reverse();
+  report.measurements.splice(0, 4, ...reversed);
+  for (const [sequence, record] of report.measurements.entries()) {
+    record.sequence = sequence;
+    if (sequence < 4) record.repeat = Number(sequence >= 2);
+  }
+  expect(renderImplementationReport(report)).toContain("2× [2–2]");
+  expect(renderImplementationReport(report)).toContain("independently randomized before timing");
+  const first = report.measurements[0];
+  if (!first) throw new Error("Fixture omitted its first process");
+  first.repeat = 1;
+  expect(() => renderImplementationReport(report)).toThrow("Unbalanced acquisition window");
+});
