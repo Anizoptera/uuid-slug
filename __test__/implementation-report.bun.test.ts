@@ -3,6 +3,7 @@ import { expect, test } from "bun:test";
 import { renderImplementationReport, validateRows } from "../bench/implementation-report";
 import type { ImplementationReport } from "../bench/implementation-report";
 import { secureEntropySources } from "../bench/implementation-entropy";
+import { medianRatio } from "../bench/statistics";
 
 function evidence(): ImplementationReport {
   const lanes = ["ts/node", "rust/native/release/fast-rng"].map((id) => ({
@@ -61,6 +62,28 @@ test("paired process medians resist one paused batch and reverse with the refere
   expect(renderImplementationReport(report, "rust/native/release/fast-rng")).toContain(
     "0.5× [0.5–0.5]",
   );
+});
+
+test("reversing a reference preserves reciprocal summaries for varied even-sized samples", () => {
+  const report = evidence();
+  const factors = [1, 1, 2, 4, 8, 8];
+  for (const record of report.measurements) {
+    if (record.subject !== "rust/native/release/fast-rng" || record.role !== "candidate") continue;
+    const factor = factors[record.block];
+    if (factor === undefined) throw new Error("Fixture omitted its block ratio");
+    for (const row of record.rows) row.ns = row.ns.map((value) => (value * factor) / 2);
+  }
+  // The central ratios are 2 and 4; their geometric midpoint has the reciprocal midpoint on reversal.
+  expect(renderImplementationReport(report)).toContain("2.8×");
+  expect(renderImplementationReport(report, "rust/native/release/fast-rng")).toContain("0.35×");
+});
+
+test("ratio summaries reject invalid contrasts and avoid large-value multiplication overflow", () => {
+  for (const invalid of [[], [0], [-1], [NaN], [Infinity]])
+    expect(() => medianRatio(invalid)).toThrow();
+  const relativeError = Math.abs(medianRatio([1e300, 4e300]) / 2e300 - 1);
+  // Two square roots, multiplication and normalization each contribute rounding error.
+  expect(relativeError).toBeLessThanOrEqual(4 * Number.EPSILON);
 });
 
 test("report regeneration refuses omitted entropy policy and insecure source labels", () => {

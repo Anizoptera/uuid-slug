@@ -14,6 +14,21 @@ export function sampleMedian(values: readonly number[]): number {
   return sorted[Math.floor(sorted.length / 2)]!;
 }
 
+export function medianRatio(values: readonly number[]): number {
+  // A log-space midpoint preserves reciprocity; the upper median changes when arms reverse.
+  const sorted = Float64Array.from(values);
+  if (sorted.some((value) => !Number.isFinite(value) || value <= 0))
+    throw new Error("Ratio summaries require finite positive observations");
+  // eslint-disable-next-line unicorn/no-array-sort -- Sort a private copy under the compiler floor.
+  sorted.sort();
+  const lower = sorted[Math.floor((sorted.length - 1) / 2)];
+  const upper = sorted[Math.floor(sorted.length / 2)];
+  if (lower === undefined || upper === undefined)
+    throw new Error("Ratio summaries require a nonempty sample");
+  // Taking roots before multiplying avoids overflow for large, valid positive ratios.
+  return lower === upper ? lower : Math.sqrt(lower) * Math.sqrt(upper);
+}
+
 /** Keep each process as one statistical unit, regardless of the number of batches it contains. */
 export function aggregateForkSamples<
   Row extends {

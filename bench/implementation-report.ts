@@ -1,5 +1,5 @@
 // Render paired process evidence without turning scheduling noise into a league table.
-import { medianConfidence95, sampleMedian } from "./statistics";
+import { medianConfidence95, medianRatio, sampleMedian } from "./statistics";
 import type { Lane } from "./implementation-build";
 import type { Observation, Settings } from "./implementation-worker";
 import type { EntropyEvidence } from "./implementation-entropy";
@@ -157,7 +157,7 @@ function table(rows: string[][]): string {
 const number = (value: number) => Number(value.toPrecision(2)).toString();
 
 function ratio(values: number[]): string {
-  const median = sampleMedian(values);
+  const median = medianRatio(values);
   const interval = medianConfidence95(values);
   // Two significant figures suppress digits that suggest precision these small process samples lack.
   return `${number(median)}×${interval ? ` [${number(interval[0])}–${number(interval[1])}]${interval[0] <= 1 && interval[1] >= 1 ? " unresolved" : ""}` : " [?]"}`;
@@ -352,7 +352,7 @@ export function renderImplementationReport(
         (_, block) =>
           (read(lane.id, block, 1, name) as number) / (read(lane.id, block, 0, name) as number),
       );
-      const distance = Math.abs(Math.log(sampleMedian(values)));
+      const distance = Math.abs(Math.log(medianRatio(values)));
       if (distance > worst.distance) worst = { name, distance, values };
     }
     const version = [
