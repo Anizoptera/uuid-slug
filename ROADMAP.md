@@ -12,11 +12,9 @@ Derive internals from these requirements; do not change user-visible APIs, behav
 
 This is the sole live plan. Keep dependent repairs with their task and unrelated unfinished work below. Completion requires acceptance evidence tied to its command, revision, features, profile and target, with coverage limits. Replace superseded evidence; retain only what a remaining decision needs. Durable contracts belong in their existing owners.
 
-### Prepared inputs and limits
+- [ ] Refresh the development archives referenced by `bench/reports/joint-current-artifacts.LihLzb/refresh.json` before release use: they predate masked binary support and the reader type corrections. Stable-tag verification remains separate.
 
-Masked binary is implemented through `426f19c`. The seven-runtime gate, complete check, native Rust and both WebAssembly profiles pass; subsequent reader type simplification emits identical JavaScript and passes packed consumers. The Node base32 gap below remains unresolved. Development archives in `bench/reports/joint-current-artifacts.LihLzb/refresh.json` predate these changes and need refresh before release use; stable-tag verification is separate.
-
-`bench/decisions.md` owns the fixed-size codec, `uuid` interoperability, boxed storage and O2 selections, their rejected alternatives and measurement limits. Historical native base32 masking costs about 0.8–4.8 ns more; some WASI/decoder comparisons are mixed. Deno base32 parity, other native-platform execution, hosted docs.rs, remote job duration and trusted publishing remain unverified. Keep existing regression gates; missing performance comparisons do not block preparation or authorize new experiments.
+Use `bench/decisions.md` for codec, interoperability, storage and O2 choices, rejected alternatives and measurement limits. Deno base32 parity, other native-platform execution, hosted docs.rs, remote job duration and trusted publishing remain unverified. Keep existing regression gates; missing performance comparisons do not block preparation or authorize new experiments.
 
 ### Release holds
 
@@ -30,6 +28,6 @@ Masked binary is implemented through `426f19c`. The seven-runtime gate, complete
 
 ## Follow-up
 
-Competitor audit: `slugid` requires `uuid ^9`, with an unresolved advisory. This is dev-only; keep the upstream graph for comparison rather than silently overriding its dependencies.
+- [ ] Resolve the advisory affecting competitor `slugid` through its `uuid ^9` dependency. Keep this dev-only comparison on the upstream dependency graph; do not silently override it.
 
 - [ ] Resolve the upstream-relative Node base32 gap: its median stays about 3% higher; one full lane fails at 1.031 [1.0033, 1.1382], while the unchanged replay and seven-runtime matrix pass. The pre-reduction control also has a higher median; a direct comparison finds no resolved loss from the four reductions. Cause and parity remain unproved; preserve both outcomes and the full filter (`bench/decisions.md` §Historical base32 slowdown).

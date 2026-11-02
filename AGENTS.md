@@ -6,6 +6,8 @@ Write instructions, plans, reports, comments and replies for someone who has not
 
 NEVER format or hard-wrap Markdown or other prose. Keep each paragraph on one source line; preserve code, tables, lists and intentional hard breaks. Generate unwrapped prose by fixing its template, never by reformatting output. `.oxfmtrc.json` exclusions MUST cover package commands, hooks, CI and direct file arguments. Editor soft wrapping needs no file changes.
 
+Write byte sizes in binary units in every file and tool output: 1 KB is 1024 bytes, then MB and GB. Never use SI units (1 kB = 1000 bytes). Release tooling formats sizes with `binarySize` in `scripts/release-comparison.ts`; reuse it rather than formatting by hand.
+
 ## Read before work
 
 READ the owner before changing its subject; these references hold the detailed rules.
@@ -21,8 +23,8 @@ BEFORE each read, measure its bytes in a separate call. Store and size generated
 | Rust, TS/Rust parity, shared formats, filesystem-safe output, package entries, runtime floors or bundling | `dev/cross-language.md` |
 | Saving command output, experiments, profiles, drivers, evidence cleanup or performance gates, even from `src/` | `bench/AGENTS.md` (priorities, gates), then `bench/README.md` (commands, reports) |
 | Versions, packaging, release tooling or workflows, publication, recovery, assets, notes or finalization | `dev/release.md` in full |
-| Consumer copy or generation guarantees | §Writing public documentation, then README opening, affected section and reference |
-| README diagram (`docs/assets/uuid-representations.svg`, generated) | `scripts/readme-diagram.ts` header owns layout, colour, hover and motion rulings. Record each ruling there; retain it until the maintainer drops it. Add each hover ruling to the build's Chromium check (`scripts/readme-diagram-hover.ts`). Show changes with `bun scripts/readme-diagram-preview.ts` (working tree vs committed, both themes, live hover). Diagram text follows §Writing public documentation |
+| Consumer copy or generation guarantees | `dev/interface.md` §Writing public documentation, then README opening, affected section and reference |
+| README diagram (`docs/assets/uuid-representations.svg`, generated) | `scripts/readme-diagram.ts` header owns layout, colour, hover and motion rulings. Record each ruling there; retain it until the maintainer drops it. Add each hover ruling to the build's Chromium check (`scripts/readme-diagram-hover.ts`). Show changes with `bun scripts/readme-diagram-preview.ts` (working tree vs committed, both themes, live hover). READ `dev/interface.md` §Writing public documentation for diagram text |
 
 ## Work scope
 
@@ -102,39 +104,6 @@ Keep adversarial hardening off default paths; ordinary calls must not pay for it
 - Format code with `bun run format` (`oxfmt`), or `bun x oxfmt <code files>` for a subset; the root configuration must exclude prose. For prose-only changes, skip formatting: oxfmt's “all matched files may have been excluded” means the exclusion is working, not permission to bypass it or substitute another formatter.
 - Exercise portable entropy draws AND native delegation; string generation can bypass `fillRandom`, so inspect the selected path, not its name. Compare byte keys with `join(",")` or hex, NEVER platform string coercion or UTF-8 decoding. Runtime/target/dependency changes require rereading backend docs linked from `docs/security.md` and testing success, failure and retry on EVERY host executing that path. Intercept real host entropy selection; shared wire vectors constrain encoding/masking only, never certify OS RNGs or masking strength.
 - Preserve an unpinned newest-Node CI lane: pinned runtimes cannot expose newly added native APIs.
-
-## Writing public documentation
-
-These rules cover every text a consumer reads: README, its diagram (`scripts/readme-diagram.ts`), package description and release notes. Declaration comments follow `dev/interface.md` instead.
-
-README is roughly 60% marketing and 40% usage: explain why the COMPLETE library merits adoption, make ordinary calls obvious and explain stored-ID durability. Generation alone is not the pitch. State supported strengths confidently, never timid implementation summaries. Bench readers need commands/reports, not marketing or agent rules. Keep agent instructions ONLY in `AGENTS.md`, never public README, `docs/`, benchmark reports or `CONTRIBUTING.md`. Engineering/measurement detail stays in its owner.
-
-- Write as one engineer telling another: short sentences in words the reader uses. Use established terms where they add precision; explain unfamiliar ones. Cut internal jargon and coined phrases ("keyed scramble", "payload offset", "the reader"). Read each sentence alone: if nobody would say it to the reader ("Your database keeps UUIDs") or deleting it loses nothing, cut it.
-- Give sizes as the saving the reader compares: "39% shorter than UUID text", not "14 characters shorter". Character and byte counts belong in definitions. Cut facts the reader cannot act on, such as bits per character.
-- Write byte sizes in binary units in every file and tool output: 1 KB is 1024 bytes, then MB and GB. Never use SI units (1 kB = 1000 bytes). Release tooling formats sizes with `binarySize` in `scripts/release-comparison.ts`; reuse it rather than formatting by hand.
-- Put limits/warnings beside the affected call, with the failure and fix. Explain actual decoding behavior, not "proof of issuance". Keep general security advice out of the opening and unrelated calls.
-- Every claim MUST give a concrete gain, caller action or boundary. Name what the reader can do, avoid or decide because of it. "Efficient", "ergonomic" or "complete" alone fails this test. State the gain before its controls; keep distinct gains separate. Short empty copy still fails.
-- State benefits as facts, not "Get..." sales commands. Imperatives belong in usage and warnings. DO NOT weaken a supported claim or force passive voice to make it sound like documentation.
-- A claim with a limit: sell what it delivers in plain words, then point to the limit once. Example: base64url sorts "mostly by time", footnote "for exact time order, use base32hex". Hedges ("roughly", "partly"), "no" labels, statistics and coined terms ("clustered") bury the value. Verify a limit once before stating it; never let it lead.
-- Never headline what the package lacks ("no native addons, no WASM") or use slogan templates ("mistakes fail at compile time, not in production"): readers take both as generated filler.
-- Before rewriting, identify each useful claim and where it survives. Change only named defects; preserve approved copy exactly otherwise. A task to merge bullets does not license rewriting their heading. Cut repetition, never capabilities, reasons or boundaries.
-- `ROADMAP.md` README items not marked "maintainer request" are leads that agents wrote. Before acting on one, check it against these rules and the current README; delete it if it asks for copy readers do not need, and never ask the maintainer to supply content for it.
-- A consistency defect is two places that tell the reader different facts, so the reader would act differently. Different wording for the same fact ("almost time-ordered", "mostly by time") and a rounded summary beside the exact value (badge "Bun >=1.0", Runtime "1.0.8") are not defects; leave them.
-- Examples MUST stand alone: direct calls, result brands/error unions visible without an IDE, explicit time units. Construct/check reusable codecs ONCE. No forwarding wrappers, redundant returned inputs, unneeded conversions or casts inventing validation; comments cannot excuse extra work. Input annotations must add meaning beyond a literal's `string`. Use `typeof` for scalar/error unions, the helper for objects/errors or unknown inputs. Preserve alternative checks, read their comments before deletion and label the choices; teaching both does not require both in production. Error guards recognize returned errors, not call correctness. After building, run `bun scripts/check-readme.ts` for links and TS examples.
-- Performance copy MUST sell speed, memory/resource efficiency and small bundles together. "Native APIs with TypeScript fallbacks" alone fails: it names machinery, not a gain. Preserve approved positioning. DO NOT put rival-by-runtime benchmark rows in README; rankings, measured gaps, timings and methods belong in `bench/decisions.md`, not the pitch.
-- Claims need an owning contract or evidence. Guarantees need a ruling and a test that fails without them; `docs/security.md` wins conflicts. A runtime/competitor "cannot" or "never" needs its probe. Delete claims with no possible owner; do not soften them.
-- Define terms before use; every referent must exist.
-- Group benefits, not exports. Each main bullet names an advantage; children add facts, not synonyms. Keep strengths rivals share; the combination matters. Preserve approved emphasis; judge information, not markup or sentence fragments. REJECT labels alone; show their meaning underneath:
-
-  | Empty label alone | Concrete meaning |
-  | --- | --- |
-  | Optional UUID object | Parse once; reuse the validated UUID for conversion and inspection. |
-  | Multiple representations | One UUID for storage, short URLs and lowercase filenames; no mapping table. |
-  | Ergonomic API | Types catch representation mix-ups; compatible conversions chain with one error check. |
-
-- Put purpose before badges. Rank gains by consumer reach and consequence, not implementation order. Surface speed/resources, deployment/bundles, unchanged IDs across representations and useful API controls before installation. Advanced controls must not make the default call look complicated. Link opening benefits to their sections. Show sizes and labeled values beside representation definitions; readers entering through an anchor must understand it without hunting another table. Follow with a copyable installation command and quick start. Keep detailed examples, limits, diagrams and runtime tables with their jobs. Check links; render only to resolve a layout question.
-- State matching cross-language formats and implementation availability; put publication status beside installation. Link release policy; keep recovery and key-retention requirements explicit to protect stored IDs.
-- State subject facts, never the writer's actions; git owns edit history.
 
 ## Release
 

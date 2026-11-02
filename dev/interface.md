@@ -232,3 +232,35 @@ For each changed interface, state the consumer job, the misuse or work eliminate
 - API baseline and release classification for consumer-visible change.
 
 A passing gate licenses only the paths and failure modes it can observe. Remove a test that merely repeats another test's evidence, and add a seam or runtime probe when no existing instrument can reach the claim.
+
+## Writing public documentation
+
+These rules cover every text a consumer reads: README, its diagram (`scripts/readme-diagram.ts`), package description and release notes. Declaration comments follow §Declaration comments instead.
+
+README is roughly 60% marketing and 40% usage: explain why the COMPLETE library merits adoption, make ordinary calls obvious and explain stored-ID durability. Generation alone is not the pitch. State supported strengths confidently, never timid implementation summaries. Bench readers need commands/reports, not marketing or agent rules. Keep agent instructions ONLY in `AGENTS.md` and its linked engineering owners, never public README, `docs/`, benchmark reports or `CONTRIBUTING.md`. Engineering/measurement detail stays in its owner.
+
+- Write as one engineer telling another: short sentences in words the reader uses. Use established terms where they add precision; explain unfamiliar ones. Cut internal jargon and coined phrases ("keyed scramble", "payload offset", "the reader"). Read each sentence alone: if nobody would say it to the reader ("Your database keeps UUIDs") or deleting it loses nothing, cut it.
+- Give sizes as the saving the reader compares: "39% shorter than UUID text", not "14 characters shorter". Character and byte counts belong in definitions. Cut facts the reader cannot act on, such as bits per character.
+- Put limits/warnings beside the affected call, with the failure and fix. Explain actual decoding behavior, not "proof of issuance". Keep general security advice out of the opening and unrelated calls.
+- Every claim MUST give a concrete gain, caller action or boundary. Name what the reader can do, avoid or decide because of it. "Efficient", "ergonomic" or "complete" alone fails this test. State the gain before its controls; keep distinct gains separate. Short empty copy still fails.
+- State benefits as facts, not "Get..." sales commands. Imperatives belong in usage and warnings. DO NOT weaken a supported claim or force passive voice to make it sound like documentation.
+- A claim with a limit: sell what it delivers in plain words, then point to the limit once. Example: base64url sorts "mostly by time", footnote "for exact time order, use base32hex". Hedges ("roughly", "partly"), "no" labels, statistics and coined terms ("clustered") bury the value. Verify a limit once before stating it; never let it lead.
+- Never headline what the package lacks ("no native addons, no WASM") or use slogan templates ("mistakes fail at compile time, not in production"): readers take both as generated filler.
+- Before rewriting, identify each useful claim and where it survives. Change only named defects; preserve approved copy exactly otherwise. A task to merge bullets does not license rewriting their heading. Cut repetition, never capabilities, reasons or boundaries.
+- Proposed README work without an explicit maintainer request is an agent lead. Before acting, check it against these rules and the current README; delete it if it asks for copy readers do not need, and never ask the maintainer to supply content for it.
+- A consistency defect is two places that tell the reader different facts, so the reader would act differently. Different wording for the same fact ("almost time-ordered", "mostly by time") and a rounded summary beside the exact value (badge "Bun >=1.0", Runtime "1.0.8") are not defects; leave them.
+- Examples MUST stand alone: direct calls, result brands/error unions visible without an IDE, explicit time units. Construct/check reusable codecs ONCE. No forwarding wrappers, redundant returned inputs, unneeded conversions or casts inventing validation; comments cannot excuse extra work. Input annotations must add meaning beyond a literal's `string`. Use `typeof` for scalar/error unions, the helper for objects/errors or unknown inputs. Preserve alternative checks, read their comments before deletion and label the choices; teaching both does not require both in production. Error guards recognize returned errors, not call correctness. After building, run `bun scripts/check-readme.ts` for links and TS examples.
+- Performance copy MUST sell speed, memory/resource efficiency and small bundles together. "Native APIs with TypeScript fallbacks" alone fails: it names machinery, not a gain. Preserve approved positioning. DO NOT put rival-by-runtime benchmark rows in README; rankings, measured gaps, timings and methods belong in `bench/decisions.md`, not the pitch.
+- Claims need an owning contract or evidence. Guarantees need a ruling and a test that fails without them; `docs/security.md` wins conflicts. A runtime/competitor "cannot" or "never" needs its probe. Delete claims with no possible owner; do not soften them.
+- Define terms before use; every referent must exist.
+- Group benefits, not exports. Each main bullet names an advantage; children add facts, not synonyms. Keep strengths rivals share; the combination matters. Preserve approved emphasis; judge information, not markup or sentence fragments. REJECT labels alone; show their meaning underneath:
+
+  | Empty label alone | Concrete meaning |
+  | --- | --- |
+  | Optional UUID object | Parse once; reuse the validated UUID for conversion and inspection. |
+  | Multiple representations | One UUID for storage, short URLs and lowercase filenames; no mapping table. |
+  | Ergonomic API | Types catch representation mix-ups; compatible conversions chain with one error check. |
+
+- Put purpose before badges. Rank gains by consumer reach and consequence, not implementation order. Surface speed/resources, deployment/bundles, unchanged IDs across representations and useful API controls before installation. Advanced controls must not make the default call look complicated. Link opening benefits to their sections. Show sizes and labeled values beside representation definitions; readers entering through an anchor must understand it without hunting another table. Follow with a copyable installation command and quick start. Keep detailed examples, limits, diagrams and runtime tables with their jobs. Check links; render only to resolve a layout question.
+- State matching cross-language formats and implementation availability; put publication status beside installation. Link release policy; keep recovery and key-retention requirements explicit to protect stored IDs.
+- State subject facts, never the writer's actions; git owns edit history.
