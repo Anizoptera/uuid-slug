@@ -189,14 +189,20 @@ test("an added interface member is not misclassified as a removal", async () => 
 
 test("compatible signature and private helper changes are not API removals", async () => {
   const before = reports(
-    "type Input = string; export declare function read(input: Input): string; export interface Reader { read(input: Input): string; }",
+    "type Input = string; export declare function read(input: string): string; export interface Reader { read(input: Input): string; }",
     "",
   );
   const after = reports(
-    "type Input = string | Uint8Array; export declare function read(input: Input): string; export interface Reader { read(input: Input): string; }",
+    "type Input = string | Uint8Array; export declare function read(input: string | Uint8Array): string; export interface Reader { read(input: Input): string; }",
     "",
   );
   await verifyEvolution("1.0.0", "1.1.0", before, after);
+});
+
+test("namespace type aliases remain public without an explicit export modifier", async () => {
+  const before = reports("export declare namespace Model { type Id = string; }", "");
+  const after = reports("export declare namespace Model {}", "");
+  await rejects(verifyEvolution("1.0.0", "2.0.0", before, after), /TypeScript removes API/);
 });
 
 test("member removals remain bound to their owner", async () => {

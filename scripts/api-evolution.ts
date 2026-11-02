@@ -121,6 +121,7 @@ function collectTypeScriptEntries(
     // callers still work; private aliases matter to that check, not to deprecation policy.
     if (
       ts.isTypeAliasDeclaration(node) &&
+      owners.length === 0 &&
       !node.modifiers?.some((item) => item.kind === ts.SyntaxKind.ExportKeyword)
     )
       return;
