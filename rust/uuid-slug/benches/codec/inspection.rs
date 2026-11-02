@@ -150,6 +150,105 @@ pub fn visit(ids: &[Uuid], record: &mut impl super::Recorder) {
                 .unwrap(),
         );
     });
+    // Exercise each decoder surface separately: universal parsing, payload inspection and
+    // timestamp validation add work that a bare masked decode cannot represent.
+    for alphabet in [
+        uuid_slug::UuidSlugAlphabet::Base64Url,
+        uuid_slug::UuidSlugAlphabet::Base32Hex,
+    ] {
+        let suffix = if alphabet == uuid_slug::UuidSlugAlphabet::Base64Url {
+            "base64"
+        } else {
+            "base32"
+        };
+        let plain: Vec<_> = ids
+            .iter()
+            .map(|id| id.to_plain_uuid_slug(alphabet))
+            .collect();
+        let keyed = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
+            masked_slug_alphabet: alphabet,
+            ..UuidV7MaskingCodecOptions::new(mask.clone())
+        })
+        .unwrap();
+        let masked: Vec<_> = ids
+            .iter()
+            .map(|id| keyed.uuid_to_masked_slug(*id).unwrap())
+            .collect();
+        scalar!(&format!("parse/plain/{suffix}"), |_: Uuid| {
+            cursor = (cursor + 1) % plain.len();
+            Uuid::from_plain_uuid_slug(&plain[cursor]).unwrap()
+        });
+        scalar!(&format!("parse/keyed/{suffix}"), |_: Uuid| {
+            cursor = (cursor + 1) % masked.len();
+            keyed.parse_uuid(masked[cursor].as_str()).unwrap()
+        });
+        scalar!(&format!("payload/masked/{suffix}"), |_: Uuid| {
+            cursor = (cursor + 1) % masked.len();
+            keyed
+                .extract_masked_uuid_v7_payload(masked[cursor].as_str(), layout)
+                .unwrap()
+        });
+        scalar!(&format!("timestamp/masked/{suffix}"), |_: Uuid| {
+            cursor = (cursor + 1) % masked.len();
+            keyed
+                .validate_masked_uuid_v7_slug_unix_ms(masked[cursor].as_str(), window)
+                .unwrap()
+        });
+        scalar!(&format!("failure/plain/{suffix}"), |_: Uuid| {
+            alphabet
+                .plain_slug_to_uuid_bytes(black_box("invalid"))
+                .is_err()
+        });
+    }
+    #[cfg(feature = "os-rng")]
+    {
+        // Caller-supplied entropy still uses the real OS source; deterministic fills would
+        // compare weaker generation and hide the public callback and buffer costs.
+        let mut generator = UuidV7Generator::new();
+        let mut fractional = UuidV7Generator::new()
+            .with_sub_millisecond_fraction_bits(12)
+            .unwrap();
+        scalar!("generation/v4/caller-buffer-custom-entropy", |_: Uuid| {
+            uuid_slug::generate_uuid_v4_into_with_random_fill(
+                &mut out,
+                4,
+                uuid_slug::fill_os_random_bytes,
+            )
+            .unwrap()
+        });
+        scalar!("generation/v7/custom-entropy", |_: Uuid| {
+            generator
+                .generate_uuid_v7_with_random_fill(
+                    black_box(1_725_000_000_000.0),
+                    uuid_slug::fill_os_random_bytes,
+                )
+                .unwrap()
+        });
+        scalar!("generation/v7/caller-buffer-custom-entropy", |_: Uuid| {
+            generator
+                .generate_uuid_v7_into_with_random_fill(
+                    black_box(1_725_000_000_000.0),
+                    &mut out,
+                    4,
+                    uuid_slug::fill_os_random_bytes,
+                )
+                .unwrap()
+        });
+        scalar!("generation/v7/fraction12-custom-entropy", |_: Uuid| {
+            fractional
+                .generate_uuid_v7_with_random_fill(
+                    black_box(1_725_000_000_000.25),
+                    uuid_slug::fill_os_random_bytes,
+                )
+                .unwrap()
+        });
+        #[cfg(feature = "std")]
+        scalar!("generation/v7/explicit-time", |_: Uuid| {
+            generator
+                .generate_uuid_v7_at_unix_ms(black_box(1_725_000_000_000.0))
+                .unwrap()
+        });
+    }
     for iterations in [1, 64] {
         scalar!(&format!("async/future/derive/{iterations}"), |_: Uuid| {
             finish(derive_uuid_v7_mask_async(

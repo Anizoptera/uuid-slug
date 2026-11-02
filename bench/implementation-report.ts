@@ -12,6 +12,14 @@ export interface Measurement {
   block: number;
   repeat: number;
 }
+
+export function comparisonWindow(block: number): readonly Pick<Measurement, "role" | "repeat">[] {
+  const reference = { role: "reference", repeat: 0 } as const;
+  const candidate = { role: "candidate", repeat: 0 } as const;
+  return block % 2
+    ? [candidate, reference, { ...reference, repeat: 1 }, { ...candidate, repeat: 1 }]
+    : [reference, candidate, { ...candidate, repeat: 1 }, { ...reference, repeat: 1 }];
+}
 export interface ImplementationReport {
   revision: string;
   captured: string;
@@ -123,6 +131,7 @@ export function renderImplementationReport(
     throw new Error(`Unknown reference lane: ${baseline}`);
   const indexed = new Map<string, Map<string, Observation>>();
   const inventory = new Map<string, string>();
+  const windows = new Map<number, string>();
   let sequence = 0;
   for (const record of report.measurements) {
     const subject = report.lanes.find((lane) => lane.id === record.subject);
@@ -147,6 +156,16 @@ export function renderImplementationReport(
       throw new Error(
         "Process acquisition order is missing or changed; regenerate from a complete current benchmark run.",
       );
+    const expected = comparisonWindow(record.block)[record.sequence % 4];
+    const window = Math.floor(record.sequence / 4);
+    const identity = `${record.subject}:${record.block}`;
+    if (
+      expected?.role !== record.role ||
+      expected.repeat !== record.repeat ||
+      (windows.has(window) && windows.get(window) !== identity)
+    )
+      throw new Error("Unbalanced acquisition window; retain adjacent ABBA/BAAB process order.");
+    windows.set(window, identity);
     const rows = validateRows(record.rows, report.settings.samples);
     const names = rows
       .map((row) => row.name)

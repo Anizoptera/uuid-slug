@@ -46,6 +46,8 @@ export function implementationCases(): Record<string, ProfileCase> {
   const sentinel = unwrap(reserved.uuidToMaskedSlug(text[0] as string));
   const upperSentinel = sentinel.toUpperCase();
   const generator = unwrap(api.createUuidV7Generator());
+  const layout = { subMillisecondFractionBits: 0, counterBits: 42 };
+  const window = { referenceUnixMs: 0, maxTimestampDeltaMs: 2 ** 48 };
   const shared: Record<string, ProfileCase> = {
     "plain/base64": (i) => api.uuidBytesToPlainSlug(bytes[i % 64] as Uint8Array),
     "plain/base32": (i) => api.uuidBytesToPlainSlug(bytes[i % 64] as Uint8Array, api.BASE32HEX),
@@ -105,6 +107,16 @@ export function implementationCases(): Record<string, ProfileCase> {
     "mask.binary.sentinel": () => reserved.uuidToMaskedBytes(text[0] as string),
     "unmask.binary.sentinel": () => reserved.maskedBytesToUuidBytes(bytes[0] as Uint8Array),
   };
+  for (const [suffix, keyed, stored] of [
+    ["base64", compact, encoded],
+    ["base32", safe, encoded32],
+  ] as const) {
+    shared[`parse/keyed/${suffix}`] = (i) => keyed.parseUuid(stored[i % 64] as string);
+    shared[`payload/masked/${suffix}`] = (i) =>
+      keyed.extractMaskedUuidV7Payload(stored[i % 64] as string, layout);
+    shared[`timestamp/masked/${suffix}`] = (i) =>
+      keyed.validateMaskedUuidV7SlugUnixMs(stored[i % 64] as string, window);
+  }
   // Fail on changed identities before timing; two implementations can agree on invalid output.
   bytes.forEach((value, index) => {
     const restored = unwrap(compact.maskedBytesToUuidBytes(binary[index] as Uint8Array));

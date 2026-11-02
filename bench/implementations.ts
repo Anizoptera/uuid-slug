@@ -8,7 +8,11 @@ import { command } from "../scripts/command";
 import { runWorkerdConsumer } from "../scripts/check-workerd-consumer";
 import { prepareImplementations } from "./implementation-build";
 import type { Lane } from "./implementation-build";
-import { renderImplementationReport, validateRows } from "./implementation-report";
+import {
+  comparisonWindow,
+  renderImplementationReport,
+  validateRows,
+} from "./implementation-report";
 import type { ImplementationReport, Measurement } from "./implementation-report";
 import type { Settings, Observation } from "./implementation-worker";
 
@@ -228,21 +232,7 @@ if (reportIndex >= 0) {
           (lane.id.startsWith("ts/") ? "ts/node" : "rust/native/release/fast-rng");
         const reference = lanes.find((item) => item.id === referenceId);
         if (!reference) throw new Error(`Missing comparison reference: ${referenceId}`);
-        const window: { role: Measurement["role"]; repeat: number }[] =
-          block % 2
-            ? [
-                { role: "candidate", repeat: 0 },
-                { role: "reference", repeat: 0 },
-                { role: "reference", repeat: 1 },
-                { role: "candidate", repeat: 1 },
-              ]
-            : [
-                { role: "reference", repeat: 0 },
-                { role: "candidate", repeat: 0 },
-                { role: "candidate", repeat: 1 },
-                { role: "reference", repeat: 1 },
-              ];
-        for (const step of window) {
+        for (const step of comparisonWindow(block)) {
           const selected =
             step.role === "candidate"
               ? lane
