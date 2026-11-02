@@ -492,17 +492,12 @@ function buildUuidSlugCodec(
     }
     // Branch after common validation so ordinary callers retain one plain borrowed-byte route.
     // Split guard helpers slowed that Bun route; reconsider only with packed mixed-workload evidence.
-    if (owned)
-      return ownedUuidV7BytesToMaskedSlug(
-        bytes,
-        handle,
-        maskedSlugAlphabet,
-        sentinels.bySlug,
-        currentTimestampRangeStart,
-      );
-    encodeScratch.set(bytes);
+    if (!owned) {
+      encodeScratch.set(bytes);
+      bytes = encodeScratch;
+    }
     return ownedUuidV7BytesToMaskedSlug(
-      encodeScratch,
+      bytes,
       handle,
       maskedSlugAlphabet,
       sentinels.bySlug,

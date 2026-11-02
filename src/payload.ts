@@ -10,7 +10,7 @@ import {
 } from "./errors.ts";
 import { mix32, read32 } from "./feistel.ts";
 import { applyMask } from "./mask-handle.ts";
-import { bytesToUuidString } from "./uuid.ts";
+import { formatUuidBytesUnchecked } from "./uuid.ts";
 import type { UuidV7Mask, MaskedUuidV7Slug, UuidString } from "./types.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
@@ -259,8 +259,8 @@ export function decodeFirstMaskedCandidate(
     const decoded = unmix(mixed.slice(), outerTag, mask);
     if (isUuidSlugError(decoded)) return decoded;
     if (decoded) {
-      const uuid = bytesToUuidString(decoded);
-      if (uuid instanceof Error) return uuid;
+      // unmix returns the private, validated 16-byte block; formatting cannot reject its size.
+      const uuid = formatUuidBytesUnchecked(decoded);
       if (!candidates.includes(uuid)) candidates.push(uuid);
       break;
     }
@@ -281,8 +281,7 @@ export function decodeMaskedCandidates(
   const firstDecoded = unmix(working, outerTag, firstMask);
   if (isUuidSlugError(firstDecoded)) return firstDecoded;
   if (firstDecoded) {
-    const uuid = bytesToUuidString(firstDecoded);
-    if (uuid instanceof Error) return uuid;
+    const uuid = formatUuidBytesUnchecked(firstDecoded);
     if (!candidates.includes(uuid)) candidates.push(uuid);
   }
   if (masks.length === 1) return candidates;
@@ -299,8 +298,7 @@ export function decodeMaskedCandidates(
     // A failed callback means the candidate list is incomplete, not that its key mismatched.
     if (isUuidSlugError(decoded)) return decoded;
     if (decoded) {
-      const uuid = bytesToUuidString(decoded);
-      if (uuid instanceof Error) return uuid;
+      const uuid = formatUuidBytesUnchecked(decoded);
       if (!candidates.includes(uuid)) candidates.push(uuid);
     }
   }

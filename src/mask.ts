@@ -38,8 +38,14 @@ const LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
 const SEED_WORD_VIEW_MIN_BYTES = 4096;
 
 /*#__NO_SIDE_EFFECTS__*/
-function canViewSeedWords(seed: Uint8Array) {
-  return LITTLE_ENDIAN && (seed.byteOffset & 3) === 0 && (seed.length & 3) === 0;
+function seedWordView(seed: Uint8Array): Int32Array | undefined {
+  // Sync and cooperative hashing must share byte-order and padding rules to derive identical masks.
+  return seed.length >= SEED_WORD_VIEW_MIN_BYTES &&
+    LITTLE_ENDIAN &&
+    (seed.byteOffset & 3) === 0 &&
+    (seed.length & 3) === 0
+    ? new Int32Array(seed.buffer, seed.byteOffset, seed.length >>> 2)
+    : undefined;
 }
 
 /**
@@ -95,8 +101,8 @@ function validateOptions(options: unknown, accepted: Readonly<Record<string, tru
 /** Repack bytes as the little-endian 32-bit words `halfSipHash` absorbs. */
 /*#__NO_SIDE_EFFECTS__*/
 function seedWords(seed: Uint8Array) {
-  if (seed.length >= SEED_WORD_VIEW_MIN_BYTES && canViewSeedWords(seed))
-    return new Int32Array(seed.buffer, seed.byteOffset, seed.length >>> 2);
+  const view = seedWordView(seed);
+  if (view) return view;
   const words = new Int32Array(Math.ceil(seed.length / 4) + 1);
   writeSeedWords(seed, words);
   return words;
@@ -292,12 +298,9 @@ function* cooperativeKeys(
   }
   const short = invalidSeedLength(length);
   if (short) return short;
-  const viewBytes =
-    typeof seed !== "string" && seed.length >= SEED_WORD_VIEW_MIN_BYTES && canViewSeedWords(seed);
-  const words = viewBytes
-    ? new Int32Array(seed.buffer, seed.byteOffset, seed.length >>> 2)
-    : new Int32Array(Math.ceil(length / 4) + 1);
-  if (!viewBytes) {
+  const view = typeof seed !== "string" ? seedWordView(seed) : undefined;
+  const words = view ?? new Int32Array(Math.ceil(length / 4) + 1);
+  if (!view) {
     let offset = 0;
     for (const bytes of chunks) {
       for (let start = 0; start < bytes.length; start += CHUNK_BYTES) {

@@ -27,6 +27,8 @@ function intervalEnd(startUnixMs: number, endUnixMs: number): number | UuidSlugE
 function endpoint(unixMs: number, upper: boolean): UuidV7Bytes {
   const bytes = new Uint8Array(16);
   if (upper) bytes.fill(0xff);
+  // Keep this fixed write local: sharing the generator's word writer slows JITless bounds calls.
+  // Reconsider extraction only with complete-call evidence across the supported engines.
   const high = Math.floor(unixMs / 0x1_0000_0000);
   bytes[0] = high >>> 8;
   bytes[1] = high;

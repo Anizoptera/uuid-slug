@@ -338,6 +338,7 @@ export function bytesToUuidString(
   if (badRange) return badRange;
   if (nativeToHex) {
     // A small existing view avoids another view; a larger buffer must not encode unrelated bytes.
+    // Keep range selection here: unchecked fixed-size callers should not pay this branch.
     const hex =
       view.length <= 32
         ? nativeToHex(view)

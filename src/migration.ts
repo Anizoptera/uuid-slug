@@ -201,9 +201,10 @@ export function createMigration(
       formatOrCase === undefined || typeof formatOrCase === "string"
         ? formatOrCase
         : (stringInput(formatOrCase) ?? formatOrCase);
-    const format = isUuidTextCase(second) ? undefined : second;
+    const secondIsCase = isUuidTextCase(second);
+    const format = secondIsCase ? undefined : second;
     const selectedCase = resolveUuidTextCase(
-      (isUuidTextCase(second) ? second : textCase) ?? UUID_TEXT_LOWERCASE,
+      (secondIsCase ? second : textCase) ?? UUID_TEXT_LOWERCASE,
     );
     if (selectedCase instanceof Error) return selectedCase;
     const result = read(uuidSlug, format as UuidSlugMigrationFormat | undefined, true);
@@ -238,9 +239,10 @@ export function createMigration(
       formatOrCase === undefined || typeof formatOrCase === "string"
         ? formatOrCase
         : (stringInput(formatOrCase) ?? formatOrCase);
-    const format = isUuidTextCase(second) ? undefined : second;
+    const secondIsCase = isUuidTextCase(second);
+    const format = secondIsCase ? undefined : second;
     const selectedCase = resolveUuidTextCase(
-      (isUuidTextCase(second) ? second : textCase) ?? UUID_TEXT_LOWERCASE,
+      (secondIsCase ? second : textCase) ?? UUID_TEXT_LOWERCASE,
     );
     if (selectedCase instanceof Error) return selectedCase;
     const result = read(uuidSlug, format as UuidSlugMigrationFormat | undefined, false);
