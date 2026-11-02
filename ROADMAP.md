@@ -9,6 +9,7 @@ Compare every maintained TypeScript runtime, native Rust feature variant and WAS
 - [x] Reuse the measurement and correctness corpus across runtime variants; add missing jobs without changing product behavior.
 - [x] Keep one rerun command and validated relative report; the existing process supervisor owns interruption cleanup, and complete JSON Lines can regenerate the report without timing.
 - [x] Pair adjacent fresh-process reference/candidate repeats, retain comparison edges, and include both workerd modes without mixing HTTP dispatch into per-call timing.
+- [x] Preserve Bun FFI before Node-API fallback and Node-API before Node FFI fallback; the complete check executes automatic selection and missing-primary-library fallback with real native libraries on both hosts.
 - [ ] Falsify reporting with identical controls, reversed comparisons, missing lanes and invalid measurements; run the complete selected matrix without overlapping timing workloads.
 - [ ] Review the generated report against raw records, document rerun controls and limits, commit the results and remove owned scratch.
 
