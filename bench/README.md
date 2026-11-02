@@ -16,6 +16,7 @@ Drop `--smoke` for repeated measurements.
 | --- | --- |
 | Compare UUID generation, slugs and timestamp extraction | `bun run bench:competitors` |
 | Compare conversion and audit randomness | `bun run bench:matrix` |
+| Compare TypeScript, native Rust and WASM implementations | `bun run bench:implementations` (`--smoke` checks wiring only) |
 | Compare Rust generators | `bun run bench:competitors:rust` |
 | Inspect linked Rust consumers in release and ThinLTO builds | `bun bench/rust-linked.ts /path/to/extracted/crate [consumer ...]` (set `LLVM_NM` if `llvm-nm` is not on PATH; browser checks require matching `wasm-bindgen-cli` and the installed Playwright engines) |
 | Record timing and resource use | `bun run bench:profile` |
@@ -35,6 +36,8 @@ UUID_SLUG_PROFILE_FILTER=plain.encode bun run bench:profile:native
 Comparisons show each call's runtime, fastest library and native reference, relative speed and uncertainty. Profiles show timing, CPU and memory costs. Allocation profiles estimate allocation; heap snapshots show retention.
 
 Raw measurements, profiles and captured inputs go to `bench/reports/`. Git ignores that folder, so its files exist only on the machine that ran them.
+
+`bun run bench:implementations` writes `bench/results/implementations.md` and its `.jsonl` evidence. Rerender without timing with `bun run bench:implementations --report bench/results/implementations.jsonl`; add `--baseline <lane>` to change the reference. Set `UUID_SLUG_IMPLEMENTATION_FILTER` to comma-separated job substrings or `UUID_SLUG_IMPLEMENTATION_REPORT` to another `.md` path. Smoke uses the same runtime matrix with fewer samples; it establishes wiring only.
 
 ## More controls
 
