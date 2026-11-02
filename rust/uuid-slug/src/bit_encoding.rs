@@ -58,7 +58,9 @@ pub(super) fn encode_identifier_bits(
             encode_blocks::<5, 8, 5, _>(symbols, bytes, length, &mut write)
         }
     }
-    // Append into the final owned string; safe character writes avoid a separate UTF-8 pass.
+    // Safe ASCII writes avoid a UTF-8 validation pass; exact capacity avoids shrink reallocations.
+    // Boxing drops String's capacity word from every stored slug and still permits
+    // pointer-preserving transfer back to String.
     out.into_boxed_str()
 }
 

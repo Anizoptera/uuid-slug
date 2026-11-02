@@ -18,7 +18,6 @@ The checked code is `4b169a4`; `bench/reports/safe-wire.ohWNSU/full-check-final.
 
 `bench/decisions.md` owns the fixed-size codec, `uuid` interoperability, boxed storage and O2 selections, their rejected alternatives and measurement limits. Historical native base32 masking costs about 0.8–4.8 ns more; some WASI/decoder comparisons are mixed. Deno base32 parity, other native-platform execution, hosted docs.rs, remote job duration and trusted publishing remain unverified. Keep existing regression gates; missing performance comparisons do not block preparation or authorize new experiments.
 
-
 ### Release holds
 
 - [ ] Authorization required: change to the release version/create its tag only after explicit approval; run the exact-tag preparation gate and review generated release notes before any authorized push/publication.
