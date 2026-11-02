@@ -231,11 +231,6 @@ declare type KeylessUuidInput<Input> = [
   : never;
 export declare type MaskedOrSentinelUuidV7Bytes = MaskedUuidV7Bytes | SentinelUuidV7Bytes;
 export declare type MaskedOrSentinelUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
-declare type MaskedUuidBytesInput<Input extends UuidByteInput | UuidSlugError> = [
-  Extract<Exclude<Input, UuidSlugError | SentinelUuidV7Bytes>, UuidBytes>,
-] extends [never]
-  ? Input
-  : never;
 declare type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 export declare type MaskedUuidV7Bytes = Brand<Uint8Array, "MaskedUuidV7Bytes">;
 export declare type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
@@ -793,22 +788,19 @@ export declare interface UuidV7MaskingCodec {
     output: Output,
     outputOffset?: number,
   ): UuidOutput<Output> | UuidSlugError;
-  maskedBytesToUuidBytes<Input extends UuidByteInput | UuidSlugError>(
+  maskedBytesToUuidBytes(
     this: void,
-    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+    maskedUuidBytes: UuidByteInput | UuidSlugError,
   ): UuidV7Bytes | UuidSlugError;
-  maskedBytesToUuidBytes<Input extends UuidByteInput | UuidSlugError, Output extends Uint8Array>(
+  maskedBytesToUuidBytes<Output extends Uint8Array>(
     this: void,
-    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+    maskedUuidBytes: UuidByteInput | UuidSlugError,
     output: Output,
     outputOffset?: number,
   ): UuidOutput<Output> | UuidSlugError;
-  maskedBytesToUuidString<
-    Input extends UuidByteInput | UuidSlugError,
-    Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
-  >(
+  maskedBytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
-    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+    maskedUuidBytes: UuidByteInput | UuidSlugError,
     ...textCase: UuidTextCaseArguments<Case>
   ): UuidV7StringFor<Case> | UuidSlugError;
   plainToMaskedUuidSlug<Input extends string | UuidSlugError>(

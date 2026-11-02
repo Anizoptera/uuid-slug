@@ -164,7 +164,7 @@ Choose defaults for end-user performance and resource efficiency across measured
 - Capture string and byte inputs generically and reject a captured brand that proves the representation or UUID version cannot satisfy the operation. Keep unbranded values accepted: widening has erased their origin, so the runtime validator must judge them. Tuple-wrap the conditional check so one invalid member rejects a whole known union instead of distributively preserving its other members. Revisit this only if TypeScript can retain erased provenance or the package stops accepting external values at its validation seam.
 - Use `unknown` only for genuinely unbounded external input or caught values, then narrow it at the nearest seam. Do not use `any` in the public surface.
 - Use structural checks where values can cross realms or duplicate package copies. An `instanceof` fast path is acceptable only when the same interface has a correct cross-realm path and measurement shows the fast path removes meaningful work.
-- A brand records only the checked property. Keep format checks separate from record lookup, access checks, timestamp-window validation and key selection.
+- A brand records only the checked property. A shape check cannot prove plain or masked provenance; source-specific readers accept compatible shape-validated input and apply the caller's stated meaning. Keep format checks separate from record lookup, access checks, timestamp-window validation and key selection.
 
 ## Failures and effects
 

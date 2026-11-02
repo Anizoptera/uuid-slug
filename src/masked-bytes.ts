@@ -19,7 +19,6 @@ import {
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import type {
   MaskedOrSentinelUuidV7Bytes,
-  MaskedUuidBytesInput,
   UuidByteInput,
   UuidInput,
   UuidOutput,
@@ -112,14 +111,11 @@ export function createMaskedByteMethods(
     );
   }
 
-  function maskedBytesToUuidBytes<Input extends UuidByteInput | UuidSlugError>(
-    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+  function maskedBytesToUuidBytes(
+    maskedUuidBytes: UuidByteInput | UuidSlugError,
   ): UuidV7Bytes | UuidSlugError;
-  function maskedBytesToUuidBytes<
-    Input extends UuidByteInput | UuidSlugError,
-    Output extends Uint8Array,
-  >(
-    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+  function maskedBytesToUuidBytes<Output extends Uint8Array>(
+    maskedUuidBytes: UuidByteInput | UuidSlugError,
     output: Output,
     outputOffset?: number,
   ): UuidOutput<Output> | UuidSlugError;
@@ -128,6 +124,7 @@ export function createMaskedByteMethods(
     output?: Uint8Array,
     outputOffset = 0,
   ): Uint8Array | UuidSlugError {
+    // The named reader supplies source meaning; a prior shape check does not exclude masking.
     // Recognize a preceding error before output validation or invoking any key callback.
     const source = exactUuidByteView(maskedUuidBytes);
     if (!isSuccessfulUuidBytes(source)) return source;
@@ -142,11 +139,8 @@ export function createMaskedByteMethods(
     return output;
   }
 
-  function maskedBytesToUuidString<
-    Input extends UuidByteInput | UuidSlugError,
-    Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
-  >(
-    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+  function maskedBytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    maskedUuidBytes: UuidByteInput | UuidSlugError,
     ...textCase: UuidTextCaseArguments<Case>
   ): UuidV7StringFor<Case> | UuidSlugError;
   function maskedBytesToUuidString(

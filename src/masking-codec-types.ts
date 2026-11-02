@@ -11,7 +11,6 @@ import type {
   MaskingCodecUuidInput,
   MaskedOrSentinelUuidV7Slug,
   MaskedOrSentinelUuidV7Bytes,
-  MaskedUuidBytesInput,
   PlainUuidSlug,
   PlainUuidSlugResult,
   PlainUuidV7Slug,
@@ -294,24 +293,21 @@ export interface UuidV7MaskingCodec {
    * unless it is also the supplied output storage.
    * A preceding error propagates unchanged; malformed storage or no passing key returns a package error.
    */
-  maskedBytesToUuidBytes<Input extends UuidByteInput | UuidSlugError>(
+  maskedBytesToUuidBytes(
     this: void,
-    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+    maskedUuidBytes: UuidByteInput | UuidSlugError,
   ): UuidV7Bytes | UuidSlugError;
   /** Write the decoded UUID at `outputOffset` (default zero), preserving output identity and bytes on failure. */
-  maskedBytesToUuidBytes<Input extends UuidByteInput | UuidSlugError, Output extends Uint8Array>(
+  maskedBytesToUuidBytes<Output extends Uint8Array>(
     this: void,
-    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+    maskedUuidBytes: UuidByteInput | UuidSlugError,
     output: Output,
     outputOffset?: number,
   ): UuidOutput<Output> | UuidSlugError;
   /** Read masked bytes as UUIDv7 text; `textCase` defaults to lowercase. Uses the same keys, checks and failures as the byte reader. */
-  maskedBytesToUuidString<
-    Input extends UuidByteInput | UuidSlugError,
-    Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
-  >(
+  maskedBytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
-    maskedUuidBytes: MaskedUuidBytesInput<Input>,
+    maskedUuidBytes: UuidByteInput | UuidSlugError,
     ...textCase: UuidTextCaseArguments<Case>
   ): UuidV7StringFor<Case> | UuidSlugError;
   /**

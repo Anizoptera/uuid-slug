@@ -544,8 +544,12 @@ uuidToString(maskedBinary);
 codec.uuidToBytes(maskedBinary);
 // @ts-expect-error Caller storage does not change the meaning of mixed input bytes.
 codec.uuidToBytes(maskedBinary, binaryStorage);
-// @ts-expect-error A known raw UUID byte value is not a mixed block.
-codec.maskedBytesToUuidBytes(versionedBytes);
+// Shape validation does not choose the meaning of bytes received over a binary transport.
+declare const binaryTransport: unknown;
+if (isUuidBytes(binaryTransport)) {
+  expectType<UuidV7Bytes | UuidSlugError>()(codec.maskedBytesToUuidBytes(binaryTransport));
+}
+expectType<UuidV7Bytes | UuidSlugError>()(codec.maskedBytesToUuidBytes(versionedBytes));
 // @ts-expect-error Binary masking remains UUIDv7-only.
 codec.uuidToMaskedBytes(generatedV4);
 // @ts-expect-error Mixed blocks do not expose a readable UUIDv7 timestamp.

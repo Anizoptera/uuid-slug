@@ -342,13 +342,6 @@ type RejectKnownInput<Input, Invalid> = [Extract<Exclude<Input, UuidSlugError>, 
 
 /** Raw UUID readers cannot infer masked provenance from the identical 16-byte shape. */
 export type UnmaskedUuidInput<Input> = RejectKnownInput<Input, MaskedUuidV7Bytes>;
-/** Masked-byte readers accept external bytes but reject a known ordinary UUID byte value. */
-export type MaskedUuidBytesInput<Input extends UuidByteInput | UuidSlugError> = [
-  Extract<Exclude<Input, UuidSlugError | SentinelUuidV7Bytes>, UuidBytes>,
-] extends [never]
-  ? Input
-  : never;
-
 /** Reject a known slug; the operation parses UUID text. A bare string is validated at runtime. */
 export type UuidStringInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
