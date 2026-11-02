@@ -75,7 +75,8 @@ export const codecBoundaryCases = [
           maskedSlugAlphabet,
           sentinels: [{ name: "far", uuid: farSentinel }],
         });
-        const expected = unwrap(codec.uuidToMaskedBytes(uuid));
+        const { uuidToMaskedBytes, maskedBytesToUuidBytes } = codec;
+        const expected = unwrap(uuidToMaskedBytes(uuid));
         const sources = [
           uuid,
           uuid.toUpperCase(),
@@ -94,7 +95,7 @@ export const codecBoundaryCases = [
           [...output.subarray(0, 4), ...output.subarray(20)],
           Array.from({ length: 8 }, () => 0xa5),
         );
-        assert.equal(codec.maskedBytesToUuidBytes(expected, output, 4), output);
+        assert.equal(maskedBytesToUuidBytes(expected, output, 4), output);
         assert.equal(bytesToUuidString(output, 4), uuid);
         const aliased = new Uint8Array(unwrap(uuidStringToBytes(uuid)));
         assert.equal(codec.uuidToMaskedBytes(aliased, aliased), aliased);

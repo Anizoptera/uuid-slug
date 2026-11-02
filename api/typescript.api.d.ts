@@ -609,7 +609,7 @@ export declare function uuidV7ByteBounds(
 export declare type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
 declare type UuidV7BytesInput<Input extends UuidByteInput | UuidSlugError> = RejectKnownInput<
   Input,
-  UuidV4Bytes
+  UuidV4Bytes | MaskedUuidV7Bytes
 >;
 export declare type UuidV7ClockRollbackPolicy =
   | {
@@ -940,7 +940,10 @@ declare type UuidV7StringInput<Input extends string | UuidSlugError> = RejectKno
 >;
 export declare type UuidV7Text = Brand<UuidText, "UuidV7Text">;
 declare type UuidV7TimestampInput<Input extends string | UuidByteInput | UuidSlugError> =
-  RejectKnownInput<Input, MaskedUuidSlug | UuidV4Text | PlainUuidV4Slug | UuidV4Bytes>;
+  RejectKnownInput<
+    Input,
+    MaskedUuidSlug | MaskedUuidV7Bytes | UuidV4Text | PlainUuidV4Slug | UuidV4Bytes
+  >;
 export declare interface UuidV7TimestampWindow {
   readonly maxTimestampDeltaMs: number;
   readonly referenceUnixMs?: number;

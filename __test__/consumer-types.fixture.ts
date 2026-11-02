@@ -525,6 +525,12 @@ expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(codec.uuidToMaskedSlug(
 const maskedBinary = codec.uuidToMaskedBytes(generateUuidV7());
 expectType<MaskedOrSentinelUuidV7Bytes | UuidSlugError>()(maskedBinary);
 expectType<UuidV7Bytes | UuidSlugError>()(codec.maskedBytesToUuidBytes(maskedBinary));
+expectType<number | UuidSlugError>()(
+  extractUuidV7UnixMs(codec.maskedBytesToUuidBytes(maskedBinary)),
+);
+expectType<UuidV7Payload | UuidSlugError>()(
+  extractUuidV7Payload(codec.maskedBytesToUuidBytes(maskedBinary), payloadLayout),
+);
 expectType<UppercaseUuidV7String | UuidSlugError>()(
   codec.maskedBytesToUuidString(maskedBinary, UUID_TEXT_UPPERCASE),
 );
@@ -542,6 +548,12 @@ codec.uuidToBytes(maskedBinary, binaryStorage);
 codec.maskedBytesToUuidBytes(versionedBytes);
 // @ts-expect-error Binary masking remains UUIDv7-only.
 codec.uuidToMaskedBytes(generatedV4);
+// @ts-expect-error Mixed blocks do not expose a readable UUIDv7 timestamp.
+extractUuidV7UnixMs(maskedBinary);
+// @ts-expect-error Supplying an offset does not make mixed bytes a raw UUID.
+extractUuidV7UnixMs(maskedBinary, 0);
+// @ts-expect-error Payload fields require decoding the mixed block first.
+extractUuidV7Payload(maskedBinary, payloadLayout);
 expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(
   codec.uuidToMaskedSlug(generateUuidV7Bytes()),
 );

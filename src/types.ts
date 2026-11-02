@@ -374,13 +374,16 @@ export type PlainUuidV7SlugInput<Input extends string | UuidSlugError> = RejectK
   Input,
   UuidText | MaskedUuidSlug | PlainUuidV4Slug
 >;
-/** Reject masked slugs and known UUIDv4 values across text and byte timestamp inputs. */
+/** Reject masked slugs, mixed bytes and known UUIDv4 values across timestamp inputs. */
 export type UuidV7TimestampInput<Input extends string | UuidByteInput | UuidSlugError> =
-  RejectKnownInput<Input, MaskedUuidSlug | UuidV4Text | PlainUuidV4Slug | UuidV4Bytes>;
-/** Reject known UUIDv4 bytes; the operation needs UUIDv7 bytes. */
+  RejectKnownInput<
+    Input,
+    MaskedUuidSlug | MaskedUuidV7Bytes | UuidV4Text | PlainUuidV4Slug | UuidV4Bytes
+  >;
+/** Reject mixed and known UUIDv4 bytes; the operation needs raw UUIDv7 bytes. */
 export type UuidV7BytesInput<Input extends UuidByteInput | UuidSlugError> = RejectKnownInput<
   Input,
-  UuidV4Bytes
+  UuidV4Bytes | MaskedUuidV7Bytes
 >;
 /** Reject known non-v7 values; a masking codec accepts every UUIDv7 form. */
 export type UuidV7ValueInput<Input extends UuidInput> = RejectKnownInput<
