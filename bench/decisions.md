@@ -1334,6 +1334,8 @@ Gate limits: relative timing cannot detect a slowdown shared by both sides; cons
 
 **The Node base32 gap remains unresolved against the upstream baseline.** On 2026-11-02, the retained reductions pass the seven-runtime gate against `ac3e4e7`, but the subsequent full lane fails Node `bytes.base32` at 1.031, family-corrected interval [1.0033, 1.1382]. The pre-reduction `c698f57` control against that same baseline has a higher median ratio, 1.059, with unresolved interval [0.9797, 1.2038]. Directly comparing the retained reductions with `c698f57` passes all 62 Node calls; base32 is 0.993 [0.8971, 1.0094]. These different comparisons do not establish a cause or parity; no base32 repair follows from them. Preserve the failed full-filter evidence alongside the passing matrix and controls in `bench/reports/ts-investigation.pZxlFS/`; a later pass must not erase this result.
 
+The unchanged full-lane replay passes all checks and 124 timing comparisons, including 393 Node tests and 408 Bun tests. Node base32 remains 1.030 [0.9919, 1.5093], so the pass does not close the gap. Final command results and limits: `bench/reports/ts-investigation.pZxlFS/verification.json`; the failure, replay and control records remain alongside it.
+
 ### Internal reduction candidates
 
 **Remove repeated work only where the complete caller remains protected.** Same-base packed substitutions against `c698f57` on macOS arm64 (2026-11-02) screen each candidate separately on Node 26.13.0, Bun 1.4.4, Deno 2.9.8, Chromium 156.0.8078.4, Firefox 157.0, WebKit 27.2 and Node JITless. Screens use six fresh reversed process pairs; their uncorrected intervals are exploratory, not the final regression gate. Exact patches, raw records and replays: `bench/reports/ts-investigation.pZxlFS/`.
