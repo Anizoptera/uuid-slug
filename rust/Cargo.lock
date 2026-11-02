@@ -399,6 +399,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "uuid-slug-benchmark"
+version = "0.6.0-dev"
+dependencies = [
+ "serde_json",
+ "uuid-slug",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "uuid-slug-bridge"
 version = "0.6.0-dev"
 dependencies = [

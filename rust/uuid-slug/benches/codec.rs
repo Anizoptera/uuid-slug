@@ -1,9 +1,6 @@
 //! Measure varied identifier operations separately from setup and host-bridge overhead.
 use std::{hint::black_box, time::Instant};
-use uuid_slug::{
-    Error, Uuid, UuidSlugAlphabet, UuidV7MaskingCodec, UuidV7MaskingCodecOptions,
-    derive_uuid_v7_mask,
-};
+use uuid_slug::{Error, Uuid};
 
 const SAMPLE_ROUNDS: usize = 5;
 const CALLS_PER_ROUND: usize = 100_000;
@@ -116,168 +113,19 @@ fn entropy_resources() -> Result<(), Error> {
     Ok(())
 }
 
+#[path = "codec/cases.rs"]
+mod cases;
+use cases::visit;
+
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 fn main() -> Result<(), Error> {
-    let ids: Vec<Uuid> = (0..64)
-        .map(|index| {
-            let mut bytes = std::array::from_fn(|i| (i * 19 + index) as u8);
-            bytes[0] &= 3;
-            bytes[6] = (bytes[6] & 15) | 0x70;
-            bytes[8] = (bytes[8] & 63) | 0x80;
-            Uuid::from_uuid_bytes_array(bytes)
-        })
-        .collect();
-    #[cfg(feature = "os-rng")]
-    {
-        // Compare the same complete calls with default features and std + os-rng. Fixed-time
-        // callback probes cannot reveal whether clock reads or formatting erase entropy savings.
-        use uuid_slug::generate_uuid_v4;
-        sample("generation/v4/bytes", &ids, |_| generate_uuid_v4().unwrap());
-        sample("generation/v4/text", &ids, |_| {
-            generate_uuid_v4().unwrap().to_string()
-        });
-        #[cfg(feature = "std")]
-        let mut generator = uuid_slug::UuidV7Generator::new();
-        #[cfg(feature = "std")]
-        sample("generation/v7/bytes", &ids, |_| {
-            generator.generate_uuid_v7().unwrap()
-        });
-        #[cfg(feature = "std")]
-        sample("generation/v7/text", &ids, |_| {
-            generator.generate_uuid_v7().unwrap().to_string()
-        });
-        for (alphabet, name) in [
-            (UuidSlugAlphabet::Base64Url, "base64url"),
-            (UuidSlugAlphabet::Base32Hex, "base32hex"),
-        ] {
-            sample(&format!("generation/v4/{name}"), &ids, |_| {
-                generate_uuid_v4().unwrap().to_plain_uuid_slug(alphabet)
-            });
-            #[cfg(feature = "std")]
-            sample(&format!("generation/v7/{name}"), &ids, |_| {
-                generator
-                    .generate_uuid_v7()
-                    .unwrap()
-                    .to_plain_uuid_slug(alphabet)
-            });
+    struct Native;
+    impl cases::Recorder for Native {
+        fn sample<T>(&mut self, name: &str, inputs: &[Uuid], operation: impl FnMut(Uuid) -> T) {
+            sample(name, inputs, operation);
         }
     }
-    let mask = derive_uuid_v7_mask(b"benchmark-seed-not-for-production", 1, "bench")?;
-    let compact = UuidV7MaskingCodec::new(mask.clone());
-    let safe = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
-        masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
-        ..UuidV7MaskingCodecOptions::new(mask)
-    })?;
-    let reserved = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
-        masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
-        sentinels: vec![("reserved".to_owned(), ids[0])],
-        ..UuidV7MaskingCodecOptions::new(uuid_slug::uuid_v7_test_mask())
-    })?;
-    let sentinel = &reserved.sentinels()[0].plain_uuid_slug;
-    let uppercase_sentinel = sentinel.to_uppercase();
-    // Opaque inputs prevent folding a repeated sentinel lookup into a precomputed UUID.
-    sample("sentinel/base32/canonical", &ids, |_| {
-        reserved
-            .masked_slug_to_uuid(black_box(sentinel.as_str()))
-            .unwrap()
-    });
-    sample("sentinel/base32/uppercase", &ids, |_| {
-        reserved
-            .masked_slug_to_uuid(black_box(uppercase_sentinel.as_str()))
-            .unwrap()
-    });
-    sample("plain/base64", &ids, |id| {
-        id.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url)
-    });
-    sample("plain/base32", &ids, |id| {
-        id.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex)
-    });
-    sample("format/uuid/lowercase", &ids, |id| id.to_string());
-    sample("format/uuid/uppercase", &ids, |id| format!("{id:X}"));
-    sample("mask/base64", &ids, |id| {
-        compact.uuid_to_masked_slug(id).unwrap()
-    });
-    sample("mask/base32", &ids, |id| {
-        safe.uuid_to_masked_slug(id).unwrap()
-    });
-    // Sentinel-enabled writers may otherwise format an unused collision-check spelling.
-    sample("mask/base32/sentinels", &ids, |id| {
-        reserved.uuid_to_masked_slug(id).unwrap()
-    });
-    let text: Vec<String> = ids.iter().map(ToString::to_string).collect();
-    let encoded: Vec<_> = ids
-        .iter()
-        .map(|id| compact.uuid_to_masked_slug(*id))
-        .collect::<Result<_, _>>()?;
-    let mut cursor = 0;
-    sample("parse/uuid", &ids, |_| {
-        cursor = (cursor + 1) % text.len();
-        Uuid::from_uuid_string(&text[cursor]).unwrap()
-    });
-    sample("unmask/base64", &ids, |_| {
-        cursor = (cursor + 1) % encoded.len();
-        compact.masked_slug_to_uuid(&encoded[cursor]).unwrap()
-    });
-    let encoded_base32: Vec<_> = ids
-        .iter()
-        .map(|id| safe.uuid_to_masked_slug(*id))
-        .collect::<Result<_, _>>()?;
-    sample("unmask/base32", &ids, |_| {
-        cursor = (cursor + 1) % encoded_base32.len();
-        safe.masked_slug_to_uuid(&encoded_base32[cursor]).unwrap()
-    });
-    // Reduced builds derive the explicit public test key here; this is not codec-only setup.
-    sample("construct/public-test-mask-and-codec", &ids, |_| {
-        UuidV7MaskingCodec::new(uuid_slug::uuid_v7_test_mask())
-    });
-    let plain_uuid_slugs: Vec<_> = ids
-        .iter()
-        .map(|id| id.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url))
-        .collect();
-    let mut out = [0; 16];
-    sample("decode/owned", &ids, |_| {
-        cursor = (cursor + 1) % plain_uuid_slugs.len();
-        UuidSlugAlphabet::Base64Url
-            .plain_slug_to_uuid_bytes(&plain_uuid_slugs[cursor])
-            .unwrap()
-    });
-    sample("decode/caller-buffer", &ids, |_| {
-        cursor = (cursor + 1) % plain_uuid_slugs.len();
-        black_box(
-            UuidSlugAlphabet::Base64Url
-                .plain_slug_to_uuid_bytes_into(&plain_uuid_slugs[cursor], &mut out, 0)
-                .unwrap(),
-        );
-    });
-    // Keep each alphabet constant at its call site, as in a consumer selecting one spelling.
-    let base32_slugs: Vec<_> = ids
-        .iter()
-        .map(|id| id.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex))
-        .collect();
-    sample("decode/base32/owned", &ids, |_| {
-        cursor = (cursor + 1) % base32_slugs.len();
-        UuidSlugAlphabet::Base32Hex
-            .plain_slug_to_uuid_bytes(&base32_slugs[cursor])
-            .unwrap()
-    });
-    sample("decode/base32/caller-buffer", &ids, |_| {
-        cursor = (cursor + 1) % base32_slugs.len();
-        black_box(
-            UuidSlugAlphabet::Base32Hex
-                .plain_slug_to_uuid_bytes_into(&base32_slugs[cursor], &mut out, 0)
-                .unwrap(),
-        );
-    });
-    let migration = compact.create_uuid_slug_migration_decoder(Default::default());
-    sample("migration/first", &ids, |_| {
-        cursor = (cursor + 1) % encoded.len();
-        migration.uuid_slug_to_uuid(&encoded[cursor], None).unwrap()
-    });
-    sample("migration/candidates", &ids, |_| {
-        cursor = (cursor + 1) % encoded.len();
-        migration
-            .uuid_slug_to_uuid_candidates(&encoded[cursor], None)
-            .unwrap()
-    });
+    visit(&mut Native)?;
     #[cfg(feature = "os-rng")]
     if std::env::var_os("UUID_SLUG_PROFILE_FILTER").is_none() {
         entropy_resources()?;

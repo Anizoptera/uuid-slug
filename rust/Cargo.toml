@@ -1,5 +1,5 @@
 [workspace]
-members = ["uuid-slug", "bridge"]
+members = ["uuid-slug", "bridge", "benchmark"]
 resolver = "3"
 
 [workspace.package]
