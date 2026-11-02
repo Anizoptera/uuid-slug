@@ -111,7 +111,7 @@ function ratio(values: number[]): string {
   const median = sampleMedian(values);
   const interval = medianConfidence95(values);
   // Two significant figures suppress digits that suggest precision these small process samples lack.
-  return `${number(median)}×${interval ? ` [${number(interval[0])}–${number(interval[1])}]` : " [?]"}`;
+  return `${number(median)}×${interval ? ` [${number(interval[0])}–${number(interval[1])}]${interval[0] <= 1 && interval[1] >= 1 ? " unresolved" : ""}` : " [?]"}`;
 }
 
 export function renderImplementationReport(
@@ -222,6 +222,21 @@ export function renderImplementationReport(
       ? value * anchor
       : value;
   };
+  const relative = (lane: string, name: string): string => {
+    const reference =
+      read(baseline, 0, 0, name) === undefined ? "rust/native/release/fast-rng" : baseline;
+    if (normalized(lane, 0, name) === undefined || normalized(reference, 0, name) === undefined)
+      return "unavailable";
+    if (lane === reference) return "reference";
+    return ratio(
+      Array.from(
+        { length: report.blocks },
+        (_, block) =>
+          (normalized(lane, block, name) as number) /
+          (normalized(reference, block, name) as number),
+      ),
+    );
+  };
   const lines = [
     "# Implementation comparisons",
     "",
@@ -237,9 +252,31 @@ export function renderImplementationReport(
     "",
     "JavaScript graphs are warmed and minified. Rust uses release optimization level 3, ThinLTO and one code-generation unit, with native CPU tuning for this machine; WASM then uses the maintained Binaryen O2 pipeline. Debug and disabled-JIT runs are excluded. Browser workers use cross-origin isolation. Unavailable cells mean the job is absent in that language or feature selection, not zero cost. Installed Node patches are represented by the newest installed patch per major plus the checkout's selected Node.",
     "",
-    "## Runtime and control evidence",
+    "workerd labels identify requested compatibility settings, not an absence of Node APIs. These are local workerd measurements, not deployed Workers latency. Warm-up executes real work before sampling; it does not prove a globally optimal compiler or JIT state.",
+    "",
+    "## Common caller jobs",
     "",
   ];
+  // This short view lets readers compare languages without hunting the same row across families.
+  const common = [
+    "generation/v7/text",
+    "plain/base64",
+    "plain/base32",
+    "mask/binary/owned",
+    "unmask/binary/owned",
+  ];
+  lines.push(
+    table([
+      ["Lane", ...common],
+      ["---", ...common.map(() => "---:")],
+      ...report.lanes
+        .filter((lane) => lane.family !== "Cross-language anchor")
+        .map((lane) => [lane.id].concat(common.map((name) => relative(lane.id, name)))),
+    ]),
+    "",
+    "## Runtime and control evidence",
+    "",
+  );
   const controls = [
     ["Lane", "Runtime", "SHA-256 prefix", "A/A repeat ratio, median [95% interval]"],
     ["---", "---", "---", "---"],
@@ -287,28 +324,7 @@ export function renderImplementationReport(
       ["Caller job", ...lanes.map((lane) => lane.id)],
       ["---", ...lanes.map(() => "---:")],
     ];
-    for (const name of names) {
-      const reference =
-        read(baseline, 0, 0, name) === undefined ? "rust/native/release/fast-rng" : baseline;
-      rows.push([
-        name,
-        ...lanes.map((lane) => {
-          if (
-            normalized(lane.id, 0, name) === undefined ||
-            normalized(reference, 0, name) === undefined
-          )
-            return "unavailable";
-          if (lane.id === reference) return "reference";
-          const values = Array.from(
-            { length: report.blocks },
-            (_, block) =>
-              (normalized(lane.id, block, name) as number) /
-              (normalized(reference, block, name) as number),
-          );
-          return ratio(values);
-        }),
-      ]);
-    }
+    for (const name of names) rows.push([name, ...lanes.map((lane) => relative(lane.id, name))]);
     lines.push(table(rows));
   }
   return `${lines.join("\n")}\n`;
