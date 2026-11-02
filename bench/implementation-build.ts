@@ -38,6 +38,7 @@ export async function sha256(file: string): Promise<string> {
 export async function buildJs(
   directory: string,
   target: "bun" | "node" | "browser" | "deno" | "edge",
+  entrypoint?: string,
 ) {
   const runtime = target === "edge" ? "browser" : target;
   const entry =
@@ -54,7 +55,8 @@ export async function buildJs(
     check: true,
     minify: { whitespace: true, syntax: true, identifiers: true, keepNames: true },
     entrypoints: [
-      runtime === "browser" ? "bench/implementation-worker.ts" : "bench/implementation-cli.ts",
+      entrypoint ??
+        (runtime === "browser" ? "bench/implementation-worker.ts" : "bench/implementation-cli.ts"),
     ],
     target: runtime === "deno" ? "node" : runtime,
     format: target === "edge" ? "iife" : "esm",
