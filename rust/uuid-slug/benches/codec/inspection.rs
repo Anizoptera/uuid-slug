@@ -111,12 +111,7 @@ pub fn visit(ids: &[Uuid], record: &mut impl super::Recorder) {
     scalar!("construct/migration", |_: Uuid| codec
         .create_uuid_slug_migration_decoder(Default::default()));
     scalar!("construct/custom-mask", |_: Uuid| {
-        uuid_slug::UuidV7Mask::from_permutation_functions(
-            "bench",
-            |bytes| Ok(bytes),
-            |bytes| Ok(bytes),
-        )
-        .unwrap()
+        uuid_slug::UuidV7Mask::from_permutation_functions("bench", Ok, Ok).unwrap()
     });
     for count in [1, 4, 16, 64] {
         scalar!(&format!("construct/sentinels/{count}"), |_: Uuid| {
