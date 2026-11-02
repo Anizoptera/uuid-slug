@@ -1336,6 +1336,8 @@ Gate limits: relative timing cannot detect a slowdown shared by both sides; cons
 
 The unchanged full-lane replay passes all checks and 124 timing comparisons, including 393 Node tests and 408 Bun tests. Node base32 remains 1.030 [0.9919, 1.5093], so the pass does not close the gap. Final command results and limits: `bench/reports/ts-investigation.pZxlFS/verification.json`; the failure, replay and control records remain alongside it.
 
+The masked-binary implementation at `ba2273b` passes `bun run perf:check:all` (2026-11-02). A complete check fails its timing stage, then the captured `bun run check` at `dc04d5c` passes with unchanged runtime JavaScript. The earlier failing call and interval were not retained, so attribution is unavailable; `bench/reports/uuid-slug-compare-roFYIM-RLU183/artifacts.tar.gz` retains its inputs only. These results do not close the upstream-relative base32 gap.
+
 ### Internal reduction candidates
 
 **Remove repeated work only where the complete caller remains protected.** Same-base packed substitutions against `c698f57` on macOS arm64 (2026-11-02) screen each candidate separately on Node 26.13.0, Bun 1.4.4, Deno 2.9.8, Chromium 156.0.8078.4, Firefox 157.0, WebKit 27.2 and Node JITless. Screens use six fresh reversed process pairs; their uncorrected intervals are exploratory, not the final regression gate. Exact patches, raw records and replays: `bench/reports/ts-investigation.pZxlFS/`.
