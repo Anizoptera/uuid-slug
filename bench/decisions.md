@@ -2,6 +2,14 @@
 
 Each entry: the decision, the evidence that decided it, alternatives that lost, and what would reopen it.
 
+## Implementation report retention
+
+Keep raw batches on disk and retain only per-process medians for report generation; streaming avoids retaining calibration histories and recomputing the same medians for each table cell.
+
+Bun 1.4.4 on macOS, observed 2026-11-02: three fresh-process comparisons with reversed second-pair order replayed the same captured records. Collected JavaScript heap retained by the report state fell from about 2.5 MB to 1.2 MB for the complete 304-process wiring capture (1,894 rows), and from about 6.4 MB to 1.9 MB for the interrupted 14-process capture (5,528 rows). These are retained-heap observations after explicit collection, not peak memory, RSS, allocation totals or implementation speed measurements.
+
+The complete capture produced byte-identical Markdown before and after the change (SHA-256 `1d8802733ead887b7c5080ca5c1d83559035a21d063834e9a7e8f22acc064683`). The interrupted capture was used only for retention and cannot produce a final comparison. Report tests also overwrite raw batches after admission and require unchanged summaries; missing processes still fail. Revisit the representation if a report needs a statistic beyond the retained process median; raw evidence remains the source for reanalysis.
+
 ## Primary TypeScript call review
 
 ### Canonical timestamp-validation results

@@ -93,8 +93,10 @@ function measure(
       } else resolved++;
       if (!Number.isSafeInteger(count)) throw new Error("Benchmark batch count overflow");
     }
-    const ns: number[] = [];
-    const threadCpuNs: number[] = [];
+    const ns = Array.from({ length: settings.samples }, () => 0);
+    const threadCpuNs = threadCpuUsage
+      ? Array.from({ length: settings.samples }, () => 0)
+      : undefined;
     let operations = 0;
     for (let sample = 0; sample < settings.samples; sample++) {
       // Counter reads stay outside elapsed timing; CPU still includes the clock and witness work.
@@ -104,8 +106,11 @@ function measure(
       const elapsed = performance.now() - start;
       const cpu = cpuStart && threadCpuUsage?.(cpuStart);
       if (!(elapsed > 0)) throw new Error(`Unresolved clock for ${name}`);
-      ns.push((elapsed * 1e6) / count);
-      if (cpu) threadCpuNs.push(((cpu.user + cpu.system) * 1e3) / count);
+      ns[sample] = (elapsed * 1e6) / count;
+      if (threadCpuNs) {
+        if (!cpu) throw new Error(`Missing caller-thread CPU sample for ${name}`);
+        threadCpuNs[sample] = ((cpu.user + cpu.system) * 1e3) / count;
+      }
       operations += count;
     }
     rows.push({
@@ -117,7 +122,7 @@ function measure(
       targetBatchMs: duration,
       // The checksum must escape through host serialization; an integer assertion alone is tautological.
       resultWitness: sink,
-      ...(threadCpuNs.length ? { threadCpuNs } : {}),
+      ...(threadCpuNs ? { threadCpuNs } : {}),
     });
   }
   return rows;

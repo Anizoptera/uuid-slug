@@ -46,14 +46,14 @@ export async function measureAsync(
       } else resolved++;
       if (!Number.isSafeInteger(count)) throw new Error("Async calibration overflow");
     }
-    const ns: number[] = [];
+    const ns = Array.from({ length: settings.samples }, () => 0);
     let operations = 0;
     for (let sample = 0; sample < settings.samples; sample++) {
       const start = performance.now();
       await batch(count);
       const elapsed = performance.now() - start;
       if (!(elapsed > 0)) throw new Error("Async timer did not resolve");
-      ns.push((elapsed * 1e6) / count);
+      ns[sample] = (elapsed * 1e6) / count;
       operations += count;
     }
     rows.push({

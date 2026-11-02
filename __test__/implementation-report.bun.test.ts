@@ -1,6 +1,9 @@
 // A complete-looking table must not hide lost processes, duplicate rows or inverted ratios.
 import { expect, test } from "bun:test";
-import { renderImplementationReport } from "../bench/implementation-report";
+import {
+  createImplementationReporter,
+  renderImplementationReport,
+} from "../bench/implementation-report";
 import { validateRows } from "../bench/implementation-evidence";
 import type { ImplementationReport } from "../bench/implementation-report";
 import { secureEntropySources } from "../bench/implementation-entropy";
@@ -173,4 +176,23 @@ test("randomized exposure accepts either balanced orientation without accepting 
   if (!first) throw new Error("Fixture omitted its first process");
   first.repeat = 1;
   expect(() => renderImplementationReport(report)).toThrow("Unbalanced acquisition window");
+});
+
+test("incremental reports retain summaries independently of reusable raw process buffers", () => {
+  const { measurements, ...metadata } = evidence();
+  const reporter = createImplementationReporter(metadata);
+  for (const record of measurements.slice(0, -1)) reporter.append(record);
+  expect(() => reporter.render()).toThrow("Missing process");
+  const final = measurements.at(-1);
+  if (!final) throw new Error("Fixture omitted its final process");
+  reporter.append(final);
+  const original = reporter.render();
+  // Raw batches may be released or reused after serialization; rendering must not retain their state.
+  for (const record of measurements)
+    for (const row of record.rows) {
+      row.ns.fill(1);
+      row.name = "overwritten raw buffer";
+    }
+  expect(reporter.render()).toBe(original);
+  expect(reporter.render("rust/native/release/fast-rng")).toContain("0.5× [0.5–0.5]");
 });

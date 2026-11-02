@@ -1,5 +1,7 @@
 // One serial scheduler owns process blocks, progress, retained observations and report regeneration.
-import { mkdir, mkdtemp, readFile, writeFile, appendFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile, appendFile, rm } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { createInterface } from "node:readline";
 import { tmpdir, cpus, platform, arch } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { randomBytes, randomInt } from "node:crypto";
@@ -8,9 +10,8 @@ import { command } from "../scripts/command";
 import { runWorkerdConsumer } from "../scripts/check-workerd-consumer";
 import { prepareImplementations } from "./implementation-build";
 import type { Lane } from "./implementation-build";
-import { comparisonWindow, renderImplementationReport } from "./implementation-report";
-import { validateRows, validateEntropyEvidence } from "./implementation-evidence";
-import type { ImplementationReport, Measurement } from "./implementation-report";
+import { comparisonWindow, createImplementationReporter } from "./implementation-report";
+import type { ImplementationReport } from "./implementation-report";
 import type { Settings } from "./implementation-worker";
 
 const root = process.cwd();
@@ -19,7 +20,7 @@ process.env.NODE_ENV = "production";
 async function acquire(
   lane: Lane,
   configuration: Settings,
-): Promise<Pick<Measurement, "rows" | "entropy">> {
+): Promise<{ rows: unknown; entropy?: unknown }> {
   const settings =
     lane.filter === undefined ? configuration : { ...configuration, filter: lane.filter };
   let input: unknown;
@@ -156,18 +157,11 @@ async function acquire(
   if (input && typeof input === "object" && "failure" in input && typeof input.failure === "string")
     throw new Error(`${lane.id}: ${input.failure}`);
   if (input && typeof input === "object" && "rows" in input) {
-    const entropy =
-      lane.requiresEntropy === undefined
-        ? undefined
-        : validateEntropyEvidence(
-            "entropy" in input ? input.entropy : undefined,
-            lane.requiresEntropy,
-          );
-    return { rows: validateRows(input.rows, settings.samples), ...(entropy ? { entropy } : {}) };
+    return { rows: input.rows, ...("entropy" in input ? { entropy: input.entropy } : {}) };
   }
   if (lane.requiresEntropy !== undefined)
     throw new Error(`Missing entropy qualification for ${lane.id}`);
-  return { rows: validateRows(input, settings.samples) };
+  return { rows: input };
 }
 const args = process.argv.slice(2);
 const reportIndex = args.indexOf("--report");
@@ -178,18 +172,26 @@ const destination = resolve(
 if (reportIndex >= 0) {
   const source = args[reportIndex + 1];
   if (!source) throw new Error("--report requires the retained JSON Lines file");
-  const [header, ...records] = (await readFile(source, "utf8")).trimEnd().split("\n");
-  if (!header || records.pop() !== '{"complete":true}')
+  const input = createInterface({ input: createReadStream(source), crlfDelay: Infinity });
+  let reporter: ReturnType<typeof createImplementationReporter> | undefined;
+  let complete = false;
+  try {
+    for await (const line of input) {
+      if (complete) throw new Error("Unexpected data after acquisition completion");
+      if (!reporter) reporter = createImplementationReporter(JSON.parse(line));
+      else if (line === '{"complete":true}') complete = true;
+      else reporter.append(JSON.parse(line));
+    }
+  } finally {
+    input.close();
+  }
+  if (!reporter || !complete)
     throw new Error(
       "Incomplete acquisition; rerun the comparison before publishing a final report.",
     );
-  const report: ImplementationReport = {
-    ...JSON.parse(header),
-    measurements: records.map((record) => JSON.parse(record)),
-  };
   await writeFile(
     destination,
-    renderImplementationReport(report, baselineIndex >= 0 ? args[baselineIndex + 1] : undefined),
+    reporter.render(baselineIndex >= 0 ? args[baselineIndex + 1] : undefined),
   );
   console.log(destination);
 } else {
@@ -223,7 +225,7 @@ if (reportIndex >= 0) {
   await mkdir(dirname(destination), { recursive: true });
   const raw = destination.replace(/\.md$/, ".jsonl");
   if (raw === destination) throw new Error("Report destination must end with .md");
-  const report: ImplementationReport = {
+  const report: Omit<ImplementationReport, "measurements"> = {
     revision: (await command("git", ["rev-parse", "HEAD"], root)).trim(),
     captured: new Date().toISOString(),
     host: `${platform()}/${arch()}; ${cpus()[0]?.model ?? "CPU unreported"}`,
@@ -232,13 +234,13 @@ if (reportIndex >= 0) {
     settings,
     blocks,
     lanes: [],
-    measurements: [],
   };
   let complete = false;
   try {
     console.log("Preparing every implementation before timing...");
     const lanes = await prepareImplementations(directory, settings);
     report.lanes = lanes.map(({ environment: _environment, ...lane }) => lane);
+    const reporter = createImplementationReporter(report);
     // Fix the small randomized schedule before timing; growing results cannot change exposure.
     const schedule = Array.from({ length: blocks }, () => {
       const order = [...lanes];
@@ -252,8 +254,7 @@ if (reportIndex >= 0) {
       return order.map((lane) => ({ lane, steps: comparisonWindow(randomInt(2)) }));
     });
     // Append each capture once; rewriting the growing history makes checkpoint I/O quadratic.
-    const { measurements: _measurements, ...metadata } = report;
-    await writeFile(raw, `${JSON.stringify(metadata)}\n`);
+    await writeFile(raw, `${JSON.stringify(report)}\n`);
     let sequence = 0;
     for (const [block, windows] of schedule.entries()) {
       for (const { lane, steps } of windows) {
@@ -269,7 +270,7 @@ if (reportIndex >= 0) {
               : { ...reference, ...(lane.filter === undefined ? {} : { filter: lane.filter }) };
           console.log(`Block ${block + 1}/${blocks}: ${lane.id}; ${step.role} ${step.repeat + 1}`);
           const capture = await acquire(selected, settings);
-          const record: Measurement = {
+          const record = reporter.append({
             lane: selected.id,
             subject: lane.id,
             block,
@@ -277,18 +278,17 @@ if (reportIndex >= 0) {
             role: step.role,
             sequence: sequence++,
             ...capture,
-          };
-          report.measurements.push(record);
+          });
           await appendFile(raw, `${JSON.stringify(record)}\n`);
         }
       }
       await writeFile(
         destination.replace(/\.md$/, ".partial.md"),
-        `**IN PROGRESS: ${block + 1}/${blocks} blocks.**\n\n${renderImplementationReport({ ...report, blocks: block + 1 })}`,
+        `**IN PROGRESS: ${block + 1}/${blocks} blocks.**\n\n${reporter.render(undefined, block + 1)}`,
       );
     }
     await appendFile(raw, '{"complete":true}\n');
-    await writeFile(destination, renderImplementationReport(report));
+    await writeFile(destination, reporter.render());
     await rm(destination.replace(/\.md$/, ".partial.md"), { force: true });
     complete = true;
     console.log(`Report: ${destination}\nRaw observations: ${raw}`);
