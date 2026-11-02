@@ -4,10 +4,10 @@
 
 Compare every maintained TypeScript runtime, native Rust feature variant and WASM variant on equivalent API jobs, warmed and optimized for performance: minified JavaScript and release Rust/WASM, without debug artifacts or disabled JITs. Cover API variants and common scenarios, retain raw evidence, and generate a rerunnable Markdown report centered on relative differences and uncertainty. Keep small fluctuations out of rankings. Benchmark work is authorized; product changes, publication and remote writes are not.
 
-- [ ] Cover each distinct Rust capability selection, including reduced browser WASM, std-only and OS entropy without std; prove unavailable combinations rather than inferring them from labels.
-- [ ] Trace and fault-test secure entropy selection in JavaScript and browser Rust/WASM before timing; exclude insecure generation from every candidate and reference.
+- [x] Cover each distinct Rust capability selection, including reduced browser WASM, std-only and OS entropy without std; the complete 76-lane smoke produced 304 captures with release-profile checks.
+- [x] Trace and fault-test secure entropy selection in JavaScript and browser Rust/WASM before timing; the complete smoke records source rejection and recovery, reduced-build absence, and report rejection of missing policy or insecure source labels. A zero-fill mutation fails the real-worker regression.
 - [x] Reuse the measurement and correctness corpus across runtime variants; add missing jobs without changing product behavior.
-- [ ] Keep one rerun command and validated relative report; reuse process supervision so interruption stops descendants and removes disposable binaries while completed observations survive.
+- [x] Keep one rerun command and validated relative report; the existing process supervisor owns interruption cleanup, and complete JSON Lines can regenerate the report without timing.
 - [x] Pair adjacent fresh-process reference/candidate repeats, retain comparison edges, and include both workerd modes without mixing HTTP dispatch into per-call timing.
 - [ ] Falsify reporting with identical controls, reversed comparisons, missing lanes and invalid measurements; run the complete selected matrix without overlapping timing workloads.
 - [ ] Review the generated report against raw records, document rerun controls and limits, commit the results and remove owned scratch.
