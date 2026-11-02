@@ -182,13 +182,13 @@ async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet>
     privateAlphabetApi: {
       node: join(nodeModules, "alphabet.js"),
       bun: join(bunModules, "alphabet.ts"),
-      deno: join(denoModules, "alphabet.ts"),
+      deno: join(denoModules, "alphabet.js"),
       chromium: join(packed, "dist/alphabet.js"),
     },
     privateV4Api: {
       node: join(nodeModules, "v4.js"),
       bun: join(bunModules, "v4.ts"),
-      deno: join(denoModules, "v4.ts"),
+      deno: join(denoModules, "v4.js"),
       chromium: join(packed, "dist/v4.js"),
     },
   };
