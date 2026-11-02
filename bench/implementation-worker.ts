@@ -22,6 +22,7 @@ export interface Observation {
   targetBatchMs?: number;
   calibration?: { count: number; elapsedMs: number }[];
   threadCpuNs?: number[];
+  resultWitness?: number;
 }
 
 function threadClock() {
@@ -58,9 +59,9 @@ function measure(
   cases: readonly [string, ProfileCase][],
 ): Observation[] {
   const duration = settings.duration;
-  let sink = 0;
   const rows: Observation[] = [];
   for (const [name, operation] of cases) {
+    let sink = 0;
     const expectedFailure = name.startsWith("invalid.");
     if (name.includes("/")) {
       if (operation(0) instanceof Error) throw new Error(`Shared job failed: ${name}`);
@@ -114,11 +115,11 @@ function measure(
       calibration,
       clockQuantumMs: quantum,
       targetBatchMs: duration,
+      // The checksum must escape through host serialization; an integer assertion alone is tautological.
+      resultWitness: sink,
       ...(threadCpuNs.length ? { threadCpuNs } : {}),
     });
   }
-  // Observable output keeps result reads live without serializing inside timed work.
-  if (!Number.isInteger(sink)) throw new Error("Missing benchmark result witness");
   return rows;
 }
 

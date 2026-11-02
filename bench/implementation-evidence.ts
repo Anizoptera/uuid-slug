@@ -59,6 +59,17 @@ export function validateRows(input: unknown, samples: number): Observation[] {
     )
       throw new Error("Malformed or duplicate benchmark observation");
     names.add(row.name);
+    const witness: Pick<Observation, "resultWitness"> = {};
+    if ("resultWitness" in row) {
+      if (
+        typeof row.resultWitness !== "number" ||
+        !Number.isInteger(row.resultWitness) ||
+        row.resultWitness < -0x8000_0000 ||
+        row.resultWitness > 0x7fff_ffff
+      )
+        throw new Error("Invalid emitted result witness");
+      witness.resultWitness = row.resultWitness;
+    }
     const calibration: NonNullable<Observation["calibration"]> = [];
     if ("calibration" in row) {
       if (!Array.isArray(row.calibration)) throw new Error("Malformed calibration evidence");
@@ -109,6 +120,13 @@ export function validateRows(input: unknown, samples: number): Observation[] {
         throw new Error("Invalid batch target");
       clocks.targetBatchMs = row.targetBatchMs;
     }
-    return { name: row.name, ns: row.ns, operations: row.operations, calibration, ...clocks };
+    return {
+      name: row.name,
+      ns: row.ns,
+      operations: row.operations,
+      calibration,
+      ...clocks,
+      ...witness,
+    };
   });
 }

@@ -56,7 +56,6 @@ export async function measureAsync(
       ns.push((elapsed * 1e6) / count);
       operations += count;
     }
-    if (!Number.isInteger(witness)) throw new Error("Missing async result witness");
     rows.push({
       name: job.name,
       ns,
@@ -64,6 +63,7 @@ export async function measureAsync(
       calibration,
       clockQuantumMs: quantum,
       targetBatchMs: settings.duration,
+      resultWitness: witness,
     });
   }
   return rows;

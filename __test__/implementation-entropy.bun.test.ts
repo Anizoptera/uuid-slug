@@ -24,10 +24,12 @@ test("the actual benchmark worker rejects source failure and recovers through re
     child.exited,
   ]);
   if (exit !== 0) throw new Error(`Benchmark worker failed: ${diagnostic}`);
-  const result: { entropy: EntropyEvidence; rows: { name: string }[] } = JSON.parse(output);
+  const result: { entropy: EntropyEvidence; rows: { name: string; resultWitness?: number }[] } =
+    JSON.parse(output);
   expect(result.entropy.required).toBe(true);
   expect(result.entropy.rejectedSourceCalls).toBeGreaterThan(0);
   expect(result.entropy.secureSourceCalls).toBeGreaterThan(0);
   expect(result.entropy.sources).toContain("crypto.getRandomValues");
   expect(result.rows.map((row) => row.name)).toEqual(["plain/base32"]);
+  expect(Number.isInteger(result.rows[0]?.resultWitness)).toBe(true);
 });
