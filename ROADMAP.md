@@ -1,5 +1,15 @@
 # Remaining work
 
+## Cross-runtime implementation comparison
+
+Compare every maintained TypeScript runtime, native Rust feature variant and WASM variant on equivalent API jobs; cover API variants and common scenarios, retain raw evidence, and generate a rerunnable Markdown report centered on relative differences and uncertainty. Keep small fluctuations out of rankings. Benchmark work is authorized; product changes, publication and remote writes are not.
+
+- [ ] Map existing workloads and runtime/build variants; identify missing API jobs and distinguish direct calls from transport overhead.
+- [ ] Reuse the measurement and correctness corpus across runtime variants; add missing jobs without changing product behavior.
+- [ ] Implement one rerun command, raw evidence validation and a generated relative report with explicit coverage and uncertainty.
+- [ ] Falsify reporting with identical controls, reversed comparisons, missing lanes and invalid measurements; run the complete selected matrix without overlapping timing workloads.
+- [ ] Review the generated report against raw records, document rerun controls and limits, commit the results and remove owned scratch.
+
 ## Joint Rust and TypeScript release preparation
 
 Deliver the same capabilities and identifier formats through APIs natural to each language, with correct and predictable consumer experience first, performance and resource efficiency second, and maintenance simplicity third.

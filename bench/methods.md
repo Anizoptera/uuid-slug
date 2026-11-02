@@ -34,6 +34,14 @@ Set `UUID_SLUG_BENCH_NODE_CURRENT_EXECUTABLE` to the Node Current executable whe
 
 ## Measurement limits
 
+### Cross-runtime implementation comparisons
+
+Compare complete caller jobs with the same inputs, output meaning and ownership. Keep native Rust, compiled WASM application loops and JavaScript calls labeled separately; WASM application throughput excludes a JavaScript crossing per identifier. Never rank JSON test-bridge dispatch as a codec implementation. Include language-specific jobs rather than deleting them to force a common denominator, and mark unavailable cells explicitly.
+
+Build before timing. Run timing workers serially on one machine, rotate and reverse their order across fresh-process blocks, and retain every batch, runtime version, artifact hash and acquisition order. Pair ratios within each block; summarize process medians rather than treating calls or batches as independent observations. Include repeated identical-artifact controls. Do not wait for an idle host, delete outliers or claim immunity to contention: uncertainty and control drift must remain visible.
+
+Generate the Markdown report from retained measurements. Show rounded relative costs, interval bounds and sample counts without a global winner or cross-operation average. Overlapping uncertainty means unresolved, not equal; unavailable and failed measurements are not zero. Keep raw precision for regeneration, and print smoke runs as wiring checks rather than performance evidence. Repeating a report must not rebuild or rerun measurements unless requested.
+
 Keep [throughput, sampled latency and cold-start measurements](https://github.com/openjdk/jmh/blob/master/jmh-samples/src/main/java/org/openjdk/jmh/samples/JMHSample_02_BenchmarkModes.java) separate, as JMH does; each answers a different question.
 
 Measure throughput and individual-call latency separately. Timed batches amortize clock and loop overhead; their per-call averages cannot establish individual-call p99. Keep raw samples, warm-up settings, runtime versions and execution order. Repeat comparisons in fresh processes with alternating order; samples from one process can share JIT, GC and thermal effects.
