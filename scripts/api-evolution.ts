@@ -117,6 +117,32 @@ function collectTypeScriptEntries(
       } else for (const member of node.members) visit(member, path);
       return;
     }
+    // A changed signature is not a removed symbol. The compiler below decides whether old
+    // callers still work; private aliases matter to that check, not to deprecation policy.
+    if (
+      ts.isTypeAliasDeclaration(node) &&
+      !node.modifiers?.some((item) => item.kind === ts.SyntaxKind.ExportKeyword)
+    )
+      return;
+    if (ts.isVariableStatement(node)) {
+      for (const declaration of node.declarationList.declarations)
+        entries.add(`${owners.join(".")}: variable ${declaration.name.getText(file)}`);
+      return;
+    }
+    if (
+      ts.isTypeAliasDeclaration(node) ||
+      ts.isFunctionDeclaration(node) ||
+      ts.isMethodSignature(node) ||
+      ts.isMethodDeclaration(node) ||
+      ts.isPropertySignature(node) ||
+      ts.isPropertyDeclaration(node) ||
+      ts.isEnumMember(node)
+    ) {
+      entries.add(
+        `${owners.join(".")}: ${ts.SyntaxKind[node.kind]} ${node.name?.getText(file) ?? "default"}`,
+      );
+      return;
+    }
     const declaration = printer.printNode(ts.EmitHint.Unspecified, node, file).trim();
     entries.add(owners.length ? `${owners.join(".")}: ${declaration}` : declaration);
   };
