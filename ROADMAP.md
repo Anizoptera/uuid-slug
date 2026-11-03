@@ -10,8 +10,6 @@ Derive API consistency and usability improvements from the maintainer's requests
 
 ## Joint release readiness
 
-- [ ] Review the crate README and every public Rust doc comment for plain language, useful caller guidance and accurate contracts; preserve limits and reasons, then verify rendered docs and examples.
-
 Follow `dev/release.md` for the npm update and first crate publication. Build and verify stable archives from the authorized tag, not old development captures; reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives. Existing regression checks remain required; missing performance comparisons neither block preparation nor authorize experiments.
 
 - [ ] With explicit authorization, configure `CRATES_IO_BOOTSTRAP_TOKEN` before the first crate upload; trusted publishing cannot be configured until the crate exists.
