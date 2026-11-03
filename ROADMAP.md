@@ -31,6 +31,8 @@ Expand solver-backed verification of the actual Rust implementation without chan
 
 ## Cross-runtime implementation comparison
 
+- [ ] Later, make the latest stable Bun the 1× reference for comparative benchmarks instead of the latest Node.js. Recalculate relative results from matching measurements; keep Node.js as a comparison target and label the reference runtime and version. Do not change the current reports during release preparation.
+
 Compare every maintained TypeScript runtime, native Rust feature variant and WASM variant on equivalent API jobs, warmed and optimized for performance: minified JavaScript and release Rust/WASM, without debug artifacts or disabled JITs. Cover API variants and common scenarios, retain raw evidence, and generate a rerunnable Markdown report centered on relative differences and uncertainty. Keep small fluctuations out of rankings. Benchmark work is authorized; product changes, publication and remote writes are not.
 
 Update and commit only one canonical Markdown comparison report. Keep progress in the CLI and retain raw captures locally and untracked only for that report or an unresolved investigation; provisional, per-runtime and duplicate reports and all committed archives are forbidden.
