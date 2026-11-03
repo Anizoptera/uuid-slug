@@ -8,7 +8,7 @@ NEVER format or hard-wrap Markdown or other prose. Keep each paragraph on one so
 
 Write byte sizes in binary units in every file and tool output: 1 KB is 1024 bytes, then MB and GB. Never use SI units (1 kB = 1000 bytes). Release tooling formats sizes with `binarySize` in `scripts/release-comparison.ts`; reuse it rather than formatting by hand.
 
-NEVER commit archives or compressed artifacts in any format, including generated evidence, fixtures and temporary or intermediate results. Keep needed artifacts untracked and identify their local availability; commit the single canonical Markdown report, not its raw archive. Never rename or encode archive content to bypass this rule. Check staged bytes before commits and tracked bytes in full verification; Git's text/binary attributes must not suppress inspection, and inspection failure must fail the check. Preserve required data before untracking it.
+NEVER commit archives or compressed artifacts in any format, including generated evidence, fixtures and temporary or intermediate results. Keep needed artifacts untracked and identify their local availability; commit the single canonical Markdown report, not its raw archive. Never rename or encode archive content to bypass this rule. Keep the existing filename check cheap; do not expand this storage policy into content scanning or adversarial bypass testing. Preserve required data before untracking it.
 
 ## Read before work
 

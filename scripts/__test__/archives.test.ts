@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import { command } from "../command";
 
-test.each([".GZ", ".crate", ".bin"])("archive policy checks the index for %s", async (suffix) => {
+test.each([".GZ", ".crate"])("archive policy checks the index for %s", async (suffix) => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-archive-policy-"));
   try {
     await command("git", ["init", "--quiet"], root);
