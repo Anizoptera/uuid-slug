@@ -1,20 +1,25 @@
-// Exercise the real index: untracked data is allowed, staged archives fail, and untracking repairs it.
+// Exercise the real index: untracked output is allowed; staged archives or ignored files fail.
 import { expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { copyFile, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import { command } from "../command";
 
-test.each([".GZ", ".crate"])("archive policy checks the index for %s", async (suffix) => {
+const artifactPaths = ["evidence.GZ", "evidence.crate", ".omc/session.json"];
+test.each(artifactPaths)("artifact policy checks the index for %s", async (name) => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-archive-policy-"));
   try {
     await command("git", ["init", "--quiet"], root);
+    await copyFile(resolve(import.meta.dir, "../../.gitignore"), join(root, ".gitignore"));
     await Bun.write(join(root, "README.md"), "Source documentation\n");
-    const name = "evidence" + suffix;
     await Bun.write(
       join(root, name),
-      suffix === ".GZ" ? gzipSync("raw evidence") : new Bun.Archive({ "data.txt": "raw evidence" }),
+      name.endsWith(".GZ")
+        ? gzipSync("raw evidence")
+        : name.endsWith(".crate")
+          ? new Bun.Archive({ "data.txt": "raw evidence" })
+          : '{"session":"temporary"}',
     );
     await command("git", ["add", "README.md"], root);
     const check = async () => {
@@ -38,7 +43,7 @@ test.each([".GZ", ".crate"])("archive policy checks the index for %s", async (su
       return { output, diagnostic, status };
     };
     expect((await check()).status).toBe(0);
-    await command("git", ["add", name], root);
+    await command("git", ["add", "--force", name], root);
     const rejected = await check();
     expect(rejected.status).toBe(1);
     expect(rejected.diagnostic).toContain(name);

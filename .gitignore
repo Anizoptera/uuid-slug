@@ -9,3 +9,14 @@ release-artifacts/
 rust/target/
 rust/proofs/target/
 .omc/
+.cache/
+/tmp/
+/temp/
+/scratch/
+coverage/
+test-results/
+playwright-report/
+*.log
+*.tmp
+*.temp
+*.tsbuildinfo

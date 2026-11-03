@@ -10,6 +10,8 @@ Write byte sizes in binary units in every file and tool output: 1 KB is 1024 byt
 
 NEVER commit archives or compressed artifacts in any format, including generated evidence, fixtures and temporary or intermediate results. Keep needed artifacts untracked and identify their local availability; commit the single canonical Markdown report, not its raw archive. Never rename or encode archive content to bypass this rule. Keep the existing filename check cheap; do not expand this storage policy into content scanning or adversarial bypass testing. Preserve required data before untracking it.
 
+Keep temporary files, agent state, caches, logs and temporary results untracked. Declare their paths in `.gitignore`; NEVER force-add ignored output. The existing index check must reject tracked ignored files using Git's own ignore rules. Preserve needed files when untracking them.
+
 ## Read before work
 
 READ the owner before changing its subject; these references hold the detailed rules.
