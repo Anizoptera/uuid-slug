@@ -46,6 +46,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import ts from "typescript-checker";
 import type { Plugin } from "vite";
+import { normalizePath } from "vite";
 
 const PREFIX = "\0uuid-slug-rust-test:";
 
@@ -90,7 +91,8 @@ function exportedNames(file: string, seen = new Set<string>()): string[] {
 }
 
 export function rustTestPlugin(root: string): Plugin {
-  const tests = resolve(root, "__test__") + "/";
+  // Vite importer IDs use forward slashes on Windows too.
+  const tests = normalizePath(resolve(root, "__test__")) + "/";
   const adapter = resolve(root, "__test__/rust-test-public-api.ts");
   return {
     name: "uuid-slug-rust-test-implementation",
