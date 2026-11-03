@@ -199,7 +199,7 @@ impl UuidV7Generator {
         offset: usize,
         fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
     ) -> Result<(), Error> {
-        let target = crate::uuid::range(out.len(), offset)?;
+        let target = crate::buffer_range::range(out.len(), offset)?;
         let id = self.generate_uuid_v7_with_random_fill(unix_ms, fill)?;
         out[target].copy_from_slice(id.as_uuid_bytes());
         Ok(())
@@ -214,7 +214,7 @@ impl UuidV7Generator {
         offset: usize,
         fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
     ) -> Result<(), Error> {
-        let target = crate::uuid::range(out.len(), offset)?;
+        let target = crate::buffer_range::range(out.len(), offset)?;
         let instant = system_instant(at)?;
         let id = self.generate_uuid_v7_from_instant(instant, fill)?;
         out[target].copy_from_slice(id.as_uuid_bytes());
@@ -334,7 +334,7 @@ pub fn generate_uuid_v4_into_with_random_fill(
     offset: usize,
     fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
 ) -> Result<(), Error> {
-    let target = crate::uuid::range(out.len(), offset)?;
+    let target = crate::buffer_range::range(out.len(), offset)?;
     let id = generate_uuid_v4_with_random_fill(fill)?;
     out[target].copy_from_slice(id.as_uuid_bytes());
     Ok(())

@@ -1,5 +1,5 @@
 //! Preserve every UUID bit while accepting standard text and enforcing canonical slug spellings.
-pub(crate) use crate::buffer_range::range;
+use crate::buffer_range::range;
 use crate::{Error, ErrorCode, KeylessUuidText, UuidSlugAlphabet, text};
 use alloc::{boxed::Box, format, string::String};
 use core::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
