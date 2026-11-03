@@ -22,6 +22,8 @@ Retain each timed result in one host-visible slot so opaque objects escape with 
 
 On macOS arm64, observed 2026-11-03 at `dd955cd`, minified production workers on Node 26.13.0 and Bun 1.4.4 preserve usable masks from synchronous and asynchronous derivation. An observing host counts exactly one store per executed calibration or measured call; removing either store fails its regression. Both escaped masks encode and restore the original UUID and produce distinct slugs for distinct derivation inputs.
 
+The same minified production-browser probe at `46f45a8` preserves these properties on Chromium 156.0.8078.4, Firefox 157.0 and WebKit 27.2 (macOS arm64, 2026-11-03). Observed writes equal executed calls at 8,383, 11,199 and 22,463 respectively; both escaped masks retain distinct key state and restore the UUID. These counts cover calibration and measured calls in the two selected derivation jobs; they do not compare performance or qualify other jobs.
+
 Six fresh processes per host compare the existing one-iteration and eight-iteration derivation jobs, with an unchanged plain conversion in each worker. Median within-process cost ratios are 1.80 on Node (range 1.76–1.87) and 2.36 on Bun (range 1.73–2.45); plain conversion process medians span 34.2–36.9 ns and 29.9–31.9 ns respectively. These observations show sensitivity to real derivation work in those jobs, not the absence of dead-code elimination in every job or engine. The iterated job also copies its options and derives different key material; this screen does not isolate a per-iteration instruction cost, establish a stable warm-up phase or rank runtimes.
 
 ## Implementation report retention
