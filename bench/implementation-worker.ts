@@ -77,7 +77,7 @@ function measure(
         else if (typeof value === "boolean") sink ^= Number(value);
         else if (value instanceof Uint8Array) sink ^= value[i % value.length] as number;
         else if (value instanceof Error) sink ^= value.message.length;
-        else sink ^= uuidObjectChecksum(value, i) ?? Object.keys(value).length;
+        else sink ^= uuidObjectChecksum(value, i) ?? 0;
       }
     };
     let count = 64;
