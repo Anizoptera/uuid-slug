@@ -17,7 +17,7 @@ Derive API consistency and usability improvements from the maintainer's requests
 
 Follow `dev/release.md` for the npm update and first crate publication. Build and verify stable archives from the authorized tag, not old development captures; reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives. Existing regression checks remain required; missing performance comparisons neither block preparation nor authorize experiments.
 
-- [ ] Repair Rust migration candidate decoding for legacy sentinel aliases: recognizing a sentinel must stop before mask callbacks. Verify canonical and alias spellings through both readers and check TypeScript parity.
+- [ ] Finish Rust API improvements: name supplied numeric times explicitly, decouple caller-buffer generation from RNG selection, and make diagnostic labels optional. Preserve wire formats and supported inputs; update dependent calls, docs, API reports and packaged consumers together.
 - [ ] Before publication, resolve or review [the upstream `deepmerge` advisory](https://github.com/advisories/GHSA-gcqx-w48m-w2h4). The latest Rollup resolver depends on the affected release and merges its fixed defaults; this dependency is development-only. Keep this separate from the clean production dependency audit.
 
 - [ ] With explicit authorization, configure `CRATES_IO_BOOTSTRAP_TOKEN` before the first crate upload; trusted publishing cannot be configured until the crate exists.

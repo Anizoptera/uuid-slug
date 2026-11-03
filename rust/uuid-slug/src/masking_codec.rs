@@ -829,7 +829,8 @@ impl UuidSlugMigrationDecoder<'_> {
         })
     }
 
-    /// Return matching UUIDs without duplicates. A registered sentinel returns only its UUID.
+    /// Return matching UUIDs without duplicates. A canonical sentinel returns only its UUID.
+    /// A legacy sentinel alias can also be a current masked ID; retain both UUIDs, sentinel first, so neither stored identity is lost.
     /// Use `None` for all enabled formats, or `Some(format)` for a known enabled format. An empty vector means the slug is well-formed but no selected format or key matched.
     /// A callback error fails the whole call, even after earlier matches.
     pub fn uuid_slug_to_uuid_candidates(
