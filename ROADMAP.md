@@ -1,5 +1,7 @@
 # Remaining work
 
+- [x] Align changelog instructions across root guidance and the release owner: establish each package's publication baseline, update final consumer entries instead of accumulating unreleased history, and retain one mandatory review procedure without a prose checker. Read back the changes and check instruction compatibility before committing.
+
 - [x] Rewrite unreleased notes for the joint release: TypeScript changes since npm 0.5.0 and Rust's first publication. Retain consumer capabilities, limits and required actions; remove unpublished migration history and development/testing details. Compare the final wording with the package APIs and release baseline.
 
 ## Rust proof coverage

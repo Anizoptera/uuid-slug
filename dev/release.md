@@ -19,6 +19,14 @@ On retry, verify and reuse the retained inputs, including the original package s
 
 ## Evidence and notes
 
+Write changelog entries for the package consumer, comparing the final release with that package's latest published version rather than intermediate commits.
+
+Before editing notes, establish each selected package's published baseline from its registry and matching source or artifact. A shared Git tag does not prove both packages were published. Treat a first publication as new capabilities, never an upgrade from an unpublished API; a failed registry request does not prove there was no publication.
+
+For each entry, ask: what can the consumer now do, what changed from the published version, why does it matter, and what action or limit must they know? Keep only supported answers. Name the package and use short, concrete sentences. Preserve useful capabilities, reasons and boundaries when shortening; never invent a guarantee or migration.
+
+Update the existing entry when an unreleased feature changes. Describe its final behavior once; remove superseded wording and fixes to versions no consumer received. Exclude development, tests, proofs, tooling and internal refactors. Mention documentation only when it changes what callers must know or do. Check the final entries against the published baseline and current API, not commit titles; leave published sections unchanged unless correcting a named factual error. These are semantic review steps, not targets for prose-matching tests.
+
 Prepare releases from correctness, compatibility, package and recovery evidence. Missing performance comparisons do not block release preparation or authorize optimization; follow [root agent guidance](../AGENTS.md#work-scope) and retain the existing required regression checks.
 
 Prepare both archives once without publishing credentials, even when publishing only one. Verify version and tag agreement, packaged APIs, shared behavior, language parity, minimum compatible version, archive integrity, and licenses before any publication step. Publication must reuse the verified archives; if a registry client must repack, require byte identity with the verified artifact.
