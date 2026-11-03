@@ -8,7 +8,7 @@ UUIDv4 uses 122 bits for random data. UUIDv7 uses 48 bits for its timestamp and 
 
 Generation selects secure sources separately for text and byte output. "Pooled" means random bytes are drawn in batches into an internal buffer; see [Memory](#memory-and-unsafe-code).
 
-- Node uses `crypto.randomUUID()` for UUIDv4 text and pooled `crypto.randomFillSync()` for other output.
+- Node uses pooled `crypto.randomFillSync()`; with JIT disabled, UUIDv4 text uses `crypto.randomUUID()`.
 - Bun uses Node-compatible `randomUUID()` for UUIDv4 text, with Web Crypto as fallback, and `Bun.randomUUIDv7()` for default UUIDv7 text and base64url slugs. Other output and configured generators use pooled `getRandomValues()`.
 - Deno uses Web Crypto `randomUUID()` for UUIDv4 text and pooled `getRandomValues()` for byte output and UUIDv7. Cloudflare Workers and browsers use pooled `getRandomValues()` for both UUID versions.
 

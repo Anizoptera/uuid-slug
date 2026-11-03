@@ -80,8 +80,6 @@ Use `bench/decisions.md` for codec, interoperability, storage and O2 choices, re
 
 ## Follow-up
 
-- [ ] Public-document correction needs approval: in `docs/security.md` §Randomness, replace “Node uses `crypto.randomUUID()` for UUIDv4 text and pooled `crypto.randomFillSync()` for other output.” with “Node uses pooled `crypto.randomFillSync()`; with JIT disabled, UUIDv4 text uses `crypto.randomUUID()`.” The current `src/runtime/node.ts` selects the native method only under its JITless condition. This factual documentation repair does not change entropy selection or block the implementation comparison.
-
 - [ ] Resolve the advisory affecting competitor `slugid` through its `uuid ^9` dependency. Keep this dev-only comparison on the upstream dependency graph; do not silently override it.
 
 - [ ] Resolve the upstream-relative Node base32 gap: its median stays about 3% higher; one full lane fails at 1.031 [1.0033, 1.1382], while the unchanged replay and seven-runtime matrix pass. The pre-reduction control also has a higher median; a direct comparison finds no resolved loss from the four reductions. Cause and parity remain unproved; preserve both outcomes and the full filter (`bench/decisions.md` §Historical base32 slowdown).
