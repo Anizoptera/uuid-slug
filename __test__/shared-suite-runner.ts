@@ -1,7 +1,7 @@
 // A passing subset cannot certify reuse: compare discovery, case results and native witnesses.
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join, relative } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import type { JsonTestResults } from "vitest/node";
 import DISCOVERY from "./shared-test-suites.json" with { type: "json" };
@@ -15,7 +15,9 @@ export function verifySharedSuites(
   const transports = typeof transport === "string" ? [transport] : transport;
   if (!report.success || report.numFailedTests || !report.numTotalTests)
     throw new Error("Shared suites failed or ran no cases; inspect the Vitest report.");
-  const observed = report.testResults.map((suite) => relative(process.cwd(), suite.name));
+  const observed = report.testResults.map((suite) =>
+    relative(process.cwd(), suite.name).split(sep).join("/"),
+  );
   if (
     observed.length !== expected.length * transports.length ||
     expected.some((file) => observed.filter((name) => name === file).length !== transports.length)

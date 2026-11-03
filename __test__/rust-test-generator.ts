@@ -87,12 +87,13 @@ export function createRustGenerator(
       return failure("invalid_timestamp", "Clock failed.", cause);
     }
     if (instant instanceof Error) return instant;
-    // Quantized JS host forms become an exact SystemTime bucket without adding the epoch first.
+    // Round upward to a Windows SystemTime tick (100 ns), still inside each 244+ ns bucket.
+    // Keep whole milliseconds separate so adding the epoch cannot round across a bucket.
     const time = {
       seconds: Math.floor(instant.unixMs / 1000),
       nanoseconds:
         (instant.unixMs % 1000) * 1_000_000 +
-        Math.ceil((instant.fractionBucket12 * 1_000_000) / 4096),
+        Math.ceil((instant.fractionBucket12 * 10_000) / 4096) * 100,
     };
     const args = {
       generator: id,
