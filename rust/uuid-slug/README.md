@@ -139,6 +139,8 @@ Generate directly into storage with `generate_uuid_v4_into(&mut buffer, offset)?
 
 Keep previous keys while stored identifiers still need them. The current key writes new slugs; previous keys only add read candidates. Install readers for the new key and spelling before switching writers. A rollback must retain those readers or it can strand newly issued identifiers. Here, `stored` is an existing slug written with the previous key.
 
+Optional diagnostic labels identify masks in logs and errors without changing their keys or IDs.
+
 ```rust
 use uuid_slug::{
     UuidSlugMigrationOptions, UuidV7MaskingCodec, UuidV7MaskingCodecOptions,
