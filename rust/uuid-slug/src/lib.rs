@@ -19,6 +19,7 @@ mod buffer_range;
 mod error;
 mod feistel;
 mod generation;
+mod generation_state;
 mod mask;
 mod mask_keys;
 mod masking_codec;

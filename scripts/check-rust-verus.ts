@@ -54,6 +54,15 @@ try {
     "value_contract::buffer_range::uuid_end",
     "value_contract::payload_fields::low_bits",
     "value_contract::payload_fields::split",
+    ...[
+      "valid_range",
+      "clock_rollback",
+      "accepted_high_water",
+      "advance_millisecond",
+      "fraction_bucket",
+      "sequence_from_seed",
+      "fraction_from_nanos",
+    ].map((name) => `value_contract::generation_state::${name}`),
   ];
   const bodies = report["times-ms"]?.smt?.["smt-run-module-times"]
     ?.flatMap((module) => module["function-breakdown"] ?? [])

@@ -3,6 +3,7 @@
 //! Every `_with` callback must fill every requested byte from its chosen source or return an
 //! error. A successful partial fill cannot be distinguished reliably from valid random bytes.
 //! Use the default generators for platform CSPRNG entropy; custom callbacks own that guarantee.
+use crate::generation_state::{self, MAX_SEQUENCE};
 #[cfg(feature = "fast-rng")]
 use crate::random::fill_random_bytes as fill_default_random_bytes;
 use crate::{Error, ErrorCode, Uuid, UuidV7PayloadLayout};
@@ -10,11 +11,7 @@ use alloc::format;
 #[cfg(all(feature = "os-rng", not(feature = "fast-rng")))]
 use fill_os_random_bytes as fill_default_random_bytes;
 
-/// Largest timestamp the UUIDv7 wire format can carry.
-pub const MAX_UUID_V7_UNIX_MS: u64 = (1 << 48) - 1;
-// Created generators own this layout; simple Bun defaults retain Bun's native counter and clock.
-// Masking accepts either layout because it preserves all 74 UUIDv7 payload bits.
-const MAX_SEQUENCE: u64 = (1 << 42) - 1;
+pub use crate::generation_state::MAX_UUID_V7_UNIX_MS;
 
 #[derive(Clone, Copy)]
 struct UuidV7Instant {
@@ -43,10 +40,7 @@ fn uuid_v7_endpoint(unix_ms: u64, upper: bool) -> Uuid {
 /// inclusive end. Omit the end to select one millisecond. Comparison must follow UUID wire order.
 pub fn uuid_v7_bounds(start_unix_ms: u64, end_unix_ms: Option<u64>) -> Result<UuidV7Bounds, Error> {
     let end_unix_ms = end_unix_ms.unwrap_or(start_unix_ms);
-    if start_unix_ms > MAX_UUID_V7_UNIX_MS
-        || end_unix_ms > MAX_UUID_V7_UNIX_MS
-        || start_unix_ms > end_unix_ms
-    {
+    if !generation_state::valid_range(start_unix_ms, end_unix_ms) {
         return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
             "UUIDv7 range requires whole Unix milliseconds in 0..={MAX_UUID_V7_UNIX_MS} with start <= end; got {start_unix_ms}..={end_unix_ms}."
         )));
@@ -146,23 +140,11 @@ impl UuidV7Generator {
         let now = at.unix_ms;
         let fraction_bits = self.sub_millisecond_fraction_bits;
         let counter_bits = 42 - fraction_bits;
-        let fraction = if fraction_bits == 0 {
-            0
-        } else {
-            u64::from(at.fraction_12) >> (12 - fraction_bits)
-        };
-        let rollback_ms = self
-            .clock_high_water_ms
-            .and_then(|high_water| high_water.checked_sub(now));
-        let reset_clock = match (rollback_ms, self.rollback_policy) {
-            (Some(rollback), UuidV7ClockRollbackPolicy::Reset { tolerance_ms })
-                if rollback > tolerance_ms =>
-            {
-                true
-            }
-            (Some(rollback), UuidV7ClockRollbackPolicy::Error { tolerance_ms })
-                if rollback > tolerance_ms =>
-            {
+        let fraction = generation_state::fraction_bucket(at.fraction_12, fraction_bits);
+        let rollback = generation_state::clock_rollback(self.clock_high_water_ms, now);
+        let reset_clock = match self.rollback_policy {
+            UuidV7ClockRollbackPolicy::Reset { tolerance_ms } if rollback > tolerance_ms => true,
+            UuidV7ClockRollbackPolicy::Error { tolerance_ms } if rollback > tolerance_ms => {
                 return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
                     "Clock moved backward by {rollback} milliseconds; the configured tolerance is {tolerance_ms}."
                 )));
@@ -178,12 +160,12 @@ impl UuidV7Generator {
                 (now, true)
             }
             (false, Some(last)) if self.sequence == MAX_SEQUENCE => {
-                if last == MAX_UUID_V7_UNIX_MS {
+                let Some(next) = generation_state::advance_millisecond(last) else {
                     return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
                         "UUIDv7 sequence exhausted at Unix millisecond {MAX_UUID_V7_UNIX_MS}; another UUID would exceed the 48-bit timestamp."
                     )));
-                }
-                (last + 1, true)
+                };
+                (next, true)
             }
             (false, Some(last)) => (last, false),
         };
@@ -195,17 +177,17 @@ impl UuidV7Generator {
         })
         .map_err(|cause| Error::new(ErrorCode::RngUnavailable).with_source(cause))?;
         let sequence = if reseed {
-            (fraction << counter_bits) | (seed(&random) & ((1u64 << counter_bits) - 1))
+            generation_state::sequence_from_seed(seed(&random), fraction, counter_bits)
         } else {
             self.sequence + 1
         };
         let id = assemble(ms, sequence, random);
         self.last_ms = Some(ms);
-        self.clock_high_water_ms = Some(if reset_clock {
-            now
-        } else {
-            self.clock_high_water_ms.unwrap_or(now).max(now)
-        });
+        self.clock_high_water_ms = Some(generation_state::accepted_high_water(
+            self.clock_high_water_ms,
+            now,
+            reset_clock,
+        ));
         self.sequence = sequence;
         Ok(id)
     }
@@ -312,7 +294,7 @@ fn system_instant(value: std::time::SystemTime) -> Result<UuidV7Instant, Error> 
     }
     Ok(UuidV7Instant {
         unix_ms,
-        fraction_12: ((elapsed.subsec_nanos() % 1_000_000) * 4096 / 1_000_000) as u16,
+        fraction_12: generation_state::fraction_from_nanos(elapsed.subsec_nanos()),
     })
 }
 fn seed(bytes: &[u8; 10]) -> u64 {

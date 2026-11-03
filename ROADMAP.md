@@ -7,7 +7,7 @@ Expand solver-backed verification of the actual Rust implementation without chan
 - [ ] Inventory production decisions and existing theorem domains; run the unchanged proof controls and identify reachable gaps.
 - [ ] Extend the existing isolated Kani crate with independent specifications for UUID inspection, payload layouts, timestamp bounds, generation and failure-atomic buffer writes; validate real call-path translation before widening.
 - [ ] Prove remaining tractable masking, parser and hash/state decisions; retain exact tool/model limits for any body not covered rather than substituting a copied algorithm or restricted examples.
-- [ ] Extend Verus independently beyond buffer admission: payload partitioning now proves complete 74-bit reconstruction and field bounds, Kani verifies public layout admission and extraction, and 42 no-default-feature native tests pass. Extend the same production-connected approach to generation's clock, range, sequence and exact-fraction arithmetic.
+- [x] Extend Verus independently beyond buffer admission: ten production functions cover admission, all 74 payload bits, clock rollback/high-water behavior, inclusive timestamp limits, sequence seeding/carry and exact fraction buckets. The strict runner requires every body; reduced and std-only native suites pass (42 and 43 cases). Clock observation, entropy, outer state commits and native machine code remain outside these value theorems.
 - [ ] Exercise semantic counterexamples in isolated copies, require named solver results, run affected native checks and final project verification, and remove owned scratch. Commit each coherent proof expansion separately.
 
 ## Cross-runtime implementation comparison

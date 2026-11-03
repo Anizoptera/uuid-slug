@@ -8,3 +8,6 @@ mod buffer_range;
 
 #[path = "../uuid-slug/src/payload_fields.rs"]
 mod payload_fields;
+
+#[path = "../uuid-slug/src/generation_state.rs"]
+mod generation_state;
