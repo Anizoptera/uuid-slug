@@ -6,6 +6,7 @@ import type { EntropyEvidence } from "./implementation-entropy";
 import { ASYNC_JOBS, measureAsync } from "./implementation-async";
 import { assertProfileOutcome, uuidObjectChecksum, selectProfileCases } from "./profile-case";
 import type { ProfileCase } from "./profile-case";
+import { retainImplementationResult } from "./implementation-result";
 
 export interface Settings {
   samples: number;
@@ -69,6 +70,7 @@ function measure(
     const batch = (fn: ProfileCase, count: number) => {
       for (let i = 0; i < count; i++) {
         const value = fn(i);
+        retainImplementationResult(value);
         if (expectedFailure !== value instanceof Error) throw new Error(`Outcome changed: ${name}`);
         if (typeof value === "string") sink ^= value.charCodeAt(i % value.length);
         else if (typeof value === "number") sink ^= value;

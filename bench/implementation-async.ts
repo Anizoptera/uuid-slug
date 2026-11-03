@@ -1,6 +1,7 @@
 // Promise completion is a distinct caller job; never add await overhead to synchronous rows.
 import { deriveUuidV7MaskAsync } from "../src/index";
 import type { Settings, Observation } from "./implementation-worker";
+import { retainImplementationResult } from "./implementation-result";
 
 export const ASYNC_JOBS = [
   { name: "async.mask.derive", iterations: 1, cancelled: false },
@@ -26,6 +27,7 @@ export async function measureAsync(
           keyDerivationIterations: job.iterations,
           ...(job.cancelled ? { signal: aborted.signal } : {}),
         });
+        retainImplementationResult(value);
         if (value instanceof Error !== job.cancelled)
           throw new Error(`Wrong async outcome: ${job.name}`);
         witness ^= value instanceof Error ? value.message.length : value.diagnosticLabel.length;

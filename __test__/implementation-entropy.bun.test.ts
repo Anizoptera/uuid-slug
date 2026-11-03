@@ -33,3 +33,23 @@ test("the actual benchmark worker rejects source failure and recovers through re
   expect(result.rows.map((row) => row.name)).toEqual(["plain/base32"]);
   expect(Number.isInteger(result.rows[0]?.resultWitness)).toBe(true);
 });
+
+test("every sync and async result escapes with usable hidden mask state", async () => {
+  const child = Bun.spawn([process.execPath, "__test__/implementation-result-probe.ts"], {
+    cwd: resolve(import.meta.dir, ".."),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [output, diagnostic, exit] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+  if (exit !== 0) throw new Error(`Result-consumption probe failed: ${diagnostic}`);
+  const result: { writes: number; calls: number; jobs: string[]; slugs: string[] } =
+    JSON.parse(output);
+  expect(result.writes).toBeGreaterThan(0);
+  expect(result.writes).toBe(result.calls);
+  expect(result.jobs).toEqual(["construct.mask", "async.mask.derive"]);
+  expect(result.slugs[0]).not.toBe(result.slugs[1]);
+});
