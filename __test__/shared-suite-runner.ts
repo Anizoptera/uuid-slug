@@ -114,7 +114,10 @@ export async function runRustSharedSuites(
       new Response(child.stderr).text(),
     ]);
     captured = { output, errors };
-    if (exit !== 0) throw new Error(`Shared ${JSON.stringify(transport)} tests exited ${exit}.`);
+    if (exit !== 0)
+      throw new Error(
+        `Shared ${JSON.stringify(transport)} tests exited ${exit}.\nstdout:\n${output}\nstderr:\n${errors}`,
+      );
     const report = JSON.parse(await readFile(file, "utf8")) as JsonTestResults;
     const witnesses = verifySharedSuites([...expected], report, output, transport);
     passed = true;
