@@ -47,7 +47,10 @@ function evidenceLink(markdown: string, destination: string, raw: string): strin
     .split(sep)
     .map((part) => encodeURIComponent(part).replaceAll("(", "%28").replaceAll(")", "%29"))
     .join("/");
-  return markdown.replace("\n", `\n\n${RAW_LINK}${target})\n`);
+  return markdown.replace(
+    "\n",
+    `\n\n${RAW_LINK}${target})\n\nRaw evidence is local and untracked. Another checkout needs the retained file to regenerate this report.\n`,
+  );
 }
 
 async function writeMarkdown(

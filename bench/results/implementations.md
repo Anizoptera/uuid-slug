@@ -2,6 +2,8 @@
 
 Raw observations: [JSON Lines](implementations-evidence-KUGmn1/observations.jsonl.gz)
 
+Raw evidence is local and untracked. Another checkout needs the retained file to regenerate this report.
+
 Captured 2026-11-03T08:53:40.077Z; revision `9bf2d288b058c21297d311261d6d498617790c43`; host darwin/arm64; Apple M4 Max.
 
 Collection resumed from 2026-11-03T04:08:55.396Z at revision `fe014c063e6ce98ff51e29e14f47fe48b9416609`. Complete four-process windows were reused after collector, artifact, runtime and host checks; the interrupted window was reacquired. A pause can change host conditions, so common-distribution assumptions remain conditional.
