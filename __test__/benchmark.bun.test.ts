@@ -51,6 +51,8 @@ test("performance runtime selection preserves every requested host and rejects o
 });
 
 test("performance routing times every unpublished change and refuses a missing baseline", async () => {
+  // This fixture owns its Git history; a CI baseline names a commit in the outer checkout.
+  const inheritedBaseline = process.env.UUID_SLUG_PERF_BASELINE;
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-performance-inputs-"));
   const git = (args: string[]) => command("git", args, root);
   const commit = async (message: string) => {
@@ -70,6 +72,7 @@ test("performance routing times every unpublished change and refuses a missing b
   };
   let passed = false;
   try {
+    delete process.env.UUID_SLUG_PERF_BASELINE;
     const guardInputs = [
       "bench/resources.ts",
       "bench/nested/resource-helper.ts",
@@ -150,6 +153,8 @@ test("performance routing times every unpublished change and refuses a missing b
     }
     passed = true;
   } finally {
+    if (inheritedBaseline === undefined) delete process.env.UUID_SLUG_PERF_BASELINE;
+    else process.env.UUID_SLUG_PERF_BASELINE = inheritedBaseline;
     if (passed) await rm(root, { recursive: true, force: true });
     else await archiveAndRemoveScratch(root, join(import.meta.dir, "../bench/reports"));
   }

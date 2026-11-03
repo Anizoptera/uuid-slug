@@ -8,6 +8,7 @@ Verify the npm update against published 0.5.0 and the first Rust crate without c
 - [ ] Compare matched npm consumer bundles and package contents with registry-verified 0.5.0.
 - [ ] Verify Cargo archive contents and extracted-source tests, native feature/profile coverage and both optimized WebAssembly profiles.
 - [ ] Review release prerequisites, report concrete regressions or remaining holds, and delete owned scratch.
+- [ ] Repair CI failures with their real triggering environment: isolate the performance-routing Git fixture from the outer baseline and diagnose missing shared-suite witnesses without weakening per-suite execution checks.
 
 - [x] Align changelog instructions across root guidance and the release owner: establish each package's publication baseline, update final consumer entries instead of accumulating unreleased history, and retain one mandatory review procedure without a prose checker. Read back the changes and check instruction compatibility before committing.
 
