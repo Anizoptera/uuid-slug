@@ -81,7 +81,7 @@ export async function runRustSharedSuites(
   const excluded = DISCOVERY.exclude.map((pattern) => new Bun.Glob(pattern));
   for (const pattern of DISCOVERY.include)
     for await (const file of new Bun.Glob(pattern).scan("."))
-      if (!excluded.some((glob) => glob.match(file))) expected.add(file);
+      if (!excluded.some((glob) => glob.match(file))) expected.add(file.split(sep).join("/"));
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-shared-suites-"));
   let passed = false;
   let captured: { output: string; errors: string } | undefined;
