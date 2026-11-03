@@ -53,9 +53,11 @@ fn uuid_v7_endpoint(unix_ms: u64, upper: bool) -> Uuid {
 /// use uuid_slug::{Uuid, uuid_v7_bounds};
 /// use std::collections::BTreeMap;
 /// let id = Uuid::from_uuid_string("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
-/// let rows = BTreeMap::from([(id, "stored")]);
 /// let bounds = uuid_v7_bounds(id.extract_uuid_v7_unix_ms()?, None)?;
-/// assert_eq!(rows.range(bounds).count(), 1);
+/// let rows = BTreeMap::from([
+///     (bounds.start_inclusive, "first"), (id, "stored"), (bounds.end_inclusive, "last"),
+/// ]);
+/// assert_eq!(rows.range(bounds).count(), 3);
 /// let outside = uuid_v7_bounds(id.extract_uuid_v7_unix_ms()? + 1, None)?;
 /// assert_eq!(rows.range(outside).count(), 0);
 /// # Ok::<(), uuid_slug::Error>(())
