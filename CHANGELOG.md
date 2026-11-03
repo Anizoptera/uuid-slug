@@ -16,6 +16,7 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ### Changed
 
+- Named TypeScript imports produce smaller bundles for UUID parsing, plain-slug conversion, generation and masking.
 - TypeScript `plainSlugToUuidBytes(slug, output)` reports the same errors as decoding without a caller buffer. For a 22-character slug with nonzero padding, the error explains that masked slugs require their codec.
 
 ## [0.5.0]
