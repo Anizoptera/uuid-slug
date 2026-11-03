@@ -31,6 +31,29 @@ impl AsRef<str> for PlainUuidSlug {
     }
 }
 
+/// Validate either plain-slug alphabet and return its canonical spelling.
+///
+/// ```
+/// use uuid_slug::PlainUuidSlug;
+/// let slug: PlainUuidSlug = "VVVVVVVVVVVVVVVVVVVVVVVVVS".parse()?;
+/// assert_eq!(slug.as_str(), "vvvvvvvvvvvvvvvvvvvvvvvvvs");
+/// assert!("AAAAAAAAAAAAAAAAAAAAAB".parse::<PlainUuidSlug>().is_err());
+/// # Ok::<(), uuid_slug::Error>(())
+/// ```
+impl FromStr for PlainUuidSlug {
+    type Err = Error;
+
+    fn from_str(text: &str) -> Result<Self, Error> {
+        // Validate the wire payload once, then retain its spelling rather than encode it again.
+        text::from_plain_uuid_slug(text)?;
+        Ok(Self(if text.len() == 26 {
+            text.to_ascii_lowercase().into_boxed_str()
+        } else {
+            Box::from(text)
+        }))
+    }
+}
+
 impl Borrow<str> for PlainUuidSlug {
     fn borrow(&self) -> &str {
         self.as_str()

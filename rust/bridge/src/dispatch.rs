@@ -379,7 +379,7 @@ fn run(request: &Value) -> Result<Value, Error> {
         "maskBytes" => Ok(json!(
             masking_codec(request)?
                 .uuid_to_masked_bytes(Uuid::from_uuid_string(input)?)?
-                .as_masked_uuid_bytes()
+                .as_bytes()
         )),
         "unmaskBytes" => {
             let bytes: Vec<u8> = serde_json::from_value(request["bytes"].clone())

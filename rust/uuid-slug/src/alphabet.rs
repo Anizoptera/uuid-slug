@@ -12,13 +12,6 @@ pub enum UuidSlugAlphabet {
     Base32Hex,
 }
 impl UuidSlugAlphabet {
-    /// Number of data bits carried by each character.
-    pub const fn bits_per_character(self) -> usize {
-        match self {
-            Self::Base64Url => 6,
-            Self::Base32Hex => 5,
-        }
-    }
     fn error(self) -> Error {
         match self {
             Self::Base64Url => Error::new(ErrorCode::InvalidBase64Url),
@@ -73,7 +66,7 @@ impl UuidSlugAlphabet {
     ) -> Result<u8, Error> {
         match TAIL_BITS {
             0 => {
-                let expected = 128usize.div_ceil(self.bits_per_character());
+                let expected = 128usize.div_ceil(crate::bit_encoding::bits_per_character(self));
                 if text.len() != expected {
                     return Err(self.error().with_message(format!(
                         "Plain {} slug must contain {expected} ASCII characters; got {} UTF-8 bytes.",
@@ -93,7 +86,7 @@ impl UuidSlugAlphabet {
                 Ok(0)
             }
             4 => {
-                let length = 132usize.div_ceil(self.bits_per_character());
+                let length = 132usize.div_ceil(crate::bit_encoding::bits_per_character(self));
                 let length_error = || {
                     self.error().with_message(format!(
                         "Masked {} slug must contain {length} ASCII characters; got {} UTF-8 bytes.",

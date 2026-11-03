@@ -426,6 +426,7 @@ mod tests {
 }
 
 /// UUIDv7 masking-codec options. Existing output stays base64url unless explicitly changed.
+#[derive(Debug)]
 pub struct UuidV7MaskingCodecOptions {
     /// Current write key; decoding tries this before previous keys.
     pub mask: UuidV7Mask,
@@ -453,6 +454,7 @@ impl UuidV7MaskingCodecOptions {
 }
 
 /// A retained decode-only mask and the timestamp-range start used by its stored slugs.
+#[derive(Debug)]
 pub struct UuidV7PreviousMask {
     /// Retained mask.
     pub mask: UuidV7Mask,
@@ -470,12 +472,14 @@ impl UuidV7PreviousMask {
     }
 }
 
+#[derive(Debug)]
 struct MaskRange {
     mask: UuidV7Mask,
     timestamp_range_start_unix_ms: u64,
 }
 
 /// Immutable keys and precomputed sentinels. Generation state is independently owned.
+#[derive(Debug)]
 pub struct UuidV7MaskingCodec {
     masks: Vec<MaskRange>,
     sentinels: Vec<UuidV7Sentinel>,
@@ -801,6 +805,7 @@ pub enum UuidSlugMigrationFormat {
 }
 
 /// A reader borrowing its codec, so keys and sentinel definitions cannot drift.
+#[derive(Debug)]
 pub struct UuidSlugMigrationDecoder<'a> {
     codec: &'a UuidV7MaskingCodec,
     options: UuidSlugMigrationOptions,

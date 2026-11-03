@@ -250,7 +250,7 @@ pub fn visit(ids: &[Uuid], record: &mut impl super::Recorder) {
                 b"benchmark-seed-not-for-production",
                 iterations,
                 "bench",
-                UuidV7MaskDerivationCancellation::default(),
+                None,
             ))
             .unwrap()
         });
@@ -262,7 +262,7 @@ pub fn visit(ids: &[Uuid], record: &mut impl super::Recorder) {
             b"benchmark-seed-not-for-production",
             64,
             "bench",
-            cancelled.clone()
+            Some(cancelled.clone())
         )
     )
     .is_err());

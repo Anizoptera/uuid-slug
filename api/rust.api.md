@@ -44,8 +44,8 @@ pub enum uuid_slug::MaskedOrSentinelUuidV7Bytes
 pub uuid_slug::MaskedOrSentinelUuidV7Bytes::Masked(uuid_slug::MaskedUuidV7Bytes)
 pub uuid_slug::MaskedOrSentinelUuidV7Bytes::Sentinel(uuid_slug::Uuid)
 impl uuid_slug::MaskedOrSentinelUuidV7Bytes
-pub const fn uuid_slug::MaskedOrSentinelUuidV7Bytes::as_masked_uuid_bytes(&self) -> &[u8; 16]
-pub fn uuid_slug::MaskedOrSentinelUuidV7Bytes::into_masked_uuid_bytes(self) -> [u8; 16]
+pub const fn uuid_slug::MaskedOrSentinelUuidV7Bytes::as_bytes(&self) -> &[u8; 16]
+pub fn uuid_slug::MaskedOrSentinelUuidV7Bytes::into_bytes(self) -> [u8; 16]
 impl core::clone::Clone for uuid_slug::MaskedOrSentinelUuidV7Bytes
 pub fn uuid_slug::MaskedOrSentinelUuidV7Bytes::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::MaskedOrSentinelUuidV7Bytes
@@ -110,7 +110,6 @@ pub enum uuid_slug::UuidSlugAlphabet
 pub uuid_slug::UuidSlugAlphabet::Base32Hex
 pub uuid_slug::UuidSlugAlphabet::Base64Url
 impl uuid_slug::UuidSlugAlphabet
-pub const fn uuid_slug::UuidSlugAlphabet::bits_per_character(self) -> usize
 pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(self, plain_uuid_slug: &Input) -> core::result::Result<[u8; 16], uuid_slug::Error>
 pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes_into<'a, Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(self, plain_uuid_slug: &Input, output: &'a mut [u8], output_offset: usize) -> core::result::Result<&'a mut [u8], uuid_slug::Error>
 pub fn uuid_slug::UuidSlugAlphabet::uuid_bytes_to_plain_slug(self, uuid_bytes: &[u8; 16]) -> uuid_slug::PlainUuidSlug
@@ -219,8 +218,8 @@ impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::Error
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::Error
 pub struct uuid_slug::MaskedUuidV7Bytes(_)
 impl uuid_slug::MaskedUuidV7Bytes
-pub const fn uuid_slug::MaskedUuidV7Bytes::as_masked_uuid_bytes(&self) -> &[u8; 16]
-pub const fn uuid_slug::MaskedUuidV7Bytes::into_masked_uuid_bytes(self) -> [u8; 16]
+pub const fn uuid_slug::MaskedUuidV7Bytes::as_bytes(&self) -> &[u8; 16]
+pub const fn uuid_slug::MaskedUuidV7Bytes::into_bytes(self) -> [u8; 16]
 impl core::clone::Clone for uuid_slug::MaskedUuidV7Bytes
 pub fn uuid_slug::MaskedUuidV7Bytes::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::MaskedUuidV7Bytes
@@ -310,6 +309,9 @@ impl core::marker::StructuralPartialEq for uuid_slug::PlainUuidSlug
 impl core::ops::deref::Deref for uuid_slug::PlainUuidSlug
 pub type uuid_slug::PlainUuidSlug::Target = str
 pub fn uuid_slug::PlainUuidSlug::deref(&self) -> &Self::Target
+impl core::str::traits::FromStr for uuid_slug::PlainUuidSlug
+pub type uuid_slug::PlainUuidSlug::Err = uuid_slug::Error
+pub fn uuid_slug::PlainUuidSlug::from_str(text: &str) -> core::result::Result<Self, uuid_slug::Error>
 impl uuid_slug::KeylessUuidText for uuid_slug::PlainUuidSlug
 impl core::marker::Freeze for uuid_slug::PlainUuidSlug
 impl core::marker::Send for uuid_slug::PlainUuidSlug
@@ -367,6 +369,9 @@ impl core::hash::Hash for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::hash<__H: core::hash::Hasher>(&self, state: &mut __H)
 impl core::marker::Copy for uuid_slug::Uuid
 impl core::marker::StructuralPartialEq for uuid_slug::Uuid
+impl core::ops::range::RangeBounds<uuid_slug::Uuid> for uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::end_bound(&self) -> core::ops::range::Bound<&uuid_slug::Uuid>
+pub fn uuid_slug::UuidV7Bounds::start_bound(&self) -> core::ops::range::Bound<&uuid_slug::Uuid>
 impl core::str::traits::FromStr for uuid_slug::Uuid
 pub type uuid_slug::Uuid::Err = uuid_slug::Error
 pub fn uuid_slug::Uuid::from_str(text: &str) -> core::result::Result<Self, uuid_slug::Error>
@@ -381,6 +386,8 @@ pub struct uuid_slug::UuidSlugMigrationDecoder<'a>
 impl uuid_slug::UuidSlugMigrationDecoder<'_>
 pub fn uuid_slug::UuidSlugMigrationDecoder<'_>::uuid_slug_to_uuid(&self, uuid_slug: &str, format: core::option::Option<uuid_slug::UuidSlugMigrationFormat>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::UuidSlugMigrationDecoder<'_>::uuid_slug_to_uuid_candidates(&self, uuid_slug: &str, format: core::option::Option<uuid_slug::UuidSlugMigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::Uuid>, uuid_slug::Error>
+impl<'a> core::fmt::Debug for uuid_slug::UuidSlugMigrationDecoder<'a>
+pub fn uuid_slug::UuidSlugMigrationDecoder<'a>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<'a> core::marker::Freeze for uuid_slug::UuidSlugMigrationDecoder<'a>
 impl<'a> core::marker::Send for uuid_slug::UuidSlugMigrationDecoder<'a>
 impl<'a> core::marker::Sync for uuid_slug::UuidSlugMigrationDecoder<'a>
@@ -417,6 +424,9 @@ impl core::fmt::Debug for uuid_slug::UuidV7Bounds
 pub fn uuid_slug::UuidV7Bounds::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7Bounds
 impl core::marker::StructuralPartialEq for uuid_slug::UuidV7Bounds
+impl core::ops::range::RangeBounds<uuid_slug::Uuid> for uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::end_bound(&self) -> core::ops::range::Bound<&uuid_slug::Uuid>
+pub fn uuid_slug::UuidV7Bounds::start_bound(&self) -> core::ops::range::Bound<&uuid_slug::Uuid>
 impl core::marker::Freeze for uuid_slug::UuidV7Bounds
 impl core::marker::Send for uuid_slug::UuidV7Bounds
 impl core::marker::Sync for uuid_slug::UuidV7Bounds
@@ -496,6 +506,8 @@ pub fn uuid_slug::UuidV7MaskingCodec::masked_bytes_to_uuid(&self, masked_uuid_by
 pub fn uuid_slug::UuidV7MaskingCodec::masked_bytes_to_uuid_bytes_into(&self, masked_uuid_bytes: &[u8], output: &mut [u8], output_offset: usize) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::uuid_to_masked_bytes(&self, uuid: uuid_slug::Uuid) -> core::result::Result<uuid_slug::MaskedOrSentinelUuidV7Bytes, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::uuid_to_masked_bytes_into(&self, uuid: uuid_slug::Uuid, output: &mut [u8], output_offset: usize) -> core::result::Result<(), uuid_slug::Error>
+impl core::fmt::Debug for uuid_slug::UuidV7MaskingCodec
+pub fn uuid_slug::UuidV7MaskingCodec::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7MaskingCodec
 impl core::marker::Send for uuid_slug::UuidV7MaskingCodec
 impl core::marker::Sync for uuid_slug::UuidV7MaskingCodec
@@ -511,6 +523,8 @@ pub uuid_slug::UuidV7MaskingCodecOptions::sentinels: alloc::vec::Vec<(alloc::str
 pub uuid_slug::UuidV7MaskingCodecOptions::timestamp_range_start_unix_ms: u64
 impl uuid_slug::UuidV7MaskingCodecOptions
 pub fn uuid_slug::UuidV7MaskingCodecOptions::new(mask: uuid_slug::UuidV7Mask) -> Self
+impl core::fmt::Debug for uuid_slug::UuidV7MaskingCodecOptions
+pub fn uuid_slug::UuidV7MaskingCodecOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7MaskingCodecOptions
 impl core::marker::Send for uuid_slug::UuidV7MaskingCodecOptions
 impl core::marker::Sync for uuid_slug::UuidV7MaskingCodecOptions
@@ -584,6 +598,8 @@ pub uuid_slug::UuidV7PreviousMask::mask: uuid_slug::UuidV7Mask
 pub uuid_slug::UuidV7PreviousMask::timestamp_range_start_unix_ms: u64
 impl uuid_slug::UuidV7PreviousMask
 pub fn uuid_slug::UuidV7PreviousMask::new(mask: uuid_slug::UuidV7Mask) -> Self
+impl core::fmt::Debug for uuid_slug::UuidV7PreviousMask
+pub fn uuid_slug::UuidV7PreviousMask::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7PreviousMask
 impl core::marker::Send for uuid_slug::UuidV7PreviousMask
 impl core::marker::Sync for uuid_slug::UuidV7PreviousMask
@@ -638,7 +654,7 @@ impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::Keyles
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::rc::Rc<Input>
 impl<Input: uuid_slug::KeylessUuidText + alloc::borrow::ToOwned + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::borrow::Cow<'_, Input>
 pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
-pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: uuid_slug::UuidV7MaskDerivationCancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: core::option::Option<uuid_slug::UuidV7MaskDerivationCancellation>) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::fill_os_random_bytes(out: &mut [u8]) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4() -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_into_with_random_fill(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
@@ -690,8 +706,8 @@ pub enum uuid_slug::MaskedOrSentinelUuidV7Bytes
 pub uuid_slug::MaskedOrSentinelUuidV7Bytes::Masked(uuid_slug::MaskedUuidV7Bytes)
 pub uuid_slug::MaskedOrSentinelUuidV7Bytes::Sentinel(uuid_slug::Uuid)
 impl uuid_slug::MaskedOrSentinelUuidV7Bytes
-pub const fn uuid_slug::MaskedOrSentinelUuidV7Bytes::as_masked_uuid_bytes(&self) -> &[u8; 16]
-pub fn uuid_slug::MaskedOrSentinelUuidV7Bytes::into_masked_uuid_bytes(self) -> [u8; 16]
+pub const fn uuid_slug::MaskedOrSentinelUuidV7Bytes::as_bytes(&self) -> &[u8; 16]
+pub fn uuid_slug::MaskedOrSentinelUuidV7Bytes::into_bytes(self) -> [u8; 16]
 impl core::clone::Clone for uuid_slug::MaskedOrSentinelUuidV7Bytes
 pub fn uuid_slug::MaskedOrSentinelUuidV7Bytes::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::MaskedOrSentinelUuidV7Bytes
@@ -756,7 +772,6 @@ pub enum uuid_slug::UuidSlugAlphabet
 pub uuid_slug::UuidSlugAlphabet::Base32Hex
 pub uuid_slug::UuidSlugAlphabet::Base64Url
 impl uuid_slug::UuidSlugAlphabet
-pub const fn uuid_slug::UuidSlugAlphabet::bits_per_character(self) -> usize
 pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(self, plain_uuid_slug: &Input) -> core::result::Result<[u8; 16], uuid_slug::Error>
 pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes_into<'a, Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(self, plain_uuid_slug: &Input, output: &'a mut [u8], output_offset: usize) -> core::result::Result<&'a mut [u8], uuid_slug::Error>
 pub fn uuid_slug::UuidSlugAlphabet::uuid_bytes_to_plain_slug(self, uuid_bytes: &[u8; 16]) -> uuid_slug::PlainUuidSlug
@@ -865,8 +880,8 @@ impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::Error
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::Error
 pub struct uuid_slug::MaskedUuidV7Bytes(_)
 impl uuid_slug::MaskedUuidV7Bytes
-pub const fn uuid_slug::MaskedUuidV7Bytes::as_masked_uuid_bytes(&self) -> &[u8; 16]
-pub const fn uuid_slug::MaskedUuidV7Bytes::into_masked_uuid_bytes(self) -> [u8; 16]
+pub const fn uuid_slug::MaskedUuidV7Bytes::as_bytes(&self) -> &[u8; 16]
+pub const fn uuid_slug::MaskedUuidV7Bytes::into_bytes(self) -> [u8; 16]
 impl core::clone::Clone for uuid_slug::MaskedUuidV7Bytes
 pub fn uuid_slug::MaskedUuidV7Bytes::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::MaskedUuidV7Bytes
@@ -956,6 +971,9 @@ impl core::marker::StructuralPartialEq for uuid_slug::PlainUuidSlug
 impl core::ops::deref::Deref for uuid_slug::PlainUuidSlug
 pub type uuid_slug::PlainUuidSlug::Target = str
 pub fn uuid_slug::PlainUuidSlug::deref(&self) -> &Self::Target
+impl core::str::traits::FromStr for uuid_slug::PlainUuidSlug
+pub type uuid_slug::PlainUuidSlug::Err = uuid_slug::Error
+pub fn uuid_slug::PlainUuidSlug::from_str(text: &str) -> core::result::Result<Self, uuid_slug::Error>
 impl uuid_slug::KeylessUuidText for uuid_slug::PlainUuidSlug
 impl core::marker::Freeze for uuid_slug::PlainUuidSlug
 impl core::marker::Send for uuid_slug::PlainUuidSlug
@@ -1013,6 +1031,9 @@ impl core::hash::Hash for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::hash<__H: core::hash::Hasher>(&self, state: &mut __H)
 impl core::marker::Copy for uuid_slug::Uuid
 impl core::marker::StructuralPartialEq for uuid_slug::Uuid
+impl core::ops::range::RangeBounds<uuid_slug::Uuid> for uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::end_bound(&self) -> core::ops::range::Bound<&uuid_slug::Uuid>
+pub fn uuid_slug::UuidV7Bounds::start_bound(&self) -> core::ops::range::Bound<&uuid_slug::Uuid>
 impl core::str::traits::FromStr for uuid_slug::Uuid
 pub type uuid_slug::Uuid::Err = uuid_slug::Error
 pub fn uuid_slug::Uuid::from_str(text: &str) -> core::result::Result<Self, uuid_slug::Error>
@@ -1027,6 +1048,8 @@ pub struct uuid_slug::UuidSlugMigrationDecoder<'a>
 impl uuid_slug::UuidSlugMigrationDecoder<'_>
 pub fn uuid_slug::UuidSlugMigrationDecoder<'_>::uuid_slug_to_uuid(&self, uuid_slug: &str, format: core::option::Option<uuid_slug::UuidSlugMigrationFormat>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::UuidSlugMigrationDecoder<'_>::uuid_slug_to_uuid_candidates(&self, uuid_slug: &str, format: core::option::Option<uuid_slug::UuidSlugMigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::Uuid>, uuid_slug::Error>
+impl<'a> core::fmt::Debug for uuid_slug::UuidSlugMigrationDecoder<'a>
+pub fn uuid_slug::UuidSlugMigrationDecoder<'a>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<'a> core::marker::Freeze for uuid_slug::UuidSlugMigrationDecoder<'a>
 impl<'a> core::marker::Send for uuid_slug::UuidSlugMigrationDecoder<'a>
 impl<'a> core::marker::Sync for uuid_slug::UuidSlugMigrationDecoder<'a>
@@ -1063,6 +1086,9 @@ impl core::fmt::Debug for uuid_slug::UuidV7Bounds
 pub fn uuid_slug::UuidV7Bounds::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7Bounds
 impl core::marker::StructuralPartialEq for uuid_slug::UuidV7Bounds
+impl core::ops::range::RangeBounds<uuid_slug::Uuid> for uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::end_bound(&self) -> core::ops::range::Bound<&uuid_slug::Uuid>
+pub fn uuid_slug::UuidV7Bounds::start_bound(&self) -> core::ops::range::Bound<&uuid_slug::Uuid>
 impl core::marker::Freeze for uuid_slug::UuidV7Bounds
 impl core::marker::Send for uuid_slug::UuidV7Bounds
 impl core::marker::Sync for uuid_slug::UuidV7Bounds
@@ -1137,6 +1163,8 @@ pub fn uuid_slug::UuidV7MaskingCodec::masked_bytes_to_uuid(&self, masked_uuid_by
 pub fn uuid_slug::UuidV7MaskingCodec::masked_bytes_to_uuid_bytes_into(&self, masked_uuid_bytes: &[u8], output: &mut [u8], output_offset: usize) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::uuid_to_masked_bytes(&self, uuid: uuid_slug::Uuid) -> core::result::Result<uuid_slug::MaskedOrSentinelUuidV7Bytes, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::uuid_to_masked_bytes_into(&self, uuid: uuid_slug::Uuid, output: &mut [u8], output_offset: usize) -> core::result::Result<(), uuid_slug::Error>
+impl core::fmt::Debug for uuid_slug::UuidV7MaskingCodec
+pub fn uuid_slug::UuidV7MaskingCodec::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7MaskingCodec
 impl core::marker::Send for uuid_slug::UuidV7MaskingCodec
 impl core::marker::Sync for uuid_slug::UuidV7MaskingCodec
@@ -1152,6 +1180,8 @@ pub uuid_slug::UuidV7MaskingCodecOptions::sentinels: alloc::vec::Vec<(alloc::str
 pub uuid_slug::UuidV7MaskingCodecOptions::timestamp_range_start_unix_ms: u64
 impl uuid_slug::UuidV7MaskingCodecOptions
 pub fn uuid_slug::UuidV7MaskingCodecOptions::new(mask: uuid_slug::UuidV7Mask) -> Self
+impl core::fmt::Debug for uuid_slug::UuidV7MaskingCodecOptions
+pub fn uuid_slug::UuidV7MaskingCodecOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7MaskingCodecOptions
 impl core::marker::Send for uuid_slug::UuidV7MaskingCodecOptions
 impl core::marker::Sync for uuid_slug::UuidV7MaskingCodecOptions
@@ -1225,6 +1255,8 @@ pub uuid_slug::UuidV7PreviousMask::mask: uuid_slug::UuidV7Mask
 pub uuid_slug::UuidV7PreviousMask::timestamp_range_start_unix_ms: u64
 impl uuid_slug::UuidV7PreviousMask
 pub fn uuid_slug::UuidV7PreviousMask::new(mask: uuid_slug::UuidV7Mask) -> Self
+impl core::fmt::Debug for uuid_slug::UuidV7PreviousMask
+pub fn uuid_slug::UuidV7PreviousMask::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7PreviousMask
 impl core::marker::Send for uuid_slug::UuidV7PreviousMask
 impl core::marker::Sync for uuid_slug::UuidV7PreviousMask
@@ -1279,7 +1311,7 @@ impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::Keyles
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::rc::Rc<Input>
 impl<Input: uuid_slug::KeylessUuidText + alloc::borrow::ToOwned + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::borrow::Cow<'_, Input>
 pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
-pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: uuid_slug::UuidV7MaskDerivationCancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: core::option::Option<uuid_slug::UuidV7MaskDerivationCancellation>) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::generate_uuid_v4_into_with_random_fill(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_with_random_fill(fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::uuid_v7_bounds(start_unix_ms: u64, end_unix_ms: core::option::Option<u64>) -> core::result::Result<uuid_slug::UuidV7Bounds, uuid_slug::Error>

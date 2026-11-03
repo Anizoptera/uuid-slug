@@ -263,7 +263,7 @@ fn run(request: &Value, objects: &mut Objects) -> Result<Value, Error> {
                 &seed,
                 iterations,
                 "shared",
-                cancellation.clone(),
+                Some(cancellation.clone()),
             ));
             let id = objects.derivations.len();
             objects.derivations.push(Some(Derivation {
@@ -492,7 +492,7 @@ fn run(request: &Value, objects: &mut Objects) -> Result<Value, Error> {
                         .get(codec.ok_or_else(|| invalid(ErrorCode::InvalidOptions))?)
                         .ok_or_else(|| invalid(ErrorCode::InvalidOptions))?
                         .uuid_to_masked_bytes(uuid)?
-                        .as_masked_uuid_bytes()
+                        .as_bytes()
                 )),
                 "timestamp" => Ok(json!(uuid.extract_uuid_v7_unix_ms()?)),
                 "version" => Ok(json!(uuid.uuid_version())),

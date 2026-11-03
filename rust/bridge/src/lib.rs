@@ -314,7 +314,7 @@ impl Derivation {
                 seed,
                 iterations,
                 "browser",
-                cancellation.clone(),
+                Some(cancellation.clone()),
             )),
             cancellation,
             uuid,

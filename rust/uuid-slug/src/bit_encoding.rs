@@ -2,6 +2,14 @@
 use crate::UuidSlugAlphabet;
 use alloc::{boxed::Box, string::String};
 
+// Keep format arithmetic shared with source-importing verification adapters, not public callers.
+pub(crate) const fn bits_per_character(alphabet: UuidSlugAlphabet) -> usize {
+    match alphabet {
+        UuidSlugAlphabet::Base64Url => 6,
+        UuidSlugAlphabet::Base32Hex => 5,
+    }
+}
+
 // Symbol order defines issued identifiers; both directions derive from these fixed alphabets.
 pub(super) const BASE64URL_SYMBOLS: &[u8] =
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -41,7 +49,7 @@ pub(super) fn encode_identifier_bits(
     payload_bits: usize,
 ) -> Box<str> {
     // Callers select 128 UUID bits or 132 masked bits; zero padding must not become payload.
-    let bits = alphabet.bits_per_character();
+    let bits = bits_per_character(alphabet);
     let symbols: &[u8] = match alphabet {
         UuidSlugAlphabet::Base64Url => BASE64URL_SYMBOLS,
         UuidSlugAlphabet::Base32Hex => BASE32HEX_SYMBOLS,

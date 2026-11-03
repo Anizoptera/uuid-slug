@@ -13,6 +13,7 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 - Rust `generate_uuid_v7()` needs no generator setup and promises no ordering. Create a `UuidV7Generator` for shared sequence state, supplied times, sub-millisecond fields or clock-rollback policies. Payload inspection preserves all 74 UUIDv7 payload bits; `uuid_v7_bounds` provides inclusive timestamp search bounds.
 - Rust UUID generation and conversion support caller-owned byte buffers; failed writes leave storage unchanged. Disable default features for `no_std` with `alloc` and caller-supplied time and entropy. Enable `std` for standard-library time and `wasm-js` for browser generation; WASI uses its host clock and entropy.
 - Rust defaults use an OS-seeded ChaCha12 generator to reduce OS draws. Disable defaults and enable `os-rng` for direct OS draws; conversions need neither entropy dependency. Initial and required reseed failures return `rng_unavailable`; other recoverable failures also return typed errors.
+- Rust plain slugs support validating `FromStr` without re-encoding, timestamp bounds work with standard range queries, and codec/configuration `Debug` hides keys. Binary wrappers expose `as_bytes`/`into_bytes` for both masked and sentinel values. Async derivation accepts no external cancellation token through `None`; dropping the future still stops work. Public generator documentation states custom entropy obligations, and docs.rs identifies feature-gated APIs.
 
 ### Changed
 

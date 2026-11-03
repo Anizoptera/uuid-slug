@@ -143,7 +143,7 @@ pub(super) fn encode(request: &Value, alphabet: UuidSlugAlphabet) -> Result<Valu
 pub(super) fn decode(request: &Value, alphabet: UuidSlugAlphabet) -> Result<Value, Error> {
     let input = request["input"].as_str().ok_or_else(|| failure(alphabet))?;
     let tail_bits = tail_bits(request)?;
-    let expected = (128 + tail_bits).div_ceil(alphabet.bits_per_character());
+    let expected = (128 + tail_bits).div_ceil(bit_encoding::bits_per_character(alphabet));
     if input.len() != expected {
         return Err(failure(alphabet));
     }

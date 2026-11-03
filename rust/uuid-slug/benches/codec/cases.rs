@@ -176,10 +176,7 @@ pub fn visit(visitor: &mut impl Recorder) -> Result<(), Error> {
         .map(|id| compact.uuid_to_masked_bytes(*id))
         .collect::<Result<_, _>>()?;
     for (id, encoded) in ids.iter().zip(&binary) {
-        assert_eq!(
-            compact.masked_bytes_to_uuid(encoded.as_masked_uuid_bytes())?,
-            *id
-        );
+        assert_eq!(compact.masked_bytes_to_uuid(encoded.as_bytes())?, *id);
     }
     measure!("mask/binary/owned", &ids, |id| compact
         .uuid_to_masked_bytes(id)
@@ -190,19 +187,19 @@ pub fn visit(visitor: &mut impl Recorder) -> Result<(), Error> {
     measure!("unmask/binary/owned", &ids, |_| {
         cursor = (cursor + 1) % binary.len();
         compact
-            .masked_bytes_to_uuid(binary[cursor].as_masked_uuid_bytes())
+            .masked_bytes_to_uuid(binary[cursor].as_bytes())
             .unwrap()
     });
     measure!("unmask/binary/caller-buffer", &ids, |_| {
         cursor = (cursor + 1) % binary.len();
         compact
-            .masked_bytes_to_uuid_bytes_into(binary[cursor].as_masked_uuid_bytes(), &mut out, 0)
+            .masked_bytes_to_uuid_bytes_into(binary[cursor].as_bytes(), &mut out, 0)
             .unwrap()
     });
     measure!("unmask/binary/text", &ids, |_| {
         cursor = (cursor + 1) % binary.len();
         compact
-            .masked_bytes_to_uuid(binary[cursor].as_masked_uuid_bytes())
+            .masked_bytes_to_uuid(binary[cursor].as_bytes())
             .unwrap()
             .to_string()
     });

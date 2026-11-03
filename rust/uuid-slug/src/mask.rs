@@ -173,7 +173,7 @@ struct MaskDerivation {
     seed: Vec<u8>,
     label: String,
     iterations: u32,
-    cancellation: UuidV7MaskDerivationCancellation,
+    cancellation: Option<UuidV7MaskDerivationCancellation>,
     chains: [[u32; 2]; 2],
     chain: usize,
     iteration: u32,
@@ -187,14 +187,18 @@ struct MaskDerivation {
 /// Allocation and this input snapshot are outside the bounded computation slice.
 /// Seed and iteration limits match [`derive_uuid_v7_mask`]; validation errors use `InvalidMask` when polled.
 /// Cancellation takes priority and returns `Aborted`. Dropping the future stops work; no background task is started.
+/// Pass `None` when dropping the future is sufficient; no cancellation token is allocated.
 /// Polling bounds hashing work, but the executor must schedule other tasks between polls.
 pub fn derive_uuid_v7_mask_async(
     mask_seed: &[u8],
     key_derivation_iterations: u32,
     diagnostic_label: &str,
-    cancellation: UuidV7MaskDerivationCancellation,
+    cancellation: Option<UuidV7MaskDerivationCancellation>,
 ) -> impl Future<Output = Result<UuidV7Mask, Error>> + Send + use<> {
-    let failure = if cancellation.is_cancelled() {
+    let failure = if cancellation
+        .as_ref()
+        .is_some_and(|token| token.is_cancelled())
+    {
         Some(Error::new(ErrorCode::Aborted))
     } else {
         validate(mask_seed, key_derivation_iterations).err()
@@ -222,7 +226,11 @@ impl Future for MaskDerivation {
     type Output = Result<UuidV7Mask, Error>;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
-        if this.cancellation.is_cancelled() {
+        if this
+            .cancellation
+            .as_ref()
+            .is_some_and(|token| token.is_cancelled())
+        {
             this.finished = true;
             return Poll::Ready(Err(Error::new(ErrorCode::Aborted)));
         }
@@ -278,12 +286,8 @@ mod tests {
                 .unwrap()
                 .mask([19; 16])
                 .unwrap();
-            let mut future = derive_uuid_v7_mask_async(
-                &seed,
-                iterations,
-                "probe",
-                UuidV7MaskDerivationCancellation::default(),
-            );
+            let cancellation = (iterations == 513).then(UuidV7MaskDerivationCancellation::default);
+            let mut future = derive_uuid_v7_mask_async(&seed, iterations, "probe", cancellation);
             seed.fill(0); // A lazy borrow would now derive a different key.
             let mut cx = Context::from_waker(std::task::Waker::noop());
             let actual = loop {
@@ -294,7 +298,8 @@ mod tests {
             assert_eq!(actual.mask([19; 16]).unwrap(), expected);
         }
         let cancellation = UuidV7MaskDerivationCancellation::default();
-        let mut future = derive_uuid_v7_mask_async(&[3; 32], 4096, "cancel", cancellation.clone());
+        let mut future =
+            derive_uuid_v7_mask_async(&[3; 32], 4096, "cancel", Some(cancellation.clone()));
         let mut cx = Context::from_waker(std::task::Waker::noop());
         assert!(Pin::new(&mut future).poll(&mut cx).is_pending());
         cancellation.cancel();

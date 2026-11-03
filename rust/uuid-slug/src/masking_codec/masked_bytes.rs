@@ -9,12 +9,12 @@ pub struct MaskedUuidV7Bytes([u8; 16]);
 
 impl MaskedUuidV7Bytes {
     /// Borrow the mixed block for binary serialization without copying.
-    pub const fn as_masked_uuid_bytes(&self) -> &[u8; 16] {
+    pub const fn as_bytes(&self) -> &[u8; 16] {
         &self.0
     }
 
     /// Take the mixed block for binary serialization.
-    pub const fn into_masked_uuid_bytes(self) -> [u8; 16] {
+    pub const fn into_bytes(self) -> [u8; 16] {
         self.0
     }
 }
@@ -36,17 +36,17 @@ pub enum MaskedOrSentinelUuidV7Bytes {
 
 impl MaskedOrSentinelUuidV7Bytes {
     /// Borrow the exact 16-byte transport value; neither variant allocates.
-    pub const fn as_masked_uuid_bytes(&self) -> &[u8; 16] {
+    pub const fn as_bytes(&self) -> &[u8; 16] {
         match self {
-            Self::Masked(bytes) => bytes.as_masked_uuid_bytes(),
+            Self::Masked(bytes) => bytes.as_bytes(),
             Self::Sentinel(uuid) => uuid.as_uuid_bytes(),
         }
     }
 
     /// Take the transport value without changing its byte order.
-    pub fn into_masked_uuid_bytes(self) -> [u8; 16] {
+    pub fn into_bytes(self) -> [u8; 16] {
         match self {
-            Self::Masked(bytes) => bytes.into_masked_uuid_bytes(),
+            Self::Masked(bytes) => bytes.into_bytes(),
             Self::Sentinel(uuid) => uuid.into(),
         }
     }
@@ -54,7 +54,7 @@ impl MaskedOrSentinelUuidV7Bytes {
 
 impl AsRef<[u8]> for MaskedOrSentinelUuidV7Bytes {
     fn as_ref(&self) -> &[u8] {
-        self.as_masked_uuid_bytes()
+        self.as_bytes()
     }
 }
 
@@ -128,7 +128,7 @@ impl UuidV7MaskingCodec {
         let end = crate::buffer_range::uuid_end(output.len(), output_offset)
             .ok_or_else(|| Error::new(ErrorCode::InvalidBuffer))?;
         let bytes = self.uuid_to_masked_bytes(uuid)?;
-        output[output_offset..end].copy_from_slice(bytes.as_masked_uuid_bytes());
+        output[output_offset..end].copy_from_slice(bytes.as_bytes());
         Ok(())
     }
 

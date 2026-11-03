@@ -28,6 +28,16 @@ pub struct UuidV7Bounds {
     pub end_inclusive: Uuid,
 }
 
+impl core::ops::RangeBounds<Uuid> for UuidV7Bounds {
+    fn start_bound(&self) -> core::ops::Bound<&Uuid> {
+        core::ops::Bound::Included(&self.start_inclusive)
+    }
+
+    fn end_bound(&self) -> core::ops::Bound<&Uuid> {
+        core::ops::Bound::Included(&self.end_inclusive)
+    }
+}
+
 fn uuid_v7_endpoint(unix_ms: u64, upper: bool) -> Uuid {
     let mut bytes = if upper { [u8::MAX; 16] } else { [0; 16] };
     bytes[..6].copy_from_slice(&unix_ms.to_be_bytes()[2..]);
@@ -38,6 +48,18 @@ fn uuid_v7_endpoint(unix_ms: u64, upper: bool) -> Uuid {
 
 /// Return bounds containing every RFC-variant UUIDv7 from `start_unix_ms` through the optional
 /// inclusive end. Omit the end to select one millisecond. Comparison must follow UUID wire order.
+///
+/// ```
+/// use uuid_slug::{Uuid, uuid_v7_bounds};
+/// use std::collections::BTreeMap;
+/// let id = Uuid::from_uuid_string("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
+/// let rows = BTreeMap::from([(id, "stored")]);
+/// let bounds = uuid_v7_bounds(id.extract_uuid_v7_unix_ms()?, None)?;
+/// assert_eq!(rows.range(bounds).count(), 1);
+/// let outside = uuid_v7_bounds(id.extract_uuid_v7_unix_ms()? + 1, None)?;
+/// assert_eq!(rows.range(outside).count(), 0);
+/// # Ok::<(), uuid_slug::Error>(())
+/// ```
 pub fn uuid_v7_bounds(start_unix_ms: u64, end_unix_ms: Option<u64>) -> Result<UuidV7Bounds, Error> {
     let end_unix_ms = end_unix_ms.unwrap_or(start_unix_ms);
     if !generation_state::valid_range(start_unix_ms, end_unix_ms) {
@@ -116,6 +138,8 @@ impl UuidV7Generator {
     /// applying rollback policy.
     /// A reseed requests ten random bytes; continuation at the same UUID timestamp requests four.
     /// Failed entropy draws leave the sequence unchanged so retries cannot corrupt state.
+    /// The callback must fill every requested byte or return an error. Production IDs require
+    /// cryptographically secure entropy; a successful partial fill cannot be detected.
     pub fn generate_uuid_v7_with_random_fill(
         &mut self,
         unix_ms: f64,
@@ -124,6 +148,8 @@ impl UuidV7Generator {
         self.generate_uuid_v7_from_instant(float_instant(unix_ms)?, fill)
     }
     /// Generate at an exact standard-library time using caller-supplied entropy.
+    /// The callback must fill every requested byte or return an error. Production IDs require
+    /// cryptographically secure entropy; a successful partial fill cannot be detected.
     #[cfg(feature = "std")]
     pub fn generate_uuid_v7_at_with_random_fill(
         &mut self,
@@ -192,6 +218,8 @@ impl UuidV7Generator {
         Ok(id)
     }
     /// Generate into caller storage; reject a short destination before clock or entropy work.
+    /// The callback must fill every requested byte or return an error. Production IDs require
+    /// cryptographically secure entropy; a successful partial fill cannot be detected.
     pub fn generate_uuid_v7_into_with_random_fill(
         &mut self,
         unix_ms: f64,
@@ -206,6 +234,8 @@ impl UuidV7Generator {
     }
     /// Generate at an exact standard-library time into caller storage.
     /// Invalid storage or time and entropy failure leave the destination unchanged.
+    /// The callback must fill every requested byte or return an error. Production IDs require
+    /// cryptographically secure entropy; a successful partial fill cannot be detected.
     #[cfg(feature = "std")]
     pub fn generate_uuid_v7_at_into_with_random_fill(
         &mut self,
@@ -318,6 +348,8 @@ fn assemble(ms: u64, sequence: u64, random: [u8; 10]) -> Uuid {
     Uuid::from_uuid_bytes_array(bytes)
 }
 /// Generate a random version-4 UUID from a fallible entropy source.
+/// The callback must fill every requested byte or return an error. Production IDs require
+/// cryptographically secure entropy; a successful partial fill cannot be detected.
 pub fn generate_uuid_v4_with_random_fill(
     mut fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
 ) -> Result<Uuid, Error> {
@@ -329,6 +361,8 @@ pub fn generate_uuid_v4_with_random_fill(
 }
 /// Generate v4 into caller storage; reject invalid ranges before drawing entropy.
 /// An entropy error leaves the destination unchanged.
+/// The callback must fill every requested byte or return an error. Production IDs require
+/// cryptographically secure entropy; a successful partial fill cannot be detected.
 pub fn generate_uuid_v4_into_with_random_fill(
     out: &mut [u8],
     offset: usize,
