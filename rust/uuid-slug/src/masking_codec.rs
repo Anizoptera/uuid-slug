@@ -514,8 +514,7 @@ impl UuidV7MaskingCodec {
     /// Invalid ranges return `InvalidTimestamp`; duplicate or empty sentinel names or duplicate
     /// identities return `InvalidSentinel`; non-v7 sentinels return `InvalidUuidVersion`.
     pub fn from_options(options: UuidV7MaskingCodecOptions) -> Result<Self, Error> {
-        const MAX_UUID_V7_UNIX_MS: u64 = (1 << 48) - 1;
-        let max_start = MAX_UUID_V7_UNIX_MS - crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
+        let max_start = crate::MAX_UUID_V7_UNIX_MS - crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
         if options.timestamp_range_start_unix_ms > max_start {
             return Err(
                 Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
