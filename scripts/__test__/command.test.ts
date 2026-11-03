@@ -10,6 +10,10 @@ test("commands preserve explicit PATH while keeping local binaries first", async
   expect(await command(process.execPath, readPath, cwd, { PATH: selectedPath })).toBe(
     `${join(cwd, "node_modules/.bin")}${delimiter}${selectedPath}`,
   );
+  if (process.platform === "win32")
+    expect(await command(process.execPath, readPath, cwd, { Path: selectedPath })).toBe(
+      `${join(cwd, "node_modules/.bin")}${delimiter}${selectedPath}`,
+    );
   expect(await command(process.execPath, readPath, cwd)).toBe(
     `${join(cwd, "node_modules/.bin")}${delimiter}${process.env.PATH ?? ""}`,
   );

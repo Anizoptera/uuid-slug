@@ -37,7 +37,13 @@ export async function command(
   options?: { readonly timeoutMs: number },
 ): Promise<string> {
   const childEnvironment = Object.fromEntries(
-    Object.entries({ ...process.env, ...env }).filter(([name]) => !GIT_LOCAL_ENVIRONMENT.has(name)),
+    Object.entries({ ...process.env, ...env })
+      .filter(([name]) => !GIT_LOCAL_ENVIRONMENT.has(name))
+      // Windows exports Path; one canonical key also lets explicit caller overrides win.
+      .map(([name, value]) => [
+        process.platform === "win32" && name.toUpperCase() === "PATH" ? "PATH" : name,
+        value,
+      ]),
   );
   try {
     const result = await execute(executable, args, {
