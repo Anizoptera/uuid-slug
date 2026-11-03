@@ -190,8 +190,8 @@ A masking codec holds immutable masking keys, sentinels, rotation, and writer se
 | `uuidToPlainSlug(uuid, alphabet?)` / `(bytes, byteOffset, alphabet?)` | A plain slug from any supported UUID form, or from one UUID inside a larger array. |
 | `uuidToMaskedSlug(uuid)` | A masked or sentinel slug from any supported UUIDv7 form. |
 | `uuidToMaskedBytes(uuid, output?, outputOffset?)` | The 16-byte mixed block, or raw bytes for a registered sentinel. |
-| `maskedBytesToUuidBytes(maskedUuidBytes, output?, outputOffset?)` | UUIDv7 bytes from an explicitly masked binary value. |
-| `maskedBytesToUuidString(maskedUuidBytes, textCase?)` | UUIDv7 text from an explicitly masked binary value. |
+| `maskedBytesToUuidBytes(maskedUuidBytes, output?, outputOffset?)` / `(bytes, byteOffset, output?, outputOffset?)` | UUIDv7 bytes from an explicitly masked binary value, including one inside a larger array. |
+| `maskedBytesToUuidString(maskedUuidBytes, textCase?)` / `(bytes, byteOffset, textCase?)` | UUIDv7 text from an explicitly masked binary value, including one inside a larger array. |
 | `plainToMaskedUuidSlug(plainUuidSlug)` | A `MaskedOrSentinelUuidV7Slug` from either plain UUIDv7 slug spelling. |
 | `maskedToPlainUuidSlug(maskedUuidSlug, alphabet?)` | A plain UUIDv7 slug from a masked slug or registered sentinel. |
 | `maskedSlugToUuidString(maskedUuidSlug, textCase?)` | UUIDv7 text when the caller knows the slug is masked. |
@@ -222,7 +222,7 @@ Slug masking returns a raw sentinel slug when the UUID is registered as a sentin
 
 The byte decoder returns a new plain `Uint8Array` branded as `UuidV7Bytes` when storage is omitted. When storage is supplied, it validates and decodes before writing, then returns that exact array; an error leaves the array unchanged.
 
-Masked binary accepts an exact 16-byte `Uint8Array`, `ArrayBuffer`, or `DataView` range. It preserves the slug's payload, keys, timestamp range and first-passing-key order, but checks 12 inner bits rather than text's 16. Read it explicitly: ordinary UUID byte readers cannot infer its provenance. To recover masked text, decode with `maskedBytesToUuidBytes`, then call `uuidToMaskedSlug`; keyless base64 encoding cannot reconstruct the four outer check bits. Binary writes that collide with a registered raw sentinel return `invalid_mask` rather than decode to the wrong identity.
+Masked binary accepts an exact 16-byte `Uint8Array`, `ArrayBuffer`, or `DataView` range; pass `byteOffset` to read 16 bytes from a larger `Uint8Array` without creating a view. Source and output ranges may overlap; failed writes leave all output unchanged. It preserves the slug's payload, keys, timestamp range and first-passing-key order, but checks 12 inner bits rather than text's 16. Read it explicitly: ordinary UUID byte readers cannot infer its provenance. To recover masked text, decode with `maskedBytesToUuidBytes`, then call `uuidToMaskedSlug`; keyless base64 encoding cannot reconstruct the four outer check bits. Binary writes that collide with a registered raw sentinel return `invalid_mask` rather than decode to the wrong identity.
 
 Each decoder accepts every value that a supported matching encoder can produce. Masked-slug decoding always accepts both alphabets, sentinels, and current or previous masks. Migration adds only the old formats you enable. Forms no supported encoder produces are invalid.
 

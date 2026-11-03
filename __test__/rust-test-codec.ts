@@ -183,8 +183,13 @@ export function createRustCodec(configuration: unknown, generator?: unknown): un
   const id = handle(result.id);
   if (id instanceof Error) return id;
   const context = { codec: id };
-  const read = (method: string, value: unknown, option?: unknown, source = "universal") =>
-    invoke(method, value, option, { ...context, source });
+  const read = (
+    method: string,
+    value: unknown,
+    option?: unknown,
+    source = "universal",
+    offset?: number,
+  ) => invoke(method, value, option, { ...context, source, offset });
   const nativeBytes = (value: unknown, source = "universal") =>
     returnedBytes(read("bytes", value, undefined, source));
   const binaryWrite = (
@@ -192,8 +197,13 @@ export function createRustCodec(configuration: unknown, generator?: unknown): un
     value: unknown,
     output?: unknown,
     offset: unknown = 0,
+    byteOffset?: number,
   ) => {
     if (isUuidSlugError(value)) return value;
+    if (byteOffset !== undefined && !Number.isSafeInteger(byteOffset))
+      return failure("invalid_buffer");
+    if (byteOffset !== undefined && byteOffset !== 0 && !isUint8Array(value))
+      return failure("invalid_options");
     if (output === undefined)
       return returnedBytes(
         read(
@@ -201,6 +211,7 @@ export function createRustCodec(configuration: unknown, generator?: unknown): un
           value,
           undefined,
           operation === "mask" ? "universal" : "masked-bytes",
+          byteOffset,
         ),
       );
     if (!isUint8Array(output) || typeof offset !== "number" || !Number.isSafeInteger(offset))
@@ -209,7 +220,7 @@ export function createRustCodec(configuration: unknown, generator?: unknown): un
       api(
         operation === "mask" ? "writeMaskedBytes" : "writeUnmaskedBytes",
         [input(value), { bytes: [...output] }, offset],
-        context,
+        { ...context, offset: byteOffset },
       ),
       output,
     );
@@ -246,10 +257,23 @@ export function createRustCodec(configuration: unknown, generator?: unknown): un
     uuidToMaskedSlug: (value: unknown) => read("mask", value),
     uuidToMaskedBytes: (value: unknown, output?: unknown, offset?: unknown) =>
       binaryWrite("mask", value, output, offset),
-    maskedBytesToUuidBytes: (value: unknown, output?: unknown, offset?: unknown) =>
-      binaryWrite("unmask", value, output, offset),
-    maskedBytesToUuidString: (value: unknown, textCase?: unknown) =>
-      read("text", value, textCase, "masked-bytes"),
+    maskedBytesToUuidBytes: (
+      value: unknown,
+      outputOrOffset?: unknown,
+      output?: unknown,
+      outputOffset?: unknown,
+    ) =>
+      typeof outputOrOffset === "number"
+        ? binaryWrite("unmask", value, output, outputOffset, outputOrOffset)
+        : binaryWrite("unmask", value, outputOrOffset, output),
+    maskedBytesToUuidString: (value: unknown, offsetOrCase?: unknown, textCase?: unknown) => {
+      if (isUuidSlugError(value)) return value;
+      if (typeof offsetOrCase === "number" && !Number.isSafeInteger(offsetOrCase))
+        return failure("invalid_buffer");
+      return typeof offsetOrCase === "number"
+        ? read("text", value, textCase, "masked-bytes", offsetOrCase)
+        : read("text", value, offsetOrCase, "masked-bytes");
+    },
     plainToMaskedUuidSlug: (value: unknown) => read("mask", value, undefined, "plain"),
     maskedSlugToUuidString: (value: unknown, textCase?: unknown) =>
       read("text", value, textCase, "masked"),

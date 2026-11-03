@@ -263,6 +263,15 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     equal(api.bytesToUuidString(storage, 2), uuid, "binary decoded caller bytes");
     equal(storage[0], 0x55, "binary caller prefix");
     equal(storage[19], 0x55, "binary caller suffix");
+    const packet = new Uint8Array(24).fill(0x55);
+    equal(codec.uuidToMaskedBytes(uuid, packet, 8), packet, "binary packet writer");
+    equal(codec.maskedBytesToUuidString(packet, 8), uuid, "binary packet text reader");
+    equal(
+      codec.maskedBytesToUuidBytes(packet, 8, packet, 2),
+      packet,
+      "overlapping binary packet reader",
+    );
+    equal(api.bytesToUuidString(packet, 2), uuid, "binary packet identity");
     equal(
       unwrap(codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true })).uuidSlugToUuidString(
         slug,

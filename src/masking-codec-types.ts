@@ -313,10 +313,42 @@ export interface UuidV7MaskingCodec {
     output: Output,
     outputOffset?: number,
   ): UuidOutput<Output> | UuidSlugError;
+  /**
+   * Read 16 masked bytes at `byteOffset` from a larger array. Uses the same keys, checks and failures
+   * as the standalone reader; an invalid range returns `invalid_buffer`.
+   * @param byteOffset - Zero-based index where the masked UUID starts. Omit for a standalone value.
+   */
+  maskedBytesToUuidBytes(
+    this: void,
+    maskedUuidBytes: Uint8Array | UuidSlugError,
+    byteOffset: number,
+  ): UuidV7Bytes | UuidSlugError;
+  /**
+   * Decode 16 masked bytes at `byteOffset` into caller storage at `outputOffset` (default zero).
+   * Input and output may overlap; return output by identity and leave it unchanged on failure.
+   */
+  maskedBytesToUuidBytes<Output extends Uint8Array>(
+    this: void,
+    maskedUuidBytes: Uint8Array | UuidSlugError,
+    byteOffset: number,
+    output: Output,
+    outputOffset?: number,
+  ): UuidOutput<Output> | UuidSlugError;
   /** Read masked bytes as UUIDv7 text; `textCase` defaults to lowercase. Uses the same keys, checks and failures as the byte reader. */
   maskedBytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
     maskedUuidBytes: UuidByteInput | UuidSlugError,
+    ...textCase: UuidTextCaseArguments<Case>
+  ): UuidV7StringFor<Case> | UuidSlugError;
+  /**
+   * Read 16 masked bytes at `byteOffset` from a larger array as UUIDv7 text; lowercase is the default.
+   * Uses the standalone reader's keys, checks and failures; an invalid range returns `invalid_buffer`.
+   * @param byteOffset - Zero-based index where the masked UUID starts. Omit for a standalone value.
+   */
+  maskedBytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    maskedUuidBytes: Uint8Array | UuidSlugError,
+    byteOffset: number,
     ...textCase: UuidTextCaseArguments<Case>
   ): UuidV7StringFor<Case> | UuidSlugError;
   /**

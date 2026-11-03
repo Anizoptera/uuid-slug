@@ -91,6 +91,22 @@ export const codecBoundaryCases = [
         const output = new Uint8Array(24).fill(0xa5);
         assert.equal(codec.uuidToMaskedBytes(uuid, output, 4), output);
         assert.deepEqual(output.subarray(4, 20), expected);
+        assert.equal(codec.maskedBytesToUuidString(output, 4), uuid);
+        assert.equal(
+          codec.maskedBytesToUuidString(output, 4, UUID_TEXT_UPPERCASE),
+          uuid.toUpperCase(),
+        );
+        assert.deepEqual(
+          unwrap(maskedBytesToUuidBytes(output, 4)),
+          unwrap(uuidStringToBytes(uuid)),
+        );
+        const view = new Uint8Array(32).subarray(4, 28);
+        view.set(expected, 8);
+        assert.equal(codec.maskedBytesToUuidString(view, 8), uuid);
+        // The destination overlaps unread source bytes; decoding must finish before publishing.
+        const overlapping = new Uint8Array(output);
+        assert.equal(maskedBytesToUuidBytes(overlapping, 4, overlapping, 2), overlapping);
+        assert.equal(bytesToUuidString(overlapping, 2), uuid);
         assert.deepEqual(
           [...output.subarray(0, 4), ...output.subarray(20)],
           Array.from({ length: 8 }, () => 0xa5),
@@ -113,6 +129,8 @@ export const codecBoundaryCases = [
         const sentinel = unwrap(codec.uuidToMaskedBytes(farSentinel));
         assert.deepEqual(sentinel, unwrap(uuidStringToBytes(farSentinel)));
         assert.equal(codec.maskedBytesToUuidString(sentinel), farSentinel);
+        output.set(sentinel, 4);
+        assert.equal(codec.maskedBytesToUuidString(output, 4), farSentinel);
       }
     },
   },
@@ -142,6 +160,13 @@ export const codecBoundaryCases = [
         assert.ok(failed instanceof Error);
         assert.equal(failed.code, "invalid_uuid_slug");
         assert.deepEqual(output, new Uint8Array(20).fill(0xa5));
+        const packet = new Uint8Array(24).fill(0xa5);
+        packet.set(bad, 4);
+        const before = packet.slice();
+        const failedOverlap = codec.maskedBytesToUuidBytes(packet, 4, packet, 2);
+        assert.ok(failedOverlap instanceof Error);
+        assert.equal(failedOverlap.code, "invalid_uuid_slug");
+        assert.deepEqual(packet, before);
       }
       for (const length of [0, 15, 17]) {
         const failed = codec.maskedBytesToUuidBytes(new Uint8Array(length));
@@ -149,12 +174,23 @@ export const codecBoundaryCases = [
         assert.equal(failed.code, "invalid_buffer");
       }
       const short = new Uint8Array(15).fill(0xa5);
+      for (const offset of [-1, 0.5, NaN, Infinity, 9]) {
+        const packet = new Uint8Array(24);
+        packet.set(good, 4);
+        const output = new Uint8Array(20).fill(0xa5);
+        const failed = codec.maskedBytesToUuidBytes(packet, offset, output);
+        assert.ok(failed instanceof Error);
+        assert.equal(failed.code, "invalid_buffer");
+        assert.deepEqual(output, new Uint8Array(20).fill(0xa5));
+      }
       assert.ok(codec.uuidToMaskedBytes(uuid, short) instanceof Error);
       assert.deepEqual(short, new Uint8Array(15).fill(0xa5));
       const prior = new UuidSlugError("invalid_mask", "upstream");
       assert.equal(codec.uuidToMaskedBytes(prior, short), prior);
       assert.equal(codec.maskedBytesToUuidBytes(prior, short), prior);
       assert.equal(codec.maskedBytesToUuidString(prior), prior);
+      assert.equal(codec.maskedBytesToUuidBytes(prior, NaN, short), prior);
+      assert.equal(codec.maskedBytesToUuidString(prior, NaN), prior);
     },
   },
   {
@@ -170,6 +206,9 @@ export const codecBoundaryCases = [
         previousMasks: [{ mask: oldMask, timestampRangeStartUnixMs: start }],
       });
       assert.equal(rotated.maskedBytesToUuidString(bytes), uuid);
+      const packet = new Uint8Array(24);
+      packet.set(bytes, 8);
+      assert.equal(rotated.maskedBytesToUuidString(packet, 8), uuid);
       const outOfRange = rotated.uuidToMaskedBytes(uuid);
       assert.ok(outOfRange instanceof Error);
       assert.equal(outOfRange.code, "invalid_timestamp");

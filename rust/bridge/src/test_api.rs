@@ -33,6 +33,16 @@ fn index(v: &Value) -> Result<usize, Error> {
 fn bytes(v: &Value) -> Result<Vec<u8>, Error> {
     serde_json::from_value(v["bytes"].clone()).map_err(|_| invalid(ErrorCode::InvalidBuffer))
 }
+fn masked_byte_range<'a>(bytes: &'a [u8], offset: &Value) -> Result<&'a [u8], Error> {
+    if offset.is_null() {
+        return Ok(bytes);
+    }
+    // Borrow the consumer's selected slice; nested gets avoid overflow and never panic.
+    bytes
+        .get(index(offset)?..)
+        .and_then(|tail| tail.get(..16))
+        .ok_or_else(|| invalid(ErrorCode::InvalidBuffer))
+}
 fn alphabet(v: &Value) -> Result<UuidSlugAlphabet, Error> {
     super::dispatch::alphabet(v)
 }
@@ -124,7 +134,7 @@ fn uuid(
             .codecs
             .get(codec.ok_or_else(|| invalid(ErrorCode::InvalidOptions))?)
             .ok_or_else(|| invalid(ErrorCode::InvalidOptions))?
-            .masked_bytes_to_uuid(&bytes(v)?);
+            .masked_bytes_to_uuid(masked_byte_range(&bytes(v)?, offset)?);
     }
     if v.is_object() && v.get("bytes").is_some() {
         if source == "text" {
@@ -200,7 +210,7 @@ fn run(request: &Value, objects: &mut Objects) -> Result<Value, Error> {
                     selected.uuid_to_masked_bytes_into(value, &mut storage, offset)
                 } else {
                     selected.masked_bytes_to_uuid_bytes_into(
-                        &bytes(&args[0])?,
+                        masked_byte_range(&bytes(&args[0])?, &request["offset"])?,
                         &mut storage,
                         offset,
                     )

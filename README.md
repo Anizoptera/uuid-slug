@@ -198,7 +198,7 @@ else console.log(result); // The same record, with its ID at bytes 8 through 23.
 
 Write directly into your database or protocol buffer with `uuidStringToBytes`, `plainSlugToUuidBytes` or `maskingCodec.maskedSlugToUuidBytes`. Pass the array and offset; the call returns your array and leaves other bytes unchanged. Failed validation leaves the buffer unchanged. See [buffer examples and accepted byte forms](docs/api.md#work-with-uuid-bytes).
 
-For client-visible binary IDs, use `maskingCodec.uuidToMaskedBytes(uuid, record, offset)` or omit storage for an owned 16-byte result. Read with `maskedBytesToUuidBytes` or `maskedBytesToUuidString`. Raw UUID bytes have the same length, so ordinary UUID readers never infer masking. Binary preserves the slug's UUID payload and settings, with a 12-bit check instead of text's 16-bit check; neither authorizes access. Registered sentinels retain their raw UUID bytes.
+For client-visible binary IDs, use `maskingCodec.uuidToMaskedBytes(uuid, record, offset)` or omit storage for an owned 16-byte result. Read directly from a packet with `maskingCodec.maskedBytesToUuidString(record, offset)` or `maskedBytesToUuidBytes(record, offset, output, outputOffset)`. Omit the input offset for a standalone value and output storage for owned bytes. Raw and masked bytes can represent different UUIDs, so ordinary UUID readers never infer masking. Binary preserves the slug's UUID payload and settings, with a 12-bit check instead of text's 16-bit check; neither authorizes access. Registered sentinels retain their raw UUID bytes.
 
 ## Parse once for repeated work
 

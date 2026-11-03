@@ -811,9 +811,27 @@ export declare interface UuidV7MaskingCodec {
     output: Output,
     outputOffset?: number,
   ): UuidOutput<Output> | UuidSlugError;
+  maskedBytesToUuidBytes(
+    this: void,
+    maskedUuidBytes: Uint8Array | UuidSlugError,
+    byteOffset: number,
+  ): UuidV7Bytes | UuidSlugError;
+  maskedBytesToUuidBytes<Output extends Uint8Array>(
+    this: void,
+    maskedUuidBytes: Uint8Array | UuidSlugError,
+    byteOffset: number,
+    output: Output,
+    outputOffset?: number,
+  ): UuidOutput<Output> | UuidSlugError;
   maskedBytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
     maskedUuidBytes: UuidByteInput | UuidSlugError,
+    ...textCase: UuidTextCaseArguments<Case>
+  ): UuidV7StringFor<Case> | UuidSlugError;
+  maskedBytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    maskedUuidBytes: Uint8Array | UuidSlugError,
+    byteOffset: number,
     ...textCase: UuidTextCaseArguments<Case>
   ): UuidV7StringFor<Case> | UuidSlugError;
   plainToMaskedUuidSlug<Input extends string | UuidSlugError>(

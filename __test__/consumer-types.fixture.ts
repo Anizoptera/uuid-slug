@@ -535,6 +535,17 @@ expectType<UppercaseUuidV7String | UuidSlugError>()(
   codec.maskedBytesToUuidString(maskedBinary, UUID_TEXT_UPPERCASE),
 );
 const binaryStorage = new Uint8Array(24);
+expectType<UuidV7Bytes | UuidSlugError>()(codec.maskedBytesToUuidBytes(binaryStorage, 4));
+expectType<UuidV7String | UuidSlugError>()(codec.maskedBytesToUuidString(binaryStorage, 4));
+expectType<UppercaseUuidV7String | UuidSlugError>()(
+  codec.maskedBytesToUuidString(binaryStorage, 4, UUID_TEXT_UPPERCASE),
+);
+expectType<typeof binaryStorage | UuidSlugError>()(
+  codec.maskedBytesToUuidBytes(binaryStorage, 4, binaryStorage, 2),
+);
+expectType<UuidV7Bytes | UuidSlugError>()(codec.maskedBytesToUuidBytes(maskedBinary, 0));
+// @ts-expect-error DataView already declares its range; only Uint8Array takes an input offset.
+codec.maskedBytesToUuidBytes(new DataView(new ArrayBuffer(16)), 1);
 expectType<UuidString | UuidSlugError>()(uuidToString(binaryStorage, 4));
 expectType<UuidBytes | UuidSlugError>()(uuidToBytes(binaryStorage, 4));
 expectType<PlainUuidSlug | UuidSlugError>()(uuidToPlainSlug(binaryStorage, 4));
