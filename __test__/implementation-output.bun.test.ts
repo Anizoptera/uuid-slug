@@ -4,8 +4,10 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { gzipSync, gunzipSync } from "node:zlib";
 import {
   openImplementationOutput,
+  readImplementationLines,
   resolveImplementationEvidence,
 } from "../bench/implementation-output";
 import type { ImplementationReport, Measurement } from "../bench/implementation-report";
@@ -29,6 +31,29 @@ const record: Measurement = {
   rows: [{ name: "plain/base32", ns: [1], operations: 1 }],
 };
 
+async function readCompressed(path: string): Promise<string> {
+  // The independent Node decoder checks the writer separately from the streaming report reader.
+  return gunzipSync(await readFile(path)).toString("utf8");
+}
+
+test("streamed evidence preserves legacy lines and rejects truncated gzip", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "uuid-slug-output-"));
+  try {
+    const legacy = join(directory, "legacy.jsonl");
+    await writeFile(legacy, '"first"\n"last"');
+    expect(await Array.fromAsync(readImplementationLines(legacy))).toEqual(['"first"', '"last"']);
+    const truncated = join(directory, "truncated.jsonl.gz");
+    const bytes = gzipSync('"first"\n');
+    await writeFile(truncated, bytes.subarray(0, -1));
+    const failure = await Array.fromAsync(readImplementationLines(truncated)).catch(
+      (error: unknown) => error,
+    );
+    expect(failure).toBeInstanceOf(Error);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("overlapping completed writers publish a report pointing to their own immutable evidence", async () => {
   const directory = await mkdtemp(join(tmpdir(), "uuid-slug-output-"));
   const destination = join(directory, "comparison #1 (warm).md");
@@ -41,13 +66,16 @@ test("overlapping completed writers publish a report pointing to their own immut
       first.publish("# First\n\nFirst comparison.\n"),
       second.publish("# Second\n\nSecond comparison.\n"),
     ]);
-    const firstBytes = await readFile(firstRaw, "utf8");
+    const firstBytes = await readCompressed(firstRaw);
     expect(
       firstBytes
         .split("\n")
         .filter(Boolean)
         .map((line) => JSON.parse(line)),
     ).toEqual([header, record, { complete: true }]);
+    expect(await Array.fromAsync(readImplementationLines(firstRaw))).toEqual(
+      firstBytes.trimEnd().split("\n"),
+    );
     const markdown = await readFile(destination, "utf8");
     const selected = await resolveImplementationEvidence(destination);
     expect([firstRaw, secondRaw]).toContain(selected);
@@ -76,8 +104,9 @@ test("failed Markdown publication retains completed raw evidence instead of over
       .publish("# Comparison\n\nResult.\n")
       .catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(Error);
-    expect(await readFile(output.raw, "utf8")).toEndWith('{"complete":true}\n');
-    expect(await readFile(output.raw, "utf8")).toContain(JSON.stringify(record));
+    const retained = await readCompressed(output.raw);
+    expect(retained).toEndWith('{"complete":true}\n');
+    expect(retained).toContain(JSON.stringify(record));
   } finally {
     await output.close();
     await rm(directory, { recursive: true, force: true });
@@ -111,7 +140,7 @@ test("killing an acquiring process leaves the previous report and evidence uncha
     await child.exited;
     expect(await readFile(destination, "utf8")).toBe("Previous complete report");
     expect(await readFile(previousRaw, "utf8")).toBe("Previous complete evidence");
-    const attempted = await readFile(ready.trim(), "utf8");
+    const attempted = await readCompressed(ready.trim());
     expect(attempted).toContain(JSON.stringify(record));
     expect(attempted).not.toContain('{"complete":true}');
   } finally {

@@ -1,5 +1,5 @@
 // One serial scheduler owns process blocks, progress, retained observations and report regeneration.
-import { mkdtemp, open, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir, cpus, platform, arch } from "node:os";
 import { join, resolve } from "node:path";
 import { randomBytes, randomInt } from "node:crypto";
@@ -13,6 +13,7 @@ import type { ImplementationReport, UnvalidatedMeasurement } from "./implementat
 import type { Settings } from "./implementation-worker";
 import {
   openImplementationOutput,
+  readImplementationLines,
   resolveImplementationEvidence,
   writeImplementationReport,
 } from "./implementation-output";
@@ -191,8 +192,7 @@ if (reportIndex >= 0) {
   const evidence = await resolveImplementationEvidence(source);
   let reporter: ReturnType<typeof createImplementationReporter> | undefined;
   let complete = false;
-  await using input = await open(evidence, "r");
-  for await (const line of input.readLines()) {
+  for await (const line of readImplementationLines(evidence)) {
     if (complete) throw new Error("Unexpected data after acquisition completion");
     if (!reporter) reporter = createImplementationReporter(JSON.parse(line));
     else if (line === '{"complete":true}') complete = true;

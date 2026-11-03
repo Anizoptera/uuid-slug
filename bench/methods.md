@@ -68,6 +68,8 @@ Retain execution-time host versions and native transport selections with their o
 
 Collect each attempt separately from completed reports. The canonical Markdown must link to its raw capture; publish that capture before atomically replacing the Markdown. A failed acquisition or report write must preserve the previous complete report and its evidence. Keep raw captures only for the current report or an unresolved comparison; superseded captures and diagnosed attempts must not accumulate. Regeneration accepts either the Markdown report or an explicit raw file; the Markdown path hides capture naming from ordinary use. Commit only the canonical Markdown and the raw evidence it needs, never scratch or duplicate reports.
 
+Compress raw JSON Lines with gzip without dropping or rounding observations. Finish one gzip member per appended process so completed records remain recoverable after interruption; stream all members when regenerating and keep legacy uncompressed captures readable. Compression runs outside measured batches and uses the platform implementation, with no tuning controls.
+
 Keep [throughput, sampled latency and cold-start measurements](https://github.com/openjdk/jmh/blob/master/jmh-samples/src/main/java/org/openjdk/jmh/samples/JMHSample_02_BenchmarkModes.java) separate, as JMH does; each answers a different question.
 
 Measure throughput and individual-call latency separately. Timed batches amortize clock and loop overhead; their per-call averages cannot establish individual-call p99. Keep raw samples, warm-up settings, runtime versions and execution order. Repeat comparisons in fresh processes with alternating order; samples from one process can share JIT, GC and thermal effects.

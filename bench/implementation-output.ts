@@ -1,9 +1,32 @@
 // Publish one Markdown pointer atomically; immutable evidence avoids a two-file transaction.
 import { mkdir, mkdtemp, open, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { gzip } from "node:zlib";
+import { promisify } from "node:util";
 import type { ImplementationReport, UnvalidatedMeasurement } from "./implementation-report";
 
 const RAW_LINK = "Raw observations: [JSON Lines](";
+const compress = promisify(gzip);
+
+export async function* readImplementationLines(source: string): AsyncGenerator<string> {
+  // Stream both legacy text and compressed captures without retaining the growing history.
+  const bytes = Bun.file(source).stream();
+  const decoded = source.endsWith(".gz")
+    ? bytes.pipeThrough(new DecompressionStream("gzip"))
+    : bytes;
+  let pending = "";
+  for await (const chunk of decoded.pipeThrough(new TextDecoderStream())) {
+    pending += chunk;
+    let start = 0;
+    let end: number;
+    while ((end = pending.indexOf("\n", start)) >= 0) {
+      yield pending.slice(start, end);
+      start = end + 1;
+    }
+    pending = pending.slice(start);
+  }
+  if (pending) yield pending;
+}
 
 export async function resolveImplementationEvidence(source: string): Promise<string> {
   if (!source.endsWith(".md")) return source;
@@ -58,13 +81,14 @@ export async function openImplementationOutput(
   await mkdir(parent, { recursive: true });
   const captureDirectory = await mkdtemp(join(parent, `${basename(destination, ".md")}-evidence-`));
   // Acquisition cannot touch completed outputs; only a fully captured run may replace the report.
-  const raw = join(captureDirectory, "observations.jsonl");
+  const raw = join(captureDirectory, "observations.jsonl.gz");
   const output = await open(raw, "wx");
   let state: "collecting" | "captured" | "published" = "collecting";
   let closed = false;
   async function appendLine(value: object) {
     const line = `${JSON.stringify(value)}\n`;
-    await output.writeFile(line);
+    // Each completed append is independently decompressible even if collection is interrupted.
+    await output.writeFile(await compress(line));
   }
   async function closeRaw() {
     if (!closed) {
