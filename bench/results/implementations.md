@@ -292,9 +292,70 @@ A/A uses identical artifacts in separate processes. Its worst median displacemen
 
 ## Per-call transports
 
-| Caller job | Reference | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | transport/rust/wasm32-unknown-unknown/release/fast-rng/node-22 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node-24 | transport/rust/wasm32-unknown-unknown/release/fast-rng/bun | transport/rust/wasm32-unknown-unknown/release/fast-rng/deno | transport/rust/wasm32-unknown-unknown/release/fast-rng/chromium | transport/rust/wasm32-unknown-unknown/release/fast-rng/firefox | transport/rust/wasm32-unknown-unknown/release/fast-rng/webkit | transport/rust/wasm32-unknown-unknown/release/fast-rng/workerd-web | transport/rust/wasm32-unknown-unknown/release/fast-rng/workerd-node-compatible | transport/rust/wasm32-unknown-unknown/release/os-rng/node | transport/rust/wasm32-unknown-unknown/release/os-rng/node-22 | transport/rust/wasm32-unknown-unknown/release/os-rng/node-24 | transport/rust/wasm32-unknown-unknown/release/os-rng/bun | transport/rust/wasm32-unknown-unknown/release/os-rng/deno | transport/rust/wasm32-unknown-unknown/release/os-rng/chromium | transport/rust/wasm32-unknown-unknown/release/os-rng/firefox | transport/rust/wasm32-unknown-unknown/release/os-rng/webkit | transport/rust/wasm32-unknown-unknown/release/os-rng/workerd-web | transport/rust/wasm32-unknown-unknown/release/os-rng/workerd-node-compatible | transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/node | transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/node-22 | transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/node-24 | transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/bun | transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/deno | transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/chromium | transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/firefox | transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/webkit | transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/workerd-web | transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/workerd-node-compatible | transport/rust/wasm32-unknown-unknown/release/std/node | transport/rust/wasm32-unknown-unknown/release/std/node-22 | transport/rust/wasm32-unknown-unknown/release/std/node-24 | transport/rust/wasm32-unknown-unknown/release/std/bun | transport/rust/wasm32-unknown-unknown/release/std/deno | transport/rust/wasm32-unknown-unknown/release/std/chromium | transport/rust/wasm32-unknown-unknown/release/std/firefox | transport/rust/wasm32-unknown-unknown/release/std/webkit | transport/rust/wasm32-unknown-unknown/release/std/workerd-web | transport/rust/wasm32-unknown-unknown/release/std/workerd-node-compatible | transport/rust/wasm32-unknown-unknown/release/reduced/node | transport/rust/wasm32-unknown-unknown/release/reduced/node-22 | transport/rust/wasm32-unknown-unknown/release/reduced/node-24 | transport/rust/wasm32-unknown-unknown/release/reduced/bun | transport/rust/wasm32-unknown-unknown/release/reduced/deno | transport/rust/wasm32-unknown-unknown/release/reduced/chromium | transport/rust/wasm32-unknown-unknown/release/reduced/firefox | transport/rust/wasm32-unknown-unknown/release/reduced/webkit | transport/rust/wasm32-unknown-unknown/release/reduced/workerd-web | transport/rust/wasm32-unknown-unknown/release/reduced/workerd-node-compatible | transport/typescript/node | transport/native/node-22/napi | transport/native/node-24/napi | transport/native/node-26/napi | transport/native/node-26/ffi | transport/native/bun/ffi | transport/native/bun/napi | transport/native/deno/napi | transport/native/deno/ffi |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| transport/plain/base64 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | reference | 1.2× [?] | 1.1× [?] | 1× [?] | 1.8× [?] | 1.3× [?] | 2× [?] | 1.4× [?] | 1× [?] | 1× [?] | 1× [?] | 1.1× [?] | 0.44× [?] | 1× [?] | 1.9× [?] | 1.3× [?] | 2.1× [?] | 2.1× [?] | 1× [?] | 1× [?] | 1× [?] | 1.2× [?] | 1.2× [?] | 1.1× [?] | 1.9× [?] | 1.2× [?] | 2× [?] | 1.4× [?] | 1.1× [?] | 1.1× [?] | 1× [?] | 1.1× [?] | 1.2× [?] | 1.1× [?] | 1.8× [?] | 1.3× [?] | 2.2× [?] | 1.3× [?] | 1× [?] | 1.1× [?] | 1× [?] | 1.3× [?] | 1.1× [?] | 1.1× [?] | 1.6× [?] | 1.2× [?] | 1.9× [?] | 1.4× [?] | 0.98× [?] | 0.99× [?] | 0.45× [?] | 0.87× [?] | 0.87× [?] | 0.89× [?] | 3× [?] | 0.49× [?] | 1× [?] | 0.91× [?] | 1.9× [?] |
+### transport/plain/base64
+
+| Lane | Reference | Relative cost |
+| --- | --- | ---: |
+| transport/rust/wasm32-unknown-unknown/release/fast-rng/node | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | reference |
+| transport/rust/wasm32-unknown-unknown/release/fast-rng/node-22 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.2× [?] |
+| transport/rust/wasm32-unknown-unknown/release/fast-rng/node-24 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/fast-rng/bun | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/fast-rng/deno | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.8× [?] |
+| transport/rust/wasm32-unknown-unknown/release/fast-rng/chromium | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.3× [?] |
+| transport/rust/wasm32-unknown-unknown/release/fast-rng/firefox | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 2× [?] |
+| transport/rust/wasm32-unknown-unknown/release/fast-rng/webkit | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.4× [?] |
+| transport/rust/wasm32-unknown-unknown/release/fast-rng/workerd-web | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/fast-rng/workerd-node-compatible | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng/node | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng/node-22 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng/node-24 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 0.44× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng/bun | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng/deno | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.9× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng/chromium | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.3× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng/firefox | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 2.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng/webkit | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 2.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng/workerd-web | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng/workerd-node-compatible | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/node | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/node-22 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.2× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/node-24 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.2× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/bun | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/deno | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.9× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/chromium | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.2× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/firefox | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 2× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/webkit | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.4× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/workerd-web | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/os-rng-no-std/workerd-node-compatible | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/std/node | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/std/node-22 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/std/node-24 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.2× [?] |
+| transport/rust/wasm32-unknown-unknown/release/std/bun | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/std/deno | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.8× [?] |
+| transport/rust/wasm32-unknown-unknown/release/std/chromium | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.3× [?] |
+| transport/rust/wasm32-unknown-unknown/release/std/firefox | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 2.2× [?] |
+| transport/rust/wasm32-unknown-unknown/release/std/webkit | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.3× [?] |
+| transport/rust/wasm32-unknown-unknown/release/std/workerd-web | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/std/workerd-node-compatible | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/reduced/node | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/reduced/node-22 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.3× [?] |
+| transport/rust/wasm32-unknown-unknown/release/reduced/node-24 | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/reduced/bun | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.1× [?] |
+| transport/rust/wasm32-unknown-unknown/release/reduced/deno | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.6× [?] |
+| transport/rust/wasm32-unknown-unknown/release/reduced/chromium | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.2× [?] |
+| transport/rust/wasm32-unknown-unknown/release/reduced/firefox | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.9× [?] |
+| transport/rust/wasm32-unknown-unknown/release/reduced/webkit | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.4× [?] |
+| transport/rust/wasm32-unknown-unknown/release/reduced/workerd-web | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 0.98× [?] |
+| transport/rust/wasm32-unknown-unknown/release/reduced/workerd-node-compatible | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 0.99× [?] |
+| transport/typescript/node | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 0.45× [?] |
+| transport/native/node-22/napi | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 0.87× [?] |
+| transport/native/node-24/napi | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 0.87× [?] |
+| transport/native/node-26/napi | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 0.89× [?] |
+| transport/native/node-26/ffi | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 3× [?] |
+| transport/native/bun/ffi | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 0.49× [?] |
+| transport/native/bun/napi | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1× [?] |
+| transport/native/deno/napi | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 0.91× [?] |
+| transport/native/deno/ffi | transport/rust/wasm32-unknown-unknown/release/fast-rng/node | 1.9× [?] |
+
 
 ## Rust browser WASM release/fast-rng
 

@@ -376,6 +376,25 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
         // eslint-disable-next-line unicorn/no-array-sort -- Sort a private list under the ES2022 library floor.
       ].sort();
       lines.push("", `## ${family}`, "");
+      if (family === "Per-call transports") {
+        // Many implementations of one job belong on rows, so results fit an ordinary viewport.
+        for (const name of names)
+          lines.push(
+            `### ${name}`,
+            "",
+            table([
+              ["Lane", "Reference", "Relative cost"],
+              ["---", "---", "---:"],
+              ...lanes.map((lane) => [
+                lane.id,
+                referenceForJob(name) ?? "none",
+                relative(lane.id, name),
+              ]),
+            ]),
+            "",
+          );
+        continue;
+      }
       const rows = [
         ["Caller job", "Reference", ...lanes.map((lane) => lane.id)],
         ["---", "---", ...lanes.map(() => "---:")],

@@ -74,6 +74,7 @@ test.each([
     lane.id = ids.get(lane.id) as string;
     lane.reference = "transport/typescript/node";
     delete lane.requiresEntropy;
+    lane.family = "Per-call transports";
   }
   for (const record of report.measurements) {
     record.lane = ids.get(record.lane) as string;
@@ -83,7 +84,12 @@ test.each([
       row.ns = [900, 1000, 90000];
   }
   const rendered = renderImplementationReport(report, "transport/typescript/node");
-  const row = rendered.split("\n").find((line) => line.startsWith("| plain/base64 |"));
+  const row = rendered
+    .split("\n")
+    .find(
+      (line) =>
+        line.startsWith(`| ${candidateId} |`) && line.includes("| transport/typescript/node |"),
+    );
   expect(row).toContain("transport/typescript/node");
   expect(row).toContain("2×");
   const root = report.lanes[0];
