@@ -6,7 +6,7 @@ Prepare the npm update and first Rust crate with matching capabilities and ident
 
 Keep one Rust crate and the dependency-free npm package, optional `std`, Rust's owned `Uuid`, immutable codecs and separate mutable generators. Replace Rust dependencies only for demonstrated gains without quality or capability loss. Keep both manifest versions aligned; preparation must not change them.
 
-Derive API consistency and usability improvements from the maintainer's requests and interface principles; escalate only material unresolved contract, priority, risk or taste decisions. Versions, tags, pushes, publication, remote settings/secrets and finalization each require explicit authorization; this roadmap grants none. Keep dependent repairs with their task. Record acceptance by command, revision, features, profile, target and coverage limits in the existing evidence owner; durable contracts stay in their owners.
+Derive API consistency and usability improvements from the maintainer's requests and interface principles; escalate every taste decision and unresolved material contract, priority or risk decision. Versions, tags, pushes, publication, remote settings/secrets and finalization each require explicit authorization; this roadmap grants none. Keep dependent repairs with their task. Record acceptance by command, revision, features, profile, target and coverage limits in the existing evidence owner; durable contracts stay in their owners.
 
 ## Joint release readiness
 
