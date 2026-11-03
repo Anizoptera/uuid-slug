@@ -31,7 +31,7 @@ Prepare releases from correctness, compatibility, package and recovery evidence.
 
 Prepare both archives once without publishing credentials, even when publishing only one. Verify version and tag agreement, packaged APIs, shared behavior, language parity, minimum compatible version, archive integrity, and licenses before any publication step. Publication must reuse the verified archives; if a registry client must repack, require byte identity with the verified artifact.
 
-For the crate, build API documentation from the extracted archive with `RUSTDOCFLAGS='-D warnings'` and `cargo doc --all-features --no-deps --locked`, using the repository's Rust toolchain wrapper. Run its doctests with default features and without default features. Check the rendered installation, feature requirements and linked public items; hosted docs.rs must also be checked after publication.
+For the crate, build API documentation from the extracted archive with `RUSTUP_TOOLCHAIN=nightly RUSTDOCFLAGS='--cfg docsrs -D warnings'` and `cargo doc --all-features --no-deps --locked`, using the repository's Rust toolchain wrapper. This exercises the cfg-derived feature badges used by docs.rs. Run its doctests with default features and without default features. Check the rendered installation, feature requirements and linked public items; hosted docs.rs must also be checked after publication.
 
 Require the candidate's annotated tag to resolve to the checked-out commit before preparation or publication. Preserve tag objects in release checkouts; a matching version string cannot identify the source that verification exercised. This does not change historical lightweight-tag selection.
 
