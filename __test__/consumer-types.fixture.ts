@@ -535,9 +535,44 @@ expectType<UppercaseUuidV7String | UuidSlugError>()(
   codec.maskedBytesToUuidString(maskedBinary, UUID_TEXT_UPPERCASE),
 );
 const binaryStorage = new Uint8Array(24);
+expectType<UuidString | UuidSlugError>()(uuidToString(binaryStorage, 4));
+expectType<UuidBytes | UuidSlugError>()(uuidToBytes(binaryStorage, 4));
+expectType<PlainUuidSlug | UuidSlugError>()(uuidToPlainSlug(binaryStorage, 4));
+expectType<UuidString | UuidSlugError>()(codec.uuidToString(binaryStorage, 4));
+expectType<UuidBytes | UuidSlugError>()(codec.uuidToBytes(binaryStorage, 4));
+expectType<PlainUuidSlug | UuidSlugError>()(codec.uuidToPlainSlug(binaryStorage, 4));
+expectType<UppercaseUuidString | UuidSlugError>()(
+  uuidToString<typeof UUID_TEXT_UPPERCASE>(binaryStorage, 4, UUID_TEXT_UPPERCASE),
+);
+expectType<UppercaseUuidString | UuidSlugError>()(
+  codec.uuidToString<typeof UUID_TEXT_UPPERCASE>(binaryStorage, 4, UUID_TEXT_UPPERCASE),
+);
+expectType<Uint8Array | UuidSlugError>()(uuidToBytes<Uint8Array>(binaryStorage, 4, binaryStorage));
+expectType<Uint8Array | UuidSlugError>()(
+  codec.uuidToBytes<Uint8Array>(binaryStorage, 4, binaryStorage),
+);
 expectType<typeof binaryStorage | UuidSlugError>()(
   codec.uuidToMaskedBytes(generateUuidV7(), binaryStorage, 4),
 );
+if (!isUuidSlugError(maskedBinary)) {
+  // Offsets select storage, not whether its bytes are masked; narrow errors before testing brands.
+  // @ts-expect-error Known masked bytes must be decoded before ordinary UUID formatting.
+  uuidToString(maskedBinary, 0);
+  // @ts-expect-error An offset must not bypass masked-byte rejection when copying.
+  uuidToBytes(maskedBinary, 0);
+  // @ts-expect-error Caller output must not bypass masked-byte rejection either.
+  uuidToBytes(maskedBinary, 0, binaryStorage);
+  // @ts-expect-error Ordinary plain conversion cannot decode a masked block.
+  uuidToPlainSlug(maskedBinary, 0);
+  // @ts-expect-error A codec still needs explicit masked-byte provenance at an offset.
+  codec.uuidToString(maskedBinary, 0);
+  // @ts-expect-error Codec copying must not reinterpret known masked bytes as raw UUIDs.
+  codec.uuidToBytes(maskedBinary, 0);
+  // @ts-expect-error Codec copying to caller output keeps the same input meaning.
+  codec.uuidToBytes(maskedBinary, 0, binaryStorage);
+  // @ts-expect-error Codec plain conversion cannot reinterpret masked bytes as raw UUIDs.
+  codec.uuidToPlainSlug(maskedBinary, 0);
+}
 // @ts-expect-error Known mixed blocks require the explicitly masked byte reader.
 uuidToString(maskedBinary);
 // @ts-expect-error A codec cannot infer masked provenance from sixteen bytes either.

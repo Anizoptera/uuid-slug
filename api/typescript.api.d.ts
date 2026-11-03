@@ -557,12 +557,15 @@ export declare function uuidToBytes<Input extends UuidInput, Output extends Uint
   output: Output,
   outputOffset?: number,
 ): UuidOutput<Output> | UuidSlugError;
-export declare function uuidToBytes(
-  uuid: Uint8Array,
+export declare function uuidToBytes<Input extends Uint8Array>(
+  uuid: KeylessUuidInput<Input>,
   byteOffset: number,
 ): UuidBytesResult<Uint8Array>;
-export declare function uuidToBytes<Output extends Uint8Array>(
-  uuid: Uint8Array,
+export declare function uuidToBytes<
+  Output extends Uint8Array,
+  Input extends Uint8Array = Uint8Array,
+>(
+  uuid: KeylessUuidInput<Input>,
   byteOffset: number,
   output: Output,
   outputOffset?: number,
@@ -571,8 +574,8 @@ export declare function uuidToPlainSlug<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlugResult<Input>;
-export declare function uuidToPlainSlug(
-  uuid: Uint8Array,
+export declare function uuidToPlainSlug<Input extends Uint8Array>(
+  uuid: KeylessUuidInput<Input>,
   byteOffset: number,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlugResult<Uint8Array>;
@@ -583,8 +586,11 @@ export declare function uuidToString<
   uuid: KeylessUuidInput<Input>,
   ...textCase: UuidTextCaseArguments<Case>
 ): UuidStringResult<Input, Case>;
-export declare function uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  uuid: Uint8Array,
+export declare function uuidToString<
+  Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+  Input extends Uint8Array = Uint8Array,
+>(
+  uuid: KeylessUuidInput<Input>,
   byteOffset: number,
   ...textCase: UuidTextCaseArguments<Case>
 ): UuidStringResult<Uint8Array, Case>;
@@ -719,9 +725,12 @@ export declare interface UuidV7MaskingCodec {
     uuid: UnmaskedUuidInput<Input>,
     ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringResult<MaskingCodecUuidInput<Input>, Case>;
-  uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  uuidToString<
+    Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+    Input extends Uint8Array = Uint8Array,
+  >(
     this: void,
-    uuid: Uint8Array,
+    uuid: UnmaskedUuidInput<Input>,
     byteOffset: number,
     ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringResult<Uint8Array, Case>;
@@ -735,10 +744,14 @@ export declare interface UuidV7MaskingCodec {
     output: Output,
     outputOffset?: number,
   ): UuidOutput<Output> | UuidSlugError;
-  uuidToBytes(this: void, uuid: Uint8Array, byteOffset: number): UuidBytesResult<Uint8Array>;
-  uuidToBytes<Output extends Uint8Array>(
+  uuidToBytes<Input extends Uint8Array>(
     this: void,
-    uuid: Uint8Array,
+    uuid: UnmaskedUuidInput<Input>,
+    byteOffset: number,
+  ): UuidBytesResult<Uint8Array>;
+  uuidToBytes<Output extends Uint8Array, Input extends Uint8Array = Uint8Array>(
+    this: void,
+    uuid: UnmaskedUuidInput<Input>,
     byteOffset: number,
     output: Output,
     outputOffset?: number,
@@ -748,9 +761,9 @@ export declare interface UuidV7MaskingCodec {
     uuid: UnmaskedUuidInput<Input>,
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugResult<MaskingCodecUuidInput<Input>>;
-  uuidToPlainSlug(
+  uuidToPlainSlug<Input extends Uint8Array>(
     this: void,
-    uuid: Uint8Array,
+    uuid: UnmaskedUuidInput<Input>,
     byteOffset: number,
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugResult<Uint8Array>;

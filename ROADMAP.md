@@ -17,6 +17,10 @@ Follow `dev/release.md` for the npm update and first crate publication. Build an
 - [ ] After publication authorization, publish both verified archives and verify registry bytes and hosted docs.rs. Preserve the original selection and archives on retries; never move a published tag or omit a selected package. Finalization needs separate authorization and matching destinations, attachments, notes and provenance.
 - [ ] With settings authorization and after the first crate exists, configure and read back trusted publishing before removing/revoking the bootstrap credential. Verify the exchange on the next authorized unpublished version; a same-version retry skips authentication.
 
+## TypeScript binary API
+
+- [ ] Needs ruling: let explicit masked-byte readers select 16 bytes from a larger `Uint8Array` with `byteOffset`, matching ordinary UUID readers. Keep exact standalone inputs, caller-output overloads, error propagation and wire formats unchanged; never guess raw versus masked meaning. This removes caller-created views at the cost of additional overloads.
+
 ## Cross-runtime implementation comparison
 
 Compare maintained TypeScript runtimes and native Rust/Wasm feature variants on equivalent complete API jobs, using warmed minified JavaScript and release Rust/Wasm; exclude debug and disabled-JIT runs. Separate per-ID bridge crossings from compiled Rust loops. These research tasks are not release gates; new measurements require the consumer-call authorization and evidence required by `AGENTS.md` and `bench/AGENTS.md`.

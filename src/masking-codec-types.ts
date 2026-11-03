@@ -145,13 +145,17 @@ export interface UuidV7MaskingCodec {
     ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringResult<MaskingCodecUuidInput<Input>, Case>;
   /**
-   * Read one UUID out of a larger array as normalized UUID text. Bytes carry no masked spelling.
+   * Read raw UUID bytes out of a larger array as normalized UUID text.
+   * Decode masked bytes with `maskedBytesToUuidString` instead.
    *
    * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
    */
-  uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  uuidToString<
+    Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+    Input extends Uint8Array = Uint8Array,
+  >(
     this: void,
-    uuid: Uint8Array,
+    uuid: UnmaskedUuidInput<Input>,
     byteOffset: number,
     ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringResult<Uint8Array, Case>;
@@ -172,15 +176,19 @@ export interface UuidV7MaskingCodec {
     outputOffset?: number,
   ): UuidOutput<Output> | UuidSlugError;
   /**
-   * Copy one UUID out of a larger array. Bytes carry no masked spelling.
+   * Copy raw UUID bytes out of a larger array. Decode masked bytes with `maskedBytesToUuidBytes` instead.
    *
    * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
    */
-  uuidToBytes(this: void, uuid: Uint8Array, byteOffset: number): UuidBytesResult<Uint8Array>;
-  /** Copy one UUID out of a larger array into caller-owned storage. */
-  uuidToBytes<Output extends Uint8Array>(
+  uuidToBytes<Input extends Uint8Array>(
     this: void,
-    uuid: Uint8Array,
+    uuid: UnmaskedUuidInput<Input>,
+    byteOffset: number,
+  ): UuidBytesResult<Uint8Array>;
+  /** Copy one UUID out of a larger array into caller-owned storage. */
+  uuidToBytes<Output extends Uint8Array, Input extends Uint8Array = Uint8Array>(
+    this: void,
+    uuid: UnmaskedUuidInput<Input>,
     byteOffset: number,
     output: Output,
     outputOffset?: number,
@@ -196,13 +204,14 @@ export interface UuidV7MaskingCodec {
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugResult<MaskingCodecUuidInput<Input>>;
   /**
-   * Read one UUID out of a larger array as a plain UUID slug. Bytes carry no masked spelling.
+   * Read raw UUID bytes out of a larger array as a plain UUID slug.
+   * Decode masked bytes with `maskedBytesToUuidBytes` before plain-slug conversion.
    *
    * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
    */
-  uuidToPlainSlug(
+  uuidToPlainSlug<Input extends Uint8Array>(
     this: void,
-    uuid: Uint8Array,
+    uuid: UnmaskedUuidInput<Input>,
     byteOffset: number,
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugResult<Uint8Array>;

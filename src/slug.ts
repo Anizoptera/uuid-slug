@@ -439,6 +439,7 @@ export function extractUuidVersion<Input extends UuidInput>(
 
 /**
  * Convert UUID text, bytes, or a plain UUID slug to new or caller-owned UUID bytes.
+ * Decode masked bytes with their masking codec before calling this reader.
  * Only `Uint8Array` input accepts a non-zero offset; `0` means the same as omitting it.
  *
  * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
@@ -451,9 +452,12 @@ export function uuidToBytes<Input extends UuidInput, Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,
 ): UuidOutput<Output> | UuidSlugError;
-export function uuidToBytes(uuid: Uint8Array, byteOffset: number): UuidBytesResult<Uint8Array>;
-export function uuidToBytes<Output extends Uint8Array>(
-  uuid: Uint8Array,
+export function uuidToBytes<Input extends Uint8Array>(
+  uuid: KeylessUuidInput<Input>,
+  byteOffset: number,
+): UuidBytesResult<Uint8Array>;
+export function uuidToBytes<Output extends Uint8Array, Input extends Uint8Array = Uint8Array>(
+  uuid: KeylessUuidInput<Input>,
   byteOffset: number,
   output: Output,
   outputOffset?: number,
@@ -500,6 +504,7 @@ export function uuidToBytes(
 
 /**
  * Convert UUID text, bytes, or a plain UUID slug to normalized UUID text.
+ * Decode masked bytes with their masking codec before calling this reader.
  * Only `Uint8Array` input accepts a non-zero offset; `0` means the same as omitting it.
  *
  * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
@@ -511,8 +516,11 @@ export function uuidToString<
   uuid: KeylessUuidInput<Input>,
   ...textCase: UuidTextCaseArguments<Case>
 ): UuidStringResult<Input, Case>;
-export function uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  uuid: Uint8Array,
+export function uuidToString<
+  Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+  Input extends Uint8Array = Uint8Array,
+>(
+  uuid: KeylessUuidInput<Input>,
   byteOffset: number,
   ...textCase: UuidTextCaseArguments<Case>
 ): UuidStringResult<Uint8Array, Case>;
@@ -568,6 +576,7 @@ export function uuidToString(
 
 /**
  * Convert UUID text, bytes, or a plain UUID slug to a plain slug.
+ * Decode masked bytes with their masking codec before calling this reader.
  * Only `Uint8Array` input accepts a non-zero offset; `0` means the same as omitting it.
  *
  * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
@@ -576,8 +585,8 @@ export function uuidToPlainSlug<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlugResult<Input>;
-export function uuidToPlainSlug(
-  uuid: Uint8Array,
+export function uuidToPlainSlug<Input extends Uint8Array>(
+  uuid: KeylessUuidInput<Input>,
   byteOffset: number,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlugResult<Uint8Array>;
