@@ -206,8 +206,7 @@ mod tests {
             timestamp_range_start_unix_ms: max_start + 1,
             ..UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask())
         })
-        .err()
-        .expect("range beyond UUIDv7 must fail");
+        .expect_err("range beyond UUIDv7 must fail");
         assert_eq!(error.code(), ErrorCode::InvalidTimestamp);
         assert_eq!(
             error.to_string(),
@@ -270,8 +269,7 @@ mod tests {
                 sentinels,
                 ..UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask())
             })
-            .err()
-            .expect("invalid sentinel names must fail codec construction");
+            .expect_err("invalid sentinel names must fail codec construction");
             assert_eq!(error.code(), ErrorCode::InvalidSentinel);
         }
         Ok(())
