@@ -5,8 +5,22 @@
 #![cfg(kani)]
 
 extern crate alloc;
-// Reuse shipped public types; source imports are needed only for private engines.
-use uuid_slug::{Error, ErrorCode, Uuid, UuidSlugAlphabet, UuidV7PayloadLayout};
+// The state engine calls Error::with_message, which is crate-private. Import its actual type
+// graph too; public crate types cannot grant that access, and a proof must not widen the API.
+#[path = "../uuid-slug/src/error.rs"]
+mod error;
+use error::{Error, ErrorCode};
+#[path = "../uuid-slug/src/alphabet.rs"]
+mod alphabet;
+use alphabet::UuidSlugAlphabet;
+#[path = "../uuid-slug/src/text.rs"]
+mod text;
+use text::KeylessUuidText;
+#[path = "../uuid-slug/src/uuid.rs"]
+mod uuid;
+use uuid::{PlainUuidSlug, Uuid, UuidV7PayloadLayout};
+#[path = "../uuid-slug/src/payload_fields.rs"]
+mod payload_fields;
 
 #[path = "../uuid-slug/src/buffer_range.rs"]
 mod buffer_range;
