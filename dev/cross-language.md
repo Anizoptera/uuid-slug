@@ -36,7 +36,7 @@ Any high-resolution generation mode must expose the same fraction width and coun
 
 TypeScript accepts `epochNanoseconds` as `bigint` because Temporal and timestamp protocols already provide that form and caller-side conversion would discard useful fraction bits. Its numeric Unix-millisecond form remains the shorter path when a `number` already identifies the needed bucket. Rust accepts exact supplied time as `SystemTime`. Its fractional Unix-millisecond method remains a narrow bridge for numeric interop rather than the primary Rust call.
 
-Native and WASI Rust use `SystemTime` for configured fraction bits. Browser WebAssembly uses `Date.now()` and therefore starts configured fractions at zero until logical ordering advances them. Callers that need measured browser precision can pass fractional Unix milliseconds through `generate_uuid_v7_with_random_fill`; the callback also owns secure entropy on that path.
+Native and WASI Rust use `SystemTime` for configured fraction bits. Browser WebAssembly uses `Date.now()` and therefore starts configured fractions at zero until logical ordering advances them. Callers with a finer reading can pass fractional Unix milliseconds to `generate_uuid_v7_at_unix_ms` with default entropy, or `generate_uuid_v7_at_unix_ms_with_random_fill` with their own provider.
 
 | TypeScript capability | Rust entry point or composition |
 | --- | --- |
