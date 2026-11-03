@@ -19,7 +19,7 @@ interface VerusReport {
   };
 }
 const verifier = Bun.which("verus");
-if (!verifier) throw new Error("Install Verus, then rerun bun scripts/check-rust-buffer-proof.ts.");
+if (!verifier) throw new Error("Install Verus, then rerun bun scripts/check-rust-verus.ts.");
 const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-buffer-proof-"));
 const file = join(scratch, "report.json");
 let passed = false;
@@ -27,7 +27,7 @@ try {
   const child = Bun.spawn(
     [
       verifier,
-      "rust/proofs/buffer_contract.rs",
+      "rust/proofs/value_contract.rs",
       "--edition=2024",
       "--crate-type",
       "lib",
@@ -50,23 +50,27 @@ try {
   if (errors.trim()) console.error(errors.trim());
   const report = JSON.parse(output) as VerusReport;
   const summary = report["verification-results"];
-  const required = "buffer_contract::buffer_range::uuid_end";
+  const required = [
+    "value_contract::buffer_range::uuid_end",
+    "value_contract::payload_fields::low_bits",
+    "value_contract::payload_fields::split",
+  ];
   const bodies = report["times-ms"]?.smt?.["smt-run-module-times"]
     ?.flatMap((module) => module["function-breakdown"] ?? [])
-    .filter((body) => body.function === required && body.success === true);
+    .filter((body) => required.includes(body.function) && body.success === true);
   if (
     summary?.success !== true ||
     summary.errors !== 0 ||
     summary["is-verifying-entire-crate"] !== true ||
-    bodies?.length !== 1
+    required.some((name) => bodies?.filter((body) => body.function === name).length !== 1)
   )
     throw new Error(
-      `Verus did not prove ${required}; restore its production import and exact success/failure contract. A missing body is not verification.`,
+      `Verus did not prove every required body (${required.join(", ")}); restore its production imports and contracts. A missing body is not verification.`,
     );
-  console.log(JSON.stringify({ tool: report.verus, body: required, summary }));
+  console.log(JSON.stringify({ tool: report.verus, bodies: required, summary }));
   passed = true;
 } catch (cause) {
-  throw new Error(`Buffer admission is unverified. Inspect ${file}.`, { cause });
+  throw new Error(`Rust value contracts are unverified. Inspect ${file}.`, { cause });
 } finally {
   if (passed) await rm(scratch, { recursive: true, force: true });
 }

@@ -72,12 +72,10 @@ fn payload_word(bytes: &[u8; 16]) -> u128 {
 }
 
 // All u8 width pairs are admitted: invalid configurations must reject, never narrow or wrap.
-// Reassembly plus field bounds uniquely specifies every permitted split of the 74 payload bits.
 #[kani::proof]
-#[kani::unwind(129)]
-#[kani::solver(z3)]
+#[kani::unwind(17)]
 #[kani::stub(alloc::fmt::format, crate::diagnostic_text)]
-fn payload_layout_and_fields() {
+fn payload_layout_admission() {
     let fraction: u8 = kani::any();
     let counter: u8 = kani::any();
     let layout = UuidV7PayloadLayout::new(fraction, counter);
@@ -87,9 +85,21 @@ fn payload_layout_and_fields() {
         valid,
         "layout accepts exactly the documented widths"
     );
-    let Ok(layout) = layout else {
-        return;
-    };
+    if let Err(error) = layout {
+        assert_eq!(error.code(), ErrorCode::InvalidOptions);
+    }
+}
+
+// The constructor theorem above establishes these preconditions; all valid layouts remain
+// admitted. Reassembly plus field bounds uniquely specifies every split of the 74 payload bits.
+#[kani::proof]
+#[kani::unwind(129)]
+#[kani::stub(alloc::fmt::format, crate::diagnostic_text)]
+fn payload_layout_and_fields() {
+    let fraction: u8 = kani::any();
+    let counter: u8 = kani::any();
+    kani::assume(fraction <= 12 && u16::from(fraction) + u16::from(counter) <= 74);
+    let layout = UuidV7PayloadLayout::new(fraction, counter).unwrap();
     let mut bytes: [u8; 16] = kani::any();
     bytes[6] = (bytes[6] & 15) | 0x70;
     bytes[8] = (bytes[8] & 63) | 0x80;

@@ -38,11 +38,12 @@ const availableHarnesses = [
     ],
   },
   {
+    name: "uuid_contract::payload_layout_admission",
+    assertions: ["layout accepts exactly the documented widths"],
+  },
+  {
     name: "uuid_contract::payload_layout_and_fields",
-    assertions: [
-      "layout accepts exactly the documented widths",
-      "payload partition preserves every payload bit",
-    ],
+    assertions: ["payload partition preserves every payload bit"],
   },
   {
     name: "uuid_contract::caller_buffer_reads_and_writes",

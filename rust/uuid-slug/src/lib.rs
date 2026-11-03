@@ -23,6 +23,7 @@ mod mask;
 mod mask_keys;
 mod masking_codec;
 mod payload;
+mod payload_fields;
 #[cfg(feature = "fast-rng")]
 mod random;
 mod siphash;

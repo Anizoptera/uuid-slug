@@ -394,19 +394,20 @@ impl Uuid {
                 .fold(0u128, |value, &byte| (value << 8) | u128::from(byte));
         let fraction_bits = layout.sub_millisecond_fraction_bits;
         let remaining_bits = 74 - fraction_bits - layout.counter_bits;
-        let low_bits = |bits: u8| if bits == 0 { 0 } else { (1u128 << bits) - 1 };
+        let (fraction, counter, remaining) =
+            crate::payload_fields::split(payload, fraction_bits, layout.counter_bits);
         Ok(UuidV7Payload {
             unix_ms,
             sub_millisecond_fraction: (fraction_bits != 0).then(|| UuidV7PayloadField {
-                value: (payload >> (74 - fraction_bits)) as u16,
+                value: fraction,
                 bits: fraction_bits,
             }),
             counter: (layout.counter_bits != 0).then(|| UuidV7PayloadField {
-                value: (payload >> remaining_bits) & low_bits(layout.counter_bits),
+                value: counter,
                 bits: layout.counter_bits,
             }),
             remaining: UuidV7PayloadField {
-                value: payload & low_bits(remaining_bits),
+                value: remaining,
                 bits: remaining_bits,
             },
         })
