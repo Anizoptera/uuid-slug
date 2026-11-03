@@ -199,13 +199,13 @@ fn run(request: &Value) -> Result<Value, Error> {
                             Ok(())
                         };
                         let result = if step["at"].is_null() {
-                            generator.generate_uuid_v7_with_random_fill(number(&step["clock"]), fill)
+                            generator.generate_uuid_v7_at_unix_ms_with_random_fill(number(&step["clock"]), fill)
                         } else if step["at"].is_object() {
                             system_time(&step["at"]).and_then(|at| {
                                 generator.generate_uuid_v7_at_with_random_fill(at, fill)
                             })
                         } else {
-                            generator.generate_uuid_v7_with_random_fill(number(&step["at"]), fill)
+                            generator.generate_uuid_v7_at_unix_ms_with_random_fill(number(&step["at"]), fill)
                         };
                         match result {
                             Ok(uuid) => json!({"value":uuid.to_string()}),

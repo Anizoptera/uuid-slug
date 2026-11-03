@@ -42,7 +42,7 @@ Rust uses `Uuid` values, ownership and `Result` where TypeScript uses directiona
 
 For supplied time, TypeScript accepts the host forms listed in [api.md](api.md#supplied-time), including exact epoch nanoseconds; Rust accepts `SystemTime`. Both keep fractional Unix milliseconds for numeric interop.
 
-Rust WebAssembly reads time through `Date.now()`, so configured fraction bits start at zero. For browser-measured precision, pass fractional Unix milliseconds through `generate_uuid_v7_with_random_fill`; that callback also supplies the entropy.
+Rust WebAssembly reads time through `Date.now()`, so configured fraction bits start at zero. For browser-measured precision, pass fractional Unix milliseconds to `generate_uuid_v7_at_unix_ms`; use `generate_uuid_v7_at_unix_ms_with_random_fill` only when supplying entropy too.
 
 ## Errors
 

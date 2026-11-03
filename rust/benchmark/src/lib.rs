@@ -82,7 +82,7 @@ pub fn entropy_probe() -> String {
         serde_json::json!({
             "provider": uuid_slug::fill_os_random_bytes(&mut bytes).is_ok(),
             "uuidV4": uuid_slug::generate_uuid_v4().is_ok(),
-            "uuidV7": uuid_slug::UuidV7Generator::new().generate_uuid_v7_with_random_fill(
+            "uuidV7": uuid_slug::UuidV7Generator::new().generate_uuid_v7_at_unix_ms_with_random_fill(
                 1_725_000_000_000.0, uuid_slug::fill_os_random_bytes,
             ).is_ok(),
         })

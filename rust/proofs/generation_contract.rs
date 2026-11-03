@@ -144,7 +144,7 @@ fn v7_initial_payload() {
         .unwrap();
     let mut draws = 0;
     let uuid = generator
-        .generate_uuid_v7_with_random_fill(timestamp as f64, |out| {
+        .generate_uuid_v7_at_unix_ms_with_random_fill(timestamp as f64, |out| {
             draws += 1;
             assert_eq!(
                 out.len(),

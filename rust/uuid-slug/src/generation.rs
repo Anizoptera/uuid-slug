@@ -141,7 +141,7 @@ impl UuidV7Generator {
     /// Failed entropy draws leave the sequence unchanged so retries cannot corrupt state.
     /// The callback must fill every requested byte or return an error. Production IDs require
     /// cryptographically secure entropy; a successful partial fill cannot be detected.
-    pub fn generate_uuid_v7_with_random_fill(
+    pub fn generate_uuid_v7_at_unix_ms_with_random_fill(
         &mut self,
         unix_ms: f64,
         fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
@@ -221,17 +221,16 @@ impl UuidV7Generator {
     /// Generate into caller storage; reject a short destination before clock or entropy work.
     /// The callback must fill every requested byte or return an error. Production IDs require
     /// cryptographically secure entropy; a successful partial fill cannot be detected.
-    pub fn generate_uuid_v7_into_with_random_fill(
+    pub fn generate_uuid_v7_at_unix_ms_into_with_random_fill(
         &mut self,
         unix_ms: f64,
         out: &mut [u8],
         offset: usize,
         fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
     ) -> Result<(), Error> {
-        let target = crate::buffer_range::range(out.len(), offset)?;
-        let id = self.generate_uuid_v7_with_random_fill(unix_ms, fill)?;
-        out[target].copy_from_slice(id.as_uuid_bytes());
-        Ok(())
+        write_generated_uuid(out, offset, || {
+            self.generate_uuid_v7_at_unix_ms_with_random_fill(unix_ms, fill)
+        })
     }
     /// Generate at an exact standard-library time into caller storage.
     /// Invalid storage or time and entropy failure leave the destination unchanged.
@@ -245,11 +244,9 @@ impl UuidV7Generator {
         offset: usize,
         fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
     ) -> Result<(), Error> {
-        let target = crate::buffer_range::range(out.len(), offset)?;
-        let instant = system_instant(at)?;
-        let id = self.generate_uuid_v7_from_instant(instant, fill)?;
-        out[target].copy_from_slice(id.as_uuid_bytes());
-        Ok(())
+        write_generated_uuid(out, offset, || {
+            self.generate_uuid_v7_at_with_random_fill(at, fill)
+        })
     }
     /// Generate at the system clock with secure randomness.
     #[cfg(all(feature = "std", feature = "os-rng"))]
@@ -286,9 +283,53 @@ impl UuidV7Generator {
     /// Generate at `unix_ms`, including its fraction, with secure platform entropy and this generator's rollback policy.
     #[cfg(feature = "os-rng")]
     pub fn generate_uuid_v7_at_unix_ms(&mut self, unix_ms: f64) -> Result<Uuid, Error> {
-        self.generate_uuid_v7_with_random_fill(unix_ms, fill_default_random_bytes)
+        self.generate_uuid_v7_at_unix_ms_with_random_fill(unix_ms, fill_default_random_bytes)
+    }
+
+    /// Generate at the current time into 16 bytes at `offset`, using the default secure entropy provider.
+    /// Invalid storage, clock or entropy failures leave the buffer and sequence unchanged.
+    #[cfg(all(feature = "std", feature = "os-rng"))]
+    pub fn generate_uuid_v7_into(&mut self, out: &mut [u8], offset: usize) -> Result<(), Error> {
+        write_generated_uuid(out, offset, || self.generate_uuid_v7())
+    }
+
+    /// Generate at `at` into 16 bytes at `offset`, using the default secure entropy provider.
+    /// Apply this generator's fraction bits and rollback policy; failures leave the buffer and sequence unchanged.
+    #[cfg(all(feature = "std", feature = "os-rng"))]
+    pub fn generate_uuid_v7_at_into(
+        &mut self,
+        at: std::time::SystemTime,
+        out: &mut [u8],
+        offset: usize,
+    ) -> Result<(), Error> {
+        write_generated_uuid(out, offset, || self.generate_uuid_v7_at(at))
+    }
+
+    /// Generate at fractional Unix milliseconds into 16 bytes at `offset`, using default secure entropy.
+    /// Apply this generator's fraction bits and rollback policy; failures leave the buffer and sequence unchanged.
+    #[cfg(feature = "os-rng")]
+    pub fn generate_uuid_v7_at_unix_ms_into(
+        &mut self,
+        unix_ms: f64,
+        out: &mut [u8],
+        offset: usize,
+    ) -> Result<(), Error> {
+        write_generated_uuid(out, offset, || self.generate_uuid_v7_at_unix_ms(unix_ms))
     }
 }
+// Validate storage before the closure can read the clock, draw entropy or advance a sequence.
+// Commit only a complete UUID so every generation path preserves output on failure.
+fn write_generated_uuid(
+    out: &mut [u8],
+    offset: usize,
+    generate: impl FnOnce() -> Result<Uuid, Error>,
+) -> Result<(), Error> {
+    let target = crate::buffer_range::range(out.len(), offset)?;
+    let id = generate()?;
+    out[target].copy_from_slice(id.as_uuid_bytes());
+    Ok(())
+}
+
 fn float_instant(value: f64) -> Result<UuidV7Instant, Error> {
     if !value.is_finite() || value < 0.0 || value >= (MAX_UUID_V7_UNIX_MS + 1) as f64 {
         return Err(
@@ -369,10 +410,7 @@ pub fn generate_uuid_v4_into_with_random_fill(
     offset: usize,
     fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
 ) -> Result<(), Error> {
-    let target = crate::buffer_range::range(out.len(), offset)?;
-    let id = generate_uuid_v4_with_random_fill(fill)?;
-    out[target].copy_from_slice(id.as_uuid_bytes());
-    Ok(())
+    write_generated_uuid(out, offset, || generate_uuid_v4_with_random_fill(fill))
 }
 /// Fill from the platform CSPRNG, retaining its error as the cause on failure.
 /// On failure, `out` may be partially modified; discard its contents.
@@ -386,6 +424,13 @@ pub fn fill_os_random_bytes(out: &mut [u8]) -> Result<(), Error> {
 pub fn generate_uuid_v4() -> Result<Uuid, Error> {
     generate_uuid_v4_with_random_fill(fill_default_random_bytes)
 }
+
+/// Generate UUIDv4 into 16 bytes at `offset`, using the same secure entropy provider as [`generate_uuid_v4`].
+/// Invalid storage or entropy failure leaves the whole buffer unchanged.
+#[cfg(feature = "os-rng")]
+pub fn generate_uuid_v4_into(out: &mut [u8], offset: usize) -> Result<(), Error> {
+    write_generated_uuid(out, offset, generate_uuid_v4)
+}
 /// Generate a UUIDv7 at the system clock with secure platform entropy and default settings.
 /// Create a `UuidV7Generator` for guaranteed ordering, a rollback policy, fraction bits or one
 /// shared sequence; module-level calls promise neither ordering nor shared sequence state.
@@ -398,6 +443,16 @@ pub fn generate_uuid_v7() -> Result<Uuid, Error> {
     }
     GENERATOR.with_borrow_mut(UuidV7Generator::generate_uuid_v7)
 }
+
+/// Generate UUIDv7 at the current time into 16 bytes at `offset`, using the ordinary default generator.
+/// Invalid storage, clock or entropy failures leave the buffer unchanged. Module-level calls promise no ordering.
+#[cfg(all(feature = "std", feature = "os-rng"))]
+pub fn generate_uuid_v7_into(out: &mut [u8], offset: usize) -> Result<(), Error> {
+    write_generated_uuid(out, offset, generate_uuid_v7)
+}
+
+#[cfg(all(test, feature = "os-rng"))]
+mod buffer_tests;
 
 #[cfg(test)]
 mod tests {
@@ -423,7 +478,7 @@ mod tests {
         let fail = |_: &mut [u8]| Err(Error::new(ErrorCode::InvalidBuffer));
         for result in [
             generate_uuid_v4_with_random_fill(fail),
-            generator.generate_uuid_v7_with_random_fill(1.0, fail),
+            generator.generate_uuid_v7_at_unix_ms_with_random_fill(1.0, fail),
         ] {
             let error = result.unwrap_err();
             assert_eq!(error.code(), ErrorCode::RngUnavailable);
@@ -435,12 +490,17 @@ mod tests {
         };
         assert!(
             generator
-                .generate_uuid_v7_into_with_random_fill(1.0, &mut output, 1, untouched)
+                .generate_uuid_v7_at_unix_ms_into_with_random_fill(1.0, &mut output, 1, untouched)
                 .is_err()
         );
         assert!(
             generator
-                .generate_uuid_v7_into_with_random_fill(1.0, &mut output, usize::MAX, untouched)
+                .generate_uuid_v7_at_unix_ms_into_with_random_fill(
+                    1.0,
+                    &mut output,
+                    usize::MAX,
+                    untouched
+                )
                 .is_err()
         );
         assert_eq!(output, [19; 16]);
@@ -457,7 +517,7 @@ mod tests {
             for value in [boundary.next_down(), boundary, boundary.next_up()] {
                 let mut generator =
                     UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
-                let generated = generator.generate_uuid_v7_with_random_fill(value, fill);
+                let generated = generator.generate_uuid_v7_at_unix_ms_with_random_fill(value, fill);
                 if value >= (1_u64 << 48) as f64 {
                     assert_eq!(generated.unwrap_err().code(), ErrorCode::InvalidTimestamp);
                 } else {
@@ -477,7 +537,7 @@ mod tests {
             let value = 1_700_000_000_000.0 + f64::from(fraction) / 4096.0;
             let uuid = UuidV7Generator::new()
                 .with_sub_millisecond_fraction_bits(12)?
-                .generate_uuid_v7_with_random_fill(value, fill)?;
+                .generate_uuid_v7_at_unix_ms_with_random_fill(value, fill)?;
             assert_eq!(
                 uuid.extract_uuid_v7_payload(layout)?
                     .sub_millisecond_fraction
@@ -489,7 +549,7 @@ mod tests {
         for value in [-0.0, 0.0, f64::from_bits(1), f64::MIN_POSITIVE] {
             let uuid = UuidV7Generator::new()
                 .with_sub_millisecond_fraction_bits(12)?
-                .generate_uuid_v7_with_random_fill(value, fill)?;
+                .generate_uuid_v7_at_unix_ms_with_random_fill(value, fill)?;
             assert_eq!(uuid.extract_uuid_v7_unix_ms()?, 0);
             assert_eq!(
                 uuid.extract_uuid_v7_payload(layout)?
@@ -514,7 +574,7 @@ mod tests {
                 if version == 4 {
                     generate_uuid_v4_with_random_fill(fill)
                 } else {
-                    UuidV7Generator::new().generate_uuid_v7_with_random_fill(0.0, fill)
+                    UuidV7Generator::new().generate_uuid_v7_at_unix_ms_with_random_fill(0.0, fill)
                 }
             };
             let baseline = u128::from_be_bytes(*generate([0; 16])?.as_uuid_bytes());
@@ -544,13 +604,13 @@ mod tests {
     fn generation_draws_only_entropy_that_reaches_the_uuid() -> Result<(), Error> {
         let mut generator = UuidV7Generator::new();
         let mut reseed_len = 0;
-        generator.generate_uuid_v7_with_random_fill(1.0, |out| {
+        generator.generate_uuid_v7_at_unix_ms_with_random_fill(1.0, |out| {
             reseed_len = out.len();
             out.fill(0);
             Ok(())
         })?;
         let mut continuation_len = 0;
-        generator.generate_uuid_v7_with_random_fill(1.0, |out| {
+        generator.generate_uuid_v7_at_unix_ms_with_random_fill(1.0, |out| {
             continuation_len = out.len();
             out.fill(0);
             Ok(())
@@ -562,10 +622,10 @@ mod tests {
     #[test]
     fn supplied_time_joins_the_ordered_sequence() -> Result<(), Error> {
         let mut generator = UuidV7Generator::new();
-        let first = generator.generate_uuid_v7_with_random_fill(123.9, fill)?;
+        let first = generator.generate_uuid_v7_at_unix_ms_with_random_fill(123.9, fill)?;
         assert_eq!(first.to_string(), "00000000-007b-7000-8408-0c1106070809");
-        let second = generator.generate_uuid_v7_with_random_fill(7.0, fill)?;
-        let third = generator.generate_uuid_v7_with_random_fill(100.0, fill)?;
+        let second = generator.generate_uuid_v7_at_unix_ms_with_random_fill(7.0, fill)?;
+        let third = generator.generate_uuid_v7_at_unix_ms_with_random_fill(100.0, fill)?;
         assert!(first.as_uuid_bytes() < second.as_uuid_bytes());
         assert!(second.as_uuid_bytes() < third.as_uuid_bytes());
         for invalid in [
@@ -576,13 +636,13 @@ mod tests {
         ] {
             assert!(
                 generator
-                    .generate_uuid_v7_with_random_fill(invalid, fill)
+                    .generate_uuid_v7_at_unix_ms_with_random_fill(invalid, fill)
                     .is_err()
             );
         }
         assert!(
             generator
-                .generate_uuid_v7_with_random_fill(1.5, fill)
+                .generate_uuid_v7_at_unix_ms_with_random_fill(1.5, fill)
                 .is_ok()
         );
         Ok(())
@@ -708,7 +768,7 @@ mod tests {
         };
         assert!(
             generator
-                .generate_uuid_v7_with_random_fill(9.0, |_| Err(Error::new(
+                .generate_uuid_v7_at_unix_ms_with_random_fill(9.0, |_| Err(Error::new(
                     ErrorCode::RngUnavailable
                 )))
                 .is_err()
@@ -717,7 +777,7 @@ mod tests {
         assert_eq!(generator.sequence, MAX_SEQUENCE);
         assert_eq!(
             generator
-                .generate_uuid_v7_with_random_fill(9.0, fill)?
+                .generate_uuid_v7_at_unix_ms_with_random_fill(9.0, fill)?
                 .extract_uuid_v7_unix_ms()?,
             11
         );
@@ -725,7 +785,7 @@ mod tests {
         generator.sequence = MAX_SEQUENCE;
         assert!(
             generator
-                .generate_uuid_v7_with_random_fill(0.0, fill)
+                .generate_uuid_v7_at_unix_ms_with_random_fill(0.0, fill)
                 .is_err()
         );
         assert_eq!(generator.sequence, MAX_SEQUENCE);
@@ -735,8 +795,8 @@ mod tests {
     #[test]
     fn sub_millisecond_fraction_precedes_the_reduced_counter() -> Result<(), Error> {
         let mut generator = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
-        let first = generator.generate_uuid_v7_with_random_fill(100.25, fill)?;
-        let second = generator.generate_uuid_v7_with_random_fill(100.75, fill)?;
+        let first = generator.generate_uuid_v7_at_unix_ms_with_random_fill(100.25, fill)?;
+        let second = generator.generate_uuid_v7_at_unix_ms_with_random_fill(100.75, fill)?;
         assert_eq!(
             generator.payload_layout(),
             UuidV7PayloadLayout::new(12, 30)?
@@ -767,9 +827,9 @@ mod tests {
     #[test]
     fn preserve_policy_orders_current_time_calls() -> Result<(), Error> {
         let mut generator = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
-        let first = generator.generate_uuid_v7_with_random_fill(100.75, fill)?;
-        let second = generator.generate_uuid_v7_with_random_fill(100.75, fill)?;
-        let third = generator.generate_uuid_v7_with_random_fill(100.25, fill)?;
+        let first = generator.generate_uuid_v7_at_unix_ms_with_random_fill(100.75, fill)?;
+        let second = generator.generate_uuid_v7_at_unix_ms_with_random_fill(100.75, fill)?;
+        let third = generator.generate_uuid_v7_at_unix_ms_with_random_fill(100.25, fill)?;
         assert!(first.as_uuid_bytes() < second.as_uuid_bytes());
         assert!(second.as_uuid_bytes() < third.as_uuid_bytes());
         Ok(())
@@ -778,7 +838,7 @@ mod tests {
     #[test]
     fn supplied_fraction_uses_the_configured_payload_bits() -> Result<(), Error> {
         let mut generator = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
-        let uuid = generator.generate_uuid_v7_with_random_fill(100.75, |out| {
+        let uuid = generator.generate_uuid_v7_at_unix_ms_with_random_fill(100.75, |out| {
             out.fill(u8::MAX);
             Ok(())
         })?;
@@ -799,8 +859,8 @@ mod tests {
         };
         let layout = UuidV7PayloadLayout::new(12, 30)?;
         let mut within_ms = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
-        let first = within_ms.generate_uuid_v7_with_random_fill(100.25, fill_ones)?;
-        let second = within_ms.generate_uuid_v7_with_random_fill(100.25, fill_ones)?;
+        let first = within_ms.generate_uuid_v7_at_unix_ms_with_random_fill(100.25, fill_ones)?;
+        let second = within_ms.generate_uuid_v7_at_unix_ms_with_random_fill(100.25, fill_ones)?;
         assert_eq!(first.extract_uuid_v7_unix_ms()?, 100);
         assert_eq!(second.extract_uuid_v7_unix_ms()?, 100);
         assert_eq!(
@@ -813,8 +873,10 @@ mod tests {
 
         let mut next_ms = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
         let last_fraction = 100.0 + f64::from((1 << 12) - 1) / f64::from(1 << 12);
-        let first = next_ms.generate_uuid_v7_with_random_fill(last_fraction, fill_ones)?;
-        let second = next_ms.generate_uuid_v7_with_random_fill(last_fraction, fill_ones)?;
+        let first =
+            next_ms.generate_uuid_v7_at_unix_ms_with_random_fill(last_fraction, fill_ones)?;
+        let second =
+            next_ms.generate_uuid_v7_at_unix_ms_with_random_fill(last_fraction, fill_ones)?;
         assert_eq!(first.extract_uuid_v7_unix_ms()?, 100);
         assert_eq!(second.extract_uuid_v7_unix_ms()?, 101);
         assert_ne!(first, second);
@@ -847,12 +909,22 @@ mod tests {
                 assert!(generate_uuid_v4_into_with_random_fill(&mut output, 1, fail).is_err());
                 assert!(
                     generator
-                        .generate_uuid_v7_into_with_random_fill(reading, &mut output, 1, fail)
+                        .generate_uuid_v7_at_unix_ms_into_with_random_fill(
+                            reading,
+                            &mut output,
+                            1,
+                            fail
+                        )
                         .is_err()
                 );
                 assert!(
                     generator
-                        .generate_uuid_v7_into_with_random_fill(reading, &mut output, 1, fail)
+                        .generate_uuid_v7_at_unix_ms_into_with_random_fill(
+                            reading,
+                            &mut output,
+                            1,
+                            fail
+                        )
                         .is_err()
                 );
                 assert_eq!(output, [19; 18]);
@@ -865,8 +937,8 @@ mod tests {
                     sub_millisecond_fraction_bits: 0,
                 };
                 assert_eq!(
-                    generator.generate_uuid_v7_with_random_fill(reading, fill)?,
-                    control.generate_uuid_v7_with_random_fill(reading, fill)?
+                    generator.generate_uuid_v7_at_unix_ms_with_random_fill(reading, fill)?,
+                    control.generate_uuid_v7_at_unix_ms_with_random_fill(reading, fill)?
                 );
             }
         }
@@ -879,25 +951,25 @@ mod tests {
             .with_clock_rollback_policy(UuidV7ClockRollbackPolicy::Reset { tolerance_ms: 5 });
         assert_eq!(
             generator
-                .generate_uuid_v7_with_random_fill(100.0, fill)?
+                .generate_uuid_v7_at_unix_ms_with_random_fill(100.0, fill)?
                 .extract_uuid_v7_unix_ms()?,
             100
         );
         assert_eq!(
             generator
-                .generate_uuid_v7_with_random_fill(96.0, fill)?
+                .generate_uuid_v7_at_unix_ms_with_random_fill(96.0, fill)?
                 .extract_uuid_v7_unix_ms()?,
             100
         );
         assert_eq!(
             generator
-                .generate_uuid_v7_with_random_fill(95.0, fill)?
+                .generate_uuid_v7_at_unix_ms_with_random_fill(95.0, fill)?
                 .extract_uuid_v7_unix_ms()?,
             100
         );
         assert!(
             generator
-                .generate_uuid_v7_with_random_fill(94.0, |_| Err(Error::new(
+                .generate_uuid_v7_at_unix_ms_with_random_fill(94.0, |_| Err(Error::new(
                     ErrorCode::RngUnavailable
                 )))
                 .is_err()
@@ -906,7 +978,7 @@ mod tests {
         assert_eq!(generator.clock_high_water_ms, Some(100));
         assert_eq!(
             generator
-                .generate_uuid_v7_with_random_fill(94.0, fill)?
+                .generate_uuid_v7_at_unix_ms_with_random_fill(94.0, fill)?
                 .extract_uuid_v7_unix_ms()?,
             94
         );
@@ -918,31 +990,33 @@ mod tests {
         for (tolerance_ms, rejected, accepted) in [(0, 99.0, 100.0), (5, 94.0, 95.0)] {
             let mut generator = UuidV7Generator::new()
                 .with_clock_rollback_policy(UuidV7ClockRollbackPolicy::Error { tolerance_ms });
-            let first = generator.generate_uuid_v7_with_random_fill(100.0, fill)?;
+            let first = generator.generate_uuid_v7_at_unix_ms_with_random_fill(100.0, fill)?;
             assert_eq!(
                 generator
-                    .generate_uuid_v7_with_random_fill(rejected, fill)
+                    .generate_uuid_v7_at_unix_ms_with_random_fill(rejected, fill)
                     .unwrap_err()
                     .code(),
                 ErrorCode::InvalidTimestamp
             );
             assert_eq!(
                 generator
-                    .generate_uuid_v7_with_random_fill(accepted, fill)?
+                    .generate_uuid_v7_at_unix_ms_with_random_fill(accepted, fill)?
                     .extract_uuid_v7_unix_ms()?,
                 100
             );
-            let recovered = generator.generate_uuid_v7_with_random_fill(100.0, fill)?;
+            let recovered = generator.generate_uuid_v7_at_unix_ms_with_random_fill(100.0, fill)?;
             assert_ne!(first, recovered);
             // A failed later reading must not make the last accepted time look like rollback.
             let failed = generator
-                .generate_uuid_v7_with_random_fill(200.0, |out| {
+                .generate_uuid_v7_at_unix_ms_with_random_fill(200.0, |out| {
                     out.fill(255);
                     Err(Error::new(ErrorCode::RngUnavailable))
                 })
                 .unwrap_err();
             assert_eq!(failed.code(), ErrorCode::RngUnavailable);
-            assert!(generator.generate_uuid_v7_with_random_fill(100.0, fill)? > recovered);
+            assert!(
+                generator.generate_uuid_v7_at_unix_ms_with_random_fill(100.0, fill)? > recovered
+            );
         }
         Ok(())
     }

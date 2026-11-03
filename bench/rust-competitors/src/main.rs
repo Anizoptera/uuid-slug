@@ -115,21 +115,21 @@ fn probe_behavior() {
         Ok(())
     };
     let first = package
-        .generate_uuid_v7_with_random_fill(2_000.0, fill)
+        .generate_uuid_v7_at_unix_ms_with_random_fill(2_000.0, fill)
         .unwrap();
     let second = package
-        .generate_uuid_v7_with_random_fill(2_000.0, fill)
+        .generate_uuid_v7_at_unix_ms_with_random_fill(2_000.0, fill)
         .unwrap();
     assert_ne!(first.as_uuid_bytes(), second.as_uuid_bytes());
     assert_eq!(
         package
-            .generate_uuid_v7_with_random_fill(1_999.0, fill)
+            .generate_uuid_v7_at_unix_ms_with_random_fill(1_999.0, fill)
             .unwrap_err()
             .code(),
         uuid_slug::ErrorCode::InvalidTimestamp
     );
     let entropy_error = uuid_slug::UuidV7Generator::new()
-        .generate_uuid_v7_with_random_fill(2_000.0, |_| {
+        .generate_uuid_v7_at_unix_ms_with_random_fill(2_000.0, |_| {
             Err(uuid_slug::Error::new(uuid_slug::ErrorCode::RngUnavailable))
         })
         .unwrap_err();

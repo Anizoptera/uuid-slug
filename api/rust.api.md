@@ -438,11 +438,14 @@ pub struct uuid_slug::UuidV7Generator
 impl uuid_slug::UuidV7Generator
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7(&mut self) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at(&mut self, at: std::time::SystemTime) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
+pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_into(&mut self, at: std::time::SystemTime, out: &mut [u8], offset: usize) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_into_with_random_fill(&mut self, at: std::time::SystemTime, out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_unix_ms(&mut self, unix_ms: f64) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
+pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_unix_ms_into(&mut self, unix_ms: f64, out: &mut [u8], offset: usize) -> core::result::Result<(), uuid_slug::Error>
+pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_unix_ms_into_with_random_fill(&mut self, unix_ms: f64, out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
+pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_unix_ms_with_random_fill(&mut self, unix_ms: f64, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_with_random_fill(&mut self, at: std::time::SystemTime, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
-pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_into_with_random_fill(&mut self, unix_ms: f64, out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
-pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_with_random_fill(&mut self, unix_ms: f64, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
+pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_into(&mut self, out: &mut [u8], offset: usize) -> core::result::Result<(), uuid_slug::Error>
 pub const fn uuid_slug::UuidV7Generator::new() -> Self
 pub fn uuid_slug::UuidV7Generator::payload_layout(&self) -> uuid_slug::UuidV7PayloadLayout
 pub const fn uuid_slug::UuidV7Generator::with_clock_rollback_policy(self, policy: uuid_slug::UuidV7ClockRollbackPolicy) -> Self
@@ -657,9 +660,11 @@ pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iteration
 pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: core::option::Option<uuid_slug::UuidV7MaskDerivationCancellation>) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::fill_os_random_bytes(out: &mut [u8]) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4() -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
+pub fn uuid_slug::generate_uuid_v4_into(out: &mut [u8], offset: usize) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_into_with_random_fill(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_with_random_fill(fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v7() -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
+pub fn uuid_slug::generate_uuid_v7_into(out: &mut [u8], offset: usize) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::uuid_v7_bounds(start_unix_ms: u64, end_unix_ms: core::option::Option<u64>) -> core::result::Result<uuid_slug::UuidV7Bounds, uuid_slug::Error>
 pub fn uuid_slug::uuid_v7_test_mask() -> uuid_slug::UuidV7Mask
 ```
@@ -1098,8 +1103,8 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7Bounds
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7Bounds
 pub struct uuid_slug::UuidV7Generator
 impl uuid_slug::UuidV7Generator
-pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_into_with_random_fill(&mut self, unix_ms: f64, out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
-pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_with_random_fill(&mut self, unix_ms: f64, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
+pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_unix_ms_into_with_random_fill(&mut self, unix_ms: f64, out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
+pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_unix_ms_with_random_fill(&mut self, unix_ms: f64, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub const fn uuid_slug::UuidV7Generator::new() -> Self
 pub fn uuid_slug::UuidV7Generator::payload_layout(&self) -> uuid_slug::UuidV7PayloadLayout
 pub const fn uuid_slug::UuidV7Generator::with_clock_rollback_policy(self, policy: uuid_slug::UuidV7ClockRollbackPolicy) -> Self

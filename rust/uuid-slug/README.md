@@ -131,7 +131,9 @@ let bytes = UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes_into(
 # }
 ```
 
-Already have a `Uuid`? Borrow its bytes with `as_uuid_bytes()`, or copy them into an existing buffer with `write_uuid_bytes(&mut buffer, offset)?`. Use `generate_uuid_v4_into_with_random_fill` or the corresponding `UuidV7Generator` method to generate into caller storage; `fill_os_random_bytes` supplies platform entropy when `os-rng` is enabled.
+Already have a `Uuid`? Borrow its bytes with `as_uuid_bytes()`, or copy them into an existing buffer with `write_uuid_bytes(&mut buffer, offset)?`.
+
+Generate directly into storage with `generate_uuid_v4_into(&mut buffer, offset)?` or `generate_uuid_v7_into(&mut buffer, offset)?`. For a shared sequence, use `generator.generate_uuid_v7_into`; supplied-time variants are `generate_uuid_v7_at_into` for `SystemTime` and `generate_uuid_v7_at_unix_ms_into` for fractional Unix milliseconds. These calls use the same default secure entropy as ordinary generation and leave the buffer and sequence unchanged on failure. Select a `_with_random_fill` method only when supplying your own entropy provider.
 
 ## Key rotation
 

@@ -65,7 +65,7 @@ fn entropy_resources() -> Result<(), Error> {
             black_box(if version == 4 {
                 generate_uuid_v4_with_random_fill(fill)?
             } else {
-                generator.generate_uuid_v7_with_random_fill(1000.0, fill)?
+                generator.generate_uuid_v7_at_unix_ms_with_random_fill(1000.0, fill)?
             });
         }
         println!(
@@ -82,21 +82,20 @@ fn entropy_resources() -> Result<(), Error> {
         let calls = 10_000;
         let started = Instant::now();
         std::thread::scope(|scope| {
-            let workers: Vec<_> =
-                (0..threads)
-                    .map(|_| {
-                        scope.spawn(|| -> Result<(), Error> {
-                            let mut generator = UuidV7Generator::new();
-                            for _ in 0..calls / threads {
-                                black_box(generator.generate_uuid_v7_with_random_fill(
-                                    1000.0,
-                                    fill_os_random_bytes,
-                                )?);
-                            }
-                            Ok(())
-                        })
+            let workers: Vec<_> = (0..threads)
+                .map(|_| {
+                    scope.spawn(|| -> Result<(), Error> {
+                        let mut generator = UuidV7Generator::new();
+                        for _ in 0..calls / threads {
+                            black_box(generator.generate_uuid_v7_at_unix_ms_with_random_fill(
+                                1000.0,
+                                fill_os_random_bytes,
+                            )?);
+                        }
+                        Ok(())
                     })
-                    .collect();
+                })
+                .collect();
             for worker in workers {
                 worker.join().expect("benchmark worker panicked")?;
             }

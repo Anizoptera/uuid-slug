@@ -100,7 +100,7 @@ fn generate_into(options: &Value, generators: &mut [UuidV7Generator]) -> Result<
                         fill,
                     )
                 } else {
-                    generator.generate_uuid_v7_into_with_random_fill(
+                    generator.generate_uuid_v7_at_unix_ms_into_with_random_fill(
                         super::dispatch::number(&options["at"]),
                         &mut storage,
                         offset,
@@ -387,7 +387,7 @@ fn run(request: &Value, objects: &mut Objects) -> Result<Value, Error> {
                             fill,
                         )
                     } else {
-                        generator.generate_uuid_v7_with_random_fill(
+                        generator.generate_uuid_v7_at_unix_ms_with_random_fill(
                             super::dispatch::number(&options["at"]),
                             fill,
                         )

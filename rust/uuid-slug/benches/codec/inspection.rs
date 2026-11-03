@@ -213,7 +213,7 @@ pub fn visit(ids: &[Uuid], record: &mut impl super::Recorder) {
         });
         scalar!("generation/v7/custom-entropy", |_: Uuid| {
             generator
-                .generate_uuid_v7_with_random_fill(
+                .generate_uuid_v7_at_unix_ms_with_random_fill(
                     black_box(1_725_000_000_000.0),
                     uuid_slug::fill_os_random_bytes,
                 )
@@ -221,7 +221,7 @@ pub fn visit(ids: &[Uuid], record: &mut impl super::Recorder) {
         });
         scalar!("generation/v7/caller-buffer-custom-entropy", |_: Uuid| {
             generator
-                .generate_uuid_v7_into_with_random_fill(
+                .generate_uuid_v7_at_unix_ms_into_with_random_fill(
                     black_box(1_725_000_000_000.0),
                     &mut out,
                     4,
@@ -231,7 +231,7 @@ pub fn visit(ids: &[Uuid], record: &mut impl super::Recorder) {
         });
         scalar!("generation/v7/fraction12-custom-entropy", |_: Uuid| {
             fractional
-                .generate_uuid_v7_with_random_fill(
+                .generate_uuid_v7_at_unix_ms_with_random_fill(
                     black_box(1_725_000_000_000.25),
                     uuid_slug::fill_os_random_bytes,
                 )
