@@ -10,10 +10,7 @@ Derive API consistency and usability improvements from the maintainer's requests
 
 ## Joint release readiness
 
-- [ ] Make Rust plain slugs parse through `FromStr`, bounds work with standard range queries, and codec/configuration diagnostics redact keys; prove each with direct consumer calls.
-- [ ] Make Rust external derivation cancellation optional, use truthful binary-view names and hide encoding arithmetic; preserve wire results and update every caller.
-- [ ] Expose entropy callback obligations and cfg-derived feature requirements at public items; check the equivalent TypeScript contracts and generated docs.
-- [ ] Verify changed packaged APIs, default/minimal features, native/Wasm behavior and existing regression checks; remove completed work from this plan.
+- [ ] Review the crate README and every public Rust doc comment for plain language, useful caller guidance and accurate contracts; preserve limits and reasons, then verify rendered docs and examples.
 
 Follow `dev/release.md` for the npm update and first crate publication. Build and verify stable archives from the authorized tag, not old development captures; reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives. Existing regression checks remain required; missing performance comparisons neither block preparation nor authorize experiments.
 
