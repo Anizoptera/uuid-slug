@@ -13,18 +13,26 @@ const decodingAssertions = [
 const paddingAssertion = "nonzero decoder padding must fail";
 const tailAssertion = "decoded tail must fit four bits";
 const availableHarnesses = [
+  ...["empty_words_match_bytes", "one_word_matches_bytes", "two_words_match_bytes"].map((name) => ({
+    name: `hash_contract::${name}`,
+    assertions: ["word hashing equals little-endian byte hashing for every key and payload"],
+  })),
+  {
+    name: "hash_contract::tail_preserves_bytes",
+    assertions: ["hash tail preserves every byte in little-endian order"],
+  },
   ...["compact_uuid", "canonical_uuid", "wrapped_uuid", "urn_uuid"].map((name) => ({
     name: `text_contract::${name}`,
     assertions: [
       "UUID parser accepts exactly its text grammar",
       "UUID parser preserves every hexadecimal payload bit",
-      "UUID parser rejects malformed text with its typed error",
+      "UUID parser rejects malformed text",
     ],
   })),
   {
     name: "generation_contract::v7_continuation_and_exhaustion",
     assertions: [
-      "v7 continuation rejects exactly final timestamp exhaustion",
+      "v7 continuation rejects exactly policy or final timestamp exhaustion",
       "v7 continuation draws only the required entropy",
       "v7 continuation strictly increases in wire order",
       "v7 sequence carry advances exactly one millisecond",
@@ -34,7 +42,7 @@ const availableHarnesses = [
     name: "generation_contract::v7_failed_entropy_preserves_retry",
     assertions: [
       "v7 failed entropy never returns an identifier",
-      "v7 failed entropy leaves the next result and sequence unchanged",
+      "v7 failed entropy preserves every generator field",
     ],
   },
   {
@@ -145,12 +153,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 const deadline = performance.now() + 300_000;
 const toolchain = await rustToolchain();
-await command(
+const graphText = await command(
   toolchain.cargo,
   ["metadata", "--manifest-path", "rust/proofs/Cargo.toml", "--locked", "--format-version", "1"],
   process.cwd(),
   toolchain.env,
 );
+// A direct parser proof must execute the same dependency as the shipped wrapper.
+const graph = JSON.parse(graphText) as {
+  packages: { id: string; name: string }[];
+  resolve: { nodes: { id: string; deps: { name: string; pkg: string }[] }[] } | null;
+};
+const parserFor = (name: string) => {
+  const owner = graph.packages.find((pkg) => pkg.name === name);
+  return graph.resolve?.nodes
+    .find((node) => node.id === owner?.id)
+    ?.deps.find((dep) => dep.name === "uuid")?.pkg;
+};
+if (!parserFor("uuid-slug") || parserFor("uuid-slug") !== parserFor("uuid-slug-proofs"))
+  throw new Error(
+    "Rust parser proofs must resolve the product's uuid dependency. Align rust/proofs/Cargo.toml and its lockfile before proving a different implementation.",
+  );
 const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-proofs-"));
 const reportPath = join(scratch, "report.json");
 let passed = false;

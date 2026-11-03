@@ -11,119 +11,20 @@ fn v4_word(entropy: [u8; 16]) -> u128 {
         | (2u128 << 62)
 }
 
-// Two successful preserve-policy calls at the same integer time must increase in wire order.
-// Exhaustion is admitted, including a maximum seed at the final representable millisecond.
+// Check one real transition over all admissible state, including every rollback policy.
 #[kani::proof]
-#[kani::unwind(65)]
+#[kani::unwind(17)]
 #[kani::stub(alloc::fmt::format, crate::diagnostic_text)]
 fn v7_continuation_and_exhaustion() {
-    let timestamp: u64 = kani::any();
-    let fraction: u8 = kani::any();
-    let first_entropy: [u8; 10] = kani::any();
-    let next_entropy: [u8; 10] = kani::any();
-    kani::assume(timestamp <= MAX_UUID_V7_UNIX_MS && fraction <= 12);
-    let mut generator = UuidV7Generator::new()
-        .with_sub_millisecond_fraction_bits(fraction)
-        .unwrap();
-    let first = generator
-        .generate_uuid_v7_with_random_fill(timestamp as f64, |out| {
-            out.copy_from_slice(&first_entropy);
-            Ok(())
-        })
-        .unwrap();
-    let sequence = first
-        .extract_uuid_v7_payload(uuid_slug::UuidV7PayloadLayout::new(0, 42).unwrap())
-        .unwrap()
-        .counter
-        .unwrap()
-        .value;
-    let maximum = (1u128 << 42) - 1;
-    let exhausted = timestamp == MAX_UUID_V7_UNIX_MS && sequence == maximum;
-    let mut drawn = 0;
-    let second = generator.generate_uuid_v7_with_random_fill(timestamp as f64, |out| {
-        drawn += out.len();
-        out.copy_from_slice(&next_entropy[..out.len()]);
-        Ok(())
-    });
-    assert_eq!(
-        second.is_err(),
-        exhausted,
-        "v7 continuation rejects exactly final timestamp exhaustion"
-    );
-    assert_eq!(
-        drawn,
-        if exhausted {
-            0
-        } else if sequence == maximum {
-            10
-        } else {
-            4
-        },
-        "v7 continuation draws only the required entropy"
-    );
-    if let Ok(second) = second {
-        assert!(
-            u128::from_be_bytes(*second.as_uuid_bytes())
-                > u128::from_be_bytes(*first.as_uuid_bytes()),
-            "v7 continuation strictly increases in wire order"
-        );
-        assert_eq!(
-            second.extract_uuid_v7_unix_ms().unwrap(),
-            timestamp + u64::from(sequence == maximum),
-            "v7 sequence carry advances exactly one millisecond"
-        );
-    } else {
-        assert_eq!(second.unwrap_err().code(), ErrorCode::InvalidTimestamp);
-    }
+    crate::generation::prove_transition();
 }
 
-// Observe state through retry results rather than copying private generator fields into a model.
-// The failed draw may overwrite its entire temporary destination before returning an error.
+// Compare all actual fields after a failed draw, independently of any selected retry input.
 #[kani::proof]
-#[kani::unwind(65)]
+#[kani::unwind(17)]
 #[kani::stub(alloc::fmt::format, crate::diagnostic_text)]
 fn v7_failed_entropy_preserves_retry() {
-    let timestamp: u64 = kani::any();
-    let failed_time: u64 = kani::any();
-    let entropy: [u8; 10] = kani::any();
-    kani::assume(timestamp <= MAX_UUID_V7_UNIX_MS && failed_time <= MAX_UUID_V7_UNIX_MS);
-    let mut subject = UuidV7Generator::new();
-    let mut control = UuidV7Generator::new();
-    for generator in [&mut subject, &mut control] {
-        generator
-            .generate_uuid_v7_with_random_fill(timestamp as f64, |out| {
-                out.copy_from_slice(&entropy);
-                Ok(())
-            })
-            .unwrap();
-    }
-    let failed = subject.generate_uuid_v7_with_random_fill(failed_time as f64, |out| {
-        out.fill(0xff);
-        Err(Error::new(ErrorCode::Aborted))
-    });
-    assert!(
-        failed.is_err(),
-        "v7 failed entropy never returns an identifier"
-    );
-    let retry = subject.generate_uuid_v7_with_random_fill(timestamp as f64, |out| {
-        out.copy_from_slice(&entropy[..out.len()]);
-        Ok(())
-    });
-    let expected = control.generate_uuid_v7_with_random_fill(timestamp as f64, |out| {
-        out.copy_from_slice(&entropy[..out.len()]);
-        Ok(())
-    });
-    assert_eq!(
-        retry
-            .as_ref()
-            .map(|uuid| *uuid.as_uuid_bytes())
-            .map_err(|error| error.code()),
-        expected
-            .as_ref()
-            .map(|uuid| *uuid.as_uuid_bytes())
-            .map_err(|error| error.code()),
-        "v7 failed entropy leaves the next result and sequence unchanged"
-    );
+    crate::generation::prove_failed_entropy();
 }
 
 #[kani::proof]
@@ -153,7 +54,7 @@ fn v4_preserves_random_payload() {
 // Both callback outcomes, including partial failed fills, must preserve bytes outside a successful
 // 16-byte write. All usize offsets and slice lengths up to two UUID slots are admitted.
 #[kani::proof]
-#[kani::unwind(65)]
+#[kani::unwind(33)]
 #[kani::stub(alloc::fmt::format, crate::diagnostic_text)]
 fn v4_buffer_failure_atomicity() {
     let before: [u8; 32] = kani::any();
@@ -246,7 +147,7 @@ fn inclusive_v7_bounds() {
 // All integer milliseconds in the full wire range and every supported fraction width are
 // symbolic. Numeric fractional-clock quantization is a separate proof obligation.
 #[kani::proof]
-#[kani::unwind(65)]
+#[kani::unwind(17)]
 #[kani::stub(alloc::fmt::format, crate::diagnostic_text)]
 fn v7_initial_payload() {
     let timestamp: u64 = kani::any();

@@ -19,5 +19,6 @@ dependencies = [
 name = "uuid-slug-proofs"
 version = "0.0.0"
 dependencies = [
+ "uuid",
  "uuid-slug",
 ]

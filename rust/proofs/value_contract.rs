@@ -1,5 +1,5 @@
-//! Prove shipped buffer admission and payload partition bodies with Verus.
-//! Allocation, diagnostics, compiled writes and other compilers need separate checks.
+//! Prove production buffer admission, payload partitioning and generation arithmetic with Verus.
+//! Entropy, state commits, diagnostics and native machine code need separate evidence.
 #![feature(proc_macro_hygiene)]
 use vstd::prelude::*;
 

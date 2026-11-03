@@ -1,5 +1,4 @@
 //! Compare the production parser with the UUID text grammar, independently of its lookup tables.
-use uuid_slug::{ErrorCode, Uuid};
 
 fn hex(byte: u8) -> Option<u8> {
     match byte {
@@ -38,30 +37,24 @@ fn reference<const N: usize>(text: &[u8; N]) -> Option<[u8; 16]> {
     Some(bytes)
 }
 
-// Quantify over every valid UTF-8 string of this byte length, including non-ASCII rejection.
-// Invalid UTF-8 is not an admissible &str and is excluded by the actual standard-library check.
+// Uuid::from_str calls this exact parser. Quantify over every byte string, a superset of &str,
+// so malformed UTF-8 and non-ASCII cannot disappear behind a proof-only validity assumption.
 fn verify<const N: usize>() {
     let bytes: [u8; N] = kani::any();
-    if let Ok(text) = core::str::from_utf8(&bytes) {
-        let parsed = Uuid::from_uuid_string(text);
-        let expected = reference(&bytes);
-        assert_eq!(
-            parsed.is_ok(),
-            expected.is_some(),
-            "UUID parser accepts exactly its text grammar"
-        );
-        match expected {
-            Some(expected) => assert_eq!(
-                *parsed.unwrap().as_uuid_bytes(),
-                expected,
-                "UUID parser preserves every hexadecimal payload bit"
-            ),
-            None => assert_eq!(
-                parsed.unwrap_err().code(),
-                ErrorCode::InvalidUuid,
-                "UUID parser rejects malformed text with its typed error"
-            ),
-        }
+    let parsed = uuid::Uuid::try_parse_ascii(&bytes);
+    let expected = reference(&bytes);
+    assert_eq!(
+        parsed.is_ok(),
+        expected.is_some(),
+        "UUID parser accepts exactly its text grammar"
+    );
+    match expected {
+        Some(expected) => assert_eq!(
+            *parsed.unwrap().as_bytes(),
+            expected,
+            "UUID parser preserves every hexadecimal payload bit"
+        ),
+        None => assert!(parsed.is_err(), "UUID parser rejects malformed text"),
     }
 }
 

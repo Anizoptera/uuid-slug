@@ -11,7 +11,14 @@ publish = false
 path = "lib.rs"
 
 [dependencies]
-uuid-slug = { path = "../uuid-slug", default-features = false }
+uuid-slug = { path = "../uuid-slug", default-features = false, features = ["std"] }
+# Prove the actual parser called by Uuid::from_str without modeling standard-library UTF-8 checks.
+# The runner requires this package ID to match the product's resolved parser dependency.
+uuid = { version = "1.29", default-features = false }
 
 [lints.rust]
-unexpected_cfgs = { level = "deny", check-cfg = ['cfg(kani)'] }
+unexpected_cfgs = { level = "deny", check-cfg = [
+  'cfg(kani)',
+  'cfg(verus_only)',
+  'cfg(feature, values("std", "fast-rng", "os-rng", "wasm-js"))',
+] }

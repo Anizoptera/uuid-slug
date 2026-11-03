@@ -1,4 +1,5 @@
 //! Preserve every UUID bit while accepting standard text and enforcing canonical slug spellings.
+pub(crate) use crate::buffer_range::range;
 use crate::{Error, ErrorCode, KeylessUuidText, UuidSlugAlphabet, text};
 use alloc::{boxed::Box, format, string::String};
 use core::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
@@ -398,11 +399,11 @@ impl Uuid {
             crate::payload_fields::split(payload, fraction_bits, layout.counter_bits);
         Ok(UuidV7Payload {
             unix_ms,
-            sub_millisecond_fraction: (fraction_bits != 0).then(|| UuidV7PayloadField {
+            sub_millisecond_fraction: (fraction_bits != 0).then_some(UuidV7PayloadField {
                 value: fraction,
                 bits: fraction_bits,
             }),
-            counter: (layout.counter_bits != 0).then(|| UuidV7PayloadField {
+            counter: (layout.counter_bits != 0).then_some(UuidV7PayloadField {
                 value: counter,
                 bits: layout.counter_bits,
             }),
@@ -412,14 +413,6 @@ impl Uuid {
             },
         })
     }
-}
-pub(crate) fn range(capacity: usize, offset: usize) -> Result<core::ops::Range<usize>, Error> {
-    let end = crate::buffer_range::uuid_end(capacity, offset).ok_or_else(|| {
-        Error::new(ErrorCode::InvalidBuffer).with_message(format!(
-            "Buffer needs 16 bytes at offset {offset}, but holds {capacity}."
-        ))
-    })?;
-    Ok(offset..end)
 }
 impl FromStr for Uuid {
     type Err = Error;

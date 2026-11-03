@@ -1,8 +1,8 @@
-//! Generate RFC UUIDs with explicit or per-thread state and fallible entropy; no global lock is required.
-//!
-//! Every `_with` callback must fill every requested byte from its chosen source or return an
-//! error. A successful partial fill cannot be distinguished reliably from valid random bytes.
-//! Use the default generators for platform CSPRNG entropy; custom callbacks own that guarantee.
+// Generate RFC UUIDs with explicit or per-thread state and fallible entropy; no global lock is required.
+//
+// Every `_with` callback must fill every requested byte from its chosen source or return an
+// error. A successful partial fill cannot be distinguished reliably from valid random bytes.
+// Use the default generators for platform CSPRNG entropy; custom callbacks own that guarantee.
 use crate::generation_state::{self, MAX_SEQUENCE};
 #[cfg(feature = "fast-rng")]
 use crate::random::fill_random_bytes as fill_default_random_bytes;
