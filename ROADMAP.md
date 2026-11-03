@@ -6,7 +6,7 @@ Prepare the npm update and first Rust crate with matching capabilities and ident
 
 Keep one Rust crate and the dependency-free npm package, optional `std`, Rust's owned `Uuid`, immutable codecs and separate mutable generators. Replace Rust dependencies only for demonstrated gains without quality or capability loss. Keep both manifest versions aligned; preparation must not change them.
 
-Public API, behavior, guarantee or risk changes require a maintainer ruling; derive internals within that boundary. Versions, tags, pushes, publication, remote settings/secrets and finalization each require explicit authorization; this roadmap grants none. Keep dependent repairs with their task. Record acceptance by command, revision, features, profile, target and coverage limits in the existing evidence owner; durable contracts stay in their owners.
+Derive API consistency and usability improvements from the maintainer's requests and interface principles; escalate only material unresolved contract, priority, risk or taste decisions. Versions, tags, pushes, publication, remote settings/secrets and finalization each require explicit authorization; this roadmap grants none. Keep dependent repairs with their task. Record acceptance by command, revision, features, profile, target and coverage limits in the existing evidence owner; durable contracts stay in their owners.
 
 ## Joint release readiness
 
@@ -19,7 +19,7 @@ Follow `dev/release.md` for the npm update and first crate publication. Build an
 
 ## TypeScript binary API
 
-- [ ] Needs ruling: let explicit masked-byte readers select 16 bytes from a larger `Uint8Array` with `byteOffset`, matching ordinary UUID readers. Keep exact standalone inputs, caller-output overloads, error propagation and wire formats unchanged; never guess raw versus masked meaning. This removes caller-created views at the cost of additional overloads.
+- [ ] Let explicit masked-byte readers select 16 bytes from a larger `Uint8Array` with `byteOffset`, matching ordinary UUID readers. Preserve exact standalone inputs, case inference, caller-output overloads, failure-atomic overlapping writes, error propagation, sentinels, key order and wire formats. Reuse range validation and the existing shared and packed consumer checks; protect existing calls and tree shaking without new wrappers or dependencies.
 
 ## Cross-runtime implementation comparison
 
