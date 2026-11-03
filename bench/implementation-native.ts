@@ -14,7 +14,8 @@ const bridge = await loadRustBridge({ directory });
 try {
   if (bridge.transport !== expected)
     throw new Error(`Expected ${expected}; the loader selected ${bridge.transport}`);
-  const runtimeVersion = process.versions.bun ?? process.versions.deno ?? process.version;
+  // Registry versions are numeric; Node's display-only `v` must not look like another executable.
+  const runtimeVersion = process.versions.bun ?? process.versions.deno ?? process.versions.node;
   console.log(
     JSON.stringify({
       runtimeVersion,
