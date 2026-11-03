@@ -10,14 +10,8 @@ Derive API consistency and usability improvements from the maintainer's requests
 
 ## Joint release readiness
 
-- [ ] Update project-managed runtimes, JavaScript and Rust dependencies, CI actions and verification tools to current stable releases. Preserve package versions, supported runtime floors and historical compatibility fixtures; repair upgrade incompatibilities without weakening checks.
-  - [x] Verify available versions and update JavaScript dependencies and runtime pins; keep the TypeScript compatibility compilers on their supported lines.
-  - [x] Update Rust workspace and competitor dependencies, matching WebAssembly tools and CI action pins.
-  - [ ] Run the complete check and affected browser, WebAssembly, package and proof checks; remove scratch and report any remaining release blockers.
-
 Follow `dev/release.md` for the npm update and first crate publication. Build and verify stable archives from the authorized tag, not old development captures; reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives. Existing regression checks remain required; missing performance comparisons neither block preparation nor authorize experiments.
 
-- [ ] Finish Rust API improvements: name supplied numeric times explicitly, decouple caller-buffer generation from RNG selection, and make diagnostic labels optional. Preserve wire formats and supported inputs; update dependent calls, docs, API reports and packaged consumers together.
 - [ ] Before publication, resolve or review [the upstream `deepmerge` advisory](https://github.com/advisories/GHSA-gcqx-w48m-w2h4). The latest Rollup resolver depends on the affected release and merges its fixed defaults; this dependency is development-only. Keep this separate from the clean production dependency audit.
 
 - [ ] With explicit authorization, configure `CRATES_IO_BOOTSTRAP_TOKEN` before the first crate upload; trusted publishing cannot be configured until the crate exists.
@@ -55,5 +49,4 @@ Future exploration only; do not start it during release preparation.
 ### Other follow-ups
 
 - [ ] Propose cross-project guidance requiring packed-consumer checks to match real installed package layouts; change external guidance only with explicit approval.
-- [ ] Resolve the advisory affecting competitor `slugid` through its `uuid ^9` dependency. Keep this dev-only comparison on the upstream dependency graph; do not silently override it.
 - [ ] Resolve Node/Deno base32 parity against the upstream baseline. Preserve failing and passing full-filter results; later passes establish neither parity nor cause. Select a repair only from corrected full-context evidence or a changed mechanism, not narrower timing replays (`bench/decisions.md` §Historical base32 slowdown and §Runtime regression checks).
