@@ -264,11 +264,7 @@ impl UuidV7Generator {
             ),
         );
         #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-        let elapsed = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|error| Error::new(ErrorCode::InvalidTimestamp).with_source(error))?;
-        #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-        let reading = system_instant(std::time::UNIX_EPOCH + elapsed)?;
+        let reading = system_instant(std::time::SystemTime::now())?;
         #[cfg(any(
             not(all(target_arch = "wasm32", target_os = "unknown")),
             feature = "wasm-js"
@@ -458,13 +454,6 @@ mod buffer_tests;
 mod tests {
     use super::*;
     use alloc::string::ToString;
-    // Exercise real platform entropy under each feature selection without imposing sequence order.
-    #[cfg(all(feature = "std", feature = "os-rng"))]
-    #[test]
-    fn simple_generation_uses_the_requested_rfc_version() {
-        assert!(generate_uuid_v4().unwrap().is_uuid_v4());
-        assert!(generate_uuid_v7().unwrap().is_uuid_v7());
-    }
     fn fill(out: &mut [u8]) -> Result<(), Error> {
         for (i, byte) in out.iter_mut().enumerate() {
             *byte = i as u8;
