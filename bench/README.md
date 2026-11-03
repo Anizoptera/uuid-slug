@@ -35,7 +35,7 @@ UUID_SLUG_PROFILE_FILTER=plain.encode bun run bench:profile:native
 
 Comparisons show each call's runtime, fastest library and native reference, relative speed and uncertainty. Profiles show timing, CPU and memory costs. Allocation profiles estimate allocation; heap snapshots show retention.
 
-Raw measurements, profiles and captured inputs go to `bench/reports/`. Git ignores that folder, so its files exist only on the machine that ran them.
+Raw measurements, profiles and captured inputs stay untracked on the machine that ran them. `bench/reports/` and implementation evidence directories are ignored. Only the canonical Markdown report is versioned; its local raw link requires the retained file and is unavailable in a fresh checkout.
 
 `bun run bench:implementations` updates the single report at `bench/results/implementations.md`; that report links to its raw evidence. Rerender the same report without timing with `bun run bench:implementations --report bench/results/implementations.md`; add `--baseline <lane>` to change the reference. Explicit `.jsonl` inputs still work. Set `UUID_SLUG_IMPLEMENTATION_FILTER` to comma-separated job substrings or `UUID_SLUG_IMPLEMENTATION_REPORT` to select the canonical `.md` path. Acquisition progress stays in the CLI; no provisional or per-runtime Markdown reports are generated. Keep raw evidence only for the current report or an unresolved investigation. Smoke uses the same runtime matrix with fewer samples; it establishes wiring only.
 

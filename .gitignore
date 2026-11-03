@@ -1,4 +1,5 @@
 bench/reports/
+bench/results/*-evidence-*/
 dist/
 node_modules/
 release-artifacts/
