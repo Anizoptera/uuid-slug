@@ -2,7 +2,13 @@
 
 The crate generates UUIDv4/v7 and encodes any UUID as a 22-character base64url or 26-character base32hex slug. UUIDv7 fields can be masked with a key; lowercase masked slugs use 27 characters for case-insensitive filenames.
 
-For a local checkout, add this dependency to your application's `Cargo.toml`, adjusting the path to the repository:
+After the first crates.io publication, install with:
+
+```sh
+cargo add uuid-slug
+```
+
+Rust 1.97 or newer is required. Before publication, use a local checkout by adding this dependency to your application's `Cargo.toml`, adjusting the repository path:
 
 ```toml
 [dependencies]
@@ -62,9 +68,9 @@ Use `UuidV7MaskingCodec::new(mask)` for base64url output with no sentinels or pr
 
 Use `masking_codec.parse_uuid(text)?` when input may be UUID text, a plain slug or a masked slug. Registered sentinels take priority. For ambiguous 22-character text, the first passing mask decides the UUID; plain decoding applies only when every mask rejects it. Callback failures are returned, not retried as plain text. Use `Uuid::from_plain_uuid_slug` or `masked_slug_to_uuid` when you know the source. The returned `Uuid` owns its bytes without retaining the codec or keys.
 
-Plain slugs preserve all 128 UUID bits without version, variant or timestamp limits. Masked slugs preserve the 132-bit payload. Slug decoding infers the alphabet and rejects nonzero padding.
+Plain slugs preserve all 128 UUID bits without version, variant or timestamp limits. Masked text encodes 116 UUIDv7 bits plus a 16-bit check; decoding restores the fixed version and variant bits. Slug decoding infers the alphabet and rejects nonzero padding.
 
-Masked binary is the same 16-byte mixed block without text encoding. `uuid_to_masked_bytes` returns `MaskedOrSentinelUuidV7Bytes`; borrow its bytes with `as_ref()` for transport and read with `masked_bytes_to_uuid`. Registered sentinels retain raw UUID bytes. Binary checks 12 inner bits rather than text's 16; neither check authorizes access. Use `uuid_to_masked_bytes_into` and `masked_bytes_to_uuid_bytes_into` for caller-owned storage; failure leaves the entire buffer unchanged. Raw and masked bytes share the same length, so choose the reader from the known format.
+Masked binary is the same 16-byte mixed block without text encoding. `uuid_to_masked_bytes` returns `MaskedOrSentinelUuidV7Bytes`; borrow its bytes with `as_ref()` for transport and read with `masked_bytes_to_uuid`. Registered sentinels retain raw UUID bytes. Binary checks 12 inner bits rather than text's 16; neither check authorizes access. Use `uuid_to_masked_bytes_into` and `masked_bytes_to_uuid_bytes_into` for caller-owned storage; failure leaves the entire buffer unchanged. Raw UUID conversion accepts every 16-byte value, including masked blocks, so byte content cannot uniquely identify the representation. Choose the reader from the known format.
 
 Masking supports UUIDv7 only. It replaces the recognizable UUIDv7 layout, including its timestamp, with a keyed reversible payload. Its cryptographic strength is not established. An incorrect key can pass the check and return the wrong UUID; look up decoded records and check caller access. Each read key adds that risk. Use `uuid_v7_test_mask()` only for examples and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs. Masking stores a timestamp offset from `timestamp_range_start_unix_ms` and restores the UUID's timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`; plain slugs retain the full UUIDv7 timestamp range. Registered sentinels are never masked.
 

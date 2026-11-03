@@ -10,6 +10,9 @@ keywords = ["uuid", "slug", "base64url", "base32", "identifier"]
 categories = ["encoding"]
 exclude = ["benches/"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 default = ["std", "fast-rng"]
 std = []
