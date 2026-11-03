@@ -32,6 +32,7 @@ impl AsRef<str> for PlainUuidSlug {
 }
 
 /// Validate either plain-slug alphabet and return its canonical spelling.
+/// Masked text can also be valid plain text for a different UUID; use its masking codec instead.
 ///
 /// ```
 /// use uuid_slug::PlainUuidSlug;
