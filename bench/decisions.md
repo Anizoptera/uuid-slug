@@ -10,6 +10,12 @@ The 2026-11-02 wiring capture used 2 jobs in the ordinary Node reference but 46 
 
 Normalized costs retain their reference identity. Without a matching artifact, version record and ordered workload connecting Rust to Node, their separate values of 1 are different scales, not evidence of equal costs. Keep measured but unconnected results visible as uncompared; when a selected reference lacks a job, use another measured reference and name it beside that job. Reconsider the collection shape only with evidence that a cheaper method preserves those comparison conditions.
 
+## Per-call native transport qualification
+
+Compare UUID text to an owned base64url string through the actual loader, including parsing and marshalling; JSON dispatch and compiled Rust byte-input loops answer different questions.
+
+On macOS arm64, observed 2026-11-03 at `8669797`, the minified release worker completes its direct-call probe on Node 22.23.4/24.22.2/26.13.0 Node-API, Node 26.13.0 FFI, Bun 1.4.4 FFI/Node-API and Deno 2.9.8 FFI/Node-API, plus the JavaScript reference. Every lane checks 64 varied UUIDs against the host's independent base64 primitive before timing and reports a positive operation count. Rust 1.99.1 builds with optimization level 3, ThinLTO, one code-generation unit and native CPU tuning; the library capture is shared by both loader spellings. These one-batch observations establish wiring, not relative performance or behavior on other architectures.
+
 ## JavaScript construction result consumption
 
 Retain each timed result in one host-visible slot so opaque objects escape with their hidden state; key counts and diagnostic labels do not witness that state. One replacement bounds retention independently of the number of calls. The slot store and checksum remain inside timing, so comparisons include their cost rather than claiming isolated package execution.
