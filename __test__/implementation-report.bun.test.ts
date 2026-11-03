@@ -100,6 +100,30 @@ test.each([
   expect(renderImplementationReport(report, root.id)).toContain("uncompared");
 });
 
+test("jobs missing from the requested baseline prefer their measured component root", () => {
+  const report = evidence();
+  const transports = evidence();
+  for (const lane of transports.lanes) {
+    lane.id = lane.id === "ts/node" ? "transport/root" : "transport/candidate";
+    lane.reference = "transport/root";
+    lane.family = "Per-call transports";
+    delete lane.requiresEntropy;
+  }
+  for (const record of transports.measurements) {
+    record.lane = record.lane === "ts/node" ? "transport/root" : "transport/candidate";
+    record.subject = record.subject === "ts/node" ? "transport/root" : "transport/candidate";
+    for (const row of record.rows) row.name = "transport/plain/base64";
+  }
+  // Discovery order must not replace the independently measured reference with its candidate.
+  // eslint-disable-next-line unicorn/no-array-reverse -- Reverse the private fixture under the ES2022 library floor.
+  report.lanes.push(...transports.lanes.reverse());
+  report.measurements.push(...transports.measurements);
+  for (const [sequence, record] of report.measurements.entries()) record.sequence = sequence;
+  const result = renderImplementationReport(report);
+  expect(result).toContain("| transport/candidate | transport/root | 2×");
+  expect(result).toContain("| transport/root | transport/root | reference |");
+});
+
 test("current captures require matching execution-time version receipts", () => {
   const report = evidence();
   report.runtimeReceipts = true;

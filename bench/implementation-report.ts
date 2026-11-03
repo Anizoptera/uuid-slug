@@ -245,6 +245,7 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
         baseline,
         "ts/node",
         "rust/native/release/fast-rng",
+        ...report.lanes.filter((lane) => lane.reference === lane.id).map((lane) => lane.id),
         ...report.lanes.map((lane) => lane.id),
       ]),
     ];
@@ -289,7 +290,7 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
           ]
         : []),
       "",
-      `Requested reference: \`${baseline}\`. Each job names its actual reference: the requested lane when available, otherwise Node, native release Rust, then another connected measured lane. Each comparison runs reference/candidate/candidate/reference or the reverse. ${report.exposure === "randomized" ? "Lane order within each block and each window's orientation were independently randomized before timing." : "Windows reverse in alternate blocks; lane exposure was not randomized."} Ratios combine the two neighboring pairs geometrically. Native Rust connects to Node only through a matching artifact, version record and ordered workload. ${blocks} fresh-process blocks, ${report.settings.samples} batches per process. A missing interval is unresolved. Retained JSON Lines keep every batch and acquisition order.`,
+      `Requested reference: \`${baseline}\`. Each job names its actual reference: the requested lane when available, otherwise Node, native release Rust, a measured component root, then another connected measured lane. Each comparison runs reference/candidate/candidate/reference or the reverse. ${report.exposure === "randomized" ? "Lane order within each block and each window's orientation were independently randomized before timing." : "Windows reverse in alternate blocks; lane exposure was not randomized."} Ratios combine the two neighboring pairs geometrically. Native Rust connects to Node only through a matching artifact, version record and ordered workload. ${blocks} fresh-process blocks, ${report.settings.samples} batches per process. A missing interval is unresolved. Retained JSON Lines keep every batch and acquisition order.`,
       "",
       "Rust application rows time complete compiled calls with result consumption in the native or WASM loop; they exclude a JS crossing per identifier. JS rows include their result witness and errors-as-values checks. Rust owns fixed-array values where JavaScript owns heap arrays. These are consumer-path comparisons, not isolated language or compiler effects. No overall winner is calculated.",
       ...(report.lanes.some((lane) => lane.id.startsWith("transport/"))

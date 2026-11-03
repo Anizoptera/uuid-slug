@@ -56,7 +56,7 @@ Make each JavaScript result observable outside the timing module by replacing on
 
 For an even sample of positive ratios, use the geometric midpoint of its two middle values; reversing the reference then inverts the point estimate. This summarizes typical paired relative cost, not arithmetic mean cost or individual-call latency tails.
 
-Changing the reference must preserve every measured job. Use the requested lane where it has a comparable result; otherwise use Node, native release Rust, then another comparable measured lane. Name the actual reference beside each job. Distinguish an absent measurement from a measured job whose comparison cannot be connected; neither means zero cost.
+Changing the reference must preserve every measured job. Use the requested lane where it has a comparable result; otherwise use Node, native release Rust, a measured component root, then another comparable measured lane. Prefer the component's independently measured reference over its first discovered candidate. Name the actual reference beside each job. Distinguish an absent measurement from a measured job whose comparison cannot be connected; neither means zero cost.
 
 Carry the reference identity with every normalized ratio. A value of 1 on a native Rust scale and a value of 1 on a Node scale do not establish equal costs; compare them only when a measured cross-language edge connects those scales.
 
