@@ -171,6 +171,9 @@
     "vitest": "^5.1.0",
     "webpack": "5.112.2"
   },
+  "overrides": {
+    "minimatch": "11.0.4"
+  },
   "engines": {
     "bun": ">=1.0.8",
     "deno": ">=1.29",
