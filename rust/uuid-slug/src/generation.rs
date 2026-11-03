@@ -148,7 +148,7 @@ impl UuidV7Generator {
     ) -> Result<Uuid, Error> {
         self.generate_uuid_v7_from_instant(float_instant(unix_ms)?, fill)
     }
-    /// Generate at `at` with caller-supplied entropy, without converting through floating-point milliseconds.
+    /// Generate from a supplied `SystemTime` with caller-supplied entropy, without converting through floating-point milliseconds.
     /// The callback must fill every requested byte or return an error. Production IDs require
     /// cryptographically secure entropy; a successful partial fill cannot be detected.
     #[cfg(feature = "std")]
@@ -275,7 +275,7 @@ impl UuidV7Generator {
         ))]
         self.generate_uuid_v7_from_instant(reading, fill_default_random_bytes)
     }
-    /// Generate at `at` with secure randomness, using this generator's fraction bits and rollback policy.
+    /// Generate from a supplied `SystemTime` with secure randomness, using this generator's fraction bits and rollback policy.
     #[cfg(all(feature = "std", feature = "os-rng"))]
     pub fn generate_uuid_v7_at(&mut self, at: std::time::SystemTime) -> Result<Uuid, Error> {
         self.generate_uuid_v7_at_with_random_fill(at, fill_default_random_bytes)
@@ -293,7 +293,7 @@ impl UuidV7Generator {
         write_generated_uuid(out, offset, || self.generate_uuid_v7())
     }
 
-    /// Generate at `at` into 16 bytes at `offset`, using the default secure entropy provider.
+    /// Generate from a supplied `SystemTime` into 16 bytes at `offset`, using the default secure entropy provider.
     /// Apply this generator's fraction bits and rollback policy; failures leave the buffer and sequence unchanged.
     #[cfg(all(feature = "std", feature = "os-rng"))]
     pub fn generate_uuid_v7_at_into(
