@@ -133,18 +133,25 @@ if (reportIndex >= 0) {
       recovery ? { source: recovery, admit: reporter.append } : undefined,
     );
     let sequence = output.reused;
+    const processCount = blocks * lanes.length * 4;
     console.log(
-      `Reused ${sequence} completed process captures; ${blocks * lanes.length * 4 - sequence} remain.`,
+      `Reused ${sequence} completed process captures; ${processCount - sequence} remain.`,
     );
-    while (sequence < blocks * lanes.length * 4) {
+    while (sequence < processCount) {
       const step = scheduledStep(planned, sequence++);
       const selected = lanes.find((lane) => lane.id === step.lane);
       if (!selected) throw new Error(`Missing comparison lane: ${step.lane}`);
       console.log(
-        `Block ${step.block + 1}/${blocks}: ${step.subject}; ${step.role} ${step.repeat + 1}`,
+        `Completed ${sequence - 1}/${processCount}; block ${step.block + 1}/${blocks}: starting ${step.subject}; ${step.role} ${step.repeat + 1}`,
       );
+      const started = performance.now();
       const capture = await acquire(selected, settings);
-      const record: UnvalidatedMeasurement = { ...step, ...capture };
+      // Batch totals omit startup and dispatch; retain the parent observation for schedule planning.
+      const record: UnvalidatedMeasurement = {
+        ...step,
+        ...capture,
+        acquisitionElapsedMs: performance.now() - started,
+      };
       // Persist once before admission so malformed output survives without becoming a completed report.
       await output.append(record);
       reporter.append(record);

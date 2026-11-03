@@ -16,6 +16,8 @@ export interface Measurement extends ExecutionReceipt {
   subject: string;
   role: "candidate" | "reference";
   sequence: number;
+  // Parent-clock acquisition includes host startup/transport/cleanup, not shared builds or evidence I/O.
+  acquisitionElapsedMs?: number;
   rows: Observation[];
   block: number;
   repeat: number;
