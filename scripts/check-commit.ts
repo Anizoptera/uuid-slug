@@ -33,6 +33,7 @@ const checks: {
   build?: true;
   args?: string[];
 }[] = [
+  { script: "archives:check", affects: () => true },
   // oxfmt ignores Markdown by configuration (`.oxfmtrc.json`).
   { script: "format:check", affects: (path) => !markdown(path) },
   // Type-aware lint resolves the package's own name to dist/, so it must not race the build.
