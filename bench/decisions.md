@@ -32,6 +32,8 @@ Keep the measured coarse-clock batches unless another instrument qualifies for t
 
 The experimental `precise_timers` flag produces 3 ms increments in the same probes; it is not a finer clock. A release-mode native trace contains runtime and GC events, but usable per-batch boundary timestamps were not established. The existing forty-tick target consequently expands batches to 40 ms: one complete 396-job web-mode process records about 231 seconds of calibration and timed loops (2026-11-03). These observations explain that collection cost, not an implementation slowdown or a physical prohibition on other instruments. Reconsider the clock or repetition policy only with evidence preserving the measured quantity and required uncertainty.
 
+Force termination of failed workerd requests; cancelling HTTP waiting and sending SIGTERM can leave CPU work running. On the same workerd release and host, a real 848 ms CPU loop reaches its completion witness after a 212 ms deadline and returns after 863 ms. With SIGKILL on timeout or failure, the same loop has no completion witness and returns after 214 ms; a successful consumer still completes normally. Successful shutdown remains graceful for trace flushing. This establishes the cleanup defect and repair, not the cause of the earlier full-run timeout; failure diagnostics retain elapsed time and actual child CPU/resource usage for that distinction.
+
 ## Implementation report retention
 
 Keep raw batches on disk and retain only per-process medians for report generation; streaming avoids retaining calibration histories and recomputing the same medians for each table cell.
