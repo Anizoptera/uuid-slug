@@ -61,14 +61,16 @@ const config :Workerd.Config = (
 );
 `,
       );
+      const started = performance.now();
       const child = Bun.spawn([executable, "serve", config, "--control-fd=1"], {
         stdout: "pipe",
         stderr: "pipe",
       });
       const diagnostics = new Response(child.stderr).text();
       const reader = child.stdout.pipeThrough(new TextDecoderStream()).getReader();
-      // This bounds a hung engine; the listen event, never elapsed time, establishes readiness.
-      const deadline = setTimeout(() => child.kill(), options.timeoutMs ?? 10_000);
+      // SIGTERM can drain a CPU-bound request past its deadline; failed runs need no trace flush.
+      // The listen event, never elapsed time, establishes readiness.
+      const deadline = setTimeout(() => child.kill("SIGKILL"), options.timeoutMs ?? 10_000);
       try {
         let remaining = "";
         let port: number | undefined;
@@ -106,9 +108,16 @@ const config :Workerd.Config = (
           throw new Error(`Packed consumer returned ${response.status}: ${result}`);
         return result;
       } catch (cause) {
-        child.kill();
+        child.kill("SIGKILL");
         await child.exited;
-        throw new Error(`workerd ${lane}: ${String(cause)}\n${await diagnostics}`, { cause });
+        const usage = child.resourceUsage();
+        const resources = usage
+          ? `user CPU ${usage.cpuTime.user} µs; system CPU ${usage.cpuTime.system} µs; max RSS ${usage.maxRSS} bytes; context switches ${usage.contextSwitches.voluntary}/${usage.contextSwitches.involuntary} voluntary/involuntary`
+          : "child resource usage unavailable";
+        throw new Error(
+          `workerd ${lane}: ${String(cause)}; elapsed ${performance.now() - started} ms; ${resources}\n${await diagnostics}`,
+          { cause },
+        );
       } finally {
         clearTimeout(deadline);
         child.kill();
