@@ -131,17 +131,18 @@ pub(super) fn prove_transition() {
 
 // A failed callback may corrupt its entire scratch slice; no generator field may commit.
 // Equality of actual state is stronger than comparing one chosen retry's output.
+// Arbitrary final scratch bytes include every partial overwrite of its initially zero bytes.
 pub(super) fn prove_failed_entropy() {
     let mut generator = arbitrary_generator();
     let before = snapshot(&generator);
     let now: u64 = kani::any();
     let fraction_12: u16 = kani::any();
-    let overwritten: u8 = kani::any();
+    let overwritten: [u8; 10] = kani::any();
     kani::assume(now <= MAX_UUID_V7_UNIX_MS && fraction_12 < 4096);
     let mut called = false;
     let result = from_parts(&mut generator, now, fraction_12, |out| {
         called = true;
-        out.fill(overwritten);
+        out.copy_from_slice(&overwritten[..out.len()]);
         Err(Error::new(ErrorCode::Aborted))
     });
     assert!(
