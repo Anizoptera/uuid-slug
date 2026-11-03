@@ -65,6 +65,11 @@ export async function measureGenerationCases(
   if (new Set(candidates.map(({ name }) => name)).size !== candidates.length)
     throw new Error("Benchmark case names must be unique");
   for (const candidate of candidates) {
+    // A rejection label does not permit timing a different entropy guarantee.
+    if (candidate.secure === false)
+      throw new Error(
+        `Insecure entropy is excluded: remove ${candidate.name} from the candidate set; do not validate, warm up or time it as a rejected row.`,
+      );
     if (candidate.qualification === "rejected" && !candidate.rejectionReason)
       throw new Error(`${candidate.name} needs a concrete rejection reason`);
     if (candidate.qualification === "qualified" && candidate.rejectionReason)

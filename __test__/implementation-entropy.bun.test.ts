@@ -2,6 +2,37 @@
 import { expect, test } from "bun:test";
 import { resolve } from "node:path";
 import type { EntropyEvidence } from "../bench/implementation-entropy";
+import { measureGenerationCases } from "../bench/generation-measure";
+import type { GenerationCase } from "../bench/generation-case";
+
+test.each(["qualified", "rejected"] as const)(
+  "insecure entropy cannot execute under a %s label",
+  async (qualification) => {
+    // The trap detects validation, warm-up and timed execution without drawing insecure bytes.
+    const candidate: GenerationCase = {
+      name: "insecure-control",
+      comparable: "v4.text",
+      implementation: "control",
+      version: 4,
+      secure: false,
+      qualification,
+      ...(qualification === "rejected" ? { rejectionReason: "Insecure entropy" } : {}),
+      operation: () => {
+        throw new Error("Operation executed before entropy rejection");
+      },
+    };
+    const failure = await measureGenerationCases([candidate], {
+      durationMs: 1,
+      samples: 1,
+      warmupMs: 1,
+      yieldControl: async () => {},
+    }).then(
+      () => "Unexpected success",
+      (cause: unknown) => String(cause),
+    );
+    expect(failure).toContain("Insecure entropy is excluded");
+  },
+);
 
 test("the actual benchmark worker rejects source failure and recovers through real Web Crypto", async () => {
   const child = Bun.spawn(

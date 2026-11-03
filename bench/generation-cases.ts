@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { v4 as lukeedV4 } from "@lukeed/uuid";
 import { v4 as lukeedSecureV4 } from "@lukeed/uuid/secure";
 import { v4 as smithyV4 } from "@smithy/uuid";
 import { uuidv7 as kripodV7 } from "@kripod/uuidv7";
@@ -343,12 +342,6 @@ export const generationCases: readonly GenerationCase[] = [
   row("smithy.v4.text", 4, "v4.text.secure", "portable", smithyV4),
   row("lukeed.v4.text.secure", 4, "v4.text.secure", "pooled-portable", lukeedSecureV4),
   row("uuid-random.v4.text", 4, "v4.text.secure", "pooled-portable", uuidRandom),
-  row("lukeed.v4.text.insecure", 4, "v4.text.insecure", "math-random", lukeedV4, {
-    note: "Not a cryptographically secure UUIDv4 competitor",
-    qualification: "rejected",
-    rejectionReason: "Math.random does not provide cryptographic UUIDv4 entropy.",
-    secure: false,
-  }),
 
   row("package.v7.text.default", 7, "v7.text.secure", "module-default", () => generateUuidV7()),
   row("package.v7.pair.default", 7, "v7.pair.secure", "module-default", () =>
