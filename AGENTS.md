@@ -125,6 +125,6 @@ Keep adversarial hardening off default paths; ordinary calls must not pay for it
 - The release command owns the temporary stable-version context. API checks must distinguish that transition from an actual tagged commit and ordinary development; never disable the commit hook.
 - Install nightly in each job that generates Rust public API reports; another job's toolchain setup does not carry over.
 - Every CI job invoking the normal packed-artifact check must install Node, Bun and Deno; its default package-resolution probes execute all three. `--web` adds browser execution, not the first Deno requirement.
-- Build before Node Vitest in each CI checkout; entropy subprocesses import the compiled Node adapter, so a source-only runtime probe cannot prepare those tests.
+- Build before Vitest and native shared-suite checks in each CI checkout; entropy subprocesses and Deno resolve compiled runtime adapters, so source-only probes cannot prepare those tests.
 - Pack only after repository build and test processes exit; packlist traversal can race temporary cache files excluded from the tarball.
 - `publish-clean verify` runs the configured artifact validator before retaining the tarball and hides its output on success. Do not repeat the same archive check just to obtain logs; run it directly only for different coverage or diagnosis. Read the installed packer's validator contract when this behavior changes.
