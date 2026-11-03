@@ -41,6 +41,8 @@ Raw measurements, profiles and captured inputs go to `bench/reports/`. Git ignor
 
 ## More controls
 
+Resume an interrupted implementation comparison with `bun run bench:implementations --resume <raw-file>`, using the evidence path printed by the failed run. It reuses complete four-process windows after checking collectors, artifacts, versions, host and settings, then reacquires the interrupted window. The saved schedule controls remaining work. Older captures without recovery receipts require source-checked migration; completed captures need only `--report`.
+
 The [benchmark methods](methods.md) cover runtime selection, report recovery and profiling:
 
 - [Report controls](methods.md#reports-and-controls)
