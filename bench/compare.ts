@@ -39,6 +39,9 @@ interface ProfileRow {
 }
 
 const project = join(import.meta.dir, "..");
+// Past measurements are outputs, not build inputs; copying them makes source snapshots
+// and failure archives grow with benchmarking history instead of the measured code.
+const SOURCE_ARCHIVE_PATHS = [".", ":(exclude)bench/results", ":(exclude)bench/reports"];
 const smoke = process.argv.includes("--smoke");
 const regressionCheck = process.argv.includes("--check");
 const sourceOptions = process.argv
@@ -539,7 +542,15 @@ async function main(): Promise<void> {
     const baselineArchive = join(scratch, "baseline.tar");
     await command(
       "git",
-      ["archive", "--format=tar", "--output", baselineArchive, baselineRef],
+      [
+        "archive",
+        "--format=tar",
+        "--output",
+        baselineArchive,
+        baselineRef,
+        "--",
+        ...SOURCE_ARCHIVE_PATHS,
+      ],
       project,
     );
     await mkdir(baselineRoot);
@@ -549,7 +560,15 @@ async function main(): Promise<void> {
       const candidateArchive = join(scratch, "candidate.tar");
       await command(
         "git",
-        ["archive", "--format=tar", "--output", candidateArchive, candidateRef ?? "HEAD"],
+        [
+          "archive",
+          "--format=tar",
+          "--output",
+          candidateArchive,
+          candidateRef ?? "HEAD",
+          "--",
+          ...SOURCE_ARCHIVE_PATHS,
+        ],
         project,
       );
       await mkdir(candidateRoot);

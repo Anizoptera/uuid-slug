@@ -476,42 +476,64 @@ test("browser launch failure releases the profiling server", async () => {
   }
 });
 
-test("failed comparisons preserve diagnostics without leaving temporary checkouts", async () => {
-  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
-  let archive: string | undefined;
-  try {
-    // A valid baseline followed by an invalid candidate fails before measurement but leaves
-    // real source to preserve. Isolated TMPDIR keeps cleanup separate from other jobs;
-    // the invalid ref must fail before any measurement.
-    const child = Bun.spawn(
-      [process.execPath, "bench/compare.ts", "HEAD", "refs/invalid/cleanup"],
-      {
-        cwd: project,
-        env: {
-          ...process.env,
-          TMPDIR: scratch,
-          UUID_SLUG_COMPARE_RUNTIMES: "bun",
+test.each([
+  ["refs/invalid/cleanup", undefined, "refs/invalid/cleanup"],
+  ["HEAD", "--source-candidate=v7-draw:cleanup-missing", "cleanup-missing"],
+] as const)(
+  "failed comparisons preserve diagnostics without leaving temporary checkouts (%s)",
+  async (candidateRef, sourceOption, diagnostic) => {
+    const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+    let archive: string | undefined;
+    try {
+      // Fail after baseline capture or both captures, before measurement. Source must survive;
+      // old timing outputs must not make every new comparison copy and recompress its history.
+      // An isolated TMPDIR keeps cleanup separate from other jobs.
+      const child = Bun.spawn(
+        [
+          process.execPath,
+          "bench/compare.ts",
+          "HEAD",
+          candidateRef,
+          ...(sourceOption ? [sourceOption] : []),
+        ],
+        {
+          cwd: project,
+          env: {
+            ...process.env,
+            TMPDIR: scratch,
+            UUID_SLUG_COMPARE_RUNTIMES: "bun",
+          },
+          stdout: "ignore",
+          stderr: "pipe",
         },
-        stdout: "ignore",
-        stderr: "pipe",
-      },
-    );
-    const [stderr, exitCode] = await Promise.all([new Response(child.stderr).text(), child.exited]);
-    archive = /artifacts are in (.+\.tar\.gz)\./.exec(stderr)?.[1];
-    expect(exitCode).not.toBe(0);
-    expect(stderr).toContain("refs/invalid/cleanup");
-    expect(await readdir(scratch)).toEqual([]);
-    if (!archive) throw new Error("Missing failure archive diagnostic");
-    const [retained, original] = await Promise.all([
-      command("tar", ["-xOzf", archive, "./baseline/src/index.ts"], project),
-      command("git", ["show", "HEAD:src/index.ts"], project),
-    ]);
-    expect(retained).toBe(original);
-  } finally {
-    if (archive) await rm(dirname(archive), { recursive: true, force: true });
-    await rm(scratch, { recursive: true, force: true });
-  }
-});
+      );
+      const [stderr, exitCode] = await Promise.all([
+        new Response(child.stderr).text(),
+        child.exited,
+      ]);
+      archive = /artifacts are in (.+\.tar\.gz)\./.exec(stderr)?.[1];
+      expect(exitCode).not.toBe(0);
+      expect(stderr).toContain(diagnostic);
+      expect(await readdir(scratch)).toEqual([]);
+      if (!archive) throw new Error("Missing failure archive diagnostic");
+      const [retained, original, entries] = await Promise.all([
+        command("tar", ["-xOzf", archive, "./baseline/src/index.ts"], project),
+        command("git", ["show", "HEAD:src/index.ts"], project),
+        command("tar", ["-tzf", archive], project),
+      ]);
+      expect(retained).toBe(original);
+      const copiedOutput = entries.split("\n").find((entry) => entry.includes("/bench/results/"));
+      expect(copiedOutput).toBeUndefined();
+      if (sourceOption)
+        expect(await command("tar", ["-xOzf", archive, "./candidate/src/index.ts"], project)).toBe(
+          original,
+        );
+    } finally {
+      if (archive) await rm(dirname(archive), { recursive: true, force: true });
+      await rm(scratch, { recursive: true, force: true });
+    }
+  },
+);
 
 test("packed artifact failures retain their inputs and remove executable scratch", async () => {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
