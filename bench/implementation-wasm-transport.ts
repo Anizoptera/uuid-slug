@@ -51,7 +51,7 @@ export async function prepareWasmTransports(
   const edgeEntry = join(directory, "transport-edge-entry.js");
   await writeFile(
     edgeEntry,
-    `import {initSync,plain} from ${glue}; ${measure} globalThis.uuidSlugBenchmark=s=>{initSync({module:globalThis.uuidSlugBenchmarkWasm});return {rows:measureUuidStringToPlainSlug(s,plain)};};`,
+    `import {initSync,plain} from "./module.js"; import {measureUuidStringToPlainSlug} from ${JSON.stringify(modules.transport)}; globalThis.uuidSlugBenchmark=s=>{initSync({module:globalThis.uuidSlugBenchmarkWasm});return {rows:measureUuidStringToPlainSlug(s,plain)};};`,
   );
   const edge = await Bun.build({
     check: true,

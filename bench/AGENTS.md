@@ -36,6 +36,7 @@ Apply `../AGENTS.md` §Work scope before starting experiments; keep required reg
 
 ## Drivers and evidence
 
+- Use filesystem paths in generated modules passed to `Bun.build`; reserve `file:` URLs for runtime imports. Runtime URL support does not establish bundler resolution; compile generated wrappers before starting their matrix.
 - Implementation comparisons update one canonical Markdown report. Never generate or commit provisional, per-runtime or duplicate Markdown reports; show acquisition progress in the CLI. Keep raw evidence only for the current report or an unresolved comparison, and follow `methods.md` §Cross-runtime implementation comparisons for safe replacement.
 - On macOS, archive evidence with `COPYFILE_DISABLE=1` and compare every archive file with its intended input before deleting scratch. AppleDouble `._` entries are metadata, not extra observations; reject unexpected archive members rather than counting them as evidence.
 - Before measuring consumer compilation cost, select features separately for each target and inspect the resolved Cargo graph. A native default lane must not inherit optional browser features from a shared matrix; record any extra capabilities explicitly so the measurement describes the consumer's actual build. Pure conversions need no entropy backend: do not exclude reduced browser WASM or enable an entropy feature merely to obtain a binding.
