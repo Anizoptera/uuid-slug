@@ -2,6 +2,10 @@
 //!
 //! Run `bun scripts/check-rust-proofs.ts`. Kani checks its own compiler's translation,
 //! not native machine code, allocation failure, OS entropy or cryptographic strength.
+//! Parser proofs cover the four supported text lengths; buffer-write proofs admit slices up to
+//! two UUID slots and every usize offset. Generation transitions start after clock normalization.
+//! These kernel and bounded API proofs do not prove the complete masking codec's key selection,
+//! sentinel/migration policies, asynchronous derivation or entropy lifecycle.
 #![cfg(kani)]
 
 extern crate alloc;
