@@ -1,5 +1,7 @@
 # Remaining work
 
+- [x] Rewrite unreleased notes for the joint release: TypeScript changes since npm 0.5.0 and Rust's first publication. Retain consumer capabilities, limits and required actions; remove unpublished migration history and development/testing details. Compare the final wording with the package APIs and release baseline.
+
 ## Rust proof coverage
 
 Expand solver-backed verification of the actual Rust implementation without changing public APIs, issued identifiers or runtime work. Preserve the existing Kani bit-codec/Feistel and Verus buffer proofs; add symbolic coverage for consequential parsing, payload interpretation, generation, masking and caller-buffer behavior where the tools reach the real body. OS entropy, foreign runtimes, scheduling and cryptographic strength require separate evidence and must not inherit a solver verdict.

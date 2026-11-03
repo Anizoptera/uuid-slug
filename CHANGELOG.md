@@ -6,24 +6,17 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ### Added
 
-- TypeScript and Rust masking codecs encode and decode 16-byte masked UUIDv7 IDs for binary transport without slug encoding. They reuse the existing mixed block, UUID payload, keys and timestamp range; sentinels retain raw UUID bytes. Binary carries 12 check bits; existing masked text retains its 16-bit check. Use the explicit masked-byte readers because raw UUID bytes have the same length; shape-validated inputs need no cast. Branded mixed bytes must be decoded before raw UUID conversion or timestamp/payload inspection. Caller-buffer writes leave storage unchanged on failure.
-- Rust supports `no_std` with `alloc` when default features are disabled. Enable `std` for standard-library time and thread-local conveniences; `os-rng` remains independent, while `fast-rng` and `wasm-js` include `std`. Defaults retain their existing behavior.
-- Rust `UuidV7MaskingCodec::parse_uuid` accepts UUID text, both plain and masked slug alphabets, and registered sentinels. Ambiguous base64url reads masked first, matching TypeScript; callback failures remain errors.
-- Rust `Uuid` converts directly to and from `uuid::Uuid` and `[u8; 16]` without allocation or text conversion. `TryFrom<&[u8]>` accepts exactly 16 bytes and reports `InvalidBuffer` for other lengths.
-- Rust gains the TypeScript calls it lacked: `Uuid::parse_uuid` reads UUID text or a plain slug like `parseUuid`, `uuid_variant` returns the RFC 9562 variant, `{:X}` writes uppercase UUID text without allocating, and `generate_uuid_v7()` generates with default settings and no generator to create.
+- TypeScript masking codecs support 16-byte binary transport through `uuidToMaskedBytes`, `maskedBytesToUuidBytes` and `maskedBytesToUuidString`, without slug encoding. Binary uses the existing keys and timestamp range but checks 12 bits rather than text's 16; neither check authenticates an ID. Sentinels retain raw UUID bytes. Use the explicit masked-byte readers before UUID conversion or inspection: raw and masked bytes have the same length. Caller-buffer writes leave storage unchanged on failure.
+- First Rust crate release: UUIDv4/v7 generation, UUID parsing and inspection, and lossless base64url/base32hex plain slugs for any UUID. `Uuid` converts directly to and from `uuid::Uuid` and `[u8; 16]` without allocation or text conversion; formatting supports lowercase and uppercase UUID text.
+- Rust UUIDv7 masking matches TypeScript's text and binary formats, with explicit keys, key rotation, unmasked sentinels, configured timestamp ranges and legacy-slug migration. `UuidV7MaskingCodec::new(mask)` uses defaults; `from_options(options)` configures them. Mask derivation supports synchronous and cancelable asynchronous calls.
+- Rust `Uuid::parse_uuid` accepts UUID text or plain slugs; the masking codec also accepts masked slugs and registered sentinels. Sentinels take priority, and ambiguous 22-character text tries masking before plain decoding. Typed masked slugs require their codec; custom string wrappers pass an explicit text view.
+- Rust `generate_uuid_v7()` needs no generator setup and promises no ordering. Create a `UuidV7Generator` for shared sequence state, supplied times, sub-millisecond fields or clock-rollback policies. Payload inspection preserves all 74 UUIDv7 payload bits; `uuid_v7_bounds` provides inclusive timestamp search bounds.
+- Rust UUID generation and conversion support caller-owned byte buffers; failed writes leave storage unchanged. Disable default features for `no_std` with `alloc` and caller-supplied time and entropy. Enable `std` for standard-library time and `wasm-js` for browser generation; WASI uses its host clock and entropy.
+- Rust defaults use an OS-seeded ChaCha12 generator to reduce OS draws. Disable defaults and enable `os-rng` for direct OS draws; conversions need neither entropy dependency. Initial and required reseed failures return `rng_unavailable`; other recoverable failures also return typed errors.
 
 ### Changed
 
-- The security guide identifies Node's actual entropy paths: pooled `crypto.randomFillSync()` normally, and `crypto.randomUUID()` for UUIDv4 text with JIT disabled. Both use cryptographic randomness.
-- Rust consumers encoding or decoding one slug alphabet can discard the other alphabet's tables without LTO.
-- Rust API documentation states mask-derivation and payload-layout limits, cooperative scheduling requirements, and the raw entropy fill's partial-write behavior on failure.
-- Rust interop examples now show the direct `uuid` dependency needed in the application's `Cargo.toml`.
-- The Rust source archive excludes benchmark drivers while retaining runnable examples and correctness fixtures.
-- Rust module-level UUIDv7 generation promises no ordering or shared sequence; create a `UuidV7Generator` when those guarantees are required. WASI generation uses the host clock, while browser generation uses JavaScript's clock.
-- Rust keyless UUID and plain-slug parsers accept `KeylessUuidText` rather than implicitly coercing typed masked slugs to strings. Strings, plain slugs and standard string containers remain supported; custom wrappers pass an explicit text view, and masked slugs use their codec.
-- Rust configured codec construction moves from `UuidV7MaskingCodec::new(options)` → `UuidV7MaskingCodec::from_options(options)`. Use `UuidV7MaskingCodec::new(mask)` for defaults without a fallible configuration step; both paths require an explicit mask.
-- Rust's default `fast-rng` feature amortizes OS draws with an OS-seeded ChaCha12 generator. Disable defaults and enable `os-rng` for direct OS draws on every call; conversion-only builds still need neither dependency. Initial and required reseed failures return `rng_unavailable`.
-- `plainSlugToUuidBytes(slug, output)` now gives the same error message as the call without `output`. For a 22-character slug with set trailing bits it says that a masked slug of that length decodes only through its codec, which is the usual cause.
+- TypeScript `plainSlugToUuidBytes(slug, output)` reports the same errors as decoding without a caller buffer. For a 22-character slug with nonzero padding, the error explains that masked slugs require their codec.
 
 ## [0.5.0]
 
