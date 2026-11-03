@@ -72,6 +72,8 @@ Compress raw JSON Lines with gzip without dropping or rounding observations. Fin
 
 Resume only complete four-process windows with matching measurement collectors, artifacts, runtime versions, host and settings. Persist the remaining randomized schedule before timing so recovery cannot choose work from observed outcomes. Reacquire an interrupted window in full; never splice its two sides across a pause. Copy accepted windows into the new immutable attempt and replace the canonical report only after complete admission. Captures without collector and schedule receipts need a separate, source-checked migration before automatic recovery.
 
+Discard the new copied attempt if reading or admitting its recovery source fails; preserve the original source and canonical report. Streaming decompression can yield a complete record before checking its checksum, so recompressing that record does not establish valid source evidence. Retain a resumed attempt only after its entire source has passed validation.
+
 Keep [throughput, sampled latency and cold-start measurements](https://github.com/openjdk/jmh/blob/master/jmh-samples/src/main/java/org/openjdk/jmh/samples/JMHSample_02_BenchmarkModes.java) separate, as JMH does; each answers a different question.
 
 Measure throughput and individual-call latency separately. Timed batches amortize clock and loop overhead; their per-call averages cannot establish individual-call p99. Keep raw samples, warm-up settings, runtime versions and execution order. Repeat comparisons in fresh processes with alternating order; samples from one process can share JIT, GC and thermal effects.

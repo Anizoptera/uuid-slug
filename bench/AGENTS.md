@@ -36,6 +36,9 @@ Apply `../AGENTS.md` §Work scope before starting experiments; keep required reg
 
 ## Drivers and evidence
 
+- A decompressor can yield records before a checksum failure. If reading or admitting a recovery source fails, discard only the new copied attempt and preserve the original source and canonical report; never leave recompressed records available for another resume.
+- Run monitors in the runtime that provides their APIs; orchestration isolates do not guarantee Web globals such as `TextEncoder`.
+
 - Use filesystem paths in generated modules passed to `Bun.build`; reserve `file:` URLs for runtime imports. Runtime URL support does not establish bundler resolution; compile generated wrappers before starting their matrix.
 - Apply entropy qualification to generation jobs, not target-name substrings. Conversion-only native and WASM transport rows draw no entropy; keep generation lanes qualified and test both categories before acquisition.
 - Before compensating for a coarse clock with longer batches, probe actual increments of the available clock APIs and inspect their implementations. Names and nanosecond units do not prove finer resolution; retain the coarse-clock work when no finer measurement qualifies.
