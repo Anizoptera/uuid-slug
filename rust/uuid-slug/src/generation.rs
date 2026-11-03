@@ -75,27 +75,27 @@ pub fn uuid_v7_bounds(start_unix_ms: u64, end_unix_ms: Option<u64>) -> Result<Uu
     })
 }
 
-/// Policy for a system clock that falls below one generator's accepted high-water reading.
+/// How to handle a clock reading earlier than the latest reading this generator accepted.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum UuidV7ClockRollbackPolicy {
-    /// Keep the last UUID timestamp and advance its sequence until the clock catches up.
+    /// Keep the last UUID timestamp and advance its sequence; carry into later timestamps if needed.
     #[default]
     Preserve,
-    /// Preserve skew through `tolerance_ms`, then restart at the current clock reading.
+    /// Keep order for rollbacks up to `tolerance_ms`; larger rollbacks restart at the current clock reading.
     Reset {
-        /// Inclusive skew that keeps the last UUID timestamp.
+        /// Largest clock rollback, in milliseconds, that still preserves order.
         tolerance_ms: u64,
     },
-    /// Preserve skew through `tolerance_ms`, then return `InvalidTimestamp` without changing state.
+    /// Keep order for rollbacks up to `tolerance_ms`; larger rollbacks return `InvalidTimestamp` without changing state.
     Error {
-        /// Inclusive skew that keeps the last UUID timestamp.
+        /// Largest clock rollback, in milliseconds, that still preserves order.
         tolerance_ms: u64,
     },
 }
 
-/// Portable UUIDv7 state; callers own synchronization when sharing a generator.
-/// Successful calls strictly increase in UUID byte order under the default preserve policy.
-/// Reset-policy calls after their tolerance are outside that sequence.
+/// A UUIDv7 generator with its own clock and sequence state. Synchronize access when sharing it.
+/// With the default preserve policy, successful calls strictly increase in UUID byte order.
+/// The reset policy can move backward after its rollback tolerance is exceeded.
 #[derive(Debug, Default)]
 pub struct UuidV7Generator {
     last_ms: Option<u64>,
@@ -115,20 +115,20 @@ impl UuidV7Generator {
             sub_millisecond_fraction_bits: 0,
         }
     }
-    /// Set how this generator handles clock skew beyond an optional tolerance.
+    /// Choose how this generator handles a backward clock.
     #[must_use]
     pub const fn with_clock_rollback_policy(mut self, policy: UuidV7ClockRollbackPolicy) -> Self {
         self.rollback_policy = policy;
         self
     }
-    /// Assign up to 12 leading payload bits to RFC 9562 sub-millisecond time.
-    /// Monotonic continuation can advance that field ahead of a stalled or backward clock.
+    /// Use `0..=12` leading payload bits for RFC 9562 sub-millisecond time; zero disables this field.
+    /// To keep UUIDs increasing, the generator can advance this fraction or timestamp ahead of a stalled or backward clock.
     pub fn with_sub_millisecond_fraction_bits(mut self, bits: u8) -> Result<Self, Error> {
         UuidV7PayloadLayout::new(bits, 0)?;
         self.sub_millisecond_fraction_bits = bits;
         Ok(self)
     }
-    /// Payload layout emitted by this generator.
+    /// Return this generator's fraction and counter widths for [`Uuid::extract_uuid_v7_payload`].
     pub fn payload_layout(&self) -> UuidV7PayloadLayout {
         UuidV7PayloadLayout::new(
             self.sub_millisecond_fraction_bits,
@@ -136,8 +136,7 @@ impl UuidV7Generator {
         )
         .expect("generator validates its fraction width")
     }
-    /// Generate at a clock reading, starting the selected fraction bits from that reading and
-    /// applying rollback policy.
+    /// Generate at `unix_ms`, filling the configured fraction bits and applying this generator's rollback policy.
     /// A reseed requests ten random bytes; continuation at the same UUID timestamp requests four.
     /// Failed entropy draws leave the sequence unchanged so retries cannot corrupt state.
     /// The callback must fill every requested byte or return an error. Production IDs require
@@ -149,7 +148,7 @@ impl UuidV7Generator {
     ) -> Result<Uuid, Error> {
         self.generate_uuid_v7_from_instant(float_instant(unix_ms)?, fill)
     }
-    /// Generate at an exact standard-library time using caller-supplied entropy.
+    /// Generate at `at` with caller-supplied entropy, without converting through floating-point milliseconds.
     /// The callback must fill every requested byte or return an error. Production IDs require
     /// cryptographically secure entropy; a successful partial fill cannot be detected.
     #[cfg(feature = "std")]
@@ -252,7 +251,7 @@ impl UuidV7Generator {
         out[target].copy_from_slice(id.as_uuid_bytes());
         Ok(())
     }
-    /// Generate at the system clock with the operating system's secure entropy source.
+    /// Generate at the system clock with secure randomness.
     #[cfg(all(feature = "std", feature = "os-rng"))]
     pub fn generate_uuid_v7(&mut self) -> Result<Uuid, Error> {
         #[cfg(all(target_arch = "wasm32", target_os = "unknown", feature = "wasm-js"))]
@@ -279,12 +278,12 @@ impl UuidV7Generator {
         ))]
         self.generate_uuid_v7_from_instant(reading, fill_default_random_bytes)
     }
-    /// Generate at an exact standard-library time with secure platform entropy and this sequence's policy.
+    /// Generate at `at` with secure randomness, using this generator's fraction bits and rollback policy.
     #[cfg(all(feature = "std", feature = "os-rng"))]
     pub fn generate_uuid_v7_at(&mut self, at: std::time::SystemTime) -> Result<Uuid, Error> {
         self.generate_uuid_v7_at_with_random_fill(at, fill_default_random_bytes)
     }
-    /// Generate from fractional Unix milliseconds for numeric interop boundaries.
+    /// Generate at `unix_ms`, including its fraction, with secure platform entropy and this generator's rollback policy.
     #[cfg(feature = "os-rng")]
     pub fn generate_uuid_v7_at_unix_ms(&mut self, unix_ms: f64) -> Result<Uuid, Error> {
         self.generate_uuid_v7_with_random_fill(unix_ms, fill_default_random_bytes)

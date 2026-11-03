@@ -3,17 +3,17 @@
 use super::UuidV7MaskingCodec;
 use crate::{Error, ErrorCode, Uuid};
 
-/// A 16-byte mixed UUIDv7 block with its 12-bit inner check, not raw UUID bytes.
+/// A 16-byte masked UUIDv7 value with a 12-bit check. Decode it with its masking codec.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MaskedUuidV7Bytes([u8; 16]);
 
 impl MaskedUuidV7Bytes {
-    /// Borrow the mixed block for binary serialization without copying.
+    /// Borrow the masked bytes without copying.
     pub const fn as_bytes(&self) -> &[u8; 16] {
         &self.0
     }
 
-    /// Take the mixed block for binary serialization.
+    /// Return the stored masked bytes unchanged.
     pub const fn into_bytes(self) -> [u8; 16] {
         self.0
     }
@@ -25,17 +25,17 @@ impl AsRef<[u8]> for MaskedUuidV7Bytes {
     }
 }
 
-/// Binary codec output retains whether the value was masked or a registered raw sentinel.
+/// Either masked bytes or an unmasked registered sentinel.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MaskedOrSentinelUuidV7Bytes {
-    /// An owned mixed block.
+    /// Masked UUIDv7 bytes.
     Masked(MaskedUuidV7Bytes),
     /// A registered sentinel preserved without masking.
     Sentinel(Uuid),
 }
 
 impl MaskedOrSentinelUuidV7Bytes {
-    /// Borrow the exact 16-byte transport value; neither variant allocates.
+    /// Borrow the stored bytes without allocating; sentinel bytes are unmasked.
     pub const fn as_bytes(&self) -> &[u8; 16] {
         match self {
             Self::Masked(bytes) => bytes.as_bytes(),
@@ -43,7 +43,7 @@ impl MaskedOrSentinelUuidV7Bytes {
         }
     }
 
-    /// Take the transport value without changing its byte order.
+    /// Return the stored bytes unchanged.
     pub fn into_bytes(self) -> [u8; 16] {
         match self {
             Self::Masked(bytes) => bytes.into_bytes(),
@@ -59,9 +59,9 @@ impl AsRef<[u8]> for MaskedOrSentinelUuidV7Bytes {
 }
 
 impl UuidV7MaskingCodec {
-    /// Convert UUIDv7 to the existing 16-byte mixed block. Sentinels retain raw UUID bytes and
-    /// their full timestamp range. Version, range, mask and reserved-output failures are errors.
-    /// Binary checks twelve inner bits; text retains four more. Neither proves authorization.
+    /// Mask a UUIDv7 into 16 bytes. Sentinels keep their raw bytes and full timestamp range.
+    /// Reject non-v7 input, out-of-range timestamps and masked output that matches a reserved sentinel. A mask callback error fails the operation.
+    /// The binary check is 12 bits; text slugs keep 16. Neither authenticates an ID.
     pub fn uuid_to_masked_bytes(&self, uuid: Uuid) -> Result<MaskedOrSentinelUuidV7Bytes, Error> {
         uuid.extract_uuid_v7_unix_ms()?;
         if self.sentinels.iter().any(|entry| entry.uuid == uuid) {
@@ -88,9 +88,9 @@ impl UuidV7MaskingCodec {
         )))
     }
 
-    /// Read exactly 16 masked bytes. Registered sentinels win, then keys are tried current first
-    /// and in configured previous-key order. A 12-bit check can accept a wrong key by chance.
-    /// The input stays unchanged; wrong storage length or no passing key returns an error.
+    /// Read exactly 16 masked bytes. Registered sentinels take priority; otherwise try the current key, then previous keys in their configured order.
+    /// Return the first UUID whose 12-bit check passes. A wrong key can pass; a callback error stops the search.
+    /// The input stays unchanged. A wrong length or no passing key returns an error.
     pub fn masked_bytes_to_uuid(&self, masked_uuid_bytes: &[u8]) -> Result<Uuid, Error> {
         let bytes: [u8; 16] = masked_uuid_bytes.try_into().map_err(|_| {
             Error::new(ErrorCode::InvalidBuffer)
@@ -132,7 +132,7 @@ impl UuidV7MaskingCodec {
         Ok(())
     }
 
-    /// Decode and write the UUID at `output_offset`; no partial UUID is published on failure.
+    /// Decode into the 16 bytes at `output_offset`. Failure leaves the whole output unchanged.
     pub fn masked_bytes_to_uuid_bytes_into(
         &self,
         masked_uuid_bytes: &[u8],

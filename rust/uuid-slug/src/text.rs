@@ -9,12 +9,11 @@ use alloc::{
     sync::Arc,
 };
 
-/// Text accepted by keyless UUID and plain-slug parsers.
+/// Text accepted by UUID and plain-slug parsers that do not use a key.
 ///
 /// Implemented for `str`, `String`, [`PlainUuidSlug`], and references, [`Box`], [`Rc`],
-/// [`Arc`] or [`Cow`] around accepted inputs. This trait is sealed; custom wrappers pass an
-/// explicit string view. Raw strings do not establish provenance: a 22-character masked slug
-/// can also be valid plain text for a different UUID. Decode masked values with their codec.
+/// [`Arc`] or [`Cow`] around accepted inputs. Only this crate can add implementations; custom wrappers must pass an explicit `&str`.
+/// That removes the type distinction: a 22-character masked slug can also be valid plain text for a different UUID. Decode masked values with their codec.
 ///
 /// ```compile_fail
 /// use uuid_slug::{KeylessUuidText, MaskedUuidV7Slug};
@@ -87,6 +86,7 @@ impl<Input: KeylessUuidText + ToOwned + ?Sized> sealed::Text for Cow<'_, Input> 
 
 // Keep the parsers nongeneric: the input boundary borrows text, not a separate decoder per
 // container. UTF-16 length preserves TypeScript's error classification for non-ASCII input.
+// Plain-slug lengths (22 and 26) do not overlap any supported UUID text length.
 pub(crate) fn parse_uuid(text: &str) -> Result<Uuid, Error> {
     match utf16_len(text) {
         22 | 26 => from_plain_uuid_slug(text),

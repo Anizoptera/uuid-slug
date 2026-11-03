@@ -3,7 +3,7 @@ use crate::{Error, ErrorCode, alphabet::UuidSlugAlphabet, mask::UuidV7Mask, uuid
 use alloc::format;
 
 const MAX_MASKED_UUID_V7_HIGH_BYTE: u8 = 3;
-/// Largest timestamp offset that fits in a masked UUIDv7 payload.
+/// Largest timestamp offset, in milliseconds, that fits in a masked UUIDv7 payload.
 pub const MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS: u64 =
     ((MAX_MASKED_UUID_V7_HIGH_BYTE as u64 + 1) << 40) - 1;
 
@@ -78,7 +78,7 @@ pub(crate) fn normalize(slug: &str) -> Result<([u8; 16], u8), Error> {
     Ok((mixed, outer))
 }
 
-/// A passing check yields a candidate, never proof of issuance; wrong keys return `None`.
+/// Return `None` when the check fails. A wrong key can pass, so a match does not prove issuance.
 /// Owned block copies prevent one custom callback from changing another key's ciphertext.
 pub(crate) fn candidate(
     mixed: [u8; 16],

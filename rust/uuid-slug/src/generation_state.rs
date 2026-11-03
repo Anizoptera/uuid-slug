@@ -3,7 +3,7 @@
 use vstd::prelude::*;
 
 // Wire widths are fixed; changing these values changes stored UUID semantics.
-/// Largest timestamp the UUIDv7 wire format can carry.
+/// Largest Unix timestamp, in milliseconds, that the UUIDv7 wire format can carry.
 #[cfg_attr(verus_only, verus_verify)]
 pub const MAX_UUID_V7_UNIX_MS: u64 = 0xffff_ffff_ffff;
 // Created generators own this layout; simple Bun defaults retain Bun's native counter and clock.

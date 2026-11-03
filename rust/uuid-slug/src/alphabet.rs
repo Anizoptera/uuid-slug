@@ -2,13 +2,13 @@
 use crate::{Error, ErrorCode, KeylessUuidText, PlainUuidSlug};
 use alloc::{boxed::Box, format};
 
-/// Supported output representations; decoding plain slugs infers this from length.
+/// Choose an alphabet for encoding or explicit decoding. [`crate::Uuid::from_plain_uuid_slug`] detects it from length.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum UuidSlugAlphabet {
-    /// Shortest representation; case-sensitive.
+    /// The shortest slug: 22 case-sensitive characters.
     #[default]
     Base64Url,
-    /// Lowercase, ASCII-sortable representation safe on case-insensitive filesystems.
+    /// Lowercase slugs for case-insensitive filenames. Plain slugs preserve UUID byte order; masked slugs have no ordering guarantee.
     Base32Hex,
 }
 impl UuidSlugAlphabet {
@@ -18,7 +18,7 @@ impl UuidSlugAlphabet {
             Self::Base32Hex => Error::new(ErrorCode::InvalidBase32Hex),
         }
     }
-    /// Encode exactly one 16-byte UUID payload.
+    /// Encode all 128 UUID bits in this alphabet, for any UUID version or variant.
     // Keep the selected alphabet visible across the library boundary.
     #[inline]
     pub fn uuid_bytes_to_plain_slug(self, uuid_bytes: &[u8; 16]) -> PlainUuidSlug {
@@ -127,7 +127,8 @@ impl UuidSlugAlphabet {
             Self::Base32Hex => "base32hex",
         }
     }
-    /// Decode exactly one canonical 16-byte UUID payload.
+    /// Decode a plain slug in this alphabet; reject invalid lengths, characters and padding bits.
+    /// Base32hex accepts either case. Use the masking codec for masked slugs.
     ///
     /// ```compile_fail
     /// use uuid_slug::{MaskedUuidV7Slug, UuidSlugAlphabet};
@@ -146,8 +147,8 @@ impl UuidSlugAlphabet {
         Ok(decoded)
     }
 
-    /// Decode into caller storage and return only the decoded range, without allocating.
-    /// Invalid text and ranges leave storage unchanged.
+    /// Decode into the 16 bytes at `output_offset` and return that slice without allocating.
+    /// Invalid input or ranges leave the whole buffer unchanged.
     ///
     /// ```compile_fail
     /// use uuid_slug::{MaskedUuidV7Slug, UuidSlugAlphabet};

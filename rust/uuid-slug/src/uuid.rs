@@ -19,7 +19,7 @@ impl PlainUuidSlug {
         &self.0
     }
 
-    /// Take ownership of the canonical plain UUID slug text.
+    /// Return an owned `String` without copying the text.
     pub fn into_string(self) -> String {
         self.0.into_string()
     }
@@ -31,7 +31,7 @@ impl AsRef<str> for PlainUuidSlug {
     }
 }
 
-/// Validate either plain-slug alphabet and return its canonical spelling.
+/// Parse either plain-slug alphabet and check padding. Base32hex is lowercased; base64url stays unchanged.
 /// Masked text can also be valid plain text for a different UUID; use its masking codec instead.
 ///
 /// ```
@@ -92,7 +92,7 @@ impl MaskedUuidV7Slug {
         &self.0
     }
 
-    /// Take ownership of the canonical masked UUIDv7 slug text.
+    /// Return an owned `String` without copying the text.
     pub fn into_string(self) -> String {
         self.0.into_string()
     }
@@ -130,10 +130,9 @@ impl fmt::Display for MaskedUuidV7Slug {
     }
 }
 
-/// A masking-codec output: either a masked payload or a registered sentinel's plain slug.
-/// Equality, ordering and hashing include the variant; use `as_str()` for a textual view.
-/// Unlike the scalar slug types, this enum cannot implement `Borrow<str>` because strings
-/// do not carry that variant and therefore have different equality and hash semantics.
+/// Either a masked slug or a registered sentinel's plain slug.
+/// Equality, ordering and hashing distinguish the variants, even when their text is identical.
+/// Use `as_str()` for the text. `Borrow<str>` is unavailable because string equality and hashing do not include the variant.
 ///
 /// ```compile_fail
 /// use std::borrow::Borrow;
@@ -150,7 +149,7 @@ pub enum MaskedOrSentinelUuidV7Slug {
 }
 
 impl MaskedOrSentinelUuidV7Slug {
-    /// Borrow either canonical slug spelling without erasing its enum variant.
+    /// Borrow the slug text; the enum still retains whether it is masked or a sentinel.
     pub fn as_str(&self) -> &str {
         match self {
             Self::Masked(slug) => slug.as_str(),
@@ -158,7 +157,7 @@ impl MaskedOrSentinelUuidV7Slug {
         }
     }
 
-    /// Take ownership of either canonical slug spelling.
+    /// Return an owned `String` without copying the text.
     pub fn into_string(self) -> String {
         match self {
             Self::Masked(slug) => slug.into_string(),
@@ -247,9 +246,9 @@ impl TryFrom<&[u8]> for Uuid {
     }
 }
 
-/// The all-zero UUID value, without a version or issuance claim.
+/// The all-zero UUID; it is neither UUIDv4 nor UUIDv7.
 pub const NIL_UUID: Uuid = Uuid::from_uuid_bytes_array([0; 16]);
-/// The all-one UUID value, without a version or issuance claim.
+/// The all-one UUID; it is neither UUIDv4 nor UUIDv7.
 pub const MAX_UUID: Uuid = Uuid::from_uuid_bytes_array([u8::MAX; 16]);
 
 /// Known leading fields in a UUIDv7 generator's 74-bit payload.
@@ -322,21 +321,20 @@ impl Uuid {
     pub const fn as_uuid_bytes(&self) -> &[u8; 16] {
         &self.0
     }
-    /// Read sixteen bytes at an offset, rejecting overflow and short buffers.
+    /// Read 16 raw UUID bytes at `offset`; reject overflow or a short buffer. Decode masked bytes with their codec first.
     pub fn from_uuid_bytes(bytes: &[u8], offset: usize) -> Result<Self, Error> {
         let range = range(bytes.len(), offset)?;
         let mut out = [0; 16];
         out.copy_from_slice(&bytes[range]);
         Ok(Self(out))
     }
-    /// Parse an accepted UUID spelling: canonical, compact, URN, or brace-wrapped canonical text.
+    /// Parse hyphenated or compact UUID text, a UUID URN, or brace-wrapped hyphenated text. Mixed case is accepted.
     pub fn from_uuid_string(uuid_string: &str) -> Result<Self, Error> {
         uuid_string.parse()
     }
-    /// Parse UUID text or a plain slug without a key. The plain-slug lengths (22 and 26) are disjoint
-    /// from every accepted UUID text length, so the length alone selects the decoder. Length counts
-    /// UTF-16 units, as TypeScript does, so non-ASCII input gets the same error code in both.
-    /// Masked slugs need their codec: use `UuidV7MaskingCodec::masked_slug_to_uuid`.
+    /// Parse UUID text or a plain base64url/base32hex slug without a key.
+    /// UUID text may be hyphenated, compact, a UUID URN, or brace-wrapped hyphenated text. Mixed case is accepted.
+    /// Decode masked slugs with [`crate::UuidV7MaskingCodec::masked_slug_to_uuid`] instead.
     ///
     /// ```compile_fail
     /// use uuid_slug::{MaskedUuidV7Slug, Uuid};
@@ -346,7 +344,7 @@ impl Uuid {
     pub fn parse_uuid<Input: KeylessUuidText + ?Sized>(uuid: &Input) -> Result<Self, Error> {
         text::parse_uuid(uuid.as_uuid_text())
     }
-    /// Infer the plain alphabet from the disjoint 22- and 26-character lengths.
+    /// Read a 22-character base64url or 26-character base32hex plain slug; its length selects the alphabet.
     ///
     /// ```compile_fail
     /// use uuid_slug::{MaskedUuidV7Slug, Uuid};
@@ -370,7 +368,7 @@ impl Uuid {
         out[target].copy_from_slice(&self.0);
         Ok(())
     }
-    /// Version nibble, without assuming the RFC variant.
+    /// Return the version field (`0..=15`) without checking the variant.
     pub const fn uuid_version(&self) -> u8 {
         self.0[6] >> 4
     }
@@ -387,15 +385,15 @@ impl Uuid {
             _ => UuidVariant::Future,
         }
     }
-    /// Require version 7 and the RFC variant without interpreting its 74 payload bits.
+    /// Whether the UUID has version 7 and the RFC 9562 variant; its payload bits are not checked.
     pub const fn is_uuid_v7(&self) -> bool {
         self.uuid_version() == 7 && self.is_rfc_uuid_variant()
     }
-    /// Require both version 4 and the RFC variant.
+    /// Whether the UUID has version 4 and the RFC 9562 variant.
     pub const fn is_uuid_v4(&self) -> bool {
         self.uuid_version() == 4 && self.is_rfc_uuid_variant()
     }
-    /// Read the 48-bit millisecond timestamp, refusing random bytes from other versions.
+    /// Return the 48-bit Unix timestamp in milliseconds. Non-v7 UUIDs or a non-RFC variant return `InvalidUuidVersion`.
     pub fn extract_uuid_v7_unix_ms(&self) -> Result<u64, Error> {
         if !self.is_uuid_v7() {
             return Err(Error::new(ErrorCode::InvalidUuidVersion));
@@ -405,7 +403,8 @@ impl Uuid {
             .fold(0u64, |value, &byte| (value << 8) | u64::from(byte)))
     }
 
-    /// Interpret preserved payload bits only under the caller's known generator layout.
+    /// Read fraction, counter and remaining payload bits using the supplied layout.
+    /// Use the generator's known field widths; the UUID format does not identify them.
     pub fn extract_uuid_v7_payload(
         &self,
         layout: UuidV7PayloadLayout,

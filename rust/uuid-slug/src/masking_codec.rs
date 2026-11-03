@@ -12,11 +12,11 @@ use alloc::{borrow::Cow, format, string::String, vec, vec::Vec};
 /// A named UUID emitted as a plain slug instead of through the mask.
 #[derive(Clone, Debug)]
 pub struct UuidV7Sentinel {
-    /// Caller-facing name, independent of identity.
+    /// Application name for this reserved UUID.
     pub name: String,
     /// Reserved UUIDv7.
     pub uuid: Uuid,
-    /// Canonical spelling selected by the codec.
+    /// Plain slug in the codec's `masked_slug_alphabet`.
     pub plain_uuid_slug: PlainUuidSlug,
 }
 
@@ -423,23 +423,23 @@ mod tests {
     }
 }
 
-/// UUIDv7 masking-codec options. Existing output stays base64url unless explicitly changed.
+/// UUIDv7 masking options. Masked slugs use base64url by default.
 #[derive(Debug)]
 pub struct UuidV7MaskingCodecOptions {
     /// Current write key; decoding tries this before previous keys.
     pub mask: UuidV7Mask,
     /// First Unix millisecond accepted by the current mask. The default is zero.
     pub timestamp_range_start_unix_ms: u64,
-    /// Older read keys, in caller-specified order. No keys are added implicitly.
+    /// Previous keys to try after the current key, in this order. No other keys are tried.
     pub previous_masks: Vec<UuidV7PreviousMask>,
-    /// UuidSlugAlphabet used by masked output and sentinel presentation.
+    /// Alphabet for masked slugs and sentinel plain slugs.
     pub masked_slug_alphabet: UuidSlugAlphabet,
-    /// Reserved identities; an empty list disables sentinels.
+    /// Reserved UUIDv7 values. Names must be nonempty and unique; UUIDs must also be unique. An empty list disables sentinels.
     pub sentinels: Vec<(String, Uuid)>,
 }
 
 impl UuidV7MaskingCodecOptions {
-    /// Start codec configuration from an explicitly selected current mask.
+    /// Create default options with this current mask.
     pub fn new(mask: UuidV7Mask) -> Self {
         Self {
             mask,
@@ -451,10 +451,10 @@ impl UuidV7MaskingCodecOptions {
     }
 }
 
-/// A retained decode-only mask and the timestamp-range start used by its stored slugs.
+/// A previous read key and the timestamp-range start used to write its stored IDs.
 #[derive(Debug)]
 pub struct UuidV7PreviousMask {
-    /// Retained mask.
+    /// Mask used to read existing IDs.
     pub mask: UuidV7Mask,
     /// First Unix millisecond accepted by this mask.
     pub timestamp_range_start_unix_ms: u64,
@@ -476,7 +476,7 @@ struct MaskRange {
     timestamp_range_start_unix_ms: u64,
 }
 
-/// Immutable keys and precomputed sentinels. Generation state is independently owned.
+/// Immutable configuration for UUIDv7 masking and decoding. Generators own the mutable sequence state.
 #[derive(Debug)]
 pub struct UuidV7MaskingCodec {
     masks: Vec<MaskRange>,
@@ -588,7 +588,7 @@ impl UuidV7MaskingCodec {
         })
     }
 
-    /// Precomputed reserved outputs; callers cannot mutate codec identity tables.
+    /// Return registered sentinels and their precomputed plain slugs as a read-only slice.
     pub fn sentinels(&self) -> &[UuidV7Sentinel] {
         &self.sentinels
     }
@@ -604,7 +604,8 @@ impl UuidV7MaskingCodec {
             .map(|(_, uuid)| *uuid)
     }
 
-    /// Encode a UUIDv7 inside this codec's inclusive timestamp range. Registered sentinels bypass masking.
+    /// Mask a UUIDv7 with the current key and encode it as a slug.
+    /// Reject non-v7 input and timestamps outside the codec's inclusive range. Registered sentinels stay plain and retain the full UUIDv7 timestamp range.
     pub fn uuid_to_masked_slug(&self, uuid: Uuid) -> Result<MaskedOrSentinelUuidV7Slug, Error> {
         uuid.extract_uuid_v7_unix_ms()?;
         if let Some(sentinel) = self.sentinels.iter().find(|entry| entry.uuid == uuid) {
@@ -636,10 +637,9 @@ impl UuidV7MaskingCodec {
             .map(MaskedOrSentinelUuidV7Slug::Masked)
     }
 
-    /// Parse UUID text, either plain-slug alphabet, or masked slugs under this codec's keys.
-    /// Sentinels take priority; ambiguous base64url reads masked first, then plain. Callback
-    /// failures stop decoding. For known sources use [`Uuid::from_plain_uuid_slug`] or
-    /// [`Self::masked_slug_to_uuid`]. The returned UUID does not retain this codec or its keys.
+    /// Read UUID text, either plain-slug alphabet, or a masked slug using this codec's keys.
+    /// Registered sentinels take priority. A 22-character slug is read as masked if any key passes its check; otherwise it is read as plain. A callback error stops decoding.
+    /// For known formats, use [`Uuid::from_plain_uuid_slug`] or [`Self::masked_slug_to_uuid`]. The returned UUID owns its bytes and does not retain the codec or keys.
     pub fn parse_uuid(&self, uuid: &str) -> Result<Uuid, Error> {
         match crate::uuid::utf16_len(uuid) {
             22 => {
@@ -664,7 +664,8 @@ impl UuidV7MaskingCodec {
         }
     }
 
-    /// Return the first current masked UUIDv7 candidate, not proof that this codec issued the ID.
+    /// Read a masked slug or registered sentinel. Sentinels take priority; otherwise try the current key, then previous keys in their configured order. Return the first UUID whose check passes.
+    /// A wrong key can pass. Check the decoded record and caller access before using it.
     pub fn masked_slug_to_uuid(&self, masked_uuid_slug: &str) -> Result<Uuid, Error> {
         if let Some(uuid) = self.sentinel(masked_uuid_slug) {
             return Ok(uuid);
@@ -722,8 +723,8 @@ impl UuidV7MaskingCodec {
         }
     }
 
-    /// Validate under this codec's key and return canonical slug text.
-    /// Canonical input stays borrowed; mixed-case base32hex becomes owned lowercase text.
+    /// Decode a masked slug or registered sentinel, check its timestamp window, and return canonical text.
+    /// Canonical input is borrowed; mixed-case base32hex is copied to lowercase.
     pub fn validate_masked_uuid_v7_slug_unix_ms<'a>(
         &self,
         slug: &'a str,
@@ -742,12 +743,12 @@ impl UuidV7MaskingCodec {
     }
 }
 
-/// A symmetric, inclusive timestamp window in milliseconds; fractions remain meaningful.
+/// Accept timestamps within the allowed distance before or after a reference time, including both ends. Fractional milliseconds are accepted.
 #[derive(Clone, Copy, Debug)]
 pub struct UuidV7TimestampWindow {
-    /// Current Unix time, read once by the caller.
+    /// Reference Unix time in milliseconds. Read the clock once before constructing the window.
     pub reference_unix_ms: f64,
-    /// Maximum allowed past or future distance, inclusive.
+    /// Allowed distance from the reference time, in milliseconds, including the limit.
     pub max_timestamp_delta_ms: f64,
 }
 
@@ -782,27 +783,27 @@ impl UuidV7TimestampWindow {
     }
 }
 
-/// Historical formats enabled explicitly; current masks are always available.
+/// Enable additional legacy formats. The current masked format is always available.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct UuidSlugMigrationOptions {
-    /// Read the original fixed permutation/XOR format, never the unsupported 0.2.0 format.
+    /// Read slugs made with the original public fixed mask. Version 0.2.0 is not supported.
     pub accept_original_masked_slug: bool,
-    /// Read raw UUID slugs, including historical trailing-bit aliases.
+    /// Read plain UUID slugs, including old base64url spellings with nonzero trailing bits.
     pub accept_plain_uuid_slug: bool,
 }
 
-/// A known stored format avoids ambiguity between unrelated decoders.
+/// Select a known stored format so the reader does not try other interpretations.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum UuidSlugMigrationFormat {
-    /// Current keyed mask.
+    /// Current masked-slug format, using the current or a previous key.
     CurrentMaskedSlug,
-    /// Original fixed permutation/XOR format.
+    /// Original public fixed-mask format.
     OriginalMaskedSlug,
-    /// Unmasked UUID.
+    /// Plain UUID slug.
     PlainUuidSlug,
 }
 
-/// A reader borrowing its codec, so keys and sentinel definitions cannot drift.
+/// A migration reader that borrows its codec and uses that codec's keys and sentinels. It cannot outlive the codec.
 #[derive(Debug)]
 pub struct UuidSlugMigrationDecoder<'a> {
     codec: &'a UuidV7MaskingCodec,
@@ -810,7 +811,8 @@ pub struct UuidSlugMigrationDecoder<'a> {
 }
 
 impl UuidSlugMigrationDecoder<'_> {
-    /// Decode with sentinel/current/original/plain priority, stopping at the first candidate.
+    /// Return the first matching UUID. With `None`, try sentinels, current-format keys, then enabled original-mask and plain decoding.
+    /// `Some(format)` selects a known format, which must be enabled in this reader.
     pub fn uuid_slug_to_uuid(
         &self,
         uuid_slug: &str,
@@ -827,7 +829,9 @@ impl UuidSlugMigrationDecoder<'_> {
         })
     }
 
-    /// Collect distinct candidates atomically: a later callback error fails the whole call.
+    /// Return matching UUIDs without duplicates. A registered sentinel returns only its UUID.
+    /// Use `None` for all enabled formats, or `Some(format)` for a known enabled format. An empty vector means the slug is well-formed but no selected format or key matched.
+    /// A callback error fails the whole call, even after earlier matches.
     pub fn uuid_slug_to_uuid_candidates(
         &self,
         uuid_slug: &str,

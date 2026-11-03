@@ -22,7 +22,7 @@ pub enum ErrorCode {
     InvalidSentinel,
     /// A timestamp does not satisfy the requested operation's range or precision.
     InvalidTimestamp,
-    /// UUID text is not hexadecimal in an accepted hyphenated or compact spelling.
+    /// UUID text is not valid hexadecimal in a hyphenated, compact, URN, or brace-wrapped spelling.
     InvalidUuid,
     /// A slug has an invalid length or cannot be decoded under the configured masks.
     InvalidUuidSlug,
@@ -35,7 +35,7 @@ pub enum ErrorCode {
 }
 
 impl ErrorCode {
-    /// Return the cross-language spelling used by TypeScript and development bridges.
+    /// Return the shared TypeScript error-code string. Use the enum for Rust matches.
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Aborted => "aborted",
@@ -79,7 +79,7 @@ impl ErrorCode {
     }
 }
 
-/// A rejected input or unavailable capability with optional diagnostic provenance.
+/// An error code and message, with an optional underlying error.
 #[derive(Debug)]
 pub struct Error {
     code: ErrorCode,
@@ -88,7 +88,7 @@ pub struct Error {
 }
 
 impl Error {
-    /// Construct a failure from its stable classification.
+    /// Create an error with this code's default message.
     pub const fn new(code: ErrorCode) -> Self {
         Self {
             code,
@@ -103,7 +103,7 @@ impl Error {
         self
     }
 
-    /// Return the stable typed classification without inspecting its diagnostic source.
+    /// Return the stable error code; messages can change.
     pub const fn code(&self) -> ErrorCode {
         self.code
     }

@@ -26,7 +26,7 @@ enum Implementation {
     Custom(Arc<Mixer>),
 }
 
-/// A keyed reversible block transform; it provides obfuscation, not authenticated encryption.
+/// A reversible 16-byte transform for UUIDv7 masking. This is not authenticated encryption.
 #[derive(Clone)]
 pub struct UuidV7Mask {
     label: String,
@@ -43,14 +43,14 @@ impl fmt::Debug for UuidV7Mask {
 }
 
 impl UuidV7Mask {
-    /// UuidV7Mask labels are diagnostic metadata, not wire-format markers.
+    /// A label for logs and errors. It is not encoded in an ID.
     pub fn diagnostic_label(&self) -> &str {
         &self.label
     }
 
-    /// Build a fallible custom permutation and reject failures on representative inverse probes.
-    /// Input and output are owned arrays: callbacks cannot retain aliases to another key's input.
-    /// The caller must supply an inverse for every block; finite probes cannot prove that property.
+    /// Build a mask from two fallible functions that undo each other for every 16-byte block.
+    /// Each call receives and returns its own array, so it cannot change another key's input.
+    /// Construction checks a few blocks; those checks cannot prove the functions are always inverses.
     pub fn from_permutation_functions(
         diagnostic_label: impl Into<String>,
         mask_uuid_bytes: impl Fn([u8; 16]) -> Result<[u8; 16], Error> + Send + Sync + 'static,
@@ -102,7 +102,7 @@ impl UuidV7Mask {
     }
 }
 
-/// Return the published mask for examples and wire fixtures; it conceals nothing from users.
+/// Return the public test mask for examples and wire fixtures. Anyone can decode IDs made with it.
 pub fn uuid_v7_test_mask() -> UuidV7Mask {
     #[cfg(feature = "std")]
     static KEYS: LazyLock<[u32; 8]> = LazyLock::new(|| derive(PUBLIC_SEED, 1));
@@ -133,7 +133,7 @@ fn validate(seed: &[u8], iterations: u32) -> Result<(), Error> {
 
 /// Derive a mask from exact seed bytes; pass `text.as_bytes()` for TypeScript UTF-8 string parity.
 /// Require at least 16 seed bytes and `key_derivation_iterations` in `1..=16_777_216`; otherwise return `InvalidMask`.
-/// Keep the same iteration count when reading issued IDs: it is key material, not a tuning hint.
+/// Keep the seed and iteration count to read issued IDs; changing either produces a different key.
 pub fn derive_uuid_v7_mask(
     mask_seed: &[u8],
     key_derivation_iterations: u32,
@@ -153,15 +153,15 @@ fn from_keys(label: String, keys: [u32; 8]) -> UuidV7Mask {
     }
 }
 
-/// Shared cancellation for cooperative derivation; dropping the future also stops all work.
+/// A shared stop signal for async mask derivation. Dropping the future also stops the work.
 #[derive(Clone, Default, Debug)]
 pub struct UuidV7MaskDerivationCancellation(Arc<AtomicBool>);
 impl UuidV7MaskDerivationCancellation {
-    /// Stop computation at its next bounded checkpoint.
+    /// Request cancellation; the next poll returns `Aborted`.
     pub fn cancel(&self) {
         self.0.store(true, Ordering::Relaxed);
     }
-    /// Observe whether cancellation has been requested.
+    /// Return whether cancellation was requested.
     pub fn is_cancelled(&self) -> bool {
         self.0.load(Ordering::Relaxed)
     }
@@ -183,12 +183,11 @@ struct MaskDerivation {
     finished: bool,
 }
 
-/// Capture options and seed bytes now, before the returned future is first polled.
-/// Allocation and this input snapshot are outside the bounded computation slice.
-/// Seed and iteration limits match [`derive_uuid_v7_mask`]; validation errors use `InvalidMask` when polled.
-/// Cancellation takes priority and returns `Aborted`. Dropping the future stops work; no background task is started.
-/// Pass `None` when dropping the future is sufficient; no cancellation token is allocated.
-/// Polling bounds hashing work, but the executor must schedule other tasks between polls.
+/// Return a future that derives the mask in small steps without borrowing the inputs.
+/// Input copies and allocations happen before polling. Seed and iteration limits match [`derive_uuid_v7_mask`]; invalid input returns `InvalidMask` when polled.
+/// Pass `None` to avoid a cancellation token, or `Some(token)` to allow external cancellation.
+/// Cancellation returns `Aborted` before checking other failures. Dropping the future stops work; no background task is started.
+/// Each poll limits hashing work. The executor must let other host tasks run between polls.
 pub fn derive_uuid_v7_mask_async(
     mask_seed: &[u8],
     key_derivation_iterations: u32,
