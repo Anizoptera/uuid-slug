@@ -8,7 +8,7 @@ Captured 2026-11-03T00:09:08.855Z; revision `3dca806ec89b65deb50eb7a44ce4c94fe7a
 
 Requested reference: `ts/node`. Each job names its actual reference: the requested lane when available, otherwise Node, native release Rust, then another connected measured lane. Each comparison runs reference/candidate/candidate/reference or the reverse. Lane order within each block and each window's orientation were independently randomized before timing. Ratios combine the two neighboring pairs geometrically. Native Rust connects to Node only through a matching artifact, version record and ordered workload. 1 fresh-process blocks, 1 batches per process. A missing interval is unresolved. Retained JSON Lines keep every batch and acquisition order.
 
-Rust rows time complete compiled application calls with result consumption in the native or WASM loop; they exclude a JS crossing per identifier. JS rows include their result witness and errors-as-values checks. Rust owns fixed-array values where JavaScript owns heap arrays. These are consumer-path comparisons, not isolated language or compiler effects. No overall winner is calculated.
+Rust application rows time complete compiled calls with result consumption in the native or WASM loop; they exclude a JS crossing per identifier. JS rows include their result witness and errors-as-values checks. Rust owns fixed-array values where JavaScript owns heap arrays. These are consumer-path comparisons, not isolated language or compiler effects. No overall winner is calculated.
 
 JavaScript graphs are warmed and minified. Rust uses release optimization level 3, ThinLTO and one code-generation unit, with native CPU tuning for this machine; WASM then uses the maintained Binaryen O2 pipeline. Debug and disabled-JIT runs are excluded. Browser workers use cross-origin isolation. “Unavailable” means no measured result for that job in the lane; it does not establish missing API support. “Uncompared” means a measured result lacks a connection to the reference under matching conditions. Neither means zero cost. Installed Node patches are represented by the newest installed patch per major plus the checkout's selected Node.
 
@@ -18,84 +18,84 @@ Browser OS entropy without std uses a harness-selected getrandom JS backend; the
 
 ## Common caller jobs
 
-| Lane | generation/v7/text | plain/base64 | plain/base32 | mask/binary/owned | unmask/binary/owned |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Reference | none | ts/node | ts/node | none | none |
-| ts/node | unavailable | reference | reference | unavailable | unavailable |
-| ts/node-22 | unavailable | 1.1× [?] | 1.1× [?] | unavailable | unavailable |
-| ts/node-24 | unavailable | 1.1× [?] | 1× [?] | unavailable | unavailable |
-| ts/bun | unavailable | 2.2× [?] | 0.89× [?] | unavailable | unavailable |
-| ts/deno | unavailable | 1× [?] | 0.9× [?] | unavailable | unavailable |
-| ts/chromium | unavailable | 0.84× [?] | 0.82× [?] | unavailable | unavailable |
-| ts/firefox | unavailable | 1.6× [?] | 1.4× [?] | unavailable | unavailable |
-| ts/webkit | unavailable | 1.5× [?] | 1.4× [?] | unavailable | unavailable |
-| ts/workerd-web | unavailable | 1× [?] | 0.94× [?] | unavailable | unavailable |
-| ts/workerd-node-compatible | unavailable | 0.91× [?] | 0.96× [?] | unavailable | unavailable |
-| rust/native/release/fast-rng | unavailable | 0.58× [?] | 0.45× [?] | unavailable | unavailable |
-| rust/wasm32-wasip1/release/fast-rng | unavailable | 2.7× [?] | 0.41× [?] | unavailable | unavailable |
-| rust/wasm32-wasip2/release/fast-rng | unavailable | 2.8× [?] | 0.47× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/fast-rng/workerd-web | unavailable | 2.8× [?] | 0.72× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/fast-rng/workerd-node-compatible | unavailable | 2.9× [?] | 0.72× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/fast-rng/node | unavailable | 2.8× [?] | 0.58× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/fast-rng/node-22 | unavailable | 2.6× [?] | 0.73× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/fast-rng/node-24 | unavailable | 2.8× [?] | 0.75× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/fast-rng/bun | unavailable | 1.9× [?] | 0.62× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/fast-rng/deno | unavailable | 2.8× [?] | 0.71× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/fast-rng/chromium | unavailable | 2.7× [?] | 0.6× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/fast-rng/firefox | unavailable | 2.4× [?] | 0.99× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/fast-rng/webkit | unavailable | 2.2× [?] | 0.6× [?] | unavailable | unavailable |
-| rust/native/release/os-rng | unavailable | 0.63× [?] | 0.41× [?] | unavailable | unavailable |
-| rust/wasm32-wasip1/release/os-rng | unavailable | 2.8× [?] | 0.47× [?] | unavailable | unavailable |
-| rust/wasm32-wasip2/release/os-rng | unavailable | 2.7× [?] | 0.46× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng/workerd-web | unavailable | 2.7× [?] | 0.72× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng/workerd-node-compatible | unavailable | 2.9× [?] | 0.72× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng/node | unavailable | 2.9× [?] | 0.62× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng/node-22 | unavailable | 2.8× [?] | 0.73× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng/node-24 | unavailable | 2.8× [?] | 0.73× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng/bun | unavailable | 1.9× [?] | 0.58× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng/deno | unavailable | 2.6× [?] | 0.69× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng/chromium | unavailable | 2.7× [?] | 0.59× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng/firefox | unavailable | 2.4× [?] | 1× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng/webkit | unavailable | 2.1× [?] | 0.62× [?] | unavailable | unavailable |
-| rust/native/release/os-rng-no-std | unavailable | 0.57× [?] | 0.46× [?] | unavailable | unavailable |
-| rust/wasm32-wasip1/release/os-rng-no-std | unavailable | 2.6× [?] | 0.46× [?] | unavailable | unavailable |
-| rust/wasm32-wasip2/release/os-rng-no-std | unavailable | 2.7× [?] | 0.46× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng-no-std/workerd-web | unavailable | 2.9× [?] | 0.77× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng-no-std/workerd-node-compatible | unavailable | 2.9× [?] | 0.69× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng-no-std/node | unavailable | 2.8× [?] | 0.58× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng-no-std/node-22 | unavailable | 2.6× [?] | 0.79× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng-no-std/node-24 | unavailable | 2.9× [?] | 0.73× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng-no-std/bun | unavailable | 1.8× [?] | 0.58× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng-no-std/deno | unavailable | 2.7× [?] | 0.7× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng-no-std/chromium | unavailable | 2.7× [?] | 0.6× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng-no-std/firefox | unavailable | 2× [?] | 0.87× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/os-rng-no-std/webkit | unavailable | 2.1× [?] | 0.6× [?] | unavailable | unavailable |
-| rust/native/release/std | unavailable | 0.62× [?] | 0.43× [?] | unavailable | unavailable |
-| rust/wasm32-wasip1/release/std | unavailable | 2.6× [?] | 0.43× [?] | unavailable | unavailable |
-| rust/wasm32-wasip2/release/std | unavailable | 2.8× [?] | 0.47× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/std/workerd-web | unavailable | 2.8× [?] | 0.75× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/std/workerd-node-compatible | unavailable | 2.8× [?] | 0.71× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/std/node | unavailable | 2.8× [?] | 0.61× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/std/node-22 | unavailable | 2.5× [?] | 0.74× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/std/node-24 | unavailable | 2.8× [?] | 0.7× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/std/bun | unavailable | 2× [?] | 0.61× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/std/deno | unavailable | 2.9× [?] | 0.7× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/std/chromium | unavailable | 2.6× [?] | 0.61× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/std/firefox | unavailable | 2.3× [?] | 1× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/std/webkit | unavailable | 2.2× [?] | 0.55× [?] | unavailable | unavailable |
-| rust/native/release/reduced | unavailable | 0.64× [?] | 0.44× [?] | unavailable | unavailable |
-| rust/wasm32-wasip1/release/reduced | unavailable | 2.8× [?] | 0.45× [?] | unavailable | unavailable |
-| rust/wasm32-wasip2/release/reduced | unavailable | 2.8× [?] | 0.44× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/reduced/workerd-web | unavailable | 2.8× [?] | 0.74× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/reduced/workerd-node-compatible | unavailable | 2.8× [?] | 0.69× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/reduced/node | unavailable | 2.9× [?] | 0.61× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/reduced/node-22 | unavailable | 2.6× [?] | 0.75× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/reduced/node-24 | unavailable | 2.9× [?] | 0.68× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/reduced/bun | unavailable | 2.1× [?] | 0.48× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/reduced/deno | unavailable | 2.7× [?] | 0.7× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/reduced/chromium | unavailable | 2.6× [?] | 0.6× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/reduced/firefox | unavailable | 2.3× [?] | 0.98× [?] | unavailable | unavailable |
-| rust/wasm32-unknown-unknown/release/reduced/webkit | unavailable | 2.2× [?] | 0.63× [?] | unavailable | unavailable |
+| Lane | plain/base64 | plain/base32 |
+| --- | ---: | ---: |
+| Reference | ts/node | ts/node |
+| ts/node | reference | reference |
+| ts/node-22 | 1.1× [?] | 1.1× [?] |
+| ts/node-24 | 1.1× [?] | 1× [?] |
+| ts/bun | 2.2× [?] | 0.89× [?] |
+| ts/deno | 1× [?] | 0.9× [?] |
+| ts/chromium | 0.84× [?] | 0.82× [?] |
+| ts/firefox | 1.6× [?] | 1.4× [?] |
+| ts/webkit | 1.5× [?] | 1.4× [?] |
+| ts/workerd-web | 1× [?] | 0.94× [?] |
+| ts/workerd-node-compatible | 0.91× [?] | 0.96× [?] |
+| rust/native/release/fast-rng | 0.58× [?] | 0.45× [?] |
+| rust/wasm32-wasip1/release/fast-rng | 2.7× [?] | 0.41× [?] |
+| rust/wasm32-wasip2/release/fast-rng | 2.8× [?] | 0.47× [?] |
+| rust/wasm32-unknown-unknown/release/fast-rng/workerd-web | 2.8× [?] | 0.72× [?] |
+| rust/wasm32-unknown-unknown/release/fast-rng/workerd-node-compatible | 2.9× [?] | 0.72× [?] |
+| rust/wasm32-unknown-unknown/release/fast-rng/node | 2.8× [?] | 0.58× [?] |
+| rust/wasm32-unknown-unknown/release/fast-rng/node-22 | 2.6× [?] | 0.73× [?] |
+| rust/wasm32-unknown-unknown/release/fast-rng/node-24 | 2.8× [?] | 0.75× [?] |
+| rust/wasm32-unknown-unknown/release/fast-rng/bun | 1.9× [?] | 0.62× [?] |
+| rust/wasm32-unknown-unknown/release/fast-rng/deno | 2.8× [?] | 0.71× [?] |
+| rust/wasm32-unknown-unknown/release/fast-rng/chromium | 2.7× [?] | 0.6× [?] |
+| rust/wasm32-unknown-unknown/release/fast-rng/firefox | 2.4× [?] | 0.99× [?] |
+| rust/wasm32-unknown-unknown/release/fast-rng/webkit | 2.2× [?] | 0.6× [?] |
+| rust/native/release/os-rng | 0.63× [?] | 0.41× [?] |
+| rust/wasm32-wasip1/release/os-rng | 2.8× [?] | 0.47× [?] |
+| rust/wasm32-wasip2/release/os-rng | 2.7× [?] | 0.46× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng/workerd-web | 2.7× [?] | 0.72× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng/workerd-node-compatible | 2.9× [?] | 0.72× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng/node | 2.9× [?] | 0.62× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng/node-22 | 2.8× [?] | 0.73× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng/node-24 | 2.8× [?] | 0.73× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng/bun | 1.9× [?] | 0.58× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng/deno | 2.6× [?] | 0.69× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng/chromium | 2.7× [?] | 0.59× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng/firefox | 2.4× [?] | 1× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng/webkit | 2.1× [?] | 0.62× [?] |
+| rust/native/release/os-rng-no-std | 0.57× [?] | 0.46× [?] |
+| rust/wasm32-wasip1/release/os-rng-no-std | 2.6× [?] | 0.46× [?] |
+| rust/wasm32-wasip2/release/os-rng-no-std | 2.7× [?] | 0.46× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng-no-std/workerd-web | 2.9× [?] | 0.77× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng-no-std/workerd-node-compatible | 2.9× [?] | 0.69× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng-no-std/node | 2.8× [?] | 0.58× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng-no-std/node-22 | 2.6× [?] | 0.79× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng-no-std/node-24 | 2.9× [?] | 0.73× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng-no-std/bun | 1.8× [?] | 0.58× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng-no-std/deno | 2.7× [?] | 0.7× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng-no-std/chromium | 2.7× [?] | 0.6× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng-no-std/firefox | 2× [?] | 0.87× [?] |
+| rust/wasm32-unknown-unknown/release/os-rng-no-std/webkit | 2.1× [?] | 0.6× [?] |
+| rust/native/release/std | 0.62× [?] | 0.43× [?] |
+| rust/wasm32-wasip1/release/std | 2.6× [?] | 0.43× [?] |
+| rust/wasm32-wasip2/release/std | 2.8× [?] | 0.47× [?] |
+| rust/wasm32-unknown-unknown/release/std/workerd-web | 2.8× [?] | 0.75× [?] |
+| rust/wasm32-unknown-unknown/release/std/workerd-node-compatible | 2.8× [?] | 0.71× [?] |
+| rust/wasm32-unknown-unknown/release/std/node | 2.8× [?] | 0.61× [?] |
+| rust/wasm32-unknown-unknown/release/std/node-22 | 2.5× [?] | 0.74× [?] |
+| rust/wasm32-unknown-unknown/release/std/node-24 | 2.8× [?] | 0.7× [?] |
+| rust/wasm32-unknown-unknown/release/std/bun | 2× [?] | 0.61× [?] |
+| rust/wasm32-unknown-unknown/release/std/deno | 2.9× [?] | 0.7× [?] |
+| rust/wasm32-unknown-unknown/release/std/chromium | 2.6× [?] | 0.61× [?] |
+| rust/wasm32-unknown-unknown/release/std/firefox | 2.3× [?] | 1× [?] |
+| rust/wasm32-unknown-unknown/release/std/webkit | 2.2× [?] | 0.55× [?] |
+| rust/native/release/reduced | 0.64× [?] | 0.44× [?] |
+| rust/wasm32-wasip1/release/reduced | 2.8× [?] | 0.45× [?] |
+| rust/wasm32-wasip2/release/reduced | 2.8× [?] | 0.44× [?] |
+| rust/wasm32-unknown-unknown/release/reduced/workerd-web | 2.8× [?] | 0.74× [?] |
+| rust/wasm32-unknown-unknown/release/reduced/workerd-node-compatible | 2.8× [?] | 0.69× [?] |
+| rust/wasm32-unknown-unknown/release/reduced/node | 2.9× [?] | 0.61× [?] |
+| rust/wasm32-unknown-unknown/release/reduced/node-22 | 2.6× [?] | 0.75× [?] |
+| rust/wasm32-unknown-unknown/release/reduced/node-24 | 2.9× [?] | 0.68× [?] |
+| rust/wasm32-unknown-unknown/release/reduced/bun | 2.1× [?] | 0.48× [?] |
+| rust/wasm32-unknown-unknown/release/reduced/deno | 2.7× [?] | 0.7× [?] |
+| rust/wasm32-unknown-unknown/release/reduced/chromium | 2.6× [?] | 0.6× [?] |
+| rust/wasm32-unknown-unknown/release/reduced/firefox | 2.3× [?] | 0.98× [?] |
+| rust/wasm32-unknown-unknown/release/reduced/webkit | 2.2× [?] | 0.63× [?] |
 
 ## Runtime and control evidence
 

@@ -1,18 +1,22 @@
 // Derive research lanes from installed hosts so conformance and benchmarks cannot drift apart.
 type NativeTransport = "ffi" | "napi";
 
+export const NATIVE_TRANSPORT_LABELS = [
+  "Bun FFI",
+  "Bun Node-API",
+  "Deno FFI",
+  "Deno Node-API",
+  "Node FFI",
+  "Node Node-API",
+] as const;
+export type NativeTransportLabel = (typeof NATIVE_TRANSPORT_LABELS)[number];
+
 interface NativeLane {
   readonly runtime: Host["name"];
   readonly version: string;
   readonly command: readonly string[];
   readonly env: Readonly<Record<string, string>>;
-  readonly expectedTransport:
-    | "Bun FFI"
-    | "Bun Node-API"
-    | "Deno FFI"
-    | "Deno Node-API"
-    | "Node FFI"
-    | "Node Node-API";
+  readonly expectedTransport: NativeTransportLabel;
   readonly host: string;
   readonly label: string;
   readonly transport: NativeTransport;

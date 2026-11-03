@@ -10,14 +10,19 @@ import { workerdExecutable } from "../scripts/check-workerd-consumer";
 import type { Settings } from "./implementation-worker";
 import { prepareNativeTransports } from "./implementation-native-build";
 import { buildJs, sha256 } from "./implementation-artifacts";
+import type { NativeTransportLabel } from "../scripts/rust-native-matrix";
+import jcoPackage from "../node_modules/@bytecodealliance/jco/package.json" with { type: "json" };
 
 export interface Lane {
   id: string;
   family: string;
   version: string;
   hash: string;
+  requiresRuntimeVersion: boolean;
   command?: string[];
   argumentStyle?: "json" | "positional";
+  receiptPreamble?: boolean;
+  nativeTransport?: NativeTransportLabel;
   browser?: keyof typeof browserEngines;
   script?: string;
   wasm?: string;
@@ -35,6 +40,23 @@ export async function prepareImplementations(
   await mkdir(directory, { recursive: true });
   const root = process.cwd();
   const lanes: Lane[] = [];
+  const hostBuild = await Bun.build({
+    check: true,
+    entrypoints: ["bench/implementation-host.ts"],
+    target: "node",
+    format: "esm",
+    outdir: directory,
+    naming: "process-host.mjs",
+    minify: { whitespace: true, syntax: true, identifiers: true, keepNames: true },
+  });
+  if (!hostBuild.success)
+    throw new AggregateError(hostBuild.logs, "Host receipt helper build failed");
+  const hostModule = pathToFileURL(join(directory, "process-host.mjs")).href;
+  const receiptModule = join(directory, "runtime-receipt.mjs");
+  await writeFile(
+    receiptModule,
+    `import {processRuntimeVersion} from ${JSON.stringify(hostModule)}; console.log(JSON.stringify({runtimeVersion:processRuntimeVersion()}));`,
+  );
   const entropyBuild = await Bun.build({
     check: true,
     entrypoints: ["bench/implementation-entropy.ts"],
@@ -80,6 +102,7 @@ export async function prepareImplementations(
     if (id !== "node" && version === current) continue;
     lanes.push({
       id: `ts/${id}`,
+      requiresRuntimeVersion: true,
       family: "TypeScript",
       version,
       hash: await sha256(node),
@@ -89,6 +112,7 @@ export async function prepareImplementations(
   }
   lanes.push({
     id: "ts/bun",
+    requiresRuntimeVersion: true,
     family: "TypeScript",
     version: (await command("bun", ["--version"], root)).trim(),
     hash: await sha256(bun),
@@ -97,6 +121,7 @@ export async function prepareImplementations(
   });
   lanes.push({
     id: "ts/deno",
+    requiresRuntimeVersion: true,
     family: "TypeScript",
     version: (await command("deno", ["--version"], root)).trim(),
     hash: await sha256(deno),
@@ -109,6 +134,7 @@ export async function prepareImplementations(
     await instance.close();
     lanes.push({
       id: `ts/${name}`,
+      requiresRuntimeVersion: true,
       family: "TypeScript",
       version,
       hash: await sha256(browser),
@@ -121,6 +147,7 @@ export async function prepareImplementations(
   for (const compatible of [false, true])
     lanes.push({
       id: `ts/workerd-${compatible ? "node-compatible" : "web"}`,
+      requiresRuntimeVersion: false,
       family: "TypeScript workerd",
       version: edgeVersion,
       hash: await sha256(edge),
@@ -216,6 +243,7 @@ export async function prepareImplementations(
           await copyFile(input, destination);
           lanes.push({
             id: name,
+            requiresRuntimeVersion: false,
             family: "Rust native",
             version: compiler,
             hash: await sha256(destination),
@@ -229,18 +257,30 @@ export async function prepareImplementations(
             `${destination}.wasm`,
             target === "wasm32-wasip2" ? "component" : "module",
           );
-          const start =
-            'import {readFile} from "node:fs/promises"; import {WASI} from "node:wasi"; const w=new WASI({version:"preview1",args:["bench",...process.argv.slice(2)],returnOnExit:true}); const m=await WebAssembly.compile(await readFile(process.argv[1])); process.exitCode=w.start(await WebAssembly.instantiate(m,w.getImportObject()));';
+          const start = `import ${JSON.stringify(pathToFileURL(receiptModule).href)}; import {readFile} from "node:fs/promises"; import {WASI} from "node:wasi"; const w=new WASI({version:"preview1",args:["bench",...process.argv.slice(2)],returnOnExit:true}); const m=await WebAssembly.compile(await readFile(process.argv[1])); process.exitCode=w.start(await WebAssembly.instantiate(m,w.getImportObject()));`;
           lanes.push({
             id: name,
             family: `Rust ${target}`,
-            version: `${compiler}\nHost: ${target === "wasm32-wasip1" ? current : "jco"}`,
+            requiresRuntimeVersion: true,
+            version: `${compiler}\nHost: ${current}${target === "wasm32-wasip2" ? `; jco ${jcoPackage.version}` : ""}`,
             hash: await sha256(`${destination}.wasm`),
             command:
               target === "wasm32-wasip1"
                 ? ["node", "--input-type=module", "-e", start, `${destination}.wasm`]
-                : ["bun", "x", "jco", "run", `${destination}.wasm`, "--"],
+                : [
+                    "bun",
+                    "x",
+                    "jco",
+                    "run",
+                    `${destination}.wasm`,
+                    "--jco-import",
+                    receiptModule,
+                    "--",
+                  ],
             argumentStyle: "positional",
+            receiptPreamble: true,
+            // jco spawns a child runtime; pin it and collect its own receipt through --jco-import.
+            ...(target === "wasm32-wasip2" ? { environment: { JCO_RUN_PATH: "node" } } : {}),
           });
         } else {
           await mkdir(destination, { recursive: true });
@@ -276,6 +316,7 @@ export async function prepareImplementations(
           for (const compatible of [false, true])
             lanes.push({
               id: `${name}/workerd-${compatible ? "node-compatible" : "web"}`,
+              requiresRuntimeVersion: false,
               family: `Rust browser WASM ${profile}/${feature}`,
               version: `${compiler}\nHost: ${edgeVersion}`,
               hash,
@@ -296,13 +337,14 @@ export async function prepareImplementations(
                 version: `${compiler}\nHost: ${ts.version}`,
                 hash,
                 browser: ts.browser,
+                requiresRuntimeVersion: true,
                 script,
                 wasm,
                 requiresEntropy,
                 entropyModule,
               });
             else {
-              const source = `import init,{benchmark,entropy_probe} from ${JSON.stringify(pathToFileURL(script).href)}; import {qualifyEntropy} from ${JSON.stringify(pathToFileURL(entropyModule).href)}; import {readFile} from "node:fs/promises"; await init({module_or_path:await readFile(${JSON.stringify(wasm)})});const q=qualifyEntropy(()=>JSON.parse(entropy_probe()),()=>undefined,${requiresEntropy}); console.log(JSON.stringify({rows:JSON.parse(benchmark(${settings.samples},${settings.duration},${settings.warmup},${JSON.stringify(settings.filter)},${settings.batchTicks})),entropy:q.entropy}));`;
+              const source = `import init,{benchmark,entropy_probe} from ${JSON.stringify(pathToFileURL(script).href)}; import {qualifyEntropy} from ${JSON.stringify(pathToFileURL(entropyModule).href)}; import {processRuntimeVersion} from ${JSON.stringify(hostModule)}; import {readFile} from "node:fs/promises"; await init({module_or_path:await readFile(${JSON.stringify(wasm)})});const q=qualifyEntropy(()=>JSON.parse(entropy_probe()),()=>undefined,${requiresEntropy}); console.log(JSON.stringify({runtimeVersion:processRuntimeVersion(),rows:JSON.parse(benchmark(${settings.samples},${settings.duration},${settings.warmup},${JSON.stringify(settings.filter)},${settings.batchTicks})),entropy:q.entropy}));`;
               const worker = join(destination, `${ts.id.slice(3)}.mjs`);
               await writeFile(worker, source);
               const prefix = ts.command?.slice(0, -1);
@@ -313,6 +355,7 @@ export async function prepareImplementations(
                 version: `${compiler}\nHost: ${ts.version}`,
                 hash,
                 command: [...prefix, worker],
+                requiresRuntimeVersion: true,
                 requiresEntropy,
               });
             }

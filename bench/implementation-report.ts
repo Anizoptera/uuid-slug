@@ -3,9 +3,14 @@ import { medianConfidence95, medianRatio, sampleMedian } from "./statistics";
 import type { Lane } from "./implementation-build";
 import type { Observation, Settings } from "./implementation-worker";
 import type { EntropyEvidence } from "./implementation-entropy";
-import { validateEntropyEvidence, validateRows } from "./implementation-evidence";
+import {
+  validateEntropyEvidence,
+  validateExecutionReceipt,
+  validateRows,
+} from "./implementation-evidence";
+import type { ExecutionReceipt } from "./implementation-evidence";
 
-export interface Measurement {
+export interface Measurement extends ExecutionReceipt {
   lane: string;
   subject: string;
   role: "candidate" | "reference";
@@ -15,6 +20,14 @@ export interface Measurement {
   repeat: number;
   entropy?: EntropyEvidence;
 }
+
+export type UnvalidatedMeasurement = Omit<
+  Measurement,
+  "rows" | "entropy" | keyof ExecutionReceipt
+> & {
+  rows: unknown;
+  entropy?: unknown;
+} & { [Key in keyof ExecutionReceipt]?: unknown };
 
 export function comparisonWindow(block: number): readonly Pick<Measurement, "role" | "repeat">[] {
   const reference = { role: "reference", repeat: 0 } as const;
@@ -29,9 +42,20 @@ export interface ImplementationReport {
   host: string;
   smoke: boolean;
   exposure?: "randomized";
+  runtimeReceipts?: boolean;
   settings: Settings;
   blocks: number;
-  lanes: Pick<Lane, "id" | "family" | "version" | "hash" | "reference" | "requiresEntropy">[];
+  lanes: Pick<
+    Lane,
+    | "id"
+    | "family"
+    | "version"
+    | "hash"
+    | "reference"
+    | "requiresEntropy"
+    | "requiresRuntimeVersion"
+    | "nativeTransport"
+  >[];
   measurements: Measurement[];
 }
 
@@ -57,11 +81,16 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
     report.blocks < 1 ||
     !Number.isSafeInteger(report.settings.samples) ||
     report.settings.samples < 1 ||
+    (report.runtimeReceipts !== undefined && typeof report.runtimeReceipts !== "boolean") ||
     !report.lanes.length ||
     new Set(report.lanes.map((lane) => lane.id)).size !== report.lanes.length
   )
     throw new Error("Invalid comparison dimensions; regenerate from a complete benchmark run.");
   for (const lane of report.lanes) {
+    if (report.runtimeReceipts === true && typeof lane.requiresRuntimeVersion !== "boolean")
+      throw new Error(
+        "Missing execution-time version policy; retain each host's receipt capability in the report header.",
+      );
     if (
       (lane.id.startsWith("ts/") && lane.requiresEntropy !== true) ||
       (lane.id.includes("wasm32-unknown-unknown") && typeof lane.requiresEntropy !== "boolean")
@@ -75,21 +104,15 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
   const workloads = new Map<string, readonly string[]>();
   const windows = new Map<number, { identity: string; orientation: number }>();
   let sequence = 0;
-  function append(
-    record: Omit<Measurement, "rows" | "entropy"> & { rows: unknown; entropy?: unknown },
-  ): Measurement {
+  function append(record: UnvalidatedMeasurement): void {
     const actual = report.lanes.find((lane) => lane.id === record.lane);
-    const entropy =
-      actual?.requiresEntropy === undefined
-        ? undefined
-        : validateEntropyEvidence(record.entropy, actual.requiresEntropy);
     const subject = report.lanes.find((lane) => lane.id === record.subject);
     const reference =
       subject?.reference ??
       (record.subject.startsWith("ts/") ? "ts/node" : "rust/native/release/fast-rng");
     if (
-      !report.lanes.some((lane) => lane.id === record.lane) ||
-      !report.lanes.some((lane) => lane.id === record.subject) ||
+      !actual ||
+      !subject ||
       (record.role !== "candidate" && record.role !== "reference") ||
       !Number.isSafeInteger(record.block) ||
       record.block < 0 ||
@@ -97,6 +120,12 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       (record.repeat !== 0 && record.repeat !== 1)
     )
       throw new Error("Unexpected measurement identity");
+    const rows = validateRows(record.rows, report.settings.samples);
+    if (actual.requiresEntropy !== undefined)
+      validateEntropyEvidence(record.entropy, actual.requiresEntropy);
+    // Legacy captures have no receipts; current producers must retain the independent host evidence.
+    const requireRuntimeVersion = report.runtimeReceipts === true && actual.requiresRuntimeVersion;
+    validateExecutionReceipt(record, actual, requireRuntimeVersion);
     if (record.lane !== (record.role === "candidate" ? record.subject : reference))
       throw new Error("Comparison used the wrong reference artifact");
     const key = `${record.subject}:${record.block}:${record.repeat}:${record.role}`;
@@ -118,7 +147,6 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
     )
       throw new Error("Unbalanced acquisition window; retain adjacent ABBA/BAAB process order.");
     windows.set(window, { identity, orientation });
-    const rows = validateRows(record.rows, report.settings.samples);
     const inventoryKey = `${record.subject}:${record.role}`;
     const prior = inventory.get(inventoryKey);
     if (
@@ -134,8 +162,6 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       inventory.set(inventoryKey, shared);
     }
     indexed.set(key, new Map(rows.map((row) => [row.name, sampleMedian(row.ns)])));
-    const { rows: _rows, entropy: _entropy, ...identityFields } = record;
-    return { ...identityFields, rows, ...(entropy ? { entropy } : {}) };
   }
   const read = (lane: string, block: number, repeat: number, name: string, role = "candidate") =>
     indexed.get(`${lane}:${block}:${repeat}:${role}`)?.get(name);
@@ -254,6 +280,12 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       report.smoke
         ? "**Wiring check only. These samples are not performance evidence.**"
         : "Relative batch cost: smaller is faster. Brackets are distribution-free 95% intervals for the median of paired fresh-process ratios, conditional on independent blocks drawn from a common comparison distribution. They are not per-call latency percentiles or simultaneous confidence across the whole report.",
+      ...(report.runtimeReceipts
+        ? [
+            "",
+            "Raw captures retain execution-time host versions and native transport selections where available; other versions come from the selected executable or compiler records.",
+          ]
+        : []),
       "",
       `Requested reference: \`${baseline}\`. Each job names its actual reference: the requested lane when available, otherwise Node, native release Rust, then another connected measured lane. Each comparison runs reference/candidate/candidate/reference or the reverse. ${report.exposure === "randomized" ? "Lane order within each block and each window's orientation were independently randomized before timing." : "Windows reverse in alternate blocks; lane exposure was not randomized."} Ratios combine the two neighboring pairs geometrically. Native Rust connects to Node only through a matching artifact, version record and ordered workload. ${blocks} fresh-process blocks, ${report.settings.samples} batches per process. A missing interval is unresolved. Retained JSON Lines keep every batch and acquisition order.`,
       "",

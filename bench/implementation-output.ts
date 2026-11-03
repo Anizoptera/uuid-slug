@@ -1,7 +1,7 @@
 // Publish one Markdown pointer atomically; immutable evidence avoids a two-file transaction.
 import { mkdir, mkdtemp, open, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import type { ImplementationReport, Measurement } from "./implementation-report";
+import type { ImplementationReport, UnvalidatedMeasurement } from "./implementation-report";
 
 const RAW_LINK = "Raw observations: [JSON Lines](";
 
@@ -80,7 +80,7 @@ export async function openImplementationOutput(
   }
   return {
     raw,
-    append: (record: Measurement) => appendLine(record),
+    append: (record: UnvalidatedMeasurement) => appendLine(record),
     async publish(markdown: string) {
       await appendLine({ complete: true });
       state = "captured";

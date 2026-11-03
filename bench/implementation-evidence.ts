@@ -1,9 +1,43 @@
 // Reject incomplete or malformed process evidence before comparing implementations.
 import type { Observation } from "./implementation-worker";
-import type { EntropyEvidence } from "./implementation-entropy";
 import { secureEntropySources } from "./implementation-entropy";
+import { NATIVE_TRANSPORT_LABELS } from "../scripts/rust-native-matrix";
+import type { NativeTransportLabel } from "../scripts/rust-native-matrix";
 
-export function validateEntropyEvidence(input: unknown, required: boolean): EntropyEvidence {
+export interface ExecutionReceipt {
+  runtimeVersion?: string;
+  transport?: NativeTransportLabel;
+}
+
+export function validateExecutionReceipt(
+  input: { runtimeVersion?: unknown; transport?: unknown },
+  expected: { version: string; nativeTransport?: NativeTransportLabel },
+  requireRuntimeVersion: boolean,
+): void {
+  // Selected-host metadata cannot substitute for what the executing process actually returned.
+  const version = input.runtimeVersion;
+  if (
+    (requireRuntimeVersion && typeof version !== "string") ||
+    (version !== undefined &&
+      (typeof version !== "string" || !version || !expected.version.includes(version)))
+  )
+    throw new Error(
+      `Runtime receipt ${typeof version === "string" ? JSON.stringify(version) : "missing or non-string"} does not match ${JSON.stringify(expected.version)}. Check the selected executable and processRuntimeVersion(); keep the runtime assertion enabled.`,
+    );
+  const transport =
+    input.transport === undefined
+      ? undefined
+      : NATIVE_TRANSPORT_LABELS.find((label) => label === input.transport);
+  if (
+    (input.transport !== undefined && transport === undefined) ||
+    transport !== expected.nativeTransport
+  )
+    throw new Error(
+      `Native transport receipt does not match ${expected.nativeTransport ?? "a non-native lane"}; retain the actual loader selection and its output field.`,
+    );
+}
+
+export function validateEntropyEvidence(input: unknown, required: boolean): void {
   if (
     !input ||
     typeof input !== "object" ||
@@ -27,15 +61,13 @@ export function validateEntropyEvidence(input: unknown, required: boolean): Entr
     throw new Error(
       "Missing secure-source success/failure evidence; refuse generation comparisons.",
     );
-  return {
-    required,
-    rejectedSourceCalls: input.rejectedSourceCalls,
-    secureSourceCalls: input.secureSourceCalls,
-    sources: input.sources,
-  };
 }
 
 export function validateRows(input: unknown, samples: number): Observation[] {
+  if (input && typeof input === "object" && "failure" in input && typeof input.failure === "string")
+    throw new Error(
+      `Benchmark worker failed: ${input.failure}. Inspect its retained incomplete capture before rerunning.`,
+    );
   if (!Array.isArray(input) || !input.length) throw new Error("Empty benchmark lane");
   const names = new Set<string>();
   return input.map((row: unknown) => {

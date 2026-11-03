@@ -4,7 +4,7 @@ import {
   createImplementationReporter,
   renderImplementationReport,
 } from "../bench/implementation-report";
-import { validateRows } from "../bench/implementation-evidence";
+import { validateExecutionReceipt, validateRows } from "../bench/implementation-evidence";
 import type { ImplementationReport } from "../bench/implementation-report";
 import { secureEntropySources } from "../bench/implementation-entropy";
 import { medianRatio } from "../bench/statistics";
@@ -15,6 +15,7 @@ function evidence(): ImplementationReport {
     family: "Comparison",
     version: "fixture",
     hash: "a".repeat(64),
+    requiresRuntimeVersion: false,
     reference: "ts/node",
     requiresEntropy: true,
   }));
@@ -87,6 +88,40 @@ test("a separate transport component uses its measured reference and cannot crea
   for (const record of report.measurements)
     if (record.subject === root.id && record.role === "reference") record.lane = root.reference;
   expect(renderImplementationReport(report, root.id)).toContain("uncompared");
+});
+
+test("current captures require matching execution-time version receipts", () => {
+  const report = evidence();
+  report.runtimeReceipts = true;
+  for (const lane of report.lanes) {
+    lane.requiresRuntimeVersion = true;
+    lane.version = "Node 26.13.0";
+  }
+  const first = report.measurements[0];
+  if (!first) throw new Error("Fixture omitted its first process");
+  expect(() =>
+    createImplementationReporter(report).append({ ...first, runtimeVersion: "26.13.0" }),
+  ).not.toThrow();
+  expect(() => createImplementationReporter(report).append(first)).toThrow(/Runtime receipt/);
+  expect(() =>
+    createImplementationReporter(report).append({ ...first, runtimeVersion: "22.23.4" }),
+  ).toThrow(/Runtime receipt/);
+  expect(() =>
+    createImplementationReporter(report).append({ ...first, runtimeVersion: 26 }),
+  ).toThrow(/Runtime receipt/);
+});
+
+test("native receipts cannot hide a missing field, unknown label or different transport", () => {
+  const expected = { version: "Bun 1.4.4", nativeTransport: "Bun FFI" as const };
+  const receipt = { runtimeVersion: "1.4.4", transport: "Bun FFI" } as const;
+  expect(() => validateExecutionReceipt(receipt, expected, true)).not.toThrow();
+  for (const transport of [undefined, "Bun Node-API", "insecure", false])
+    expect(() => validateExecutionReceipt({ ...receipt, transport }, expected, true)).toThrow(
+      /transport receipt/,
+    );
+  expect(() => validateRows({ failure: "invalid process JSON", output: "not JSON" }, 1)).toThrow(
+    /invalid process JSON/,
+  );
 });
 
 function nativeReferenceEvidence() {

@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { rustToolchain } from "./rust-toolchain";
+import type { NativeTransportLabel } from "./rust-native-matrix";
 
 // The lane runs from the checkout root; bundled scripts must not resolve relative to their bundle.
 const root = process.cwd();
@@ -58,13 +59,7 @@ interface RustBridge {
   evaluate(input: string): string;
   plain(input: string): string;
   close(): void;
-  readonly transport:
-    | "Bun FFI"
-    | "Bun Node-API"
-    | "Deno FFI"
-    | "Deno Node-API"
-    | "Node FFI"
-    | "Node Node-API";
+  readonly transport: NativeTransportLabel;
 }
 
 function runtime(): "Bun" | "Deno" | "Node" {

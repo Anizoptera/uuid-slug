@@ -9,7 +9,7 @@ import { runWorkerdConsumer } from "../scripts/check-workerd-consumer";
 import { prepareImplementations } from "./implementation-build";
 import type { Lane } from "./implementation-build";
 import { comparisonWindow, createImplementationReporter } from "./implementation-report";
-import type { ImplementationReport } from "./implementation-report";
+import type { ImplementationReport, UnvalidatedMeasurement } from "./implementation-report";
 import type { Settings } from "./implementation-worker";
 import {
   openImplementationOutput,
@@ -20,14 +20,30 @@ import {
 const root = process.cwd();
 // Bun's implicit development condition otherwise outranks the published Node adapter.
 process.env.NODE_ENV = "production";
+
+function decodeOutput(output: string, receiptPreamble = false): unknown {
+  try {
+    if (!receiptPreamble) return JSON.parse(output);
+    const separator = output.indexOf("\n");
+    if (separator < 0) throw new Error("Missing runtime receipt line");
+    const receipt: unknown = JSON.parse(output.slice(0, separator));
+    if (!receipt || typeof receipt !== "object" || !("runtimeVersion" in receipt))
+      throw new Error("Malformed runtime receipt line");
+    return { ...receipt, rows: JSON.parse(output.slice(separator + 1)) };
+  } catch (cause) {
+    // Rejected output still belongs to the incomplete capture; diagnosis must not need another run.
+    return { failure: `Malformed process output: ${String(cause)}`, output };
+  }
+}
 async function acquire(
   lane: Lane,
   settings: Settings,
-): Promise<{ rows: unknown; entropy?: unknown }> {
+): Promise<Pick<UnvalidatedMeasurement, "rows" | "entropy" | "runtimeVersion" | "transport">> {
   let input: unknown;
+  let browserVersion: string | undefined;
   if (lane.edge !== undefined) {
     if (!lane.script) throw new Error(`Missing edge script for ${lane.id}`);
-    input = JSON.parse(
+    input = decodeOutput(
       await runWorkerdConsumer(lane.script, {
         compatible: lane.edge,
         timeoutMs: 600_000,
@@ -80,6 +96,7 @@ async function acquire(
         throw cause;
       });
     try {
+      browserVersion = browser.version();
       const page = await browser.newPage();
       await page.goto(server.url.href);
       await page.waitForFunction(
@@ -143,26 +160,18 @@ async function acquire(
       },
       { timeoutMs: 300_000 },
     );
-    const decoded: unknown = JSON.parse(output);
-    if (
-      lane.argumentStyle === "json" &&
-      (!decoded ||
-        typeof decoded !== "object" ||
-        !("runtimeVersion" in decoded) ||
-        typeof decoded.runtimeVersion !== "string" ||
-        !lane.version.includes(decoded.runtimeVersion))
-    )
-      throw new Error(`Timing worker ran an unexpected runtime: ${lane.id}`);
-    input = decoded;
+    input = decodeOutput(output, lane.receiptPreamble);
   }
-  if (input && typeof input === "object" && "failure" in input && typeof input.failure === "string")
-    throw new Error(`${lane.id}: ${input.failure}`);
   if (input && typeof input === "object" && "rows" in input) {
-    return { rows: input.rows, ...("entropy" in input ? { entropy: input.entropy } : {}) };
+    return {
+      rows: input.rows,
+      ...("entropy" in input ? { entropy: input.entropy } : {}),
+      ...("runtimeVersion" in input ? { runtimeVersion: input.runtimeVersion } : {}),
+      ...("transport" in input ? { transport: input.transport } : {}),
+      ...(browserVersion ? { runtimeVersion: browserVersion } : {}),
+    };
   }
-  if (lane.requiresEntropy !== undefined)
-    throw new Error(`Missing entropy qualification for ${lane.id}`);
-  return { rows: input };
+  return { rows: input, ...(browserVersion ? { runtimeVersion: browserVersion } : {}) };
 }
 const args = process.argv.slice(2);
 const reportIndex = args.indexOf("--report");
@@ -227,6 +236,7 @@ if (reportIndex >= 0) {
     host: `${platform()}/${arch()}; ${cpus()[0]?.model ?? "CPU unreported"}`,
     smoke,
     exposure: "randomized",
+    runtimeReceipts: true,
     settings,
     blocks,
     lanes: [],
@@ -263,7 +273,7 @@ if (reportIndex >= 0) {
           const selected = step.role === "candidate" ? lane : reference;
           console.log(`Block ${block + 1}/${blocks}: ${lane.id}; ${step.role} ${step.repeat + 1}`);
           const capture = await acquire(selected, settings);
-          const record = reporter.append({
+          const record: UnvalidatedMeasurement = {
             lane: selected.id,
             subject: lane.id,
             block,
@@ -271,8 +281,10 @@ if (reportIndex >= 0) {
             role: step.role,
             sequence: sequence++,
             ...capture,
-          });
+          };
+          // Persist once before admission so malformed output survives without becoming a completed report.
           await output.append(record);
+          reporter.append(record);
         }
       }
     }
