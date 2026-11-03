@@ -8,9 +8,7 @@ NEVER format or hard-wrap Markdown or other prose. Keep each paragraph on one so
 
 Write byte sizes in binary units in every file and tool output: 1 KB is 1024 bytes, then MB and GB. Never use SI units (1 kB = 1000 bytes). Release tooling formats sizes with `binarySize` in `scripts/release-comparison.ts`; reuse it rather than formatting by hand.
 
-NEVER commit archives or compressed artifacts in any format, including generated evidence, fixtures and temporary or intermediate results. Keep needed artifacts untracked and identify their local availability; commit the single canonical Markdown report, not its raw archive. Never rename or encode archive content to bypass this rule. Keep the existing filename check cheap; do not expand this storage policy into content scanning or adversarial bypass testing. Preserve required data before untracking it.
-
-Keep temporary files, agent state, caches, logs and temporary results untracked. Declare their paths in `.gitignore`; NEVER force-add ignored output. The existing index check must reject tracked ignored files using Git's own ignore rules. Preserve needed files when untracking them.
+NEVER commit ignored files, archives or compressed artifacts in any format, including generated evidence, fixtures and temporary or intermediate results. Declare temporary files, agent state, caches and logs in `.gitignore`; the existing index check MUST reject tracked ignored files using Git's own rules. Keep needed artifacts untracked and identify their local availability; commit the single canonical Markdown report, not its raw archive. NEVER force-add ignored output or rename/encode archives to bypass this rule. Keep the existing filename check cheap; do not expand this storage policy into content scanning or adversarial bypass testing. Preserve required data before untracking it.
 
 ## Read before work
 
