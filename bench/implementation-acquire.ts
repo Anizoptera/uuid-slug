@@ -130,7 +130,7 @@ if (reportIndex >= 0) {
     output = await openImplementationOutput(
       destination,
       planned,
-      recovery ? { windows: recovery.windows(), admit: reporter.append } : undefined,
+      recovery ? { source: recovery, admit: reporter.append } : undefined,
     );
     let sequence = output.reused;
     console.log(

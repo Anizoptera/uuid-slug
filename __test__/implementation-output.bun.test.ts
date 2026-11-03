@@ -1,6 +1,7 @@
 // Real filesystem failures and process death must preserve completed benchmark evidence.
 import { expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -11,6 +12,7 @@ import {
   resolveImplementationEvidence,
 } from "../bench/implementation-output";
 import type { ImplementationReport, Measurement } from "../bench/implementation-report";
+import { createImplementationReporter } from "../bench/implementation-report";
 import { openRecovery, scheduledStep, validateRecovery } from "../bench/implementation-recovery";
 import type { RecoverableReport } from "../bench/implementation-recovery";
 
@@ -35,6 +37,7 @@ const record: Measurement = {
 
 const resumable: RecoverableReport = {
   ...header,
+  exposure: "randomized",
   lanes: ["first", "second"].map((id) => ({
     id,
     family: "fixture",
@@ -146,10 +149,168 @@ test("recovery rejects changed instruments and repeated or missing scheduled lan
   );
 });
 
+test("older copied attempts cannot bypass source-validation provenance", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "uuid-slug-output-"));
+  const source = join(directory, "copied.jsonl.gz");
+  let opened: Awaited<ReturnType<typeof openRecovery>> | undefined;
+  try {
+    const copied: RecoverableReport = {
+      ...resumable,
+      recovery: {
+        ...resumable.recovery,
+        resumedFrom: { path: "original.jsonl.gz", revision: "original", captured: "original" },
+      },
+    };
+    await writeFile(source, gzipSync(`${JSON.stringify(copied)}\n`));
+    const failure = await openRecovery(source)
+      .then((input) => {
+        opened = input;
+        return input;
+      })
+      .catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(Error);
+    expect(String(failure)).toContain("source-validation receipt");
+  } finally {
+    await opened?.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 async function readCompressed(path: string): Promise<string> {
   // The independent Node decoder checks the writer separately from the streaming report reader.
   return gunzipSync(await readFile(path)).toString("utf8");
 }
+
+test("failed recovery cannot retain recompressed records from an unchecked gzip trailer", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "uuid-slug-output-"));
+  const source = join(directory, "source.jsonl.gz");
+  const destination = join(directory, "comparison.md");
+  const records = Array.from({ length: 4 }, (_, sequence) => ({
+    ...record,
+    ...scheduledStep(resumable, sequence),
+  }));
+  const prefix = gzipSync(
+    [resumable, ...records.slice(0, -1)].map((value) => JSON.stringify(value)).join("\n") + "\n",
+  );
+  const last = gzipSync(`${JSON.stringify(records.at(-1))}\n`);
+  const damaged = Buffer.concat([prefix, last.subarray(0, -8)]);
+  const planned: RecoverableReport = {
+    ...resumable,
+    recovery: {
+      ...resumable.recovery,
+      resumedFrom: { path: source, revision: resumable.revision, captured: resumable.captured },
+    },
+  };
+  try {
+    await writeFile(source, damaged);
+    await writeFile(destination, "previous report\n");
+    const input = await openRecovery(source);
+    try {
+      const failure = await openImplementationOutput(destination, planned, {
+        source: input,
+        admit: createImplementationReporter(planned).append,
+      }).catch((error: unknown) => error);
+      expect(failure).toBeInstanceOf(Error);
+      expect(await readFile(source)).toEqual(damaged);
+      expect(await readFile(destination, "utf8")).toBe("previous report\n");
+      expect(new Set(await readdir(directory))).toEqual(
+        new Set(["source.jsonl.gz", "comparison.md"]),
+      );
+    } finally {
+      await input.close();
+    }
+
+    // Restore only the missing trailer on the same input; metadata and admission stay unchanged.
+    await writeFile(source, Buffer.concat([prefix, last]));
+    const valid = await openRecovery(source);
+    try {
+      const output = await openImplementationOutput(destination, planned, {
+        source: valid,
+        admit: createImplementationReporter(planned).append,
+      });
+      try {
+        expect(output.reused).toBe(4);
+        expect(
+          (await readCompressed(output.raw))
+            .trimEnd()
+            .split("\n")
+            .slice(1)
+            .map((line) => JSON.parse(line)),
+        ).toEqual(records);
+        const resumed = await openRecovery(output.raw);
+        try {
+          expect((await Array.fromAsync(resumed.windows())).flat()).toEqual(records);
+        } finally {
+          await resumed.close();
+        }
+      } finally {
+        await output.close();
+      }
+    } finally {
+      await valid.close();
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("a copied prefix stays private until every source window passes admission", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "uuid-slug-output-"));
+  const source = join(directory, "source.jsonl.gz");
+  const destination = join(directory, "comparison.md");
+  const records = Array.from({ length: 8 }, (_, sequence) => ({
+    ...record,
+    ...scheduledStep(resumable, sequence),
+  }));
+  const last = records.at(-1);
+  if (!last) throw new Error("Missing rejection fixture");
+  // Control rows share storage; only the final record may change.
+  last.rows = last.rows.map((row) => Object.assign({}, row, { ns: [0] }));
+  try {
+    await writeFile(
+      source,
+      gzipSync([resumable, ...records].map((value) => JSON.stringify(value)).join("\n")),
+    );
+    await writeFile(destination, "previous report\n");
+    const input = await openRecovery(source);
+    const reporter = createImplementationReporter(resumable);
+    let admitted = 0;
+    let visible: string[] | undefined;
+    try {
+      const failure = await openImplementationOutput(
+        destination,
+        {
+          ...resumable,
+          recovery: {
+            ...resumable.recovery,
+            resumedFrom: {
+              path: source,
+              revision: resumable.revision,
+              captured: resumable.captured,
+            },
+          },
+        },
+        {
+          source: input,
+          admit(value) {
+            reporter.append(value);
+            // The first window has finished writing when the next window reaches admission.
+            if (++admitted === 5) visible = readdirSync(directory);
+          },
+        },
+      ).catch((error: unknown) => error);
+      expect(failure).toBeInstanceOf(Error);
+      expect(visible).toBeDefined();
+      expect(new Set(visible)).toEqual(new Set(["source.jsonl.gz", "comparison.md"]));
+      expect(new Set(await readdir(directory))).toEqual(new Set(visible));
+      expect(await readFile(destination, "utf8")).toBe("previous report\n");
+    } finally {
+      await input.close();
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 
 test("streamed evidence preserves legacy lines and rejects truncated gzip", async () => {
   const directory = await mkdtemp(join(tmpdir(), "uuid-slug-output-"));

@@ -13,6 +13,7 @@ export interface RecoveryReceipt {
   // Each pair names a lane index and the ABBA/BAAB orientation, before any timing occurs.
   schedule: [number, number][][];
   resumedFrom?: { path: string; revision: string; captured: string };
+  sourceValidated?: true;
 }
 export type RecoverableReport = Header & { recovery: RecoveryReceipt };
 
@@ -165,6 +166,12 @@ export async function openRecovery(source: string) {
     await lines.return(undefined);
     throw new Error(
       "This capture has no collector receipt or saved schedule; source-check and migrate it separately before recovery.",
+    );
+  }
+  if (header.recovery.resumedFrom && header.recovery.sourceValidated !== true) {
+    await lines.return(undefined);
+    throw new Error(
+      "This older resumed capture has no source-validation receipt. Do not add the flag to bypass this check: validate its full parent source and copied prefix before migration, or start a new comparison. Use --report for a completed capture.",
     );
   }
   return {
