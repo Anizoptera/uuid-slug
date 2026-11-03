@@ -1,4 +1,4 @@
-// Prove the production codec kernels; missing evidence must fail, even at exit zero.
+// Prove production UUID contracts; missing evidence must fail, even at exit zero.
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,7 +12,95 @@ const decodingAssertions = [
 ];
 const paddingAssertion = "nonzero decoder padding must fail";
 const tailAssertion = "decoded tail must fit four bits";
-const harnesses = [
+const availableHarnesses = [
+  ...["compact_uuid", "canonical_uuid", "wrapped_uuid", "urn_uuid"].map((name) => ({
+    name: `text_contract::${name}`,
+    assertions: [
+      "UUID parser accepts exactly its text grammar",
+      "UUID parser preserves every hexadecimal payload bit",
+      "UUID parser rejects malformed text with its typed error",
+    ],
+  })),
+  {
+    name: "generation_contract::v7_continuation_and_exhaustion",
+    assertions: [
+      "v7 continuation rejects exactly final timestamp exhaustion",
+      "v7 continuation draws only the required entropy",
+      "v7 continuation strictly increases in wire order",
+      "v7 sequence carry advances exactly one millisecond",
+    ],
+  },
+  {
+    name: "generation_contract::v7_failed_entropy_preserves_retry",
+    assertions: [
+      "v7 failed entropy never returns an identifier",
+      "v7 failed entropy leaves the next result and sequence unchanged",
+    ],
+  },
+  {
+    name: "uuid_contract::payload_layout_and_fields",
+    assertions: [
+      "layout accepts exactly the documented widths",
+      "payload partition preserves every payload bit",
+    ],
+  },
+  {
+    name: "uuid_contract::caller_buffer_reads_and_writes",
+    assertions: [
+      "UUID read accepts exactly fitting ranges",
+      "UUID read preserves every source byte",
+      "UUID write accepts exactly fitting ranges",
+      "UUID write changes only its complete admitted range",
+    ],
+  },
+  {
+    name: "generation_contract::v4_preserves_random_payload",
+    assertions: [
+      "v4 requests exactly sixteen entropy bytes",
+      "v4 draws entropy once",
+      "v4 preserves all 122 random payload bits",
+    ],
+  },
+  {
+    name: "generation_contract::v4_buffer_failure_atomicity",
+    assertions: [
+      "v4 writes succeed exactly when capacity and entropy permit",
+      "v4 invalid buffers draw no entropy",
+      "v4 failures retain their classification",
+      "v4 failure is atomic and successful writes preserve surrounding bytes",
+    ],
+  },
+  {
+    name: "generation_contract::inclusive_v7_bounds",
+    assertions: [
+      "v7 bounds accept exactly ordered 48-bit intervals",
+      "lower bound is the smallest RFC UUIDv7 at the requested time",
+      "upper bound is the largest RFC UUIDv7 at the requested time",
+    ],
+  },
+  {
+    name: "generation_contract::v7_initial_payload",
+    assertions: [
+      "v7 reseeding requests exactly ten entropy bytes",
+      "v7 initial generation draws entropy once",
+      "v7 generation preserves all 48 timestamp bits",
+      "integer time initializes the configured fraction to zero",
+      "v7 reseeding preserves every configured random counter bit",
+      "v7 generation preserves the independent 32-bit random tail",
+    ],
+  },
+  {
+    name: "uuid_contract::inspection_and_timestamp",
+    assertions: [
+      "version inspection preserves the wire nibble",
+      "variant inspection matches every wire prefix",
+      "RFC inspection matches the wire prefix",
+      "v4 inspection requires version and variant",
+      "v7 inspection requires version and variant",
+      "timestamp preserves every leading wire bit",
+      "timestamp rejects other UUID domains",
+    ],
+  },
   {
     name: "feistel_contract::inverts_every_block_and_key",
     assertions: ["unmask must invert every block and key"],
@@ -40,6 +128,17 @@ const harnesses = [
     assertions: ["encoding must preserve every payload bit and canonical padding"],
   })),
 ];
+// Focused iterations use the same named assertions and deadline as the complete proof command.
+const requested = process.argv.slice(2);
+const harnesses = requested.length
+  ? requested.map((name) => {
+      const harness = availableHarnesses.find((candidate) => candidate.name === name);
+      if (!harness) throw new Error(`Unknown Rust proof harness: ${name}`);
+      return harness;
+    })
+  : availableHarnesses;
+if (new Set(harnesses.map(({ name }) => name)).size !== harnesses.length)
+  throw new Error("Select each Rust proof harness only once.");
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -59,6 +158,8 @@ try {
     toolchain.cargo,
     [
       "kani",
+      "-Z",
+      "stubbing",
       "--manifest-path",
       "rust/proofs/Cargo.toml",
       "--lib",
@@ -67,6 +168,8 @@ try {
       "--exact",
       "--output-format",
       "terse",
+      "--harness-timeout",
+      `${Math.max(1, Math.ceil((deadline - performance.now()) / 1_000))}s`,
       "-Z",
       "unstable-options",
       "--export-json",
