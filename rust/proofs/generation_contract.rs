@@ -11,22 +11,6 @@ fn v4_word(entropy: [u8; 16]) -> u128 {
         | (2u128 << 62)
 }
 
-// Check one real transition over all admissible state, including every rollback policy.
-#[kani::proof]
-#[kani::unwind(17)]
-#[kani::stub(alloc::fmt::format, crate::diagnostic_text)]
-fn v7_continuation_and_exhaustion() {
-    crate::generation::prove_transition();
-}
-
-// Compare all actual fields after a failed draw, independently of any selected retry input.
-#[kani::proof]
-#[kani::unwind(17)]
-#[kani::stub(alloc::fmt::format, crate::diagnostic_text)]
-fn v7_failed_entropy_preserves_retry() {
-    crate::generation::prove_failed_entropy();
-}
-
 #[kani::proof]
 #[kani::unwind(17)]
 fn v4_preserves_random_payload() {

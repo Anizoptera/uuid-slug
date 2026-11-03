@@ -30,7 +30,7 @@ const availableHarnesses = [
     ],
   })),
   {
-    name: "generation_contract::v7_continuation_and_exhaustion",
+    name: "generation::v7_continuation_and_exhaustion",
     assertions: [
       "v7 continuation rejects exactly policy or final timestamp exhaustion",
       "v7 continuation draws only the required entropy",
@@ -39,7 +39,7 @@ const availableHarnesses = [
     ],
   },
   {
-    name: "generation_contract::v7_failed_entropy_preserves_retry",
+    name: "generation::v7_failed_entropy_preserves_state",
     assertions: [
       "v7 failed entropy never returns an identifier",
       "v7 failed entropy preserves every generator field",

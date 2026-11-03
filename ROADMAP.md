@@ -4,6 +4,8 @@
 
 Expand solver-backed verification of the actual Rust implementation without changing public APIs, issued identifiers or runtime work. Preserve the existing Kani bit-codec/Feistel and Verus buffer proofs; add symbolic coverage for consequential parsing, payload interpretation, generation, masking and caller-buffer behavior where the tools reach the real body. OS entropy, foreign runtimes, scheduling and cryptographic strength require separate evidence and must not inherit a solver verdict.
 
+- [ ] Remove forwarding-only state-proof adapters. Keep every input domain, assertion, formatting assumption and required harness; reprove the direct entries, reject a semantic defect and an omitted entry in isolated copies, then run final project verification and remove owned scratch.
+
 - [x] Inventory production decisions and existing theorem domains; run the unchanged proof controls and identify reachable gaps.
 - [x] Extend the existing isolated Kani crate with independent specifications for UUID inspection, payload layouts, timestamp bounds, generation and failure-atomic buffer writes; validate real call-path translation before widening.
 - [x] Prove remaining tractable masking, parser and hash/state decisions; retain exact tool/model limits for any body not covered rather than substituting a copied algorithm or restricted examples. The proof root states the bounded domains and excludes aggregate masking-codec policies, asynchronous derivation and entropy lifecycle claims.

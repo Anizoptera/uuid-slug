@@ -37,7 +37,11 @@ fn snapshot(g: &UuidV7Generator) -> (Option<u64>, Option<u64>, u64, UuidV7ClockR
     )
 }
 
-pub(super) fn prove_transition() {
+// Check the real private transition after clock normalization, including every rollback policy.
+#[kani::proof]
+#[kani::unwind(17)]
+#[kani::stub(alloc::fmt::format, crate::diagnostic_text)]
+fn v7_continuation_and_exhaustion() {
     let mut generator = arbitrary_generator();
     let before = snapshot(&generator);
     let now: u64 = kani::any();
@@ -56,11 +60,17 @@ pub(super) fn prove_transition() {
     let exhausted = !fresh && before.2 == WIRE_LAST_SEQUENCE && before.0 == Some(WIRE_LAST_MS);
     let reseed = fresh || before.2 == WIRE_LAST_SEQUENCE;
     let mut drawn = 0;
-    let result = from_parts(&mut generator, now, fraction_12, |out| {
-        drawn += out.len();
-        out.copy_from_slice(&entropy[..out.len()]);
-        Ok(())
-    });
+    let result = generator.generate_uuid_v7_from_instant(
+        UuidV7Instant {
+            unix_ms: now,
+            fraction_12,
+        },
+        |out| {
+            drawn += out.len();
+            out.copy_from_slice(&entropy[..out.len()]);
+            Ok(())
+        },
+    );
     assert_eq!(
         result.is_err(),
         rejected_clock || exhausted,
@@ -135,7 +145,10 @@ pub(super) fn prove_transition() {
 // A failed callback may corrupt its entire scratch slice; no generator field may commit.
 // Equality of actual state is stronger than comparing one chosen retry's output.
 // Arbitrary final scratch bytes include every partial overwrite of its initially zero bytes.
-pub(super) fn prove_failed_entropy() {
+#[kani::proof]
+#[kani::unwind(17)]
+#[kani::stub(alloc::fmt::format, crate::diagnostic_text)]
+fn v7_failed_entropy_preserves_state() {
     let mut generator = arbitrary_generator();
     let before = snapshot(&generator);
     let now: u64 = kani::any();
@@ -143,11 +156,17 @@ pub(super) fn prove_failed_entropy() {
     let overwritten: [u8; 10] = kani::any();
     kani::assume(now <= WIRE_LAST_MS && fraction_12 < 4096);
     let mut called = false;
-    let result = from_parts(&mut generator, now, fraction_12, |out| {
-        called = true;
-        out.copy_from_slice(&overwritten[..out.len()]);
-        Err(Error::new(ErrorCode::Aborted))
-    });
+    let result = generator.generate_uuid_v7_from_instant(
+        UuidV7Instant {
+            unix_ms: now,
+            fraction_12,
+        },
+        |out| {
+            called = true;
+            out.copy_from_slice(&overwritten[..out.len()]);
+            Err(Error::new(ErrorCode::Aborted))
+        },
+    );
     assert!(
         result.is_err(),
         "v7 failed entropy never returns an identifier"

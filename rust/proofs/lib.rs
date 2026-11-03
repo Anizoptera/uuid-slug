@@ -34,22 +34,6 @@ mod generation_state;
 mod generation {
     include!("../uuid-slug/src/generation.rs");
     include!("generation_transition.rs");
-    // Call the real private state engine after clock normalization. This adapter performs no
-    // selection or mutation; numeric/SystemTime normalization has separate proof boundaries.
-    pub(super) fn from_parts(
-        generator: &mut UuidV7Generator,
-        unix_ms: u64,
-        fraction_12: u16,
-        fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
-    ) -> Result<Uuid, Error> {
-        generator.generate_uuid_v7_from_instant(
-            UuidV7Instant {
-                unix_ms,
-                fraction_12,
-            },
-            fill,
-        )
-    }
 }
 
 // These contracts concern values, error codes and caller state, not diagnostic spelling.
