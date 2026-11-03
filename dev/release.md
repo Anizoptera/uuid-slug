@@ -21,7 +21,7 @@ On retry, verify and reuse the retained inputs, including the original package s
 
 Write changelog entries for the package consumer, comparing the final release with that package's latest published version rather than intermediate commits.
 
-Before editing notes, establish each selected package's published baseline from its registry and matching source or artifact. A shared Git tag does not prove both packages were published. Treat a first publication as new capabilities, never an upgrade from an unpublished API; a failed registry request does not prove there was no publication.
+Before editing notes, establish each selected package's published baseline from its registry's complete package history and matching source or artifact. A shared Git tag does not prove both packages were published, and an absent candidate version does not prove the package has no history. Treat a first publication as new capabilities, never an upgrade from an unpublished API; a failed registry request does not prove there was no publication.
 
 For each entry, ask: what can the consumer now do, what changed from the published version, why does it matter, and what action or limit must they know? Keep only supported answers. Name the package and use short, concrete sentences. Preserve useful capabilities, reasons and boundaries when shortening; never invent a guarantee or migration.
 
