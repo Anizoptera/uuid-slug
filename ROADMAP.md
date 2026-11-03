@@ -11,11 +11,14 @@ Derive API consistency and usability improvements from the maintainer's requests
 ## Joint release readiness
 
 - [ ] Update project-managed runtimes, JavaScript and Rust dependencies, CI actions and verification tools to current stable releases. Preserve package versions, supported runtime floors and historical compatibility fixtures; repair upgrade incompatibilities without weakening checks.
-  - [ ] Verify available versions and update JavaScript dependencies and runtime pins; keep the TypeScript compatibility compilers on their supported lines.
-  - [ ] Update Rust workspace and competitor dependencies, matching WebAssembly tools and CI action pins.
+  - [x] Verify available versions and update JavaScript dependencies and runtime pins; keep the TypeScript compatibility compilers on their supported lines.
+  - [x] Update Rust workspace and competitor dependencies, matching WebAssembly tools and CI action pins.
   - [ ] Run the complete check and affected browser, WebAssembly, package and proof checks; remove scratch and report any remaining release blockers.
 
 Follow `dev/release.md` for the npm update and first crate publication. Build and verify stable archives from the authorized tag, not old development captures; reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives. Existing regression checks remain required; missing performance comparisons neither block preparation nor authorize experiments.
+
+- [ ] Repair Rust migration candidate decoding for legacy sentinel aliases: recognizing a sentinel must stop before mask callbacks. Verify canonical and alias spellings through both readers and check TypeScript parity.
+- [ ] Before publication, resolve or review [the upstream `deepmerge` advisory](https://github.com/advisories/GHSA-gcqx-w48m-w2h4). The latest Rollup resolver depends on the affected release and merges its fixed defaults; this dependency is development-only. Keep this separate from the clean production dependency audit.
 
 - [ ] With explicit authorization, configure `CRATES_IO_BOOTSTRAP_TOKEN` before the first crate upload; trusted publishing cannot be configured until the crate exists.
 - [ ] After version/tag authorization, run exact-tag preparation for both packages and review the generated consumer release notes before any separately authorized push or publication.
