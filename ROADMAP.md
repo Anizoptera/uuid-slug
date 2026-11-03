@@ -4,12 +4,12 @@
 
 Verify the npm update against published 0.5.0 and the first Rust crate without changing versions, creating tags or publishing. Reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives; distinguish local evidence from unexecuted platform and tagged-release checks.
 
-- [x] Run full project verification with packed browser/worker coverage and all-runtime regression selection. Both the seven-runtime timing gate and the repaired-tree full check exit zero; passes do not close the retained upstream-relative Node base32 gap in `bench/decisions.md`.
+- [x] Run full project verification with packed browser/worker coverage and all-runtime regression selection. Both the seven-runtime timing gate and the repaired-tree full check exit zero; passes do not close the retained Node/Deno base32 gaps in `bench/decisions.md`.
 - [x] Compare matched npm consumer bundles and package contents with registry-verified 0.5.0. All 49 raw/gzip consumer bundles shrink; the cleaned npm archive grows by 239 bytes. The consumer-graph section in `bench/decisions.md` retains the measurements and limits.
-- [x] Verify Cargo archive contents and extracted-source tests, native feature/profile coverage and both optimized WebAssembly profiles. Local macOS arm64, Chromium/Firefox/WebKit and WASI preview-1/2 pass; other native platforms still require CI.
-- [ ] Review release prerequisites, report concrete regressions or remaining holds, and delete owned CI follow-up scratch.
+- [x] Verify Cargo archive contents and extracted-source tests, native feature/profile coverage and both optimized WebAssembly profiles. Local checks and CI pass across Linux/macOS/Windows x64/arm64, Chromium/Firefox/WebKit and WASI preview-1/2.
+- [x] Review release prerequisites, report concrete regressions or remaining holds, and delete owned CI follow-up scratch.
 - [x] Reproduce and repair the inherited Git-baseline and colored-witness CI failures; missing, duplicate and zero-call witnesses still reject.
-- [ ] Validate the repaired native matrix in CI: preserve Windows `Path`, expose child diagnostics, launch complete Bun commands directly, normalize Vite resolver paths and unload temporary Node-API libraries through child exit before cleanup. The final local full check passes; Windows execution still needs CI evidence.
+- [x] Validate the repaired native matrix in CI: preserve Windows `Path`, expose child diagnostics, launch complete Bun commands directly, normalize resolver/discovery paths, preserve timestamp buckets and release temporary Node-API libraries before cleanup. The full local check and all jobs in [CI run 41693986491](https://github.com/Anizoptera/uuid-slug/actions/runs/41693986491) pass on `bf22d70`.
 - [ ] Configure `CRATES_IO_BOOTSTRAP_TOKEN` before the first crate publication; the repository secret list is empty. Stable versions, annotated tags and final tagged-archive preparation still require explicit authorization.
 
 - [x] Align changelog instructions across root guidance and the release owner: establish each package's publication baseline, update final consumer entries instead of accumulating unreleased history, and retain one mandatory review procedure without a prose checker. Read back the changes and check instruction compatibility before committing.
