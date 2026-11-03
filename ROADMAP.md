@@ -8,6 +8,7 @@ Update and commit only one canonical Markdown comparison report. Keep progress i
 
 - [x] Cover each distinct Rust capability selection, including reduced browser WASM, std-only and OS entropy without std; the complete 76-lane smoke produced 304 captures with release-profile checks.
 - [x] Trace and fault-test secure entropy selection in JavaScript and browser Rust/WASM before timing; the complete smoke records source rejection and recovery, reduced-build absence, and report rejection of missing policy or insecure source labels. A zero-fill mutation fails the real-worker regression.
+- [x] Exclude insecure entropy from competitor execution too (`6a8387d`): remove the insecure UUIDv4 case and reject explicitly insecure candidates before validation, warm-up or timing. Qualified and rejected labels both fail before the operation trap; removing the guard makes both regressions fail.
 - [x] Reuse the measurement and correctness corpus across runtime variants; add missing jobs without changing product behavior.
 - [x] Keep one rerun command and validated relative report; the existing process supervisor owns interruption cleanup, and complete JSON Lines can regenerate the report without timing.
 - [x] Pair adjacent fresh-process reference/candidate repeats, retain comparison edges, and include both workerd modes without mixing HTTP dispatch into per-call timing.
@@ -78,6 +79,8 @@ Use `bench/decisions.md` for codec, interoperability, storage and O2 choices, re
 - [ ] Propose the Aponte agent-gotcha rule (packed-consumer checks must match real install layout) and write it only with approval.
 
 ## Follow-up
+
+- [ ] Public-document correction needs approval: in `docs/security.md` §Randomness, replace “Node uses `crypto.randomUUID()` for UUIDv4 text and pooled `crypto.randomFillSync()` for other output.” with “Node uses pooled `crypto.randomFillSync()`; with JIT disabled, UUIDv4 text uses `crypto.randomUUID()`.” The current `src/runtime/node.ts` selects the native method only under its JITless condition. This factual documentation repair does not change entropy selection or block the implementation comparison.
 
 - [ ] Resolve the advisory affecting competitor `slugid` through its `uuid ^9` dependency. Keep this dev-only comparison on the upstream dependency graph; do not silently override it.
 
