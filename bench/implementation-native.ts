@@ -2,6 +2,7 @@
 import { loadRustBridge } from "../scripts/rust-bridge";
 import { measureUuidStringToPlainSlug } from "./implementation-transport";
 import type { Settings } from "./implementation-timing";
+import { processRuntimeVersion } from "./implementation-host";
 
 const input = process.argv[2];
 if (!input) throw new Error("Use bun run bench:implementations; this is its native timing worker.");
@@ -14,11 +15,9 @@ const bridge = await loadRustBridge({ directory });
 try {
   if (bridge.transport !== expected)
     throw new Error(`Expected ${expected}; the loader selected ${bridge.transport}`);
-  // Registry versions are numeric; Node's display-only `v` must not look like another executable.
-  const runtimeVersion = process.versions.bun ?? process.versions.deno ?? process.versions.node;
   console.log(
     JSON.stringify({
-      runtimeVersion,
+      runtimeVersion: processRuntimeVersion(),
       transport: bridge.transport,
       rows: measureUuidStringToPlainSlug(settings, (uuid) => bridge.plain(uuid)),
     }),

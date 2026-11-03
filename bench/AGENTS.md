@@ -16,7 +16,7 @@ Apply `../AGENTS.md` §Work scope before starting experiments; keep required reg
 
 ## Runtime choices
 
-- When native worker version checks fail, compare `process.versions` with the registry's numeric version before changing transport selection; Node's `process.version` adds a display-only `v`. Keep the actual-runtime check enabled.
+- Emit process versions through `processRuntimeVersion()` in `implementation-host.ts`; it matches the registry's numeric versions without Node's display-only `v`. When version checks fail, compare the receipt with the registry before changing transport selection; keep the actual-runtime check enabled.
 
 - Use latest stable runtimes. Rank Node Current and Bun first, Node LTS and Chromium second, Deno third, Node Current JITless last. Older supported Node versions gate compatibility, not trade-offs. A JITless-only gain needs unchanged higher-ranked calls and enough value to justify its lifetime cost.
 - Give each call family a native-floor row. Defaults, including case/alphabet presets, must approach equivalent native floors and qualified rivals; configured calls add only work those floors lack. Keep gaps open until closed, negligible or explained as unavoidable in `decisions.md`.

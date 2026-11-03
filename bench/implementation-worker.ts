@@ -8,6 +8,7 @@ import { selectProfileCases } from "./profile-case";
 import { measureImplementationCases } from "./implementation-timing";
 import type { Settings, Observation } from "./implementation-timing";
 export type { Settings, Observation } from "./implementation-timing";
+import { exposeBenchmark } from "./implementation-host";
 
 export async function run(
   settings: Settings,
@@ -34,23 +35,4 @@ export async function run(
     rows: [...timed.rows, ...(await measureAsync(timed.settings, timed.quantum, selected))],
   };
 }
-const host = globalThis as typeof globalThis & { uuidSlugBenchmark?: typeof run };
-host.uuidSlugBenchmark = run;
-function postWorkerResult(
-  message: Awaited<ReturnType<typeof run>> | string | { failure: string },
-): void {
-  // eslint-disable-next-line unicorn/require-post-message-target-origin -- Dedicated workers post to their owner, not a Window origin.
-  globalThis.postMessage(message);
-}
-if (
-  typeof document === "undefined" &&
-  typeof process === "undefined" &&
-  typeof globalThis.postMessage === "function"
-) {
-  globalThis.addEventListener("message", (event: MessageEvent<Settings>) => {
-    run(event.data)
-      .then(postWorkerResult)
-      .catch((cause: unknown) => postWorkerResult({ failure: String(cause) }));
-  });
-  postWorkerResult("ready");
-}
+exposeBenchmark(run);
