@@ -4,6 +4,7 @@ import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { loadRustBridge, rustBridgeFiles } from "../scripts/rust-bridge";
+import { command } from "../scripts/command";
 
 const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000";
 const slug = "AZChssPUfl-KmwwdLj8AAA";
@@ -29,7 +30,10 @@ export function verifySingleExecution(
   }
 }
 
-export async function verifyNativeLoading(profile: "debug" | "release") {
+export async function verifyNativeLoading(
+  profile: "debug" | "release",
+  parentOwnedDirectory?: string,
+) {
   const bun = process.versions.bun !== undefined;
   // Deno has separate forced coverage. Older Node has no experimental FFI fallback.
   if (process.versions.deno || (!bun && Number(process.versions.node.split(".")[0]) < 26))
@@ -37,6 +41,24 @@ export async function verifyNativeLoading(profile: "debug" | "release") {
   const primary = bun ? "ffi" : "napi";
   const forced = process.env.UUID_SLUG_RUST_TRANSPORT;
   if (forced !== undefined && forced !== primary) return undefined;
+  if (process.platform === "win32" && parentOwnedDirectory === undefined) {
+    // Node-API caches loaded DLLs until process exit; the parent owns scratch cleanup.
+    const directory = await mkdtemp(join(tmpdir(), "uuid-slug-native-route-"));
+    try {
+      return await command(
+        process.execPath,
+        [
+          ...process.execArgv,
+          join(process.cwd(), "rust/target/native-bridge-probe.mjs"),
+          profile,
+          directory,
+        ],
+        process.cwd(),
+      );
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
   const preferred = await loadRustBridge({ transport: "auto" });
   try {
     strictEqual(preferred.transport, bun ? "Bun FFI" : "Node Node-API");
@@ -45,7 +67,8 @@ export async function verifyNativeLoading(profile: "debug" | "release") {
     preferred.close();
   }
 
-  const directory = await mkdtemp(join(tmpdir(), "uuid-slug-native-route-"));
+  const directory =
+    parentOwnedDirectory ?? (await mkdtemp(join(tmpdir(), "uuid-slug-native-route-")));
   try {
     const files = rustBridgeFiles(profile, directory);
     const available = rustBridgeFiles(profile);
@@ -71,6 +94,13 @@ export async function verifyNativeLoading(profile: "debug" | "release") {
     );
     return selected.transport;
   } finally {
-    await rm(directory, { recursive: true, force: true });
+    if (parentOwnedDirectory === undefined) await rm(directory, { recursive: true, force: true });
   }
+}
+
+if (import.meta.main) {
+  const [profile, directory] = process.argv.slice(2);
+  if ((profile !== "debug" && profile !== "release") || !directory)
+    throw new Error("Usage: native-bridge-probe.mjs debug|release PARENT_OWNED_DIRECTORY");
+  process.stdout.write((await verifyNativeLoading(profile, directory)) ?? "");
 }

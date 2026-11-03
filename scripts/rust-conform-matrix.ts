@@ -32,6 +32,20 @@ export async function prepareNativeConformance() {
     ],
     {},
   );
+  if (process.platform === "win32")
+    await run(
+      [
+        "bun",
+        "build",
+        "--check",
+        "__test__/native-bridge-probe.ts",
+        "--target=node",
+        "--outfile=rust/target/native-bridge-probe.mjs",
+        "--external=bun:ffi",
+        "--external=node:ffi",
+      ],
+      {},
+    );
   const lanes = await nativeMatrix("scripts/rust-conform.ts", "rust/target/conform.mjs");
   // Forced rows cannot exercise omission; derive automatic rows from the same host commands.
   const checks = lanes.flatMap((lane) => {
