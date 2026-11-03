@@ -1370,6 +1370,8 @@ The unchanged full-lane replay passes all checks and 124 timing comparisons, inc
 
 The 2026-11-03 full check again resolves Node 26.13.0 `bytes.base32` above `ac3e4e7`: median ratio 1.029, family-corrected interval [1.0047, 1.4747], about 37 to 38 ns per call on macOS arm64. Bun 1.4.4 remains unresolved at 1.000. The complete filter and failure diagnostics remain in `bench/reports/uuid-slug-compare-zSG1rJ-UJtGR0/check-output.log.gz` beside the packed input archive. This result does not identify the cause; preserve it through later replays rather than substituting a narrower workload or weakening the gate.
 
+The complete check replay at `4848f70` passes all gates and 124 timing comparisons with the same full filter. Node's paired base32 ratio is 1.0253 with family-corrected interval [0.7226, 1.4836]; Bun's is 0.9980 [0.9285, 1.1180]. This pass does not establish parity or explain the earlier failure. `check-replay-output.log.gz` beside the failure retains the complete result.
+
 The masked-binary implementation at `ba2273b` passes `bun run perf:check:all` (2026-11-02). A complete check fails its timing stage, then the captured `bun run check` at `dc04d5c` passes with unchanged runtime JavaScript. The earlier failing call and interval were not retained, so attribution is unavailable; `bench/reports/uuid-slug-compare-roFYIM-RLU183/artifacts.tar.gz` retains its inputs only. These results do not close the upstream-relative base32 gap.
 
 ### Internal reduction candidates
