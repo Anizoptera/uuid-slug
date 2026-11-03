@@ -62,6 +62,7 @@ if ((await tool.exited) !== 0 || reported !== `wasm-bindgen ${version}`)
   throw new Error(`Cargo.lock requires wasm-bindgen ${version}; found ${reported}`);
 
 // Browser entropy requires wasm-js; the empty selection must remain independent of JS services.
+// Native-only benchmark executables have no browser entry point; check:rust covers them.
 for (const features of ["--no-default-features", "--all-features"]) {
   await run([
     "cargo",
@@ -70,7 +71,7 @@ for (const features of ["--no-default-features", "--all-features"]) {
     "rust/Cargo.toml",
     "-p",
     "uuid-slug",
-    "--all-targets",
+    "--lib",
     features,
     "--target",
     "wasm32-unknown-unknown",
