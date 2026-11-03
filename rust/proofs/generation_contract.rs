@@ -1,6 +1,6 @@
 //! Prove generation through caller-supplied entropy; entropy quality and OS clocks are not modeled.
 use uuid_slug::{
-    Error, ErrorCode, MAX_UUID_V7_UNIX_MS, UuidV7Generator, generate_uuid_v4_into_with_random_fill,
+    Error, ErrorCode, UuidV7Generator, generate_uuid_v4_into_with_random_fill,
     generate_uuid_v4_with_random_fill, uuid_v7_bounds,
 };
 
@@ -120,7 +120,7 @@ fn inclusive_v7_bounds() {
     let explicit: bool = kani::any();
     let last = if explicit { end } else { start };
     let result = uuid_v7_bounds(start, explicit.then_some(end));
-    let valid = start <= last && last <= MAX_UUID_V7_UNIX_MS;
+    let valid = start <= last && last < (1u64 << 48);
     assert_eq!(
         result.is_ok(),
         valid,
@@ -153,7 +153,7 @@ fn v7_initial_payload() {
     let timestamp: u64 = kani::any();
     let fraction: u8 = kani::any();
     let entropy: [u8; 10] = kani::any();
-    kani::assume(timestamp <= MAX_UUID_V7_UNIX_MS);
+    kani::assume(timestamp < (1u64 << 48));
     kani::assume(fraction <= 12);
     let mut generator = UuidV7Generator::new()
         .with_sub_millisecond_fraction_bits(fraction)

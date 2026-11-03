@@ -1,5 +1,8 @@
 // One production transition from every admissible state avoids unfolding a history of pointer-
 // bearing Results. The invariant includes every reachable state, not only sampled histories.
+// Independent published widths keep a changed production constant from shrinking the proof domain.
+const WIRE_LAST_MS: u64 = (1u64 << 48) - 1;
+const WIRE_LAST_SEQUENCE: u64 = (1u64 << 42) - 1;
 fn arbitrary_generator() -> UuidV7Generator {
     let initialized: bool = kani::any();
     let last: u64 = kani::any();
@@ -8,8 +11,8 @@ fn arbitrary_generator() -> UuidV7Generator {
     let bits: u8 = kani::any();
     let policy: u8 = kani::any();
     let tolerance_ms: u64 = kani::any();
-    kani::assume(last <= MAX_UUID_V7_UNIX_MS && high <= last);
-    kani::assume(sequence <= MAX_SEQUENCE && bits <= 12 && policy < 3);
+    kani::assume(last <= WIRE_LAST_MS && high <= last);
+    kani::assume(sequence <= WIRE_LAST_SEQUENCE && bits <= 12 && policy < 3);
     UuidV7Generator {
         last_ms: initialized.then_some(last),
         clock_high_water_ms: initialized.then_some(high),
@@ -40,7 +43,7 @@ pub(super) fn prove_transition() {
     let now: u64 = kani::any();
     let fraction_12: u16 = kani::any();
     let entropy: [u8; 10] = kani::any();
-    kani::assume(now <= MAX_UUID_V7_UNIX_MS && fraction_12 < 4096);
+    kani::assume(now <= WIRE_LAST_MS && fraction_12 < 4096);
     let rollback = before.1.map_or(0, |high| high.saturating_sub(now));
     let reset = matches!(before.3, UuidV7ClockRollbackPolicy::Reset { tolerance_ms } if rollback > tolerance_ms);
     let rejected_clock = matches!(before.3, UuidV7ClockRollbackPolicy::Error { tolerance_ms } if rollback > tolerance_ms);
@@ -50,8 +53,8 @@ pub(super) fn prove_transition() {
         || before
             .0
             .is_none_or(|last| now > last || (now == last && fraction > before.2 >> counter_bits));
-    let exhausted = !fresh && before.2 == MAX_SEQUENCE && before.0 == Some(MAX_UUID_V7_UNIX_MS);
-    let reseed = fresh || before.2 == MAX_SEQUENCE;
+    let exhausted = !fresh && before.2 == WIRE_LAST_SEQUENCE && before.0 == Some(WIRE_LAST_MS);
+    let reseed = fresh || before.2 == WIRE_LAST_SEQUENCE;
     let mut drawn = 0;
     let result = from_parts(&mut generator, now, fraction_12, |out| {
         drawn += out.len();
@@ -138,7 +141,7 @@ pub(super) fn prove_failed_entropy() {
     let now: u64 = kani::any();
     let fraction_12: u16 = kani::any();
     let overwritten: [u8; 10] = kani::any();
-    kani::assume(now <= MAX_UUID_V7_UNIX_MS && fraction_12 < 4096);
+    kani::assume(now <= WIRE_LAST_MS && fraction_12 < 4096);
     let mut called = false;
     let result = from_parts(&mut generator, now, fraction_12, |out| {
         called = true;
