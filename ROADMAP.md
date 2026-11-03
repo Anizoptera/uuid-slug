@@ -113,6 +113,16 @@ Use `bench/decisions.md` for codec, interoperability, storage and O2 choices, re
 
 ## Follow-up
 
+### Deferred Rust CPU optimizations
+
+Future exploration only; do not start it during release preparation.
+
+- [ ] Explore native CPU instructions and instruction-set extensions across supported CPU architectures for single-UUID operations. Compare complete consumer calls with the portable implementation.
+- [ ] Explore batched UUID operations separately, including SIMD where useful; batch gains must not slow single-UUID calls.
+- [ ] Retain a specialized path only for demonstrated gains on actual target hardware, accounting for dispatch, allocation, code size and maintenance. Preserve wire formats, secure entropy, ownership, safety requirements and a portable fallback; detect CPU support before executing optional instructions.
+
+### Other follow-ups
+
 - [ ] Resolve the advisory affecting competitor `slugid` through its `uuid ^9` dependency. Keep this dev-only comparison on the upstream dependency graph; do not silently override it.
 
 - [ ] Resolve the upstream-relative Node base32 gap: its median stays about 3% higher; one full lane fails at 1.031 [1.0033, 1.1382], while the unchanged replay and seven-runtime matrix pass. The pre-reduction control also has a higher median; a direct comparison finds no resolved loss from the four reductions. Cause and parity remain unproved; preserve both outcomes and the full filter (`bench/decisions.md` §Historical base32 slowdown).
