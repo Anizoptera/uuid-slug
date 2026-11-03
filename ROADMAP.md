@@ -37,6 +37,7 @@ Update and commit only one canonical Markdown comparison report. Keep progress i
   - [x] Keep the reference identity with normalized costs; a regression rejects the prior invented 1× result for disconnected Node and Rust scales.
   - [x] Remove the anchor's separate filter and reject connections across different artifacts, version records, reference edges or ordered job inventories. Eight targeted `prove-guard.ts` mutations fail their regressions and restore the source byte for byte. The earlier 2-versus-46 Node and 6-versus-81 Rust wiring contexts require reacquisition under the shared filter.
     - [x] Intern structured ordered job lists without delimiter collisions; the multiline-name regression rejects the prior false 2× cross-language comparison.
+    - [x] Reacquire the 76-lane wiring matrix under the shared `plain/` filter: 304 completed process captures; the canonical report links to the completed raw capture. This smoke is not performance evidence.
 
 ## Joint Rust and TypeScript release preparation
 
