@@ -1,8 +1,7 @@
 //! Any UUID encodes losslessly as a base64url or base32hex slug. UUIDv7 additionally supports
 //! reversible masking.
 //!
-//! Masking hides structure; its 16-bit check is not authentication. Match decoded candidates
-//! against your own store. Select private key material explicitly for real identifiers.
+//! Masking hides structure; neither its 16-bit text check nor its 12-bit binary check authenticates an ID. Match decoded candidates against your own store. Select private key material explicitly for real identifiers.
 
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
