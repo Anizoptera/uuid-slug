@@ -52,7 +52,8 @@ jobs:
 
   rust-native:
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 5
+    # Cold toolchains and shared runners need headroom beyond the local check budget.
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -245,7 +246,8 @@ jobs:
   # Browser execution and Wasm compilation need tools outside the main packed-artifact check.
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Includes browser downloads, Rust/Wasm compilation and execution in every engine.
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:

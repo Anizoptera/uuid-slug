@@ -97,6 +97,7 @@ Keep adversarial hardening off default paths; ordinary calls must not pay for it
 - Keep TypeScript tests and their fixtures in the nearest `__test__/` directory so production and verification code remain distinct without a second naming convention.
 - Keep routine verification in `.github/workflows/check.yml`. Add another workflow only when it needs a different trigger or permission boundary.
 - Use `scripts/test-bun.ts`'s `verificationTimeoutMs` for Bun and Vitest test/hook deadlines: keep local hang bounds unchanged and retain the same CI headroom in both runners.
+- CI job deadlines must also cover cold tool installation and compilation; never apply the local lane ceiling to a whole shared-runner job or weaken local deadlines to compensate.
 - Execute packed browser code and both WebAssembly profiles in every browser engine selected by the workflow. Build once per profile; do not multiply equivalent compilation by browser count.
 - Resolve Rust tools through `rustup which` from the repository root, bind `RUSTC` and put that toolchain's bin directory first on PATH. Cargo subcommands such as Clippy otherwise can select a system compiler even when Cargo and rustc are pinned.
 - Child command environments MUST preserve Windows `Path` as well as `PATH` before prepending local executables; normalize the key once so duplicate case variants cannot discard the toolchain or an explicit caller override.
