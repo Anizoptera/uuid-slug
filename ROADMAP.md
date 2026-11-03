@@ -10,6 +10,11 @@ Derive API consistency and usability improvements from the maintainer's requests
 
 ## Joint release readiness
 
+- [ ] Update project-managed runtimes, JavaScript and Rust dependencies, CI actions and verification tools to current stable releases. Preserve package versions, supported runtime floors and historical compatibility fixtures; repair upgrade incompatibilities without weakening checks.
+  - [ ] Verify available versions and update JavaScript dependencies and runtime pins; keep the TypeScript compatibility compilers on their supported lines.
+  - [ ] Update Rust workspace and competitor dependencies, matching WebAssembly tools and CI action pins.
+  - [ ] Run the complete check and affected browser, WebAssembly, package and proof checks; remove scratch and report any remaining release blockers.
+
 Follow `dev/release.md` for the npm update and first crate publication. Build and verify stable archives from the authorized tag, not old development captures; reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives. Existing regression checks remain required; missing performance comparisons neither block preparation nor authorize experiments.
 
 - [ ] With explicit authorization, configure `CRATES_IO_BOOTSTRAP_TOKEN` before the first crate upload; trusted publishing cannot be configured until the crate exists.
