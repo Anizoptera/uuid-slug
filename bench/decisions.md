@@ -26,6 +26,12 @@ The same minified production-browser probe at `46f45a8` preserves these properti
 
 Six fresh processes per host compare the existing one-iteration and eight-iteration derivation jobs, with an unchanged plain conversion in each worker. Median within-process cost ratios are 1.80 on Node (range 1.76–1.87) and 2.36 on Bun (range 1.73–2.45); plain conversion process medians span 34.2–36.9 ns and 29.9–31.9 ns respectively. These observations show sensitivity to real derivation work in those jobs, not the absence of dead-code elimination in every job or engine. The iterated job also copies its options and derives different key material; this screen does not isolate a per-iteration instruction cost, establish a stable warm-up phase or rank runtimes.
 
+## Workerd clock resolution
+
+Keep the measured coarse-clock batches unless another instrument qualifies for the same caller jobs. On macOS arm64, workerd 1.20261102.1 reports 1 ms minimum positive increments for `performance.now()` and `Date.now()` in both compatibility modes; Node-compatible `hrtime()`, `hrtime.bigint()` and Node performance also report 1 ms. The matching release implements [performance time through `dateNow()`](https://github.com/cloudflare/workerd/blob/c4ae7ef/src/workerd/api/performance.c%2B%2B) and [hrtime through `Date.now()`](https://github.com/cloudflare/workerd/blob/c4ae7ef/src/node/internal/public_process.ts). Nanosecond units therefore provide no finer observation in these probes.
+
+The experimental `precise_timers` flag produces 3 ms increments in the same probes; it is not a finer clock. A release-mode native trace contains runtime and GC events, but usable per-batch boundary timestamps were not established. The existing forty-tick target consequently expands batches to 40 ms: one complete 396-job web-mode process records about 231 seconds of calibration and timed loops (2026-11-03). These observations explain that collection cost, not an implementation slowdown or a physical prohibition on other instruments. Reconsider the clock or repetition policy only with evidence preserving the measured quantity and required uncertainty.
+
 ## Implementation report retention
 
 Keep raw batches on disk and retain only per-process medians for report generation; streaming avoids retaining calibration histories and recomputing the same medians for each table cell.

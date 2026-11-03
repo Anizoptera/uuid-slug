@@ -70,6 +70,8 @@ Collect each attempt separately from completed reports. The canonical Markdown m
 
 Compress raw JSON Lines with gzip without dropping or rounding observations. Finish one gzip member per appended process so completed records remain recoverable after interruption; stream all members when regenerating and keep legacy uncompressed captures readable. Compression runs outside measured batches and uses the platform implementation, with no tuning controls.
 
+Resume only complete four-process windows with matching measurement collectors, artifacts, runtime versions, host and settings. Persist the remaining randomized schedule before timing so recovery cannot choose work from observed outcomes. Reacquire an interrupted window in full; never splice its two sides across a pause. Copy accepted windows into the new immutable attempt and replace the canonical report only after complete admission. Captures without collector and schedule receipts need a separate, source-checked migration before automatic recovery.
+
 Keep [throughput, sampled latency and cold-start measurements](https://github.com/openjdk/jmh/blob/master/jmh-samples/src/main/java/org/openjdk/jmh/samples/JMHSample_02_BenchmarkModes.java) separate, as JMH does; each answers a different question.
 
 Measure throughput and individual-call latency separately. Timed batches amortize clock and loop overhead; their per-call averages cannot establish individual-call p99. Keep raw samples, warm-up settings, runtime versions and execution order. Repeat comparisons in fresh processes with alternating order; samples from one process can share JIT, GC and thermal effects.
