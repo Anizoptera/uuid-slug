@@ -4,11 +4,13 @@
 
 Verify the npm update against published 0.5.0 and the first Rust crate without changing versions, creating tags or publishing. Reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives; distinguish local evidence from unexecuted platform and tagged-release checks.
 
-- [ ] Run full project verification with packed browser/worker coverage and all-runtime regression selection.
-- [ ] Compare matched npm consumer bundles and package contents with registry-verified 0.5.0.
-- [ ] Verify Cargo archive contents and extracted-source tests, native feature/profile coverage and both optimized WebAssembly profiles.
+- [x] Run full project verification with packed browser/worker coverage and all-runtime regression selection. Both the seven-runtime timing gate and the repaired-tree full check exit zero; passes do not close the retained upstream-relative Node base32 gap in `bench/decisions.md`.
+- [x] Compare matched npm consumer bundles and package contents with registry-verified 0.5.0. All 49 raw/gzip consumer bundles shrink; the cleaned npm archive grows by 239 bytes. The consumer-graph section in `bench/decisions.md` retains the measurements and limits.
+- [x] Verify Cargo archive contents and extracted-source tests, native feature/profile coverage and both optimized WebAssembly profiles. Local macOS arm64, Chromium/Firefox/WebKit and WASI preview-1/2 pass; other native platforms still require CI.
 - [ ] Review release prerequisites, report concrete regressions or remaining holds, and delete owned scratch.
-- [ ] Repair CI failures with their real triggering environment: isolate the performance-routing Git fixture from the outer baseline and diagnose missing shared-suite witnesses without weakening per-suite execution checks.
+- [x] Reproduce and repair the inherited Git-baseline and colored-witness CI failures; missing, duplicate and zero-call witnesses still reject.
+- [ ] Validate the Windows `Path` repair and rerun the full remote matrix after the local fixes are pushed. The run at `f272c18` fails; its runtime floors and browser timing jobs pass, but the Node runtime matrix is skipped and two native jobs are cancelled.
+- [ ] Configure `CRATES_IO_BOOTSTRAP_TOKEN` before the first crate publication; the repository secret list is empty. Stable versions, annotated tags and final tagged-archive preparation still require explicit authorization.
 
 - [x] Align changelog instructions across root guidance and the release owner: establish each package's publication baseline, update final consumer entries instead of accumulating unreleased history, and retain one mandatory review procedure without a prose checker. Read back the changes and check instruction compatibility before committing.
 
