@@ -10,6 +10,11 @@ Derive API consistency and usability improvements from the maintainer's requests
 
 ## Joint release readiness
 
+- [ ] Review and repair the complete TypeScript public API without changing issued IDs or weakening supported capabilities. Use the existing API report as the export inventory; retain documented value types and distinguish shipped contracts from unreleased additions.
+  - [ ] Audit names, parameters, options, types, defaults and comments across conversions, inspection, generation, parsed values, masking, sentinels and migration.
+  - [ ] Challenge ordinary calls, unions, detached methods, brands, error composition and ownership through real consumers; fix demonstrated failures with focused regressions.
+  - [ ] Verify emitted declarations, editor help, packaged calls and affected runtime paths; run required regression checks, commit focused changes and remove scratch.
+
 Follow `dev/release.md` for the npm update and first crate publication. Build and verify stable archives from the authorized tag, not old development captures; reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives. Existing regression checks remain required; missing performance comparisons neither block preparation nor authorize experiments.
 
 - [ ] Before publication, resolve or review [the upstream `deepmerge` advisory](https://github.com/advisories/GHSA-gcqx-w48m-w2h4). The latest Rollup resolver depends on the affected release and merges its fixed defaults; this dependency is development-only. Keep this separate from the clean production dependency audit.
