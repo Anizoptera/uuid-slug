@@ -61,15 +61,19 @@ function evidence(): ImplementationReport {
   };
 }
 
-test("a separate transport component uses its measured reference and cannot create cyclic scales", () => {
+test.each([
+  "transport/native/bun/ffi",
+  "transport/rust/wasm32-unknown-unknown/release/reduced/node",
+])("transport %s uses its measured reference without requiring generation", (candidateId) => {
   const report = evidence();
   const ids = new Map([
     ["ts/node", "transport/typescript/node"],
-    ["rust/native/release/fast-rng", "transport/native/bun/ffi"],
+    ["rust/native/release/fast-rng", candidateId],
   ]);
   for (const lane of report.lanes) {
     lane.id = ids.get(lane.id) as string;
     lane.reference = "transport/typescript/node";
+    delete lane.requiresEntropy;
   }
   for (const record of report.measurements) {
     record.lane = ids.get(record.lane) as string;
@@ -84,7 +88,7 @@ test("a separate transport component uses its measured reference and cannot crea
   expect(row).toContain("2×");
   const root = report.lanes[0];
   if (!root) throw new Error("Fixture omitted its root");
-  root.reference = "transport/native/bun/ffi";
+  root.reference = candidateId;
   for (const record of report.measurements)
     if (record.subject === root.id && record.role === "reference") record.lane = root.reference;
   expect(renderImplementationReport(report, root.id)).toContain("uncompared");

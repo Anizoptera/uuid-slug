@@ -93,7 +93,9 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       );
     if (
       (lane.id.startsWith("ts/") && lane.requiresEntropy !== true) ||
-      (lane.id.includes("wasm32-unknown-unknown") && typeof lane.requiresEntropy !== "boolean")
+      // Application lanes include generation; direct transport lanes convert fixed UUID inputs only.
+      (lane.id.startsWith("rust/wasm32-unknown-unknown/") &&
+        typeof lane.requiresEntropy !== "boolean")
     )
       throw new Error("Missing secure-source qualification policy for JavaScript host lane.");
   }
