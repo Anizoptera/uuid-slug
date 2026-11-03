@@ -1,7 +1,6 @@
 // Prepare immutable inputs once; timing starts only after every build and optimizer exits.
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
-import { join, resolve } from "node:path";
+import { copyFile, mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { command } from "../scripts/command";
 import { rustToolchain } from "../scripts/rust-toolchain";
@@ -9,7 +8,8 @@ import { optimizeWasm } from "../scripts/wasm-opt";
 import { browserEngines } from "../scripts/browser-engines";
 import { workerdExecutable } from "../scripts/check-workerd-consumer";
 import type { Settings } from "./implementation-worker";
-import packageJson from "../package.json" with { type: "json" };
+import { prepareNativeTransports } from "./implementation-native-build";
+import { buildJs, sha256 } from "./implementation-artifacts";
 
 export interface Lane {
   id: string;
@@ -26,65 +26,6 @@ export interface Lane {
   reference?: string;
   requiresEntropy?: boolean;
   entropyModule?: string;
-}
-
-export async function sha256(file: string): Promise<string> {
-  return createHash("sha256")
-    .update(await readFile(file))
-    .digest("hex");
-}
-
-export async function buildJs(
-  directory: string,
-  target: "bun" | "node" | "browser" | "deno" | "edge",
-  entrypoint?: string,
-) {
-  const runtime = target === "edge" ? "browser" : target;
-  const entry =
-    runtime === "bun"
-      ? packageJson.exports["."].bun
-      : runtime === "deno"
-        ? packageJson.exports["."].deno
-        : packageJson.exports["."].default;
-  const adapter =
-    runtime === "browser"
-      ? packageJson.imports["#runtime"].default
-      : packageJson.imports["#runtime"][runtime];
-  const result = await Bun.build({
-    check: true,
-    minify: { whitespace: true, syntax: true, identifiers: true, keepNames: true },
-    entrypoints: [
-      entrypoint ??
-        (runtime === "browser" ? "bench/implementation-worker.ts" : "bench/implementation-cli.ts"),
-    ],
-    target: runtime === "deno" ? "node" : runtime,
-    format: target === "edge" ? "iife" : "esm",
-    outdir: directory,
-    naming: `${target}.mjs`,
-    conditions: [runtime],
-    metafile: true,
-    plugins: [
-      {
-        name: "public-package-route",
-        setup(builder) {
-          // Bun snapshots implicit conditions at startup; select the manifest's production adapter explicitly.
-          builder.onResolve({ filter: /^#runtime$/ }, () => ({ path: resolve(adapter) }));
-          builder.onResolve({ filter: /^\.\.\/src\/index(?:\.ts)?$/ }, () => ({
-            path: resolve(entry),
-          }));
-        },
-      },
-    ],
-  });
-  if (!result.success) throw new AggregateError(result.logs, `Benchmark build failed: ${target}`);
-  const inputs = Object.keys(result.metafile?.inputs ?? {});
-  for (const expected of [entry, adapter])
-    if (!inputs.some((input) => resolve(input) === resolve(expected)))
-      throw new Error(
-        `${target} benchmark did not select ${expected}; inspect its package export conditions`,
-      );
-  await writeFile(join(directory, `${target}.inputs.json`), JSON.stringify(result.metafile));
-  return join(directory, `${target}.mjs`);
 }
 
 export async function prepareImplementations(
@@ -389,5 +330,16 @@ export async function prepareImplementations(
     family: "Cross-language anchor",
     reference: "ts/node",
   });
+  const transportReference = await buildJs(
+    join(directory, "transport-reference"),
+    "node",
+    "bench/implementation-transport-reference.ts",
+  );
+  lanes.push(
+    ...(await prepareNativeTransports(directory, transportReference, {
+      node: current,
+      rust: compiler,
+    })),
+  );
   return lanes;
 }

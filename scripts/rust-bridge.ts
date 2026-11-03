@@ -20,13 +20,17 @@ export function rustBridgeFiles(profile: "debug" | "release", directory = target
 }
 
 /** Build explicitly once per lane; loading never launches an implicit Cargo process. */
-export async function buildRustBridge(profile: "debug" | "release" = "release"): Promise<void> {
+export async function buildRustBridge(
+  profile: "debug" | "release" = "release",
+  cargoConfig: readonly string[] = [],
+): Promise<void> {
   const toolchain = await rustToolchain(root);
   await new Promise<void>((done, reject) => {
     const child = spawn(
       toolchain.cargo,
       [
         ...toolchain.cargoArgs,
+        ...cargoConfig.flatMap((value) => ["--config", value]),
         "build",
         "--manifest-path",
         "rust/Cargo.toml",

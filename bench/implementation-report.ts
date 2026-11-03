@@ -188,11 +188,16 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
         : { referenceLane: "ts/node", cost: direct };
     }
     if (!sameReferenceContext) return undefined;
+    // Transport callers form their own measured component rather than borrowing a native loop's scale.
+    if (reference === lane) return { referenceLane: lane, cost: 1 };
     const value = localRatio(lane, block, name);
     if (value === undefined) return undefined;
     // Keep the scale with the cost: disconnected reference graphs cannot imply equal timings.
     if (reference === "ts/node") return { referenceLane: reference, cost: value };
-    if (reference !== "rust/native/release/fast-rng") return undefined;
+    if (reference !== "rust/native/release/fast-rng") {
+      const root = report.lanes.find((item) => item.id === reference);
+      return root?.reference === reference ? { referenceLane: reference, cost: value } : undefined;
+    }
     const base = normalized(reference, block, name);
     return base && { referenceLane: base.referenceLane, cost: value * base.cost };
   };
@@ -252,7 +257,13 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       "",
       `Requested reference: \`${baseline}\`. Each job names its actual reference: the requested lane when available, otherwise Node, native release Rust, then another connected measured lane. Each comparison runs reference/candidate/candidate/reference or the reverse. ${report.exposure === "randomized" ? "Lane order within each block and each window's orientation were independently randomized before timing." : "Windows reverse in alternate blocks; lane exposure was not randomized."} Ratios combine the two neighboring pairs geometrically. Native Rust connects to Node only through a matching artifact, version record and ordered workload. ${blocks} fresh-process blocks, ${report.settings.samples} batches per process. A missing interval is unresolved. Retained JSON Lines keep every batch and acquisition order.`,
       "",
-      "Rust rows time complete compiled application calls with result consumption in the native or WASM loop; they exclude a JS crossing per identifier. JS rows include their result witness and errors-as-values checks. Rust owns fixed-array values where JavaScript owns heap arrays. These are consumer-path comparisons, not isolated language or compiler effects. No overall winner is calculated.",
+      "Rust application rows time complete compiled calls with result consumption in the native or WASM loop; they exclude a JS crossing per identifier. JS rows include their result witness and errors-as-values checks. Rust owns fixed-array values where JavaScript owns heap arrays. These are consumer-path comparisons, not isolated language or compiler effects. No overall winner is calculated.",
+      ...(report.lanes.some((lane) => lane.id.startsWith("transport/"))
+        ? [
+            "",
+            "Per-call transport rows include one real native crossing for each UUID, text parsing and owned base64url string output, checked against the same JavaScript text-to-slug job. They exclude JSON dispatch. Native libraries are development-only and are not shipped in the npm package; Bun prefers FFI and Node prefers Node-API. Forced alternative rows measure fallback capabilities, not a recommendation to change those defaults.",
+          ]
+        : []),
       "",
       "JavaScript graphs are warmed and minified. Rust uses release optimization level 3, ThinLTO and one code-generation unit, with native CPU tuning for this machine; WASM then uses the maintained Binaryen O2 pipeline. Debug and disabled-JIT runs are excluded. Browser workers use cross-origin isolation. “Unavailable” means no measured result for that job in the lane; it does not establish missing API support. “Uncompared” means a measured result lacks a connection to the reference under matching conditions. Neither means zero cost. Installed Node patches are represented by the newest installed patch per major plus the checkout's selected Node.",
       "",
@@ -270,14 +281,18 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       "plain/base32",
       "mask/binary/owned",
       "unmask/binary/owned",
-    ];
+    ].filter((name) => report.lanes.some((lane) => read(lane.id, 0, 0, name) !== undefined));
     lines.push(
       table([
         ["Lane", ...common],
         ["---", ...common.map(() => "---:")],
         ["Reference", ...common.map((name) => referenceForJob(name) ?? "none")],
         ...report.lanes
-          .filter((lane) => lane.family !== "Cross-language anchor")
+          .filter(
+            (lane) =>
+              lane.family !== "Cross-language anchor" &&
+              common.some((name) => read(lane.id, 0, 0, name) !== undefined),
+          )
           .map((lane) => [lane.id].concat(common.map((name) => relative(lane.id, name)))),
       ]),
       "",

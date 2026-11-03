@@ -60,6 +60,35 @@ function evidence(): ImplementationReport {
   };
 }
 
+test("a separate transport component uses its measured reference and cannot create cyclic scales", () => {
+  const report = evidence();
+  const ids = new Map([
+    ["ts/node", "transport/typescript/node"],
+    ["rust/native/release/fast-rng", "transport/native/bun/ffi"],
+  ]);
+  for (const lane of report.lanes) {
+    lane.id = ids.get(lane.id) as string;
+    lane.reference = "transport/typescript/node";
+  }
+  for (const record of report.measurements) {
+    record.lane = ids.get(record.lane) as string;
+    record.subject = ids.get(record.subject) as string;
+    const row = record.rows[0];
+    if (row && record.subject === "transport/typescript/node" && record.role === "reference")
+      row.ns = [900, 1000, 90000];
+  }
+  const rendered = renderImplementationReport(report, "transport/typescript/node");
+  const row = rendered.split("\n").find((line) => line.startsWith("| plain/base64 |"));
+  expect(row).toContain("transport/typescript/node");
+  expect(row).toContain("2×");
+  const root = report.lanes[0];
+  if (!root) throw new Error("Fixture omitted its root");
+  root.reference = "transport/native/bun/ffi";
+  for (const record of report.measurements)
+    if (record.subject === root.id && record.role === "reference") record.lane = root.reference;
+  expect(renderImplementationReport(report, root.id)).toContain("uncompared");
+});
+
 function nativeReferenceEvidence() {
   const report = evidence();
   const native = report.lanes.find((lane) => lane.id === "rust/native/release/fast-rng");

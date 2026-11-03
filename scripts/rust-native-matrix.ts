@@ -2,6 +2,8 @@
 type NativeTransport = "ffi" | "napi";
 
 interface NativeLane {
+  readonly runtime: Host["name"];
+  readonly version: string;
   readonly command: readonly string[];
   readonly env: Readonly<Record<string, string>>;
   readonly expectedTransport:
@@ -123,6 +125,8 @@ export async function nativeMatrix(
 
   return hosts.flatMap((host) =>
     host.transports.map((transport) => ({
+      runtime: host.name,
+      version: host.version,
       command: [...host.executable, ...host.ffiArguments, host.source ? sourceEntry : bundledEntry],
       env: { ...host.env, UUID_SLUG_RUST_TRANSPORT: transport },
       expectedTransport: `${host.name} ${transport === "ffi" ? "FFI" : "Node-API"}` as const,
