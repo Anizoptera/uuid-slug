@@ -2,6 +2,7 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
+import { stripVTControlCharacters } from "node:util";
 import type { JsonTestResults } from "vitest/node";
 import DISCOVERY from "./shared-test-suites.json" with { type: "json" };
 
@@ -23,6 +24,8 @@ export function verifySharedSuites(
       `Shared suite discovery differs: expected ${expected.join(", ")}; ran ${observed.join(", ")}. Remove test filters; every discovered suite must run.`,
     );
   const witnesses: string[] = [];
+  // Reporters can put a color reset after their header's newline, before the witness text.
+  const lines = stripVTControlCharacters(output).split("\n");
   const reached = new Set<string>();
   for (const suite of report.testResults) {
     if (suite.status !== "passed" || !suite.assertionResults.length)
@@ -52,7 +55,7 @@ export function verifySharedSuites(
     if (reached.has(identity)) throw new Error(`Duplicate shared suite execution: ${identity}`);
     reached.add(identity);
     const prefix = `${host}: shared suite ${basename(suite.name)} executed `;
-    const matches = output.split("\n").filter((line) => line.startsWith(prefix));
+    const matches = lines.filter((line) => line.startsWith(prefix));
     const [witness] = matches;
     if (
       matches.length !== 1 ||
