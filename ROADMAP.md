@@ -1,5 +1,14 @@
 # Remaining work
 
+## Rust proof coverage
+
+Expand solver-backed verification of the actual Rust implementation without changing public APIs, issued identifiers or runtime work. Preserve the existing Kani bit-codec/Feistel and Verus buffer proofs; add symbolic coverage for consequential parsing, payload interpretation, generation, masking and caller-buffer behavior where the tools reach the real body. OS entropy, foreign runtimes, scheduling and cryptographic strength require separate evidence and must not inherit a solver verdict.
+
+- [ ] Inventory production decisions and existing theorem domains; run the unchanged proof controls and identify reachable gaps.
+- [ ] Extend the existing isolated Kani crate with independent specifications for UUID inspection, payload layouts, timestamp bounds, generation and failure-atomic buffer writes; validate real call-path translation before widening.
+- [ ] Prove remaining tractable masking, parser and hash/state decisions; retain exact tool/model limits for any body not covered rather than substituting a copied algorithm or restricted examples.
+- [ ] Exercise semantic counterexamples in isolated copies, require named solver results, run affected native checks and final project verification, and remove owned scratch. Commit each coherent proof expansion separately.
+
 ## Cross-runtime implementation comparison
 
 Compare every maintained TypeScript runtime, native Rust feature variant and WASM variant on equivalent API jobs, warmed and optimized for performance: minified JavaScript and release Rust/WASM, without debug artifacts or disabled JITs. Cover API variants and common scenarios, retain raw evidence, and generate a rerunnable Markdown report centered on relative differences and uncertainty. Keep small fluctuations out of rankings. Benchmark work is authorized; product changes, publication and remote writes are not.
