@@ -3,6 +3,8 @@ import { measureImplementationCases } from "./implementation-timing";
 import type { Settings } from "./implementation-timing";
 import { selectProfileCases } from "./profile-case";
 
+export const TRANSPORT_REFERENCE_ID = "transport/typescript/node";
+
 export function measureUuidStringToPlainSlug(
   settings: Settings,
   plain: (uuidString: string) => string | Error,

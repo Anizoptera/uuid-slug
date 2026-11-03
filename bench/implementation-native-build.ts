@@ -6,6 +6,7 @@ import { buildRustBridge, rustBridgeFiles } from "../scripts/rust-bridge";
 import { nativeMatrix } from "../scripts/rust-native-matrix";
 import type { Lane } from "./implementation-build";
 import { sha256 } from "./implementation-artifacts";
+import { TRANSPORT_REFERENCE_ID } from "./implementation-transport";
 
 export async function prepareNativeTransports(
   directory: string,
@@ -47,7 +48,7 @@ export async function prepareNativeTransports(
   const combined = createHash("sha256")
     .update(JSON.stringify({ worker: jsHash, native: libraryHash }))
     .digest("hex");
-  const referenceId = "transport/typescript/node";
+  const referenceId = TRANSPORT_REFERENCE_ID;
   const lanes: Lane[] = [
     {
       id: referenceId,

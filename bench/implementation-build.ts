@@ -9,6 +9,7 @@ import { browserEngines } from "../scripts/browser-engines";
 import { workerdExecutable } from "../scripts/check-workerd-consumer";
 import type { Settings } from "./implementation-worker";
 import { prepareNativeTransports } from "./implementation-native-build";
+import { prepareTransportModule, prepareWasmTransports } from "./implementation-wasm-transport";
 import { buildJs, sha256 } from "./implementation-artifacts";
 import type { NativeTransportLabel } from "../scripts/rust-native-matrix";
 import jcoPackage from "../node_modules/@bytecodealliance/jco/package.json" with { type: "json" };
@@ -31,6 +32,7 @@ export interface Lane {
   reference?: string;
   requiresEntropy?: boolean;
   entropyModule?: string;
+  transportModule?: string;
 }
 
 export async function prepareImplementations(
@@ -57,6 +59,7 @@ export async function prepareImplementations(
     receiptModule,
     `import {processRuntimeVersion} from ${JSON.stringify(hostModule)}; console.log(JSON.stringify({runtimeVersion:processRuntimeVersion()}));`,
   );
+  const transportModule = await prepareTransportModule(directory);
   const entropyBuild = await Bun.build({
     check: true,
     entrypoints: ["bench/implementation-entropy.ts"],
@@ -297,6 +300,13 @@ export async function prepareImplementations(
           const wasm = join(destination, "module_bg.wasm");
           const script = join(destination, "module.js");
           const hash = await sha256(wasm);
+          lanes.push(
+            ...(await prepareWasmTransports(
+              { directory: destination, script, wasm, hash, name, compiler },
+              lanes.filter((lane) => lane.id.startsWith("ts/")),
+              { transport: transportModule, host: hostModule },
+            )),
+          );
           const edgeEntry = join(destination, "edge-entry.js");
           await writeFile(
             edgeEntry,

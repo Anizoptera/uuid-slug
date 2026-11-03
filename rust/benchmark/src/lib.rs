@@ -1,4 +1,4 @@
-//! Time the shared Rust caller jobs without a transport crossing per identifier.
+//! Time Rust application loops and expose direct conversion for host crossing measurements.
 use std::hint::black_box;
 #[path = "../../uuid-slug/benches/codec/cases.rs"]
 mod cases;
@@ -18,6 +18,19 @@ fn clock_ms() -> f64 {
     static START: std::sync::LazyLock<std::time::Instant> =
         std::sync::LazyLock::new(std::time::Instant::now);
     START.elapsed().as_secs_f64() * 1000.0
+}
+
+/// Convert one UUID text value through the generated JavaScript/WASM boundary.
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+#[wasm_bindgen]
+pub fn plain(input: &str) -> Result<String, JsValue> {
+    // A direct binding measures marshalling and real conversion without JSON test dispatch.
+    uuid_slug::Uuid::from_uuid_string(input)
+        .map(|uuid| {
+            uuid.to_plain_uuid_slug(uuid_slug::UuidSlugAlphabet::Base64Url)
+                .into_string()
+        })
+        .map_err(|error| JsValue::from_str(error.code().as_str()))
 }
 
 /// Return batch observations; setup, correctness checks and serialization are outside timing.

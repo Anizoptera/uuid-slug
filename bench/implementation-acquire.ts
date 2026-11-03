@@ -75,9 +75,15 @@ async function acquire(
           return new Response(Bun.file(lane.entropyModule), {
             headers: { "content-type": "text/javascript", ...isolation },
           });
+        if (path === "/transport.mjs" && lane.transportModule)
+          return new Response(Bun.file(lane.transportModule), {
+            headers: { "content-type": "text/javascript", ...isolation },
+          });
         if (path === "/bootstrap.mjs")
           return new Response(
-            `import init,{benchmark,entropy_probe} from "/worker.mjs"; import {qualifyEntropy} from "/entropy.mjs"; await init(); onmessage=e=>{const q=qualifyEntropy(()=>JSON.parse(entropy_probe()),()=>undefined,${lane.requiresEntropy});postMessage({rows:JSON.parse(benchmark(e.data.samples,e.data.duration,e.data.warmup,e.data.filter,e.data.batchTicks)),entropy:q.entropy});}; postMessage("ready");`,
+            lane.transportModule
+              ? 'import init,{plain} from "/worker.mjs"; import {measureUuidStringToPlainSlug} from "/transport.mjs"; await init(); onmessage=e=>postMessage({rows:measureUuidStringToPlainSlug(e.data,plain)}); postMessage("ready");'
+              : `import init,{benchmark,entropy_probe} from "/worker.mjs"; import {qualifyEntropy} from "/entropy.mjs"; await init(); onmessage=e=>{const q=qualifyEntropy(()=>JSON.parse(entropy_probe()),()=>undefined,${lane.requiresEntropy});postMessage({rows:JSON.parse(benchmark(e.data.samples,e.data.duration,e.data.warmup,e.data.filter,e.data.batchTicks)),entropy:q.entropy});}; postMessage("ready");`,
             { headers: { "content-type": "text/javascript", ...isolation } },
           );
         const script = `const worker=new Worker(${JSON.stringify(lane.wasm ? "/bootstrap.mjs" : "/worker.mjs")},{type:"module"}); const ready=new Promise((resolve,reject)=>{worker.onmessage=e=>{if(e.data==="ready")resolve();};worker.onerror=e=>reject(Error(e.message));}); globalThis.uuidSlugBenchmark=async s=>{await ready;return new Promise((resolve,reject)=>{worker.onmessage=e=>resolve(e.data);worker.onerror=e=>reject(Error(e.message));worker.postMessage(s);});};`;

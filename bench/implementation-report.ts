@@ -293,7 +293,7 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       ...(report.lanes.some((lane) => lane.id.startsWith("transport/"))
         ? [
             "",
-            "Per-call transport rows include one real native crossing for each UUID, text parsing and owned base64url string output, checked against the same JavaScript text-to-slug job. They exclude JSON dispatch. Native libraries are development-only and are not shipped in the npm package; Bun prefers FFI and Node prefers Node-API. Forced alternative rows measure fallback capabilities, not a recommendation to change those defaults.",
+            "Per-call transport rows include one real native or WebAssembly crossing for each UUID, text parsing and owned base64url string output, checked against the same JavaScript text-to-slug job. They exclude JSON dispatch. Native libraries and WASM bindings are development-only and are not shipped in the npm package; Bun prefers FFI and Node prefers Node-API. Forced alternative rows measure fallback capabilities, not a recommendation to change those defaults.",
           ]
         : []),
       "",
