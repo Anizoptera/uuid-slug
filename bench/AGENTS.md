@@ -2,6 +2,12 @@
 
 Apply `../AGENTS.md` §Work scope before starting experiments; keep required regression checks. Read `README.md` for commands, `methods.md` for experiment and measurement mechanics, and `decisions.md` for measured conclusions.
 
+## Before a full run
+
+- Derive the measurement from the requested consumer decision. Before broad timing, name required caller jobs and runtime/feature distinctions, count planned processes and jobs, and state what observation would change the next action. A Cartesian matrix, existing plan, default sample count or successful wiring check does not justify its cost.
+- Account for the complete schedule using retained calibration and batch durations, including coarse-clock expansion, setup and dispatch; use a narrow pilot for missing costs. Allocate repetitions where variation enters and preserve valid pairing and inference. Reuse builds and validated observations; remove redundant work, never required coverage or correctness. Read `methods.md` §Cross-runtime implementation comparisons before choosing the schedule.
+- Show admitted captures against the planned total; distinguish starting work from completed evidence. Analyze usable complete experimental units as they arrive. Polling and progress messages do not replace analysis or advance other work: finish independent in-scope review while collecting, then run final checks after timing. Keep only work that can change the requested decision; do not expand the task to fill a wait.
+
 ## Choose the decision
 
 - Optimize ordinary successful calls in `../README.md`: single-ID generation, parsing and conversion. Failures and batch writes are not optimization targets; never slow single calls for batches.
@@ -11,7 +17,7 @@ Apply `../AGENTS.md` §Work scope before starting experiments; keep required reg
 - Locate the complete-call bottleneck before optimizing a component. Reprofile when it moves; dispatch, formatting and allocation can erase a component gain.
 - Before comparing compiler flags or optimizer pipelines, read `methods.md` §Compiler and WebAssembly optimization. Separate artifact changes from runtime compilation and measurement variation; a preset number or aggregate score cannot establish a gain across protected calls.
 - Screen one candidate through the complete call; retain it only after independent packed replays and resource evidence. Stop once evidence decides; diagnose conflicting instruments before replay, because more samples cannot repair comparisons of different work. When a harness correction exposes a confound, requalify dependent performance claims with the corrected harness before changing production; preserve historical measurements with their original limits.
-- EXCLUDE insecure generation from ALL timings, including references: trace the selected CSPRNG and test secure-source failure before timing; output statistics cannot establish cryptographic security. Qualify rivals by correct wire output and proper native guarantees. Counter widths, zero-start counters and random-bit allocation are differences, not disqualifiers. Keep other weaker rows labeled separately and inspect faster mechanisms that could preserve the requested result; materially weaker results cannot win equivalent-result rankings.
+- EXCLUDE insecure generation from ALL timings, including references: trace the selected CSPRNG and test secure-source failure before timing; output statistics cannot establish cryptographic security. A ranking rejection does not permit insecure validation or warm-up. Qualify rivals by correct wire output and proper native guarantees. Counter widths, zero-start counters and random-bit allocation are differences, not disqualifiers. Keep other weaker rows labeled separately and inspect faster mechanisms that could preserve the requested result; materially weaker results cannot win equivalent-result rankings.
 - Repeat decision-relevant workloads in independent processes. Keep only reproducible gains whose uncertainty rules out an unchanged result, without material loss on speed or resources. Statistically detectable but negligible effects do not earn code; unresolved results stay unresolved. Close primary-call speed and resource gaps together; throughput alone does not close a task.
 
 ## Runtime choices

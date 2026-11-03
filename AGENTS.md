@@ -21,7 +21,7 @@ BEFORE each read, measure its bytes in a separate call. Store and size generated
 | TypeScript source, types, JSDoc, emitted modules or runtime capabilities, including README API text written without opening `src/` | `src/AGENTS.md` (auto-loads only when a `src/` file is opened) |
 | Masking, keys, sentinels or identifier formats | `docs/design.md` and `docs/security.md` |
 | Rust, TS/Rust parity, shared formats, filesystem-safe output, package entries, runtime floors or bundling | `dev/cross-language.md` |
-| Saving command output, experiments, profiles, drivers, evidence cleanup or performance gates, even from `src/` | `bench/AGENTS.md` (priorities, gates), then `bench/README.md` (commands, reports) |
+| Planning or running benchmarks, saving command output, experiments, profiles, drivers, evidence cleanup or performance gates, even from `src/` | `bench/AGENTS.md` (scope, acquisition cost, priorities, gates), then `bench/README.md` (commands, reports) |
 | Versions, packaging, release tooling or workflows, publication, recovery, assets, notes or finalization | `dev/release.md` in full |
 | Consumer copy or generation guarantees | `dev/interface.md` §Writing public documentation, then README opening, affected section and reference |
 | README diagram (`docs/assets/uuid-representations.svg`, generated) | `scripts/readme-diagram.ts` header owns layout, colour, hover and motion rulings. Record each ruling there; retain it until the maintainer drops it. Add each hover ruling to the build's Chromium check (`scripts/readme-diagram-hover.ts`). Show changes with `bun scripts/readme-diagram-preview.ts` (working tree vs committed, both themes, live hover). READ `dev/interface.md` §Writing public documentation for diagram text |
