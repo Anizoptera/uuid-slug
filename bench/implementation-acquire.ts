@@ -127,17 +127,12 @@ if (reportIndex >= 0) {
     };
     const reporter = createImplementationReporter(planned);
     // Append each capture once; rewriting the growing history makes checkpoint I/O quadratic.
-    output = await openImplementationOutput(destination, planned);
-    let sequence = 0;
-    if (recovery)
-      for await (const window of recovery.windows()) {
-        // Validate the entire unit before copying it; never resume across an interrupted pair.
-        for (const record of window) reporter.append(record);
-        for (const record of window) {
-          await output.append(record);
-          sequence++;
-        }
-      }
+    output = await openImplementationOutput(
+      destination,
+      planned,
+      recovery ? { windows: recovery.windows(), admit: reporter.append } : undefined,
+    );
+    let sequence = output.reused;
     console.log(
       `Reused ${sequence} completed process captures; ${blocks * lanes.length * 4 - sequence} remain.`,
     );

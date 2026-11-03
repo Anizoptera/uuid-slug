@@ -75,6 +75,10 @@ export async function writeImplementationReport(
 export async function openImplementationOutput(
   destination: string,
   header: Omit<ImplementationReport, "measurements">,
+  recovery?: {
+    windows: AsyncIterable<readonly UnvalidatedMeasurement[]>;
+    admit: (record: UnvalidatedMeasurement) => void;
+  },
 ) {
   if (!destination.endsWith(".md")) throw new Error("Report destination must end with .md");
   const parent = dirname(destination);
@@ -85,6 +89,7 @@ export async function openImplementationOutput(
   const output = await open(raw, "wx");
   let state: "collecting" | "captured" | "published" = "collecting";
   let closed = false;
+  let reused = 0;
   async function appendLine(value: object) {
     const line = `${JSON.stringify(value)}\n`;
     // Each completed append is independently decompressible even if collection is interrupted.
@@ -96,14 +101,35 @@ export async function openImplementationOutput(
       closed = true;
     }
   }
+  async function close() {
+    await closeRaw();
+    if (state !== "published") {
+      // Markdown is regenerable; only the failed attempt's observations justify retention.
+      await rm(join(captureDirectory, "complete.md"), { force: true });
+      console.error(
+        `Report not updated; existing completed files were not overwritten. Observations: ${raw}\n${state === "captured" ? "Regenerate with --report and this file; timing does not need repeating." : "Acquisition did not finish. Diagnose the failure before repeating measurements; remove this attempt when diagnosis no longer needs it."}`,
+      );
+    }
+  }
   try {
     await appendLine(header);
+    if (recovery)
+      for await (const window of recovery.windows) {
+        // Validate the entire unit before copying it; never resume across an interrupted pair.
+        for (const record of window) recovery.admit(record);
+        for (const record of window) {
+          await appendLine(record);
+          reused++;
+        }
+      }
   } catch (error) {
-    await closeRaw();
+    if (recovery) await close();
+    else await closeRaw();
     throw error;
   }
   return {
     raw,
+    reused,
     append: (record: UnvalidatedMeasurement) => appendLine(record),
     async publish(markdown: string) {
       await appendLine({ complete: true });
@@ -115,15 +141,6 @@ export async function openImplementationOutput(
       state = "published";
       return raw;
     },
-    async close() {
-      await closeRaw();
-      if (state !== "published") {
-        // Markdown is regenerable; only the failed attempt's observations justify retention.
-        await rm(join(captureDirectory, "complete.md"), { force: true });
-        console.error(
-          `Report not updated; existing completed files were not overwritten. Observations: ${raw}\n${state === "captured" ? "Regenerate with --report and this file; timing does not need repeating." : "Acquisition did not finish. Diagnose the failure before repeating measurements; remove this attempt when diagnosis no longer needs it."}`,
-        );
-      }
-    },
+    close,
   };
 }
