@@ -64,7 +64,7 @@ pub fn visit(visitor: &mut impl Recorder) -> Result<(), Error> {
             });
         }
     }
-    let mask = derive_uuid_v7_mask(b"benchmark-seed-not-for-production", 1, "bench")?;
+    let mask = derive_uuid_v7_mask(b"benchmark-seed-not-for-production", 1)?;
     let compact = UuidV7MaskingCodec::new(mask.clone());
     let safe = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
         masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,

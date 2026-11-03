@@ -968,9 +968,9 @@ RFC 9562 permits four useful payload models: random bits; a fixed leading counte
 
 ### Rust derivation future construction
 
-Constructing `derive_uuid_v7_mask_async` synchronously copies its seed and diagnostic label; bounded polling starts after that capture. Owning the snapshot lets callers reuse their inputs before polling, as the native mutation-after-construction test requires. For large inputs, include capture when deciding whether construction belongs on the caller's thread.
+Constructing `derive_uuid_v7_mask_async` synchronously copies its seed; bounded polling starts after that capture. Owning the snapshot lets callers reuse their inputs before polling, as the native mutation-after-construction test requires. Diagnostic labels attach to the resulting mask and are not copied during derivation. For large seeds, include capture when deciding whether construction belongs on the caller's thread.
 
-An isolated consumer of `5f70330`, Rust 1.99.1 release on macOS Arm64 with crate defaults disabled (2026-10-23), varies seed and label lengths separately from 16 bytes to 16 MB. Three fresh processes capture sixteen observations per size/mode, with either a new cancellation handle or a clone of a shared one. Timing includes that handle acquisition and construction; input setup, future drop, polling and hashing are outside the interval. For the new-handle call, ranges of the three process medians are:
+An isolated consumer of `5f70330`, using the earlier label-taking signature, Rust 1.99.1 release on macOS Arm64 with crate defaults disabled (2026-10-23), varies seed and label lengths separately from 16 bytes to 16 MB. Three fresh processes capture sixteen observations per size/mode, with either a new cancellation handle or a clone of a shared one. Timing includes that handle acquisition and construction; input setup, future drop, polling and hashing are outside the interval. For the new-handle call, ranges of the three process medians are:
 
 | Varied input | 64 KB | 1 MB | 16 MB |
 | --- | ---: | ---: | ---: |

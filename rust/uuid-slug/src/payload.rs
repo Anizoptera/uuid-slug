@@ -150,7 +150,7 @@ mod tests {
             },
         )
         .unwrap();
-        let seeded = derive_uuid_v7_mask(b"golden-vector-seed-v3", 1, "seeded-v2").unwrap();
+        let seeded = derive_uuid_v7_mask(b"golden-vector-seed-v3", 1).unwrap();
         let default = crate::uuid_v7_test_mask();
         for case in fixture.as_array().unwrap() {
             // Masking-codec sentinel bypass is deliberately not exercised by this block-level test.

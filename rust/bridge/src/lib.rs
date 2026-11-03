@@ -313,7 +313,6 @@ impl Derivation {
             future: Box::pin(uuid_slug::derive_uuid_v7_mask_async(
                 seed,
                 iterations,
-                "browser",
                 Some(cancellation.clone()),
             )),
             cancellation,

@@ -94,13 +94,11 @@ pub fn visit(ids: &[Uuid], record: &mut impl super::Recorder) {
     scalar!("construct/mask", |_: Uuid| derive_uuid_v7_mask(
         black_box(b"benchmark-seed-not-for-production"),
         1,
-        "bench"
     )
     .unwrap());
     scalar!("construct/mask-iterated", |_: Uuid| derive_uuid_v7_mask(
         black_box(b"benchmark-seed-not-for-production"),
         64,
-        "bench"
     )
     .unwrap());
     let mask = uuid_v7_test_mask();
@@ -126,7 +124,7 @@ pub fn visit(ids: &[Uuid], record: &mut impl super::Recorder) {
             .unwrap()
         });
     }
-    let old = derive_uuid_v7_mask(b"benchmark-previous-key", 1, "previous").unwrap();
+    let old = derive_uuid_v7_mask(b"benchmark-previous-key", 1).unwrap();
     let previous = UuidV7MaskingCodec::new(old.clone());
     let stored: Vec<_> = ids
         .iter()
@@ -249,7 +247,6 @@ pub fn visit(ids: &[Uuid], record: &mut impl super::Recorder) {
             finish(derive_uuid_v7_mask_async(
                 b"benchmark-seed-not-for-production",
                 iterations,
-                "bench",
                 None,
             ))
             .unwrap()
@@ -261,7 +258,6 @@ pub fn visit(ids: &[Uuid], record: &mut impl super::Recorder) {
         derive_uuid_v7_mask_async(
             b"benchmark-seed-not-for-production",
             64,
-            "bench",
             Some(cancelled.clone())
         )
     )

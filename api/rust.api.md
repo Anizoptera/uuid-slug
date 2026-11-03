@@ -465,6 +465,7 @@ pub struct uuid_slug::UuidV7Mask
 impl uuid_slug::UuidV7Mask
 pub fn uuid_slug::UuidV7Mask::diagnostic_label(&self) -> &str
 pub fn uuid_slug::UuidV7Mask::from_permutation_functions(diagnostic_label: impl core::convert::Into<alloc::string::String>, mask_uuid_bytes: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::Error> + core::marker::Send + core::marker::Sync + 'static, unmask_uuid_bytes: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::Error>
+pub fn uuid_slug::UuidV7Mask::with_diagnostic_label(self, label: impl core::convert::Into<alloc::string::String>) -> Self
 impl core::clone::Clone for uuid_slug::UuidV7Mask
 pub fn uuid_slug::UuidV7Mask::clone(&self) -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7Mask
@@ -656,8 +657,8 @@ impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::Keyles
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::arc::Arc<Input>
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::rc::Rc<Input>
 impl<Input: uuid_slug::KeylessUuidText + alloc::borrow::ToOwned + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::borrow::Cow<'_, Input>
-pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
-pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: core::option::Option<uuid_slug::UuidV7MaskDerivationCancellation>) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
+pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, cancellation: core::option::Option<uuid_slug::UuidV7MaskDerivationCancellation>) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::fill_os_random_bytes(out: &mut [u8]) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4() -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_into(out: &mut [u8], offset: usize) -> core::result::Result<(), uuid_slug::Error>
@@ -1124,6 +1125,7 @@ pub struct uuid_slug::UuidV7Mask
 impl uuid_slug::UuidV7Mask
 pub fn uuid_slug::UuidV7Mask::diagnostic_label(&self) -> &str
 pub fn uuid_slug::UuidV7Mask::from_permutation_functions(diagnostic_label: impl core::convert::Into<alloc::string::String>, mask_uuid_bytes: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::Error> + core::marker::Send + core::marker::Sync + 'static, unmask_uuid_bytes: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::Error>
+pub fn uuid_slug::UuidV7Mask::with_diagnostic_label(self, label: impl core::convert::Into<alloc::string::String>) -> Self
 impl core::clone::Clone for uuid_slug::UuidV7Mask
 pub fn uuid_slug::UuidV7Mask::clone(&self) -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7Mask
@@ -1315,8 +1317,8 @@ impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::Keyles
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::arc::Arc<Input>
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::rc::Rc<Input>
 impl<Input: uuid_slug::KeylessUuidText + alloc::borrow::ToOwned + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::borrow::Cow<'_, Input>
-pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
-pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: core::option::Option<uuid_slug::UuidV7MaskDerivationCancellation>) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
+pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, cancellation: core::option::Option<uuid_slug::UuidV7MaskDerivationCancellation>) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::generate_uuid_v4_into_with_random_fill(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_with_random_fill(fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::uuid_v7_bounds(start_unix_ms: u64, end_unix_ms: core::option::Option<u64>) -> core::result::Result<uuid_slug::UuidV7Bounds, uuid_slug::Error>

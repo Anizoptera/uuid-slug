@@ -45,7 +45,7 @@ let uuid = Uuid::from_uuid_string("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
 let filename = uuid.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex);
 assert_eq!(Uuid::from_plain_uuid_slug(&filename)?, uuid);
 
-let mask = derive_uuid_v7_mask(b"replace-with-your-own-secret-seed", 1, "current")?;
+let mask = derive_uuid_v7_mask(b"replace-with-your-own-secret-seed", 1)?;
 let masking_codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
     masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
     ..UuidV7MaskingCodecOptions::new(mask)
@@ -146,8 +146,8 @@ use uuid_slug::{
 };
 
 # fn main() -> Result<(), uuid_slug::Error> {
-let old_key = derive_uuid_v7_mask(b"previous-private-seed", 1, "previous")?;
-let new_key = derive_uuid_v7_mask(b"replacement-private-seed", 1, "current")?;
+let old_key = derive_uuid_v7_mask(b"previous-private-seed", 1)?.with_diagnostic_label("previous");
+let new_key = derive_uuid_v7_mask(b"replacement-private-seed", 1)?.with_diagnostic_label("current");
 # let uuid = uuid_slug::Uuid::from_uuid_string("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
 # let stored = UuidV7MaskingCodec::new(old_key.clone()).uuid_to_masked_slug(uuid)?;
 let masking_codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {

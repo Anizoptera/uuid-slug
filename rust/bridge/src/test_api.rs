@@ -262,7 +262,6 @@ fn run(request: &Value, objects: &mut Objects) -> Result<Value, Error> {
             let future = Box::pin(uuid_slug::derive_uuid_v7_mask_async(
                 &seed,
                 iterations,
-                "shared",
                 Some(cancellation.clone()),
             ));
             let id = objects.derivations.len();

@@ -177,7 +177,6 @@ mod tests {
             ..UuidV7MaskingCodecOptions::new(crate::mask::derive_uuid_v7_mask(
                 b"new shifted-range test seed",
                 1,
-                "new",
             )?)
         })?;
         assert_eq!(reader.masked_slug_to_uuid(&slug)?, uuid);
@@ -318,8 +317,7 @@ mod tests {
         .unwrap();
         let overlap = &fixtures["overlap"];
         let slug = overlap["slug"].as_str().unwrap();
-        let mask =
-            crate::derive_uuid_v7_mask(overlap["seed"].as_str().unwrap().as_bytes(), 1, "fixture")?;
+        let mask = crate::derive_uuid_v7_mask(overlap["seed"].as_str().unwrap().as_bytes(), 1)?;
         let codec = UuidV7MaskingCodec::new(mask);
         let masked = Uuid::from_uuid_string(overlap["currentUuid"].as_str().unwrap())?;
         let plain = Uuid::from_uuid_string(overlap["plainUuid"].as_str().unwrap())?;
@@ -492,7 +490,7 @@ impl UuidV7MaskingCodec {
     /// ```
     /// use uuid_slug::{derive_uuid_v7_mask, UuidV7MaskingCodec};
     /// # fn main() -> Result<(), uuid_slug::Error> {
-    /// let mask = derive_uuid_v7_mask(b"replace-with-your-own-private-seed", 1, "current")?;
+    /// let mask = derive_uuid_v7_mask(b"replace-with-your-own-private-seed", 1)?;
     /// let masking_codec = UuidV7MaskingCodec::new(mask);
     /// # assert!(masking_codec.sentinels().is_empty());
     /// # Ok(())

@@ -112,7 +112,7 @@ pub(super) fn mask(value: &Value) -> Result<UuidV7Mask, Error> {
     {
         return Err(Error::new(ErrorCode::InvalidMask));
     }
-    derive_uuid_v7_mask(&bytes, iterations as u32, "seeded")
+    derive_uuid_v7_mask(&bytes, iterations as u32)
 }
 
 fn masking_codec(request: &Value) -> Result<UuidV7MaskingCodec, Error> {

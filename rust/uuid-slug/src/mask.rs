@@ -6,7 +6,7 @@ use crate::{
     mask_keys::{CHAIN_A, CHAIN_B, derive, expand},
     siphash::{HashState, tail_word},
 };
-use alloc::{format, string::String, sync::Arc, vec::Vec};
+use alloc::{borrow::Cow, format, string::String, sync::Arc, vec::Vec};
 use core::{
     fmt,
     future::Future,
@@ -18,6 +18,7 @@ use core::{
 use std::sync::LazyLock;
 
 const PUBLIC_SEED: &[u8] = b"anizoptera.uuid-slug.default-mask.v1";
+const DERIVED_MASK_LABEL: &str = "seeded";
 type Mixer = dyn Fn([u8; 16], Direction) -> Result<[u8; 16], Error> + Send + Sync;
 
 #[derive(Clone)]
@@ -29,7 +30,8 @@ enum Implementation {
 /// A reversible 16-byte transform for UUIDv7 masking. This is not authenticated encryption.
 #[derive(Clone)]
 pub struct UuidV7Mask {
-    label: String,
+    // Default labels borrow static text so unnamed masks need no label allocation.
+    label: Cow<'static, str>,
     implementation: Implementation,
 }
 
@@ -48,6 +50,14 @@ impl UuidV7Mask {
         &self.label
     }
 
+    /// Name this mask in logs and errors without changing its key or encoded IDs.
+    /// Derived masks use `"seeded"` by default.
+    #[must_use]
+    pub fn with_diagnostic_label(mut self, label: impl Into<String>) -> Self {
+        self.label = Cow::Owned(label.into());
+        self
+    }
+
     /// Build a mask from two fallible functions that undo each other for every 16-byte block.
     /// Each call receives and returns its own array, so it cannot change another key's input.
     /// Construction checks a few blocks; those checks cannot prove the functions are always inverses.
@@ -57,7 +67,7 @@ impl UuidV7Mask {
         unmask_uuid_bytes: impl Fn([u8; 16]) -> Result<[u8; 16], Error> + Send + Sync + 'static,
     ) -> Result<Self, Error> {
         let built = Self {
-            label: diagnostic_label.into(),
+            label: Cow::Owned(diagnostic_label.into()),
             implementation: Implementation::Custom(Arc::new(
                 move |input, direction| match direction {
                     Direction::UuidV7Mask => mask_uuid_bytes(input),
@@ -137,16 +147,15 @@ fn validate(seed: &[u8], iterations: u32) -> Result<(), Error> {
 pub fn derive_uuid_v7_mask(
     mask_seed: &[u8],
     key_derivation_iterations: u32,
-    diagnostic_label: &str,
 ) -> Result<UuidV7Mask, Error> {
     validate(mask_seed, key_derivation_iterations)?;
     Ok(from_keys(
-        diagnostic_label.into(),
+        DERIVED_MASK_LABEL.into(),
         derive(mask_seed, key_derivation_iterations),
     ))
 }
 
-fn from_keys(label: String, keys: [u32; 8]) -> UuidV7Mask {
+fn from_keys(label: Cow<'static, str>, keys: [u32; 8]) -> UuidV7Mask {
     UuidV7Mask {
         label,
         implementation: Implementation::Feistel(keys),
@@ -171,7 +180,6 @@ impl UuidV7MaskDerivationCancellation {
 /// An executor must yield fairly between polls; browser adapters must schedule host tasks.
 struct MaskDerivation {
     seed: Vec<u8>,
-    label: String,
     iterations: u32,
     cancellation: Option<UuidV7MaskDerivationCancellation>,
     chains: [[u32; 2]; 2],
@@ -191,7 +199,6 @@ struct MaskDerivation {
 pub fn derive_uuid_v7_mask_async(
     mask_seed: &[u8],
     key_derivation_iterations: u32,
-    diagnostic_label: &str,
     cancellation: Option<UuidV7MaskDerivationCancellation>,
 ) -> impl Future<Output = Result<UuidV7Mask, Error>> + Send + use<> {
     let failure = if cancellation
@@ -208,7 +215,6 @@ pub fn derive_uuid_v7_mask_async(
         } else {
             Vec::new()
         },
-        label: diagnostic_label.into(),
         iterations: key_derivation_iterations,
         cancellation,
         chains: [CHAIN_A, CHAIN_B],
@@ -262,7 +268,7 @@ impl Future for MaskDerivation {
                 if this.chain == 2 {
                     this.finished = true;
                     return Poll::Ready(Ok(from_keys(
-                        core::mem::take(&mut this.label),
+                        DERIVED_MASK_LABEL.into(),
                         expand(this.chains[0], this.chains[1]),
                     )));
                 }
@@ -281,12 +287,13 @@ mod tests {
     fn cooperative_derivation_matches_direct_work_across_block_and_iteration_boundaries() {
         for (length, iterations) in [(16, 1), (17, 513), (1023, 2), (1024, 2), (16385, 3)] {
             let mut seed: Vec<u8> = (0..length).map(|index| index as u8).collect();
-            let expected = derive_uuid_v7_mask(&seed, iterations, "probe")
+            let expected = derive_uuid_v7_mask(&seed, iterations)
                 .unwrap()
+                .with_diagnostic_label("direct")
                 .mask([19; 16])
                 .unwrap();
             let cancellation = (iterations == 513).then(UuidV7MaskDerivationCancellation::default);
-            let mut future = derive_uuid_v7_mask_async(&seed, iterations, "probe", cancellation);
+            let mut future = derive_uuid_v7_mask_async(&seed, iterations, cancellation);
             seed.fill(0); // A lazy borrow would now derive a different key.
             let mut cx = Context::from_waker(std::task::Waker::noop());
             let actual = loop {
@@ -297,8 +304,7 @@ mod tests {
             assert_eq!(actual.mask([19; 16]).unwrap(), expected);
         }
         let cancellation = UuidV7MaskDerivationCancellation::default();
-        let mut future =
-            derive_uuid_v7_mask_async(&[3; 32], 4096, "cancel", Some(cancellation.clone()));
+        let mut future = derive_uuid_v7_mask_async(&[3; 32], 4096, Some(cancellation.clone()));
         let mut cx = Context::from_waker(std::task::Waker::noop());
         assert!(Pin::new(&mut future).poll(&mut cx).is_pending());
         cancellation.cancel();
