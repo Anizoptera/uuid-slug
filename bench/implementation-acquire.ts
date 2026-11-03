@@ -109,6 +109,7 @@ if (reportIndex >= 0) {
     const receipt = await collectorReceipt();
     if (recovery) validateRecovery(recovery.header, report, receipt);
     const planned: RecoverableReport = {
+      ...recovery?.header,
       ...report,
       recovery: {
         ...receipt,

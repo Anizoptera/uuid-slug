@@ -9,6 +9,7 @@ import {
   validateRows,
 } from "./implementation-evidence";
 import type { ExecutionReceipt } from "./implementation-evidence";
+import type { RecoveryReceipt } from "./implementation-recovery";
 
 export interface Measurement extends ExecutionReceipt {
   lane: string;
@@ -43,6 +44,7 @@ export interface ImplementationReport {
   smoke: boolean;
   exposure?: "randomized";
   runtimeReceipts?: boolean;
+  recovery?: RecoveryReceipt;
   settings: Settings;
   blocks: number;
   lanes: Pick<
@@ -279,6 +281,12 @@ export function createImplementationReporter(report: Omit<ImplementationReport, 
       "# Implementation comparisons",
       "",
       `Captured ${report.captured}; revision \`${report.revision}\`; host ${report.host}.`,
+      ...(report.recovery?.resumedFrom
+        ? [
+            "",
+            `Collection resumed from ${report.recovery.resumedFrom.captured} at revision \`${report.recovery.resumedFrom.revision}\`. Complete four-process windows were reused after collector, artifact, runtime and host checks; the interrupted window was reacquired. A pause can change host conditions, so common-distribution assumptions remain conditional.`,
+          ]
+        : []),
       "",
       report.smoke
         ? "**Wiring check only. These samples are not performance evidence.**"
