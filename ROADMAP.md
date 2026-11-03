@@ -1,5 +1,14 @@
 # Remaining work
 
+## Joint release readiness
+
+Verify the npm update against published 0.5.0 and the first Rust crate without changing versions, creating tags or publishing. Reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives; distinguish local evidence from unexecuted platform and tagged-release checks.
+
+- [ ] Run full project verification with packed browser/worker coverage and all-runtime regression selection.
+- [ ] Compare matched npm consumer bundles and package contents with registry-verified 0.5.0.
+- [ ] Verify Cargo archive contents and extracted-source tests, native feature/profile coverage and both optimized WebAssembly profiles.
+- [ ] Review release prerequisites, report concrete regressions or remaining holds, and delete owned scratch.
+
 - [x] Align changelog instructions across root guidance and the release owner: establish each package's publication baseline, update final consumer entries instead of accumulating unreleased history, and retain one mandatory review procedure without a prose checker. Read back the changes and check instruction compatibility before committing.
 
 - [x] Rewrite unreleased notes for the joint release: TypeScript changes since npm 0.5.0 and Rust's first publication. Retain consumer capabilities, limits and required actions; remove unpublished migration history and development/testing details. Compare the final wording with the package APIs and release baseline.
