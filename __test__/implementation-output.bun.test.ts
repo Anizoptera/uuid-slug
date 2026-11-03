@@ -11,6 +11,8 @@ import {
   resolveImplementationEvidence,
 } from "../bench/implementation-output";
 import type { ImplementationReport, Measurement } from "../bench/implementation-report";
+import { openRecovery, scheduledStep, validateRecovery } from "../bench/implementation-recovery";
+import type { RecoverableReport } from "../bench/implementation-recovery";
 
 const header: Omit<ImplementationReport, "measurements"> = {
   revision: "fixture",
@@ -30,6 +32,119 @@ const record: Measurement = {
   sequence: 0,
   rows: [{ name: "plain/base32", ns: [1], operations: 1 }],
 };
+
+const resumable: RecoverableReport = {
+  ...header,
+  lanes: ["first", "second"].map((id) => ({
+    id,
+    family: "fixture",
+    version: "1",
+    hash: id,
+    requiresRuntimeVersion: false,
+    reference: "first",
+  })),
+  recovery: {
+    collector: { "collector.ts": "source hash" },
+    machine: "fixture",
+    schedule: [
+      [
+        [1, 1],
+        [0, 0],
+      ],
+    ],
+  },
+};
+
+test("recovery keeps complete windows and reacquires the interrupted window in its saved order", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "uuid-slug-output-"));
+  const source = join(directory, "partial.jsonl.gz");
+  const records = Array.from({ length: 6 }, (_, sequence) => ({
+    ...record,
+    ...scheduledStep(resumable, sequence),
+  }));
+  try {
+    await writeFile(
+      source,
+      gzipSync([resumable, ...records].map((value) => JSON.stringify(value)).join("\n")),
+    );
+    const recovered = await openRecovery(source);
+    try {
+      validateRecovery(recovered.header, resumable, resumable.recovery);
+      expect((await Array.fromAsync(recovered.windows())).flat()).toEqual(records.slice(0, 4));
+      expect(scheduledStep(recovered.header, 4)).toMatchObject({
+        subject: "first",
+        role: "reference",
+        repeat: 0,
+      });
+    } finally {
+      await recovered.close();
+    }
+    const wrongOrder = [...records];
+    wrongOrder[1] = { ...record, ...scheduledStep(resumable, 2) };
+    await writeFile(
+      source,
+      gzipSync([resumable, ...wrongOrder].map((value) => JSON.stringify(value)).join("\n")),
+    );
+    const corrupt = await openRecovery(source);
+    try {
+      const failure = await Array.fromAsync(corrupt.windows()).catch((error: unknown) => error);
+      expect(failure).toBeInstanceOf(Error);
+      expect(String(failure)).toContain("saved schedule");
+    } finally {
+      await corrupt.close();
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("recovery rejects changed instruments and repeated or missing scheduled lanes", () => {
+  const current = structuredClone(resumable);
+  expect(() => validateRecovery(resumable, current, resumable.recovery)).not.toThrow();
+  const changes: ((value: RecoverableReport) => void)[] = [
+    (value) => {
+      value.host = "another host";
+    },
+    (value) => {
+      value.settings.samples++;
+    },
+    (value) => {
+      value.blocks++;
+    },
+    (value) => {
+      if (value.lanes[0]) value.lanes[0].hash = "another artifact";
+    },
+    (value) => {
+      if (value.lanes[0]) value.lanes[0].version = "another runtime";
+    },
+  ];
+  for (const change of changes) {
+    const changed = structuredClone(current);
+    change(changed);
+    expect(() => validateRecovery(resumable, changed, resumable.recovery)).toThrow(
+      "Resume inputs changed",
+    );
+  }
+  expect(() =>
+    validateRecovery(resumable, current, { ...resumable.recovery, machine: "other" }),
+  ).toThrow("Resume inputs changed");
+  expect(() =>
+    validateRecovery(resumable, current, {
+      ...resumable.recovery,
+      collector: { "collector.ts": "changed" },
+    }),
+  ).toThrow("Resume inputs changed");
+  const duplicate = structuredClone(resumable);
+  duplicate.recovery.schedule = [
+    [
+      [0, 0],
+      [0, 1],
+    ],
+  ];
+  expect(() => validateRecovery(duplicate, current, resumable.recovery)).toThrow(
+    "Invalid saved schedule",
+  );
+});
 
 async function readCompressed(path: string): Promise<string> {
   // The independent Node decoder checks the writer separately from the streaming report reader.
