@@ -10,6 +10,15 @@ Derive API consistency and usability improvements from the maintainer's requests
 
 ## Joint release readiness
 
+- [ ] Audit npm and crate manifests, packaged files, licenses, version agreement and registry baselines; repair incorrect release inputs.
+- [ ] Review TypeScript and Rust consumer entry points, defaults, errors, caller ownership, feature availability and shared wire contracts; reproduce and fix concrete defects.
+- [ ] Review README, API references, crate landing page and generated documentation for wrong promises, missing setup and stale paths; preserve the protected README opening.
+- [ ] Review CI coverage, runtime/toolchain resolution, pinned actions, target/profile coverage and local verification commands against release promises.
+- [ ] Review publication, partial-failure recovery, archive validation and release-note generation without performing remote writes or release operations.
+- [ ] Inspect dependencies and advisories, repository layout, tracked artifacts, scratch, placeholders and existing deferred work; distinguish real release blockers from optional research and reserved publication steps.
+- [ ] Fix demonstrated defects with focused regressions and inline reasons, update their existing owners, and commit each completed repair.
+- [ ] Close the audit with affected checks, cleanup and a concrete list of remaining release prerequisites and unverified boundaries; do not claim an exhaustive proof from passing tests.
+
 Follow `dev/release.md` for the npm update and first crate publication. Build and verify stable archives from the authorized tag, not old development captures; reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives. Existing regression checks remain required; missing performance comparisons neither block preparation nor authorize experiments.
 
 - [ ] Before publication, resolve or review [the upstream `deepmerge` advisory](https://github.com/advisories/GHSA-gcqx-w48m-w2h4). The latest Rollup resolver depends on the affected release and merges its fixed defaults; this dependency is development-only. Keep this separate from the clean production dependency audit.
