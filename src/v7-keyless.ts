@@ -19,6 +19,10 @@ import type {
   GenerateUuidV7BytesIntoOptions,
   GenerateUuidV7BytesOptions,
   UuidOutput,
+  UuidGenerationBytes,
+  UuidGenerationFailure,
+  UuidGenerationInput,
+  UuidGenerationTextCase,
   UuidTextCase,
   UuidTextCaseArguments,
   UuidV7Bytes,
@@ -174,6 +178,15 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
 export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   options: GenerateUuidV7Options<Case>,
 ): UuidV7StringFor<Case> | UuidSlugError;
+/**
+ * Forward a spelling preset or optional settings without branching.
+ * @throws `UuidSlugError` with code `rng_unavailable` on a preset or undefined branch when secure randomness is unavailable.
+ */
+export function generateUuidV7<
+  const Input extends UuidTextCase | GenerateUuidV7Options<UuidTextCase> | undefined,
+>(
+  textCaseOrOptions: UuidGenerationInput<Input, GenerateUuidV7Options<UuidTextCase>>,
+): UuidV7StringFor<UuidGenerationTextCase<Input>> | UuidGenerationFailure<Input>;
 export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCaseOrOptions?: Case | GenerateUuidV7Options<Case>,
 ): UuidV7StringFor<Case> | UuidSlugError {
@@ -240,7 +253,7 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
  * @throws `UuidSlugError` with code `rng_unavailable` when generation cannot obtain
  * secure randomness.
  */
-export function generateUuidV7Bytes(): UuidV7Bytes;
+export function generateUuidV7Bytes(options?: undefined): UuidV7Bytes;
 /**
  * Write UUIDv7 bytes into caller-owned storage only after successful generation. Module-level calls
  * do not provide ordering across calls.
@@ -261,6 +274,22 @@ export function generateUuidV7Bytes(
 export function generateUuidV7Bytes<Output extends Uint8Array>(
   options: GenerateUuidV7BytesIntoOptions<Output>,
 ): UuidOutput<Output> | UuidSlugError;
+/**
+ * Forward optional storage or generation settings; caller storage keeps its own array type.
+ * @throws `UuidSlugError` with code `rng_unavailable` on an undefined branch when secure randomness is unavailable.
+ */
+export function generateUuidV7Bytes<
+  const Input extends
+    | Uint8Array
+    | GenerateUuidV7BytesOptions
+    | GenerateUuidV7BytesIntoOptions<Uint8Array>
+    | undefined,
+>(
+  outOrOptions: UuidGenerationInput<
+    Input,
+    GenerateUuidV7BytesOptions & GenerateUuidV7BytesIntoOptions<Uint8Array>
+  >,
+): UuidGenerationBytes<Input, UuidV7Bytes> | UuidGenerationFailure<Input>;
 export function generateUuidV7Bytes(
   outOrOptions?:
     | Uint8Array

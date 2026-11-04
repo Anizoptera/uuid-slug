@@ -116,8 +116,9 @@ export const codecBoundaryCases = [
         const aliased = new Uint8Array(unwrap(uuidStringToBytes(uuid)));
         assert.equal(codec.uuidToMaskedBytes(aliased, aliased), aliased);
         assert.deepEqual(aliased, expected);
-        assert.equal(codec.maskedBytesToUuidBytes(aliased, aliased), aliased);
-        assert.equal(bytesToUuidString(aliased), uuid);
+        const decoded = codec.maskedBytesToUuidBytes(aliased, aliased);
+        assert.equal(bytesToUuidString(decoded), uuid);
+        assert.equal(decoded, aliased);
         assert.equal(
           codec.maskedBytesToUuidString(expected, UUID_TEXT_UPPERCASE),
           uuid.toUpperCase(),

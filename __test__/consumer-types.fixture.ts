@@ -344,6 +344,10 @@ expectType<GeneratedUuidV7<PlainUuidV7Slug, typeof UUID_TEXT_UPPERCASE> | UuidSl
 generateUuidV7Bytes({ at: 0, outputOffset: 8 });
 // @ts-expect-error A misspelled time option must not generate at the current clock reading.
 generateUuidV7({ att: new Date(0) });
+// @ts-expect-error Forwarding overloads must not hide a typo beside a valid option.
+generateUuidV7({ at: 0, att: 0 });
+// @ts-expect-error Generator methods cannot accept a different generator in their options.
+generator.generateUuidV7({ at: 0, generator });
 const uppercaseV7 = generateUuidV7("uppercase");
 expectType<UppercaseUuidV7String>()(uppercaseV7);
 expectType<PlainUuidV7Slug | UuidSlugError>()(uuidStringToPlainSlug(uppercaseV7));
@@ -566,6 +570,23 @@ expectType<typeof binaryStorage | UuidSlugError>()(
   codec.uuidToMaskedBytes(generateUuidV7(), binaryStorage, 4),
 );
 if (!isUuidSlugError(maskedBinary)) {
+  // Known masked provenance must survive direct readers, offsets and explicit output generics.
+  // @ts-expect-error Raw formatting cannot decode a known masked block.
+  bytesToUuidString(maskedBinary);
+  // @ts-expect-error A raw byte offset cannot erase known masking.
+  bytesToUuidString(maskedBinary, 0);
+  // @ts-expect-error Explicit text case must not erase known masking either.
+  bytesToUuidString<typeof UUID_TEXT_UPPERCASE>(maskedBinary, 0, UUID_TEXT_UPPERCASE);
+  // @ts-expect-error Raw encoding would make a plain slug of the wrong UUID.
+  uuidBytesToPlainSlug(maskedBinary);
+  // @ts-expect-error A raw byte offset cannot turn a masked block into a UUID.
+  uuidBytesToPlainSlug(maskedBinary, 0);
+  // @ts-expect-error A text-case generic must not bypass raw-input provenance.
+  uuidToString<typeof UUID_TEXT_UPPERCASE>(maskedBinary, 0, UUID_TEXT_UPPERCASE);
+  // @ts-expect-error A codec's case generic must not bypass explicit masked decoding.
+  codec.uuidToString<typeof UUID_TEXT_UPPERCASE>(maskedBinary, 0, UUID_TEXT_UPPERCASE);
+  // @ts-expect-error A caller-output generic must not bypass raw-input provenance.
+  codec.uuidToBytes<Uint8Array>(maskedBinary, 0, binaryStorage);
   // Offsets select storage, not whether its bytes are masked; narrow errors before testing brands.
   // @ts-expect-error Known masked bytes must be decoded before ordinary UUID formatting.
   uuidToString(maskedBinary, 0);
@@ -1002,6 +1023,74 @@ declare const optionalGeneratorValueOptions: UuidSlugApi.UuidV7GeneratorValueOpt
 generator.generateUuidV7Value(optionalGeneratorValueOptions);
 declare const alphabetOrOptions: UuidSlugApi.SlugAlphabet | GeneratePlainUuidV7SlugOptions;
 generatePlainUuidV7Slug(alphabetOrOptions);
+
+// Wrappers must forward supported settings without losing default cases or caller storage.
+declare const forwardedText: GenerateUuidV7Options | undefined;
+declare const forwardedUpper: GenerateUuidV7Options<typeof UUID_TEXT_UPPERCASE> | undefined;
+declare const forwardedGeneratorUpper:
+  | Omit<GenerateUuidV7Options<typeof UUID_TEXT_UPPERCASE>, "generator">
+  | undefined;
+expectType<UuidV7String | UuidSlugError>()(generateUuidV7(forwardedText));
+expectType<UuidV7String | UppercaseUuidV7String | UuidSlugError>()(generateUuidV7(forwardedUpper));
+expectType<UuidV7String | UppercaseUuidV7String | UuidSlugError>()(
+  generator.generateUuidV7(forwardedGeneratorUpper),
+);
+declare const forwardedBytes:
+  | GenerateUuidV7BytesOptions
+  | GenerateUuidV7BytesIntoOptions<ConsumerBuffer>
+  | undefined;
+expectType<UuidV7Bytes | ConsumerBuffer | UuidSlugError>()(generateUuidV7Bytes(forwardedBytes));
+expectType<UuidV7Bytes | ConsumerBuffer | UuidSlugError>()(
+  generator.generateUuidV7Bytes(forwardedBytes),
+);
+expectType<UuidV7Bytes>()(generateUuidV7Bytes(undefined));
+expectType<UuidV4Bytes>()(generateUuidV4Bytes(undefined));
+declare const forwardedBuffer: ConsumerBuffer | undefined;
+expectType<UuidV4Bytes | ConsumerBuffer | UuidSlugError>()(generateUuidV4Bytes(forwardedBuffer));
+declare const forwardedPair:
+  | GenerateUuidV7WithPlainSlugOptions<typeof UUID_TEXT_UPPERCASE>
+  | undefined;
+declare const forwardedGeneratorPair:
+  | Omit<GenerateUuidV7WithPlainSlugOptions<typeof UUID_TEXT_UPPERCASE>, "generator">
+  | undefined;
+expectType<GeneratedUuidV7<PlainUuidV7Slug, UuidSlugApi.UuidTextCase> | UuidSlugError>()(
+  generateUuidV7WithPlainSlug(forwardedPair),
+);
+expectType<GeneratedUuidV7<PlainUuidV7Slug, UuidSlugApi.UuidTextCase> | UuidSlugError>()(
+  generator.generateUuidV7WithPlainSlug(forwardedGeneratorPair),
+);
+declare const forwardedAlphabet: UuidSlugApi.SlugAlphabet | undefined;
+expectType<GeneratedUuidV7<PlainUuidV7Slug, typeof UUID_TEXT_UPPERCASE>>()(
+  generateUuidV7WithPlainSlug(forwardedAlphabet, UUID_TEXT_UPPERCASE),
+);
+expectType<UuidV7Bounds<UppercaseUuidV7String> | UuidSlugError>()(
+  uuidV7StringBounds(0, undefined, UUID_TEXT_UPPERCASE),
+);
+declare const forwardedMaskedPair:
+  | GenerateUuidV7WithMaskedSlugOptions<typeof UUID_TEXT_UPPERCASE>
+  | undefined;
+expectType<GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, UuidSlugApi.UuidTextCase> | UuidSlugError>()(
+  codec.generateUuidV7WithMaskedSlug(forwardedMaskedPair),
+);
+declare const forwardedFormat: typeof SEEDED_MASK_FORMAT | undefined;
+expectType<UppercaseUuidString | UuidSlugError>()(
+  currentOnlyMigration.uuidSlugToUuidString(
+    "AZChssPUfl-KmwwdLj9AUQ",
+    forwardedFormat,
+    UUID_TEXT_UPPERCASE,
+  ),
+);
+expectType<readonly UppercaseUuidString[] | UuidSlugError>()(
+  currentOnlyMigration.uuidSlugToUuidStringCandidates(
+    "AZChssPUfl-KmwwdLj9AUQ",
+    forwardedFormat,
+    UUID_TEXT_UPPERCASE,
+  ),
+);
+// @ts-expect-error Omitted settings can produce lowercase UUID text.
+expectType<UppercaseUuidV7String | UuidSlugError>()(generateUuidV7(forwardedUpper));
+// @ts-expect-error Optional storage cannot carry a positional offset.
+generateUuidV4Bytes(forwardedBuffer, 8);
 
 // Independent retained capabilities must not constrain each other's default calls.
 declare const sharedCodecPreset: Uuid<7, true> | Uuid<7, true, true>;

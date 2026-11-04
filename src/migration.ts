@@ -189,7 +189,7 @@ export function createMigration(
   ): UuidString | UuidSlugError;
   function uuidSlugToUuidString<Case extends UuidTextCase>(
     uuidSlug: string | UuidSlugError,
-    format: UuidSlugMigrationFormat,
+    format: UuidSlugMigrationFormat | undefined,
     textCase: Case,
   ): UuidStringFor<Case> | UuidSlugError;
   function uuidSlugToUuidString<Case extends UuidTextCase>(
@@ -227,7 +227,7 @@ export function createMigration(
   ): readonly UuidString[] | UuidSlugError;
   function uuidSlugToUuidStringCandidates<Case extends UuidTextCase>(
     uuidSlug: string | UuidSlugError,
-    format: UuidSlugMigrationFormat,
+    format: UuidSlugMigrationFormat | undefined,
     textCase: Case,
   ): readonly UuidStringFor<Case>[] | UuidSlugError;
   function uuidSlugToUuidStringCandidates(

@@ -13,6 +13,8 @@ import {
 } from "./errors.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type {
+  UuidGenerationBytes,
+  UuidGenerationFailure,
   UuidRandomFill,
   UuidOutput,
   UuidTextCase,
@@ -47,7 +49,7 @@ let generating = false;
  * @throws `UuidSlugError` with code `rng_unavailable` when generation cannot obtain
  * secure randomness.
  */
-export function generateUuidV4Bytes(): UuidV4Bytes;
+export function generateUuidV4Bytes(output?: undefined): UuidV4Bytes;
 /**
  * Write UUIDv4 bytes into caller-owned storage only after successful generation.
  *
@@ -59,6 +61,13 @@ export function generateUuidV4Bytes<Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,
 ): UuidOutput<Output> | UuidSlugError;
+/**
+ * Use caller storage when supplied; otherwise allocate UUIDv4 bytes.
+ * @throws `UuidSlugError` with code `rng_unavailable` when storage is omitted and secure randomness is unavailable.
+ */
+export function generateUuidV4Bytes<const Input extends Uint8Array | undefined>(
+  output: Input,
+): UuidGenerationBytes<Input, UuidV4Bytes> | UuidGenerationFailure<Input>;
 export function generateUuidV4Bytes(
   output?: Uint8Array,
   outputOffset = 0,

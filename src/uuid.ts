@@ -18,6 +18,7 @@ import type { Latin1Scratch } from "./runtime/types.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type {
   PreserveUuidVersion,
+  UnmaskedUuidInput,
   UuidBytes,
   UuidByteInput,
   UuidV4Bytes,
@@ -304,6 +305,7 @@ export function uuidStringToBytes(
  * `ArrayBuffer` uses its whole contents; a `DataView` uses its declared range. Only `Uint8Array`
  * input accepts an explicit offset. Invalid input returns `invalid_buffer`, and a preceding
  * `UuidSlugError` is returned unchanged.
+ * TypeScript rejects known masked bytes; decode them with their masking codec first.
  *
  * @param bytes - One supported UUID byte source.
  * @param textCase - Built-in output spelling. Omit for lowercase.
@@ -311,11 +313,11 @@ export function uuidStringToBytes(
  * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
  */
 export function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  bytes: UuidByteInput | UuidSlugError,
+  bytes: UnmaskedUuidInput<Readonly<UuidByteInput> | UuidSlugError>,
   ...textCase: UuidTextCaseArguments<Case>
 ): UuidStringFor<Case> | UuidSlugError;
 export function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  bytes: Uint8Array | UuidSlugError,
+  bytes: UnmaskedUuidInput<Readonly<Uint8Array> | UuidSlugError>,
   byteOffset: number,
   ...textCase: UuidTextCaseArguments<Case>
 ): UuidStringFor<Case> | UuidSlugError;

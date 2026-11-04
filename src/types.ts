@@ -33,6 +33,31 @@ export type UuidTextCase = typeof UUID_TEXT_LOWERCASE | typeof UUID_TEXT_UPPERCA
 export type UuidTextCaseArguments<Case extends UuidTextCase> =
   typeof UUID_TEXT_LOWERCASE extends Case ? [textCase?: Case] : [textCase: Case];
 
+// Forwarded unions must keep the lowercase branch when the selector or its property is absent.
+// Capturing the argument avoids claiming uppercase from an explicit generic alone.
+export type UuidGenerationTextCase<Input> = Input extends UuidTextCase
+  ? Input
+  : Input extends object
+    ? "textCase" extends keyof Input
+      ?
+          | Extract<Input["textCase"], UuidTextCase>
+          | (undefined extends Input["textCase"] ? typeof UUID_TEXT_LOWERCASE : never)
+      : typeof UUID_TEXT_LOWERCASE
+    : typeof UUID_TEXT_LOWERCASE;
+
+// Module presets and omission throw entropy failures; configured calls return error values.
+export type UuidGenerationFailure<Input> = Input extends object ? UuidSlugError : never;
+
+// Capturing an argument suppresses excess-property checks; keep misspelled options rejected.
+// Byte destinations are caller-owned arrays, so their own additional properties remain valid.
+export type UuidGenerationInput<Input, Options> = Input extends Uint8Array
+  ? Input
+  : Input extends object
+    ? Exclude<keyof Input, keyof Options> extends never
+      ? Input
+      : Input & { [Key in Exclude<keyof Input, keyof Options>]: never }
+    : Input;
+
 // Keep selector inference at the property while requiring a non-default selector in reusable options.
 type UuidTextCaseOptions<Case extends UuidTextCase> = typeof UUID_TEXT_LOWERCASE extends Case
   ? { readonly textCase?: Case }
@@ -341,7 +366,13 @@ type RejectKnownInput<Input, Invalid> = [Extract<Exclude<Input, UuidSlugError>, 
   : never;
 
 /** Raw UUID readers cannot infer masked provenance from the identical 16-byte shape. */
-export type UnmaskedUuidInput<Input> = RejectKnownInput<Input, MaskedUuidV7Bytes>;
+// Keep the exclusion on the parameter: explicit case/output generics can default an inferred
+// input to unbranded bytes. The object intersection accepts unrelated UUID brands too.
+// Fixed byte-source unions use Readonly first so methods returning `this` do not revive a
+// destination's previous brand after a writer returns its unbranded view.
+export type UnmaskedUuidInput<Input> = Input & {
+  readonly [brand]?: object & { readonly MaskedUuidV7Bytes?: never };
+};
 /** Reject a known slug; the operation parses UUID text. A bare string is validated at runtime. */
 export type UuidStringInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
@@ -400,6 +431,13 @@ export type UuidOutput<Output extends Uint8Array> = Output extends UuidBytes | M
   ? Omit<Output, typeof brand>
   : Output;
 
+// Storage remains a caller choice even when a wrapper forwards several generation forms.
+export type UuidGenerationBytes<Input, Owned extends UuidBytes> = Input extends Uint8Array
+  ? UuidOutput<Input>
+  : Input extends { readonly output: infer Output extends Uint8Array }
+    ? UuidOutput<Output>
+    : Owned;
+
 /** A UUID byte source: a `Uint8Array`, a complete `ArrayBuffer`, or a `DataView`'s declared range. */
 export type UuidByteInput = Uint8Array | ArrayBuffer | DataView;
 type AnyUuidForVersion<Version extends UuidVersion> = Uuid<Version, boolean, boolean>;
@@ -426,11 +464,7 @@ export type ParsedUuidResult<Input, WithCodec extends boolean = false> = Uuid<
  */
 export type UuidInput = string | UuidByteInput | AnyUuid | UuidSlugError;
 /** Reject branded masked slugs or bytes where no masking codec is available. */
-export type KeylessUuidInput<Input> = [
-  Extract<Exclude<Input, UuidSlugError>, MaskedUuidV7Slug | MaskedUuidV7Bytes>,
-] extends [never]
-  ? Input
-  : never;
+export type KeylessUuidInput<Input> = UnmaskedUuidInput<RejectKnownInput<Input, MaskedUuidV7Slug>>;
 /** UUID text or the error returned while converting the captured input. */
 export type UuidStringResult<Input, Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE> =
   | PreserveUuidVersion<Input, UuidStringFor<Case>, UuidV4StringFor<Case>, UuidV7StringFor<Case>>
@@ -487,8 +521,21 @@ export interface UuidV7Generator {
     this: void,
     options: Omit<GenerateUuidV7Options<Case>, "generator">,
   ): UuidV7StringFor<Case> | UuidSlugError;
+  /** Forward a spelling preset or optional settings through this generator's sequence. */
+  generateUuidV7<
+    const Input extends
+      | UuidTextCase
+      | Omit<GenerateUuidV7Options<UuidTextCase>, "generator">
+      | undefined,
+  >(
+    this: void,
+    textCaseOrOptions: UuidGenerationInput<
+      Input,
+      Omit<GenerateUuidV7Options<UuidTextCase>, "generator">
+    >,
+  ): UuidV7StringFor<UuidGenerationTextCase<Input>> | UuidSlugError;
   /** Generate a new plain 16-byte `Uint8Array` for the current clock reading. */
-  generateUuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
+  generateUuidV7Bytes(this: void, options?: undefined): UuidV7Bytes | UuidSlugError;
   /**
    * Write 16 bytes only after success and return the exact supplied array.
    *
@@ -511,6 +558,20 @@ export interface UuidV7Generator {
     this: void,
     options: Omit<GenerateUuidV7BytesIntoOptions<Output>, "generator">,
   ): UuidOutput<Output> | UuidSlugError;
+  /** Forward optional storage or settings, preserving caller-array types and sequence state. */
+  generateUuidV7Bytes<
+    const Input extends
+      | Uint8Array
+      | Omit<GenerateUuidV7BytesOptions, "generator">
+      | Omit<GenerateUuidV7BytesIntoOptions<Uint8Array>, "generator">
+      | undefined,
+  >(
+    this: void,
+    outOrOptions: UuidGenerationInput<
+      Input,
+      Omit<GenerateUuidV7BytesOptions & GenerateUuidV7BytesIntoOptions<Uint8Array>, "generator">
+    >,
+  ): UuidGenerationBytes<Input, UuidV7Bytes> | UuidSlugError;
   /**
    * Generate a plain UUIDv7 slug in this sequence. Lowercase base32hex preserves UUID byte order;
    * base64url does not preserve that order under text comparison.
@@ -539,7 +600,7 @@ export interface UuidV7Generator {
   ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
   generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
     this: void,
-    alphabet: SlugAlphabet,
+    alphabet: SlugAlphabet | undefined,
     textCase: Case,
   ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
   /** Generate the pair at an explicit time or the current clock reading, in the selected spellings. */
@@ -547,6 +608,20 @@ export interface UuidV7Generator {
     this: void,
     options: Omit<GenerateUuidV7WithPlainSlugOptions<Case>, "generator">,
   ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
+  /** Forward presets or optional settings through this sequence, retaining the UUID text case. */
+  generateUuidV7WithPlainSlug<
+    const Input extends
+      | SlugAlphabet
+      | UuidTextCase
+      | Omit<GenerateUuidV7WithPlainSlugOptions<UuidTextCase>, "generator">
+      | undefined,
+  >(
+    this: void,
+    alphabetOrCaseOrOptions: UuidGenerationInput<
+      Input,
+      Omit<GenerateUuidV7WithPlainSlugOptions<UuidTextCase>, "generator">
+    >,
+  ): GeneratedUuidV7<PlainUuidV7Slug, UuidGenerationTextCase<Input>> | UuidSlugError;
 }
 
 /**
@@ -808,7 +883,7 @@ export interface UuidSlugMigrationDecoder<
   uuidSlugToUuidString<Input extends string | UuidSlugError, Case extends UuidTextCase>(
     this: void,
     uuidSlug: SlugStringInput<Input>,
-    format: Format,
+    format: Format | undefined,
     textCase: Case,
   ): UuidStringFor<Case> | UuidSlugError;
   /**
@@ -837,7 +912,7 @@ export interface UuidSlugMigrationDecoder<
   uuidSlugToUuidStringCandidates<Input extends string | UuidSlugError, Case extends UuidTextCase>(
     this: void,
     uuidSlug: SlugStringInput<Input>,
-    format: Format,
+    format: Format | undefined,
     textCase: Case,
   ): readonly UuidStringFor<Case>[] | UuidSlugError;
 }

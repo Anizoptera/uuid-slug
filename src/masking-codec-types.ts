@@ -27,6 +27,8 @@ import type {
   UuidOutput,
   UuidTextCase,
   UuidTextCaseArguments,
+  UuidGenerationTextCase,
+  UuidGenerationInput,
   UuidV7Bytes,
   UuidV7Mask,
   UuidV7MaskOptions,
@@ -262,6 +264,19 @@ export interface UuidV7MaskingCodec {
     this: void,
     options: GenerateUuidV7WithMaskedSlugOptions<Case>,
   ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError;
+  /** Forward a text-case preset or optional settings with this masking codec retained. */
+  generateUuidV7WithMaskedSlug<
+    const Input extends
+      | UuidTextCase
+      | GenerateUuidV7WithMaskedSlugOptions<UuidTextCase>
+      | undefined,
+  >(
+    this: void,
+    textCaseOrOptions: UuidGenerationInput<
+      Input,
+      GenerateUuidV7WithMaskedSlugOptions<UuidTextCase>
+    >,
+  ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, UuidGenerationTextCase<Input>> | UuidSlugError;
   /**
    * Convert UUID text, 16 UUID bytes, a plain slug, or a masked slug to this masking codec's
    * current masked spelling. A 22-character slug is read as masked when it passes this codec's

@@ -21,6 +21,9 @@ import type {
   GenerateUuidV7BytesIntoOptions,
   GenerateUuidV7BytesOptions,
   GenerateUuidV7Options,
+  UuidGenerationBytes,
+  UuidGenerationTextCase,
+  UuidGenerationInput,
   UuidOutput,
   UuidTextCase,
   UuidTextCaseArguments,
@@ -357,7 +360,7 @@ export function createPortableUuidV7Generator(
     }
   }
 
-  function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
+  function generateUuidV7Bytes(options?: undefined): UuidV7Bytes | UuidSlugError;
   function generateUuidV7Bytes<Output extends Uint8Array>(
     out: Output,
     offset?: number,
@@ -368,6 +371,18 @@ export function createPortableUuidV7Generator(
   function generateUuidV7Bytes<Output extends Uint8Array>(
     options: Omit<GenerateUuidV7BytesIntoOptions<Output>, "generator">,
   ): UuidOutput<Output> | UuidSlugError;
+  function generateUuidV7Bytes<
+    const Input extends
+      | Uint8Array
+      | Omit<GenerateUuidV7BytesOptions, "generator">
+      | Omit<GenerateUuidV7BytesIntoOptions<Uint8Array>, "generator">
+      | undefined,
+  >(
+    outOrOptions: UuidGenerationInput<
+      Input,
+      Omit<GenerateUuidV7BytesOptions & GenerateUuidV7BytesIntoOptions<Uint8Array>, "generator">
+    >,
+  ): UuidGenerationBytes<Input, UuidV7Bytes> | UuidSlugError;
   function generateUuidV7Bytes(
     outOrOptions?:
       | Uint8Array
@@ -408,6 +423,17 @@ export function createPortableUuidV7Generator(
   function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     options: Omit<GenerateUuidV7Options<Case>, "generator">,
   ): UuidV7StringFor<Case> | UuidSlugError;
+  function generateUuidV7<
+    const Input extends
+      | UuidTextCase
+      | Omit<GenerateUuidV7Options<UuidTextCase>, "generator">
+      | undefined,
+  >(
+    textCaseOrOptions: UuidGenerationInput<
+      Input,
+      Omit<GenerateUuidV7Options<UuidTextCase>, "generator">
+    >,
+  ): UuidV7StringFor<UuidGenerationTextCase<Input>> | UuidSlugError;
   function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     textCaseOrOptions:
       | Case

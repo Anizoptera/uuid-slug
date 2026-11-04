@@ -55,6 +55,7 @@ import type {
   UuidV7StringFor,
   UuidVersion,
   KeylessUuidInput,
+  UnmaskedUuidInput,
 } from "./types.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import { uuidValueBytes } from "./uuid-value-protocol.ts";
@@ -192,12 +193,13 @@ const SLUG_LENGTHS = `26 (${BASE32HEX_NAME})${ALTERNATIVE_SEPARATOR}22 (${BASE64
  * Encode a standalone 16-byte UUID as a plain slug, using base64url by default. An `ArrayBuffer`
  * uses its whole contents; a `DataView` uses its declared range. Invalid input or alphabet returns
  * `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
+ * TypeScript rejects known masked bytes; decode them with their masking codec first.
  *
  * @param bytes - One exact 16-byte UUID source.
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
 export function uuidBytesToPlainSlug(
-  bytes: UuidByteInput | UuidSlugError,
+  bytes: UnmaskedUuidInput<Readonly<UuidByteInput> | UuidSlugError>,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlug | UuidSlugError;
 /**
@@ -209,7 +211,7 @@ export function uuidBytesToPlainSlug(
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
 export function uuidBytesToPlainSlug(
-  bytes: Uint8Array | UuidSlugError,
+  bytes: UnmaskedUuidInput<Readonly<Uint8Array> | UuidSlugError>,
   byteOffset: number,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlug | UuidSlugError;
@@ -429,7 +431,8 @@ export function readObjectUuidInput(uuid: unknown): Uint8Array | string | UuidSl
  */
 export function extractUuidVersion<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,
-): UuidVersion | UuidSlugError {
+): UuidVersion | UuidSlugError;
+export function extractUuidVersion(uuid: unknown): UuidVersion | UuidSlugError {
   const localBytes = exactLocalUuidBytes(uuid);
   if (localBytes) return uuidVersion(localBytes, 0);
   const bytes = decodeKeylessUuid(uuid);

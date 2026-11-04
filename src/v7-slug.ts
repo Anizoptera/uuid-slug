@@ -14,6 +14,9 @@ import type {
   UuidTextCase,
   UuidV7Generator,
   UuidV7StringFor,
+  UuidGenerationFailure,
+  UuidGenerationInput,
+  UuidGenerationTextCase,
 } from "./types.ts";
 import { currentUuidV7Scratch, uuidV7ScratchAt } from "./v7-keyless.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
@@ -250,7 +253,7 @@ export function generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
   textCase: Case,
 ): GeneratedUuidV7<PlainUuidV7Slug, Case>;
 export function generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
-  alphabet: SlugAlphabet,
+  alphabet: SlugAlphabet | undefined,
   textCase: Case,
 ): GeneratedUuidV7<PlainUuidV7Slug, Case>;
 /**
@@ -261,6 +264,22 @@ export function generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
 export function generateUuidV7WithPlainSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   options: GenerateUuidV7WithPlainSlugOptions<Case>,
 ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
+/**
+ * Forward presets or optional settings, retaining their UUID text case and default branches.
+ * @throws `UuidSlugError` with code `rng_unavailable` on a preset or undefined branch when secure randomness is unavailable.
+ */
+export function generateUuidV7WithPlainSlug<
+  const Input extends
+    | SlugAlphabet
+    | UuidTextCase
+    | GenerateUuidV7WithPlainSlugOptions<UuidTextCase>
+    | undefined,
+>(
+  alphabetOrCaseOrOptions: UuidGenerationInput<
+    Input,
+    GenerateUuidV7WithPlainSlugOptions<UuidTextCase>
+  >,
+): GeneratedUuidV7<PlainUuidV7Slug, UuidGenerationTextCase<Input>> | UuidGenerationFailure<Input>;
 export function generateUuidV7WithPlainSlug(
   alphabetOrCaseOrOptions:
     | SlugAlphabet

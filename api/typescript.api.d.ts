@@ -19,11 +19,11 @@ declare type Brand<Value, Name extends string> = Value & {
 };
 declare const brand: unique symbol;
 export declare function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  bytes: UuidByteInput | UuidSlugError,
+  bytes: UnmaskedUuidInput<Readonly<UuidByteInput> | UuidSlugError>,
   ...textCase: UuidTextCaseArguments<Case>
 ): UuidStringFor<Case> | UuidSlugError;
 export declare function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  bytes: Uint8Array | UuidSlugError,
+  bytes: UnmaskedUuidInput<Readonly<Uint8Array> | UuidSlugError>,
   byteOffset: number,
   ...textCase: UuidTextCaseArguments<Case>
 ): UuidStringFor<Case> | UuidSlugError;
@@ -111,11 +111,14 @@ export declare interface GeneratePlainUuidV7SlugOptions {
 export declare function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   ...textCase: UuidTextCaseArguments<Case>
 ): UuidV4StringFor<Case>;
-export declare function generateUuidV4Bytes(): UuidV4Bytes;
+export declare function generateUuidV4Bytes(output?: undefined): UuidV4Bytes;
 export declare function generateUuidV4Bytes<Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,
 ): UuidOutput<Output> | UuidSlugError;
+export declare function generateUuidV4Bytes<const Input extends Uint8Array | undefined>(
+  output: Input,
+): UuidGenerationBytes<Input, UuidV4Bytes> | UuidGenerationFailure<Input>;
 export declare function generateUuidV4WithRandomFill<
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
 >(
@@ -128,7 +131,12 @@ export declare function generateUuidV7<Case extends UuidTextCase = typeof UUID_T
 export declare function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   options: GenerateUuidV7Options<Case>,
 ): UuidV7StringFor<Case> | UuidSlugError;
-export declare function generateUuidV7Bytes(): UuidV7Bytes;
+export declare function generateUuidV7<
+  const Input extends UuidTextCase | GenerateUuidV7Options<UuidTextCase> | undefined,
+>(
+  textCaseOrOptions: UuidGenerationInput<Input, GenerateUuidV7Options<UuidTextCase>>,
+): UuidV7StringFor<UuidGenerationTextCase<Input>> | UuidGenerationFailure<Input>;
+export declare function generateUuidV7Bytes(options?: undefined): UuidV7Bytes;
 export declare function generateUuidV7Bytes<Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,
@@ -139,6 +147,18 @@ export declare function generateUuidV7Bytes(
 export declare function generateUuidV7Bytes<Output extends Uint8Array>(
   options: GenerateUuidV7BytesIntoOptions<Output>,
 ): UuidOutput<Output> | UuidSlugError;
+export declare function generateUuidV7Bytes<
+  const Input extends
+    | Uint8Array
+    | GenerateUuidV7BytesOptions
+    | GenerateUuidV7BytesIntoOptions<Uint8Array>
+    | undefined,
+>(
+  outOrOptions: UuidGenerationInput<
+    Input,
+    GenerateUuidV7BytesOptions & GenerateUuidV7BytesIntoOptions<Uint8Array>
+  >,
+): UuidGenerationBytes<Input, UuidV7Bytes> | UuidGenerationFailure<Input>;
 export declare interface GenerateUuidV7BytesIntoOptions<Output extends Uint8Array> {
   readonly at?: UuidV7Instant;
   readonly generator?: UuidV7Generator;
@@ -185,7 +205,7 @@ export declare function generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
   textCase: Case,
 ): GeneratedUuidV7<PlainUuidV7Slug, Case>;
 export declare function generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
-  alphabet: SlugAlphabet,
+  alphabet: SlugAlphabet | undefined,
   textCase: Case,
 ): GeneratedUuidV7<PlainUuidV7Slug, Case>;
 export declare function generateUuidV7WithPlainSlug<
@@ -193,6 +213,18 @@ export declare function generateUuidV7WithPlainSlug<
 >(
   options: GenerateUuidV7WithPlainSlugOptions<Case>,
 ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
+export declare function generateUuidV7WithPlainSlug<
+  const Input extends
+    | SlugAlphabet
+    | UuidTextCase
+    | GenerateUuidV7WithPlainSlugOptions<UuidTextCase>
+    | undefined,
+>(
+  alphabetOrCaseOrOptions: UuidGenerationInput<
+    Input,
+    GenerateUuidV7WithPlainSlugOptions<UuidTextCase>
+  >,
+): GeneratedUuidV7<PlainUuidV7Slug, UuidGenerationTextCase<Input>> | UuidGenerationFailure<Input>;
 export declare type GenerateUuidV7WithPlainSlugOptions<
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
 > = {
@@ -224,11 +256,7 @@ export declare function isUuidV4Text(value: unknown): value is UuidV4Text;
 export declare function isUuidV7Bytes(value: unknown): value is UuidV7Bytes;
 export declare function isUuidV7String(value: unknown): value is UuidV7String;
 export declare function isUuidV7Text(value: unknown): value is UuidV7Text;
-declare type KeylessUuidInput<Input> = [
-  Extract<Exclude<Input, UuidSlugError>, MaskedUuidV7Slug | MaskedUuidV7Bytes>,
-] extends [never]
-  ? Input
-  : never;
+declare type KeylessUuidInput<Input> = UnmaskedUuidInput<RejectKnownInput<Input, MaskedUuidV7Slug>>;
 export declare type MaskedOrSentinelUuidV7Bytes = MaskedUuidV7Bytes | SentinelUuidV7Bytes;
 export declare type MaskedOrSentinelUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 declare type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
@@ -325,7 +353,11 @@ declare type SlugStringInput<Input extends string | UuidSlugError> = RejectKnown
   UuidText
 >;
 export declare const TIMESTAMP_OUTSIDE_WINDOW = "timestamp_outside_window";
-declare type UnmaskedUuidInput<Input> = RejectKnownInput<Input, MaskedUuidV7Bytes>;
+declare type UnmaskedUuidInput<Input> = Input & {
+  readonly [brand]?: object & {
+    readonly MaskedUuidV7Bytes?: never;
+  };
+};
 export declare type UppercaseUuidString = Brand<UuidText, "UppercaseUuidString">;
 export declare type UppercaseUuidV4String = Brand<UppercaseUuidString & UuidV4Text, "UuidV4String">;
 export declare type UppercaseUuidV7String = Brand<UppercaseUuidString & UuidV7Text, "UuidV7String">;
@@ -410,14 +442,40 @@ export declare type UuidBytesResult<Input> =
   | PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes>
   | UuidSlugError;
 export declare function uuidBytesToPlainSlug(
-  bytes: UuidByteInput | UuidSlugError,
+  bytes: UnmaskedUuidInput<Readonly<UuidByteInput> | UuidSlugError>,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlug | UuidSlugError;
 export declare function uuidBytesToPlainSlug(
-  bytes: Uint8Array | UuidSlugError,
+  bytes: UnmaskedUuidInput<Readonly<Uint8Array> | UuidSlugError>,
   byteOffset: number,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlug | UuidSlugError;
+declare type UuidGenerationBytes<Input, Owned extends UuidBytes> = Input extends Uint8Array
+  ? UuidOutput<Input>
+  : Input extends {
+        readonly output: infer Output extends Uint8Array;
+      }
+    ? UuidOutput<Output>
+    : Owned;
+declare type UuidGenerationFailure<Input> = Input extends object ? UuidSlugError : never;
+declare type UuidGenerationInput<Input, Options> = Input extends Uint8Array
+  ? Input
+  : Input extends object
+    ? Exclude<keyof Input, keyof Options> extends never
+      ? Input
+      : Input & {
+          [Key in Exclude<keyof Input, keyof Options>]: never;
+        }
+    : Input;
+declare type UuidGenerationTextCase<Input> = Input extends UuidTextCase
+  ? Input
+  : Input extends object
+    ? "textCase" extends keyof Input
+      ?
+          | Extract<Input["textCase"], UuidTextCase>
+          | (undefined extends Input["textCase"] ? typeof UUID_TEXT_LOWERCASE : never)
+      : typeof UUID_TEXT_LOWERCASE
+    : typeof UUID_TEXT_LOWERCASE;
 export declare type UuidInput = string | UuidByteInput | AnyUuid | UuidSlugError;
 export declare interface UuidInspection<Version extends UuidVersion = UuidVersion> {
   readonly uuid: UuidStringForVersion<Version, typeof UUID_TEXT_LOWERCASE>;
@@ -473,7 +531,7 @@ export declare interface UuidSlugMigrationDecoder<
   uuidSlugToUuidString<Input extends string | UuidSlugError, Case extends UuidTextCase>(
     this: void,
     uuidSlug: SlugStringInput<Input>,
-    format: Format,
+    format: Format | undefined,
     textCase: Case,
   ): UuidStringFor<Case> | UuidSlugError;
   uuidSlugToUuidStringCandidates<
@@ -492,7 +550,7 @@ export declare interface UuidSlugMigrationDecoder<
   uuidSlugToUuidStringCandidates<Input extends string | UuidSlugError, Case extends UuidTextCase>(
     this: void,
     uuidSlug: SlugStringInput<Input>,
-    format: Format,
+    format: Format | undefined,
     textCase: Case,
   ): readonly UuidStringFor<Case>[] | UuidSlugError;
 }
@@ -645,7 +703,19 @@ export declare interface UuidV7Generator {
     this: void,
     options: Omit<GenerateUuidV7Options<Case>, "generator">,
   ): UuidV7StringFor<Case> | UuidSlugError;
-  generateUuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
+  generateUuidV7<
+    const Input extends
+      | UuidTextCase
+      | Omit<GenerateUuidV7Options<UuidTextCase>, "generator">
+      | undefined,
+  >(
+    this: void,
+    textCaseOrOptions: UuidGenerationInput<
+      Input,
+      Omit<GenerateUuidV7Options<UuidTextCase>, "generator">
+    >,
+  ): UuidV7StringFor<UuidGenerationTextCase<Input>> | UuidSlugError;
+  generateUuidV7Bytes(this: void, options?: undefined): UuidV7Bytes | UuidSlugError;
   generateUuidV7Bytes<Output extends Uint8Array>(
     this: void,
     output: Output,
@@ -659,6 +729,19 @@ export declare interface UuidV7Generator {
     this: void,
     options: Omit<GenerateUuidV7BytesIntoOptions<Output>, "generator">,
   ): UuidOutput<Output> | UuidSlugError;
+  generateUuidV7Bytes<
+    const Input extends
+      | Uint8Array
+      | Omit<GenerateUuidV7BytesOptions, "generator">
+      | Omit<GenerateUuidV7BytesIntoOptions<Uint8Array>, "generator">
+      | undefined,
+  >(
+    this: void,
+    outOrOptions: UuidGenerationInput<
+      Input,
+      Omit<GenerateUuidV7BytesOptions & GenerateUuidV7BytesIntoOptions<Uint8Array>, "generator">
+    >,
+  ): UuidGenerationBytes<Input, UuidV7Bytes> | UuidSlugError;
   generatePlainUuidV7Slug(
     this: void,
     alphabetOrOptions?: SlugAlphabet | Omit<GeneratePlainUuidV7SlugOptions, "generator">,
@@ -673,13 +756,26 @@ export declare interface UuidV7Generator {
   ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
   generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
     this: void,
-    alphabet: SlugAlphabet,
+    alphabet: SlugAlphabet | undefined,
     textCase: Case,
   ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
   generateUuidV7WithPlainSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
     options: Omit<GenerateUuidV7WithPlainSlugOptions<Case>, "generator">,
   ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
+  generateUuidV7WithPlainSlug<
+    const Input extends
+      | SlugAlphabet
+      | UuidTextCase
+      | Omit<GenerateUuidV7WithPlainSlugOptions<UuidTextCase>, "generator">
+      | undefined,
+  >(
+    this: void,
+    alphabetOrCaseOrOptions: UuidGenerationInput<
+      Input,
+      Omit<GenerateUuidV7WithPlainSlugOptions<UuidTextCase>, "generator">
+    >,
+  ): GeneratedUuidV7<PlainUuidV7Slug, UuidGenerationTextCase<Input>> | UuidSlugError;
 }
 export declare interface UuidV7GeneratorOptions {
   readonly readUnixMs?: () => number;
@@ -787,6 +883,18 @@ export declare interface UuidV7MaskingCodec {
     this: void,
     options: GenerateUuidV7WithMaskedSlugOptions<Case>,
   ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError;
+  generateUuidV7WithMaskedSlug<
+    const Input extends
+      | UuidTextCase
+      | GenerateUuidV7WithMaskedSlugOptions<UuidTextCase>
+      | undefined,
+  >(
+    this: void,
+    textCaseOrOptions: UuidGenerationInput<
+      Input,
+      GenerateUuidV7WithMaskedSlugOptions<UuidTextCase>
+    >,
+  ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, UuidGenerationTextCase<Input>> | UuidSlugError;
   uuidToMaskedSlug<Input extends UuidInput>(
     this: void,
     uuid: UuidV7ValueInput<Input>,
@@ -952,7 +1060,7 @@ export declare function uuidV7StringBounds<Case extends UuidTextCase = typeof UU
 ): UuidV7Bounds<UuidV7StringFor<Case>> | UuidSlugError;
 export declare function uuidV7StringBounds<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   startUnixMs: number,
-  endUnixMs: number,
+  endUnixMs: number | undefined,
   ...textCase: UuidTextCaseArguments<Case>
 ): UuidV7Bounds<UuidV7StringFor<Case>> | UuidSlugError;
 export declare type UuidV7StringFor<Case extends UuidTextCase> =

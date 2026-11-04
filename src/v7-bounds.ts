@@ -145,13 +145,13 @@ export function uuidV7StringBounds<Case extends UuidTextCase = typeof UUID_TEXT_
  * interval. The comparison must preserve UUID byte order.
  *
  * @param startUnixMs - First whole Unix millisecond, inclusive.
- * @param endUnixMs - Last whole Unix millisecond, inclusive.
+ * @param endUnixMs - Last whole Unix millisecond, inclusive. Use `undefined` for `startUnixMs`.
  * @param textCase - Built-in output spelling. Omit for lowercase.
  * @returns Canonical UUIDv7 endpoints, or `invalid_timestamp` for an invalid interval.
  */
 export function uuidV7StringBounds<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   startUnixMs: number,
-  endUnixMs: number,
+  endUnixMs: number | undefined,
   ...textCase: UuidTextCaseArguments<Case>
 ): UuidV7Bounds<UuidV7StringFor<Case>> | UuidSlugError;
 export function uuidV7StringBounds(
