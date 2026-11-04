@@ -17,11 +17,12 @@ Derive API consistency and usability improvements from the maintainer's requests
 - [ ] Review publication, partial-failure recovery, archive validation and release-note generation without performing remote writes or release operations.
 - [ ] Inspect dependencies and advisories, repository layout, tracked artifacts, scratch, placeholders and existing deferred work; distinguish real release blockers from optional research and reserved publication steps.
 - [ ] Fix demonstrated defects with focused regressions and inline reasons, update their existing owners, and commit each completed repair.
+  - [x] Update Rollup and compatible transitive patches through Bun; validate packed consumer bundles.
+  - [x] Add a separate manifest-derived Rust minimum-compiler lane while retaining the latest stable toolchain for normal builds.
+  - [x] Verify rendered rustdoc and default/reduced doctests from the extracted crate before retaining it for publication.
 - [ ] Close the audit with affected checks, cleanup and a concrete list of remaining release prerequisites and unverified boundaries; do not claim an exhaustive proof from passing tests.
 
 Follow `dev/release.md` for the npm update and first crate publication. Build and verify stable archives from the authorized tag, not old development captures; reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives. Existing regression checks remain required; missing performance comparisons neither block preparation nor authorize experiments.
-
-- [ ] Before publication, resolve or review [the upstream `deepmerge` advisory](https://github.com/advisories/GHSA-gcqx-w48m-w2h4). The latest Rollup resolver depends on the affected release and merges its fixed defaults; this dependency is development-only. Keep this separate from the clean production dependency audit.
 
 - [ ] With explicit authorization, configure `CRATES_IO_BOOTSTRAP_TOKEN` before the first crate upload; trusted publishing cannot be configured until the crate exists.
 - [ ] After version/tag authorization, run exact-tag preparation for both packages and review the generated consumer release notes before any separately authorized push or publication.

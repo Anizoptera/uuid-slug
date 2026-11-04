@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 import { appendFile, copyFile, mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { inspectCrate } from "./check-crate";
+import { checkCrateDocumentation, inspectCrate } from "./check-crate";
 import { preflightRelease } from "./release-notes";
 import { rustToolchain } from "./rust-toolchain";
 
@@ -75,6 +75,7 @@ async function releaseCrate(mode: string): Promise<void> {
       ["test", "--all-features"],
       join("rust/target/package", `uuid-slug-${version}`, "Cargo.toml"),
     );
+    await checkCrateDocumentation(join("rust/target/package", `uuid-slug-${version}`));
     await copyFile(packaged, reviewed);
     return;
   }

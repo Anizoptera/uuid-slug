@@ -17,6 +17,7 @@ import {
 import { incompatibleExports } from "./api-compatibility";
 import { verifyEvolution } from "./api-evolution";
 import { extractRustApi } from "./rust-api";
+import { rustToolchain } from "./rust-toolchain";
 import type { ApiDifference, ApiSections, ReleaseLevel } from "./release-comparison";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
@@ -330,10 +331,11 @@ async function rustApi(
   cwd: string,
   manifest: string,
 ): Promise<{ declarations: string; report: string; package: CargoReleaseSurface }> {
-  // API extraction alone uses nightly; installed system Cargo may not select it automatically.
+  // API extraction alone uses nightly; Cargo subcommands must select that compiler too.
+  const toolchain = await rustToolchain(cwd, "nightly");
   const env = {
-    RUSTC: (await command("rustup", ["which", "--toolchain", "nightly", "rustc"], cwd)).trim(),
-    RUSTDOC: (await command("rustup", ["which", "--toolchain", "nightly", "rustdoc"], cwd)).trim(),
+    ...toolchain.env,
+    RUSTDOC: join(dirname(toolchain.rustc), "rustdoc"),
   };
   const api = await extractRustApi(cwd, manifest, env);
   const manifestSurface = await rustReleaseSurface(cwd, manifest);
@@ -344,9 +346,10 @@ async function rustApi(
 }
 
 async function runSemver(args: string[], cwd: string, target: string): Promise<CommandResult> {
-  const child = Bun.spawn(["cargo", "semver-checks", ...args], {
+  const toolchain = await rustToolchain(cwd);
+  const child = Bun.spawn([toolchain.cargo, ...toolchain.cargoArgs, "semver-checks", ...args], {
     cwd,
-    env: { ...process.env, CARGO_TARGET_DIR: target },
+    env: { ...toolchain.env, CARGO_TARGET_DIR: target },
     signal: AbortSignal.timeout(30_000),
     stdout: "pipe",
     stderr: "pipe",

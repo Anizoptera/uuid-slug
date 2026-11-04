@@ -2,9 +2,13 @@
 import { delimiter, dirname, join } from "node:path";
 import { command } from "./command";
 
-export async function rustToolchain(root = process.cwd()) {
+export async function rustToolchain(root = process.cwd(), channel?: string) {
   const [cargo, rustc] = await Promise.all(
-    ["cargo", "rustc"].map(async (tool) => (await command("rustup", ["which", tool], root)).trim()),
+    ["cargo", "rustc"].map(async (tool) =>
+      (
+        await command("rustup", ["which", ...(channel ? ["--toolchain", channel] : []), tool], root)
+      ).trim(),
+    ),
   );
   if (!cargo || !rustc)
     throw new Error("rustup did not resolve Cargo and rustc for this checkout.");

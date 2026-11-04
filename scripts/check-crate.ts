@@ -1,4 +1,6 @@
-import { basename } from "node:path";
+import { basename, dirname, join } from "node:path";
+import { command, PACK_TIMEOUT_MS } from "./command";
+import { rustToolchain } from "./rust-toolchain";
 
 const BUILD_PATH_LEAK = /(?:\/Users\/|\/home\/[a-z]|[A-Z]:\\Users\\)/;
 const FORBIDDEN_PARTS = new Set([
@@ -62,6 +64,46 @@ export async function inspectCrate(crate: string, version: string): Promise<void
     throw new Error(
       `The crate library target must be uuid_slug at src/lib.rs; got ${String(manifest.lib?.name)} at ${String(manifest.lib?.path)}.`,
     );
+}
+
+/** Check the documentation consumers receive, including cfg-derived docs.rs feature badges. */
+export async function checkCrateDocumentation(crateRoot: string): Promise<void> {
+  const root = process.cwd();
+  const manifest = join(crateRoot, "Cargo.toml");
+  const nightly = await rustToolchain(root, "nightly");
+  await command(
+    nightly.cargo,
+    [
+      ...nightly.cargoArgs,
+      "doc",
+      "--manifest-path",
+      manifest,
+      "--all-features",
+      "--no-deps",
+      "--locked",
+    ],
+    root,
+    {
+      ...nightly.env,
+      RUSTDOC: join(dirname(nightly.rustc), "rustdoc"),
+      RUSTDOCFLAGS: "--cfg docsrs -D warnings",
+    },
+    { timeoutMs: PACK_TIMEOUT_MS },
+  );
+  const stable = await rustToolchain(root);
+  for (const features of [[], ["--no-default-features"]]) {
+    await command(
+      stable.cargo,
+      [...stable.cargoArgs, "test", "--manifest-path", manifest, "--doc", "--locked", ...features],
+      root,
+      {
+        ...stable.env,
+        RUSTDOC: join(dirname(stable.rustc), "rustdoc"),
+        RUSTDOCFLAGS: "-D warnings",
+      },
+      { timeoutMs: PACK_TIMEOUT_MS },
+    );
+  }
 }
 
 if (import.meta.main) {
