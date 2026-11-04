@@ -46,6 +46,15 @@ Derive choices/checks from owning rulings and in-scope evidence. Ask ONLY about 
 
 Keep adversarial hardening off default paths; ordinary calls must not pay for it. Extra hardening requires an explicit request and a non-default path; read `dev/interface.md` §Capabilities and runtime work. Preserve input validation, secure randomness, caller ownership and wire integrity. JavaScript may accept calls TypeScript rejects; that alone justifies neither wider types nor a release blocker.
 
+## Public API simplicity
+
+Public types must make real calls easier or prevent a concrete mistake; compiler acceptance alone does not justify them.
+
+- Write the ordinary call and its simplest useful declaration before adding overloads or generic helpers. A zero-argument operation must have a zero-argument signature: `generateUuidV4Bytes()`, never `generateUuidV4Bytes(options?: undefined)`. An argument must carry a meaningful caller choice; `undefined` alone is not one. Preserve separate capabilities such as caller-owned buffers.
+- Do not expand the API merely because the runtime accepts a call or a hypothetical wrapper could forward it. Require a concrete consumer need before adding optional-input combinations, conditional types or overloads. Keep meaningful safety distinctions; remove machinery that only compensates for other unnecessary machinery.
+- Review the emitted declarations and actual caller code before accepting a type change. If either becomes harder to understand, simplify the design instead of adding more helpers, explanations or tests to defend it. Tests prove behavior and rejection, not usefulness.
+- Fix the demonstrated problem with the smallest sufficient change. Do not turn an API repair into a new audit framework, inventory, checker or verification ritual. Spend effort on required functionality and concrete defects; preserve capabilities, correctness and issued identifiers.
+
 ## Contract owners
 
 - README owns the consumer model: define each term before first use, state when this package is preferable to a UUID-only library, and keep its capability and representation maps consistent with the public API. Propose an update to the owning explanation for every consumer-visible change; do not copy implementation reasoning or create parallel inventories in other docs.
