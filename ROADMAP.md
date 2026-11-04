@@ -10,9 +10,6 @@ Derive API consistency and usability improvements from the maintainer's requests
 
 ## Joint release readiness
 
-- [x] Restore zero-argument declarations across TypeScript generation and migration construction without losing buffer, configuration or inferred-result capabilities.
-- [ ] Review emitted declarations and run existing consumer, runtime and regression checks; commit the API repair.
-
 Follow `dev/release.md` for the npm update and first crate publication. Build and verify stable archives from the authorized tag, not old development captures; reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives. Existing regression checks remain required; missing performance comparisons neither block preparation nor authorize experiments.
 
 - [ ] Before publication, resolve or review [the upstream `deepmerge` advisory](https://github.com/advisories/GHSA-gcqx-w48m-w2h4). The latest Rollup resolver depends on the affected release and merges its fixed defaults; this dependency is development-only. Keep this separate from the clean production dependency audit.
