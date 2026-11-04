@@ -836,14 +836,16 @@ function buildUuidSlugCodec(
     return bytes instanceof Error ? bytes : extractUuidV7Payload(bytes, layout);
   }
 
-  function createUuidSlugMigrationDecoder(
-    migrationOptions?: undefined,
-  ): UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT>;
+  function createUuidSlugMigrationDecoder(): UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT>;
   // Structural typing permits extra keys and accessors; createMigration can reject either even
   // when boolean fields type-check. Only omission removes that configuration failure boundary.
-  function createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions>(
-    migrationOptions: Options | undefined,
-  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>> | UuidSlugError;
+  function createUuidSlugMigrationDecoder<
+    const Options extends UuidSlugMigrationOptions | undefined,
+  >(
+    migrationOptions: Options,
+  ):
+    | UuidSlugMigrationDecoder<EnabledMigrationFormat<NonNullable<Options>>>
+    | (Options extends undefined ? never : UuidSlugError);
   function createUuidSlugMigrationDecoder(
     migrationOptions?: UuidSlugMigrationOptions,
   ): UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT> | UuidSlugError {

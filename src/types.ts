@@ -503,7 +503,7 @@ export interface UuidV7Generator {
   /** Payload layout emitted by this generator; pass it to UUIDv7 payload extraction. */
   readonly payloadLayout: UuidV7PayloadLayout;
   /** Generate an immutable UUIDv7 that remembers this generator's payload layout. */
-  generateUuidV7Value(this: void, options?: undefined): Uuid<7, false, true> | UuidSlugError;
+  generateUuidV7Value(this: void): Uuid<7, false, true> | UuidSlugError;
   /** Generate with supplied time or masking options; only a supplied codec is retained. */
   generateUuidV7Value<const Options extends UuidV7GeneratorValueOptions | undefined>(
     this: void,
@@ -535,7 +535,7 @@ export interface UuidV7Generator {
     >,
   ): UuidV7StringFor<UuidGenerationTextCase<Input>> | UuidSlugError;
   /** Generate a new plain 16-byte `Uint8Array` for the current clock reading. */
-  generateUuidV7Bytes(this: void, options?: undefined): UuidV7Bytes | UuidSlugError;
+  generateUuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
   /**
    * Write 16 bytes only after success and return the exact supplied array.
    *

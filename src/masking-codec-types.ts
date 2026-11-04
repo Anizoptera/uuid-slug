@@ -225,15 +225,14 @@ export interface UuidV7MaskingCodec {
    *
    * @param options - Old formats this application has actually issued. Omit for current formats only.
    */
-  createUuidSlugMigrationDecoder(
-    this: void,
-    options?: undefined,
-  ): UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT>;
+  createUuidSlugMigrationDecoder(this: void): UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT>;
   /** Create a reusable reader with explicitly enabled old formats; check configuration failure once. */
-  createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions>(
+  createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions | undefined>(
     this: void,
-    options: Options | undefined,
-  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>> | UuidSlugError;
+    options: Options,
+  ):
+    | UuidSlugMigrationDecoder<EnabledMigrationFormat<NonNullable<Options>>>
+    | (Options extends undefined ? never : UuidSlugError);
   /**
    * Generate and encode a UUIDv7 as a masked slug or its registered raw sentinel slug.
    * Options may select an explicit time and a generator whose sequence this call joins.

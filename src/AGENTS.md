@@ -10,7 +10,7 @@ Rules for editing the TypeScript package. Root `AGENTS.md` applies too.
 - Test supported unions and optional-options forwarding, not just each branch separately. Test branded-input rejection on every overload with the preceding error already narrowed away; an incompatible error union can hide a missing brand check. Receiver repairs must preserve inferred versions and reject borrowed methods that invent version or preset facts. Vary retained capabilities independently and check bound preset calls; overload order affects bind/call.
 - Generic forwarding overloads must still reject unknown option keys and generator overrides on generator methods. Test a typo beside a valid key: a typo alone can fail a weak-type check while the combined object still bypasses excess-property checks.
 - Anchor overload edits at their enclosing declaration and signature boundary; compare emitted JavaScript before accepting a type-only repair so a matching implementation line cannot change behavior.
-- Finish only when source calls, runtime paths, emitted declarations, editor help, packed consumers, and produced bundles independently prove the changed contract.
+- Match evidence to the changed contract: check inference and rejection through source and shipped declarations for type changes; exercise affected runtime paths for behavior changes; execute bundles for bundling changes. Review changed declaration help. Keep required repository gates, but do not invent extra probes for unchanged behavior or treat passing checks as proof that an API is useful.
 
 ## Source and emitted modules
 

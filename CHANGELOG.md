@@ -17,7 +17,7 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ### Changed
 
-- TypeScript generation accepts forwarded optional settings and caller buffers without branching, while preserving output types and the lowercase default. Plain-pair generation, migration decoding and UUIDv7 text bounds accept `undefined` for a default selector before an explicit text case. Runtime behavior and issued IDs are unchanged.
+- TypeScript generation accepts optional settings and caller buffers directly, preserving output types and the lowercase default. Plain-pair generation, migration decoding and UUIDv7 text bounds accept `undefined` for a default selector before an explicit text case. Runtime behavior and issued IDs are unchanged.
 - Named TypeScript imports produce smaller bundles for UUID parsing, plain-slug conversion, generation and masking.
 - TypeScript `plainSlugToUuidBytes(slug, output)` reports the same errors as decoding without a caller buffer. For a 22-character slug with nonzero padding, the error explains that masked slugs require their codec.
 

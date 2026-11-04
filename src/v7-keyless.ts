@@ -253,7 +253,7 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
  * @throws `UuidSlugError` with code `rng_unavailable` when generation cannot obtain
  * secure randomness.
  */
-export function generateUuidV7Bytes(options?: undefined): UuidV7Bytes;
+export function generateUuidV7Bytes(): UuidV7Bytes;
 /**
  * Write UUIDv7 bytes into caller-owned storage only after successful generation. Module-level calls
  * do not provide ordering across calls.

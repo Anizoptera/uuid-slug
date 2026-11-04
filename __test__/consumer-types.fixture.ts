@@ -1045,6 +1045,7 @@ expectType<UuidV7Bytes | ConsumerBuffer | UuidSlugError>()(
 );
 expectType<UuidV7Bytes>()(generateUuidV7Bytes(undefined));
 expectType<UuidV4Bytes>()(generateUuidV4Bytes(undefined));
+expectType<Uuid<7, false, true>>()(generateUuidV7Value(undefined));
 declare const forwardedBuffer: ConsumerBuffer | undefined;
 expectType<UuidV4Bytes | ConsumerBuffer | UuidSlugError>()(generateUuidV4Bytes(forwardedBuffer));
 declare const forwardedPair:

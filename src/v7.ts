@@ -360,7 +360,7 @@ export function createPortableUuidV7Generator(
     }
   }
 
-  function generateUuidV7Bytes(options?: undefined): UuidV7Bytes | UuidSlugError;
+  function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
   function generateUuidV7Bytes<Output extends Uint8Array>(
     out: Output,
     offset?: number,

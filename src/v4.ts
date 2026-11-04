@@ -49,7 +49,7 @@ let generating = false;
  * @throws `UuidSlugError` with code `rng_unavailable` when generation cannot obtain
  * secure randomness.
  */
-export function generateUuidV4Bytes(output?: undefined): UuidV4Bytes;
+export function generateUuidV4Bytes(): UuidV4Bytes;
 /**
  * Write UUIDv4 bytes into caller-owned storage only after successful generation.
  *

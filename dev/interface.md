@@ -60,7 +60,7 @@ Before selecting a shape, map independent caller-visible axes and the interactio
 
 Model concrete call sites before naming or adding a public part: keyless one-off conversion, repeated masked writes, current and rotated-key reads, old-format migration, caller-owned buffer writes, untyped JavaScript input, and known-source resolution of an ambiguous slug. Judge each name where a consumer constructs, destructures, stores, passes, and calls it outside this package. A public part that does not shorten or secure one of those jobs has no reason to exist.
 
-Before editing, inventory every root export, type, overload, parameter, option, callback, property, literal, default, result, error, side effect, ownership rule, package entry, and runtime variant. Start from the shortest correct caller code for each job. Each retained part must serve a job that fails without it. The generated declaration baseline records signatures; it does not prove that the interface is complete, useful, or clear.
+For an API-wide review, inventory every root export and package entry, including caller-visible types, overloads, parameters, options, callbacks, properties, literals, defaults, results, failures, effects, ownership and runtime differences once. For a focused repair, trace the affected declarations and callers; do not repeat the whole inventory. Start from the shortest correct caller code for each affected job. Each retained part must serve a job that fails without it. The generated declaration baseline records signatures; it does not prove that the interface is complete, useful, or clear.
 
 ## Shape
 
