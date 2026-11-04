@@ -25,8 +25,8 @@ Rust uses `Uuid` values, ownership and `Result` where TypeScript uses directiona
 | Canonical nil and max UUID values | `NIL_UUID`, `MAX_UUID` |
 | Base64url UUID payload | `UuidSlugAlphabet::Base64Url.uuid_bytes_to_plain_slug`, `plain_slug_to_uuid_bytes`, `plain_slug_to_uuid_bytes_into` |
 | Canonical base64url guard | Check `UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes` success for exactly 22 characters |
-| v4 generation and caller storage | `generate_uuid_v4`, `generate_uuid_v4_with_random_fill`, `generate_uuid_v4_into_with_random_fill` |
-| v7 generation, rollback, explicit time and caller storage | `UuidV7Generator`, `UuidV7ClockRollbackPolicy`, exact `SystemTime`, fractional Unix-millisecond interop, explicit random-fill, and caller-output forms |
+| v4 generation and caller storage | `generate_uuid_v4`, `generate_uuid_v4_into`; `_with_random_fill` variants accept custom entropy |
+| v7 generation, rollback, explicit time and caller storage | `generate_uuid_v7`, `generate_uuid_v7_into`; `UuidV7Generator` adds shared ordering, rollback, supplied `SystemTime` or fractional Unix milliseconds, custom entropy and caller-output forms |
 | Generated plain or masked slugs | TypeScript representation calls may select one generator directly; Rust generates a `Uuid`, then calls `to_plain_uuid_slug` or `uuid_to_masked_slug` |
 | UUIDv7 timestamp | `Uuid::extract_uuid_v7_unix_ms` |
 | Caller-known UUIDv7 payload layout | `UuidV7PayloadLayout::new`, `Uuid::extract_uuid_v7_payload`, `UuidV7MaskingCodec::extract_masked_uuid_v7_payload` |

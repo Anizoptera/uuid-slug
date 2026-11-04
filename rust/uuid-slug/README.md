@@ -198,7 +198,7 @@ On a `UuidV7Generator`, `generate_uuid_v7()` reads the system clock and `generat
 
 With the default preserve-order policy, successful calls on one generator strictly increase in UUID byte order. If the clock stalls or moves backward, the generator advances the logical fraction, then the millisecond timestamp when needed. The fraction or timestamp can therefore be ahead of the clock.
 
-Use `with_clock_rollback_policy` to reset or return `InvalidTimestamp` when the total clock rollback exceeds your tolerance. Reset calls beyond that tolerance can move backward. Same-millisecond ordering depends on the generator and is not a cross-language guarantee.
+Use `with_clock_rollback_policy` to reset or return `InvalidTimestamp` when the total clock rollback exceeds your tolerance. Reset calls beyond that tolerance can move backward. Module-level generation does not share the created generator's ordering guarantee.
 
 ### Sub-millisecond time
 
