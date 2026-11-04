@@ -155,7 +155,7 @@
     "playwright": "^1.64.1",
     "pnpm": "^12.16.1",
     "publint": "^0.3.25",
-    "rollup": "4.67.4",
+    "rollup": "4.67.5",
     "short-uuid": "6.0.3",
     "slugid": "6.0.0",
     "svgo": "4.1.0",
