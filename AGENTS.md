@@ -138,3 +138,4 @@ Public types must make real calls easier or prevent a concrete mistake; compiler
 - Build before Vitest and native shared-suite checks in each CI checkout; entropy subprocesses and Deno resolve compiled runtime adapters, so source-only probes cannot prepare those tests.
 - Pack only after repository build and test processes exit; packlist traversal can race temporary cache files excluded from the tarball.
 - `publish-clean verify` runs the configured artifact validator before retaining the tarball and hides its output on success. Do not repeat the same archive check just to obtain logs; run it directly only for different coverage or diagnosis. Read the installed packer's validator contract when this behavior changes.
+- Every packer invocation must use `PACK_TIMEOUT_MS` from `scripts/command.ts`; the generic subprocess deadline does not cover packing plus archive validation.

@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rename, rm, symlink } from "node:fs/promises";
 import { isBuiltin } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { command } from "./command";
+import { command, PACK_TIMEOUT_MS } from "./command";
 import { checkConsumerInterop } from "./check-consumer-interop";
 import { typeScriptCheckers } from "./typescript-compilers";
 import { archiveAndRemoveScratch } from "./archive-scratch";
@@ -441,6 +441,8 @@ async function main(): Promise<void> {
     "bun",
     [path.join(project, "node_modules/.bin/publish-clean"), "verify", "--no-git-checks"],
     project,
+    undefined,
+    { timeoutMs: PACK_TIMEOUT_MS },
   );
 }
 
