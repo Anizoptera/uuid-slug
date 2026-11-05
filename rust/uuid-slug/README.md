@@ -288,14 +288,13 @@ Supply entropy through the `_with_random_fill` methods, or enable `os-rng` on a 
 
 `derive_uuid_v7_mask_async` limits hashing work per poll and needs no particular executor. The executor must let other host tasks run between polls. Pass `None` when dropping the future is sufficient to stop work. Pass `Some(token.clone())` to cancel through a `UuidV7MaskDerivationCancellation` shared with another task.
 
-For conversions alone, or when your application supplies time and entropy, disable defaults in the dependency declaration:
+For conversions alone, or when your application supplies time and entropy, disable defaults:
 
-```toml
-[dependencies]
-uuid-slug = { version = "0.6", default-features = false }
+```sh
+cargo add uuid-slug --no-default-features
 ```
 
-For browser WebAssembly generation, add `features = ["wasm-js"]` to that declaration. For WASI generation, use defaults or `features = ["std", "os-rng"]`; the WASI host supplies clock and entropy access. Keep the JavaScript feature for browser integration.
+For browser WebAssembly generation, add `--features wasm-js` to that command. For WASI generation, use defaults or `--features std,os-rng`; the WASI host supplies clock and entropy access. Keep the JavaScript feature for browser integration.
 
 Features select host capabilities and dependencies, independently of UUID version or slug alphabet. A v4-only or v7-only application does not need a per-version feature. Unused functions can be removed from the linked application, but enabling a feature still affects its dependency graph and compilation. Other dependencies can also enable features through Cargo feature unification.
 

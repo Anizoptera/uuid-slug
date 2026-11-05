@@ -4,7 +4,7 @@ Keep the same IDs readable in TypeScript and Rust, with matching validation, err
 
 ## Parity
 
-Every feature, fix, and contract change must update both implementations and their shared contract cases. Any semantic exception requires the maintainer's explicit ruling before shipping.
+Shared behavior changes must update both implementations and their shared contract cases. Language-specific dependency or distribution features must preserve that behavior in every supported selection. Any semantic exception requires the maintainer's explicit ruling before shipping.
 
 README §Guarantees owns consumer promises; [design.md](../docs/design.md) owns masking and wire semantics. Neither implementation becomes correct merely by agreeing with the other: expected results must come from those contracts, retained producer fixtures, reference vectors, or independently checkable properties. Preserve issued identifiers when changing either implementation.
 
