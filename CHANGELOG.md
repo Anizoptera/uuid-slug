@@ -4,6 +4,10 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ## [Unreleased]
 
+### Maintainer reminder
+
+- Refine the roadmap and release notes after the SIMD and CPU experiments; details are pending from the maintainer.
+
 ### Breaking changes
 
 - Rust conversions to and from `uuid::Uuid` require opt-in `uuid-interop` (`cargo add uuid-slug --features uuid-interop`). Defaults retain secure generation and omit `uuid`. Both selections preserve accepted text, output, errors and identifier formats. This change requires a minor release before 1.0.
