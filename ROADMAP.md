@@ -21,12 +21,12 @@ Derive engineering choices from the maintainer's requests and interface principl
 
 Keep `uuid-interop` opt-in: enabled builds use upstream parsing, formatting and byte interoperability; ordinary builds compile only the attributed parser/formatter kernels. Preserve secure default generation with OS-seeded ChaCha12; minimize each dependency's features without removing required entropy. Keep accepted text, output, typed errors and issued IDs unchanged. Local unchecked ASCII formatting is approved; deny unrelated unsafe code and review upstream changes before syncing. Treat opt-in conversion availability as a normal pre-1.0 breaking minor and document migration. Credit the source in both READMEs. Versions, pushes and publication still need separate authorization.
 
-- [x] Correct dependency/safety guidance, release-policy exception, feature documentation and matching README attribution before implementation.
+- [x] Correct dependency/safety guidance, normal pre-1.0 version classification, feature documentation and matching README attribution.
 - [x] Copy only required upstream parser/formatter kernels with revision/license provenance, scoped unsafe reasoning and compile-time backend exclusion.
 - [x] Gate `From` interoperability and its examples/tests; refresh lockfiles/API baselines and verify the default graph excludes `uuid` while retaining secure generation.
-- [ ] Finish packed-consumer, allocation and compilation-exclusion checks; the owned parser's four bounded Kani proofs and malformed-text/payload/writer regression controls pass.
-- [ ] Run native/debug/release, compiler-floor and optimized browser/WASI checks, then the complete routine check on the final tree.
-- [ ] Update measured conclusions for the implemented backend, inspect the packaged crate and credit files, remove scratch and commit verified changes.
+- [x] Packed consumers, allocation and compilation-exclusion checks pass; the owned parser's four bounded Kani proofs and malformed-text/payload/writer regression controls pass.
+- [x] Run native/debug/release, compiler-floor and optimized browser/WASI checks; the complete routine check passes on the final code tree.
+- [x] Integrated evidence is in `bench/decisions.md`; packaged source and credit files pass inspection, timing limits remain explicit and disposable scratch is removed.
 
 ## Deferred comparison research
 
