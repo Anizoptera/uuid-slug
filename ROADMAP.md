@@ -16,7 +16,7 @@ Derive engineering choices from the maintainer's requests and interface principl
 ## Active: push workflow repair
 
 - [x] Remove unsupported custom job deadlines from both workflows; actionlint passes, with platform limits, all checks and local/subprocess deadlines preserved.
-- [ ] After push authorization, verify a new GitHub run through the main checks and dependent Node matrix; local validation does not prove hosted completion.
+- [x] Authorized push through `88956ed`; GitHub run `42097737779` completes successfully, including the main checks, dependent Node matrix, native CPU/OS targets and both browser/WASM profiles.
 
 ## Crates.io trusted publishing
 
@@ -46,6 +46,7 @@ Implementation comparisons update only `bench/results/implementations.md`; show 
 
 ## Deferred distribution and guidance
 
+- [ ] Evaluate, research and prototype [Base84](https://00f.net/2026/09/09/base84/) and a lowercase-only alternative for UUID slugs. Compare encoded length, alphabet size, URL and filename safety, decoding rules, performance and caller value against existing base64url/base32hex; preserve issued formats and require a separate decision before adding a public representation.
 - [ ] Decide later whether to also publish to JSR, where Deno can load the TypeScript source; it needs a ruling against the one-npm-package rule in `dev/cross-language.md`, a condition-free Deno entry and slow-types checks.
 - [ ] Propose cross-project guidance requiring packed-consumer checks to match real installed package layouts; change external guidance only with explicit approval.
 
@@ -53,11 +54,15 @@ Implementation comparisons update only `bench/results/implementations.md`; show 
 
 The SIMD, CPU-specific and batch study is authorized now. Compare complete calls and resource costs before proposing API or feature changes; keep normal single-ID calls primary. One push through `88956ed` is authorized and complete; further pushes require authorization.
 
-Current evidence: local hardware is Apple M4 Max. Nugine checkout `dff9585` is unreleased `0.9.0-dev`; UUID/base64 comparisons also include released `0.8.0` and `base64` `0.23.1`. Native prototype grammar/format/slug mutation checks pass. Initial timings are screening only: SIMD parsing/base64 decoding are promising, lowercase-normalized base32 encoding and scalar `u128` encoding lose; the `base64` allocated decoder needs a fixed-buffer comparison before ranking. Rosetta execution is emulation, never AMD hardware evidence; Zen 4 is compile-only. Scratch and raw inputs: `/var/folders/fh/5p3dywss4w53y0mr9f6ftnwc0000gn/T/uuid-slug-simd-study.qKfdHkq4sf`. The pushed workflow run is `42097737779`; all reported lanes except the still-running Intel macOS lane have passed.
+Current evidence: local hardware is Apple M4 Max. Nugine checkout `dff9585` is unreleased `0.9.0-dev`; UUID/base64 comparisons also include released `0.8.0` and `base64` `0.23.1`. Native prototype grammar/format/slug mutation checks pass. Initial timings are screening only: SIMD parsing/base64 decoding are promising, lowercase-normalized base32 encoding and scalar `u128` encoding lose; the `base64` allocated decoder needs a fixed-buffer comparison before ranking. Rosetta execution is emulation, never AMD hardware evidence; Zen 4 is compile-only. Scratch and raw inputs: `/var/folders/fh/5p3dywss4w53y0mr9f6ftnwc0000gn/T/uuid-slug-simd-study.qKfdHkq4sf`. The pushed workflow run `42097737779` completed successfully, including Intel macOS.
+
+Article preservation is source-only: no reproduction, formula checks or independent validation of its published results. Vault commits `a4998afa5` and `49ebad592` preserve the reported runtime/feature matrix, plots, historical results, failure conditions and reusable mechanisms; Vault checks and source-conservation checking pass. Compare portable modules and best-supported feature builds separately; record execution mode and memory configuration, and distinguish runtime compilation from standalone module optimization. These libsodium/AMD results do not establish a UUID/M4 default. UUID experiments remain separately authorized. The full Node/Bun/browser pilot has completed, but its JS reference uses one portable browser bundle; native-host references still need matching runtime routes. The scratch generation prototype is written but not built or timed yet.
 
 - [ ] Acquire and inspect Nugine's SIMD implementations and APIs; map supported architectures, runtime dispatch, scalar fallbacks, grammar and output ownership against this package.
 - [ ] Compare non-SIMD kernels too: scalar arithmetic/tables, compiler vectorization and CPU tuning, bit-operation support, batching of entropy/time and dispatch placement; prioritize the local CPU and common AMD64/ARM64 variants, labeling native, emulated and compile-only evidence.
 - [ ] Execute native and WebAssembly scalar/SIMD parsing, formatting and slug-conversion comparisons, including boundary batch sizes, dispatch, output validation, allocations and linked size; distinguish executed architectures from compile-only coverage.
+- [ ] Compare WebAssembly execution and feature support across Node, Bun, Deno, browser engines and standalone Wasmtime; separate full JavaScript crossings from WASI-internal loops before evaluating any default backend change.
+- [ ] Study and propagate `https://00f.net/2026/06/23/webassembly-runtimes-2026/` into the Knowledge Vault, including its plots and source limits; apply its runtime/compiler/optimizer distinctions here, evaluate Wasmer/WAVM and verify the optimizer name before proposing defaults. Keep runtime selection distinct from npm distribution and per-call crossing costs.
 - [ ] Execute secure scalar/batched generation and npm complete-call comparisons; measure bridge overhead and tree shaking separately from kernel throughput.
 - [ ] Evaluate Rust and npm API call sites and optional-feature/export designs from measured gains and caller burden; preserve conclusions, rejected alternatives and limits in `bench/decisions.md`.
 - [ ] Inspect the pushed workflow results, finish focused verification, remove disposable scratch and commit the study; remind the maintainer to provide roadmap/release-note refinement details.
