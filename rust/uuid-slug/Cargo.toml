@@ -5,9 +5,10 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Compact UUIDs with reversible UUIDv7 masking and filesystem-safe representations"
-keywords = ["uuid", "slug", "base64url", "base32", "identifier"]
-categories = ["encoding"]
+description = "UUIDv4/v7 generation, short base64url/base32hex slugs, and reversible UUIDv7 masking"
+# Broad encoding keywords aid discovery; the description names the exact alphabets.
+keywords = ["uuid", "uuidv7", "short-uuid", "base64", "base32"]
+categories = ["encoding", "no-std", "wasm"]
 exclude = ["benches/"]
 
 [package.metadata.docs.rs]

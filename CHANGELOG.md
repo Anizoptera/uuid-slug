@@ -4,6 +4,10 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ## [Unreleased]
 
+### Changed
+
+- Rust metadata includes UUIDv7 and short-UUID keywords, plus `no-std` and `wasm` categories. npm keywords also cover base32/base64, GUIDs, filesystem-safe output and masking to make these capabilities easier to find.
+
 ## [0.6.0]
 
 ### Breaking changes
