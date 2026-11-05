@@ -17,16 +17,16 @@ Derive engineering choices from the maintainer's requests and interface principl
 
 - [ ] Verify the crates.io trusted-publishing exchange on the next authorized unpublished version (`dev/release.md`); a same-version retry skips authentication and cannot prove the configuration works.
 
-## Active: optional UUID interoperability experiments
+## Optional UUID interoperability: implementation needs rulings
 
-Compare an independent UUID core with optional `uuid` interoperability, including delegation to upstream parsing/formatting when that feature is enabled. Preserve all accepted text, output, errors and issued IDs. Experiments may change isolated copies; changing published feature defaults or interoperability availability requires a proposal and ruling after evidence. Measure single-ID calls first; keep unrelated batch implementation out of this comparison.
+Keep accepted text, output, errors and issued IDs unchanged. The experiment supports a dependency-free reduced build, not a faster default (`bench/decisions.md` §Optional UUID interoperability). Before implementation, rule on gating the released conversions under the published deprecation policy and on copying an unchecked formatter into a crate promising no unsafe code of its own. Select parser and formatter separately; keep ordinary single-ID calls primary and batch implementation outside this comparison.
 
-- [x] Screen retained parser/formatter candidates, independent grammar/bit/allocation checks, optional interoperability and compile-time backend selection; local evidence is in `bench/reports/optional-uuid.3ajuDc`.
-- [ ] Compare copied upstream parser/formatter bodies through the same direct formatting-trait call, without an extra helper; seal inputs and executables before timing, and separate checked UTF-8 from upstream's ASCII invariant.
-- [ ] Reject candidates that change grammar, case, UUID bits, formatting, error behavior or allocation ownership; prove the corpus detects a valid-shaped wrong result.
-- [ ] Compare complete parsing, formatting and composed calls in isolated release processes with alternating order and an unchanged control; retain uncertainty and resource costs.
-- [ ] Measure resolved dependencies, isolated consumer compilation and native/optimized-WASM sizes with interoperability off and on; execute the measured artifacts.
-- [ ] Propose feature defaults and backend selection from the combined evidence, including reduced-build compatibility, maintenance cost and migration; update the evidence owner and remove experiment scratch.
+- [x] Compare complete parsing, formatting and composed calls with defaults enabled and disabled in randomized paired release processes; retain unchanged and added-work controls and uncertainty.
+- [x] Measure resolved dependencies, fresh-target compilation and native/optimized-WASM sizes with interoperability off/on; measured consumers execute natively and in all three browser engines.
+- [x] Compile a registry-published 0.6.0 caller and the same caller with the feature off/on; only the feature-off interoperability calls fail, with missing `From` implementations.
+- [x] Record the optional-feature proposal, direct upstream-copy comparisons, correctness and allocation evidence, limits and migration costs in `bench/decisions.md`; retain local inputs and remove scratch.
+- [ ] Before implementing `uuid-interop`, obtain a ruling on default-on interoperability and migration for released reduced-feature callers; keep current conversions available until then.
+- [ ] Before copying the unchecked formatter into production, obtain a ruling on changing the published no-local-unsafe boundary; keep the current boundary until then.
 
 ## Deferred comparison research
 
