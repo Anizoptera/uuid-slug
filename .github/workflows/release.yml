@@ -97,8 +97,12 @@ jobs:
           if-no-files-found: error
 
   publish-npm:
-    if: needs.prepare.outputs.selected != 'crate'
-    needs: prepare
+    if: >-
+      always() && needs.prepare.result == 'success' &&
+      needs.prepare.outputs.selected != 'crate' &&
+      (needs.publish-crate.result == 'success' ||
+       (needs.prepare.outputs.selected == 'npm' && needs.publish-crate.result == 'skipped'))
+    needs: [prepare, publish-crate]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

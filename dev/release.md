@@ -67,6 +67,8 @@ Consumer-visible changes accumulate under `## [Unreleased]` as they land. Run `b
 
 Keep `@anizoptera/publish-clean` as a registry dependency and publication in `.github/workflows/release.yml`, whose filename is bound to trusted publishing. Verification of the tagged commit runs without publication credentials; only a dependent publication job receives them. Validate the cleaned archive, publish with public access and provenance, and derive the npm dist-tag from the Git tag: prereleases use `next`; stable releases use `latest`.
 
+For a joint release, publish the crate and verify its registry checksum before publishing npm. A failed crate job must hold npm; an npm-only selection must still run without the skipped crate job. Keep both packages selected on retries.
+
 The first crates.io upload requires an API token because [trusted publishing](https://crates.io/docs/trusted-publishing) can be configured only after the crate exists. Complete the following setup when publication is authorized; do not put credentials in chat, source files or command arguments.
 
 1. Sign in to crates.io with the GitHub account that will own the crate. Add and verify its email in [account settings](https://crates.io/settings/profile), as required by the [Cargo publishing guide](https://doc.rust-lang.org/cargo/reference/publishing.html).

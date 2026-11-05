@@ -12,9 +12,9 @@ Derive engineering choices from the maintainer's requests and interface principl
 
 Prepare both stable archives from the authorized tag under `dev/release.md`, not old development captures. Reject incompatible old calls, issued-ID drift, unwanted bundle retention, runtime failures and invalid archives. Keep existing regression checks; missing performance comparisons neither block preparation nor authorize experiments.
 
-- [ ] With explicit authorization, configure `CRATES_IO_BOOTSTRAP_TOKEN` before the first crate upload; trusted publishing cannot be configured until the crate exists.
+- [x] Configure `CRATES_IO_BOOTSTRAP_TOKEN` before the first crate upload; trusted publishing cannot be configured until the crate exists.
 - [ ] Before tagging, review installation and publication-status copy for the selected packages. After version/tag authorization, prepare both archives from that tag and review generated consumer notes before any separately authorized push or publication (`dev/release.md`).
-- [ ] After publication authorization, publish both verified archives and verify registry bytes and hosted docs.rs. Preserve the original selection and archives on retries; never move a published tag or omit a selected package. Keep the release draft until finalization.
+- [ ] Publish authorized version `0.6.0`: publish and verify the crate first, then npm; verify registry bytes and hosted docs.rs. Preserve both selected packages and archives on retries; never move a published tag or omit a selected package. Keep the release draft until finalization.
 - [ ] With separate finalization authorization, verify matching destinations, attachments, notes and provenance before making the draft release public (`dev/release.md`).
 - [ ] With settings authorization and after the first crate exists, configure and read back trusted publishing before removing/revoking the bootstrap credential. Verify the exchange on the next authorized unpublished version; a same-version retry skips authentication.
 
