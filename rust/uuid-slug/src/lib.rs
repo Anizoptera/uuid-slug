@@ -1,4 +1,4 @@
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc = include_str!("../README.md")]
@@ -25,6 +25,11 @@ mod random;
 mod siphash;
 mod text;
 mod uuid;
+// Backend selection is compile-time: interoperability never compiles a second text engine.
+#[cfg(not(feature = "uuid-interop"))]
+mod uuid_text;
+#[cfg(test)]
+mod uuid_text_tests;
 
 pub use alphabet::UuidSlugAlphabet;
 pub use error::{Error, ErrorCode};

@@ -23,6 +23,8 @@ use text::KeylessUuidText;
 #[path = "../uuid-slug/src/uuid.rs"]
 mod uuid;
 use uuid::{PlainUuidSlug, Uuid, UuidV7PayloadLayout};
+#[path = "../uuid-slug/src/uuid_text.rs"]
+mod uuid_text;
 #[path = "../uuid-slug/src/payload_fields.rs"]
 mod payload_fields;
 

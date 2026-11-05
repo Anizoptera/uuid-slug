@@ -41,20 +41,20 @@ fn reference<const N: usize>(text: &[u8; N]) -> Option<[u8; 16]> {
 // so malformed UTF-8 and non-ASCII cannot disappear behind a proof-only validity assumption.
 fn verify<const N: usize>() {
     let bytes: [u8; N] = kani::any();
-    let parsed = uuid::Uuid::try_parse_ascii(&bytes);
+    let parsed = crate::uuid_text::parse_uuid_text(&bytes);
     let expected = reference(&bytes);
     assert_eq!(
-        parsed.is_ok(),
+        parsed.is_some(),
         expected.is_some(),
         "UUID parser accepts exactly its text grammar"
     );
     match expected {
         Some(expected) => assert_eq!(
-            *parsed.unwrap().as_bytes(),
+            parsed.unwrap(),
             expected,
             "UUID parser preserves every hexadecimal payload bit"
         ),
-        None => assert!(parsed.is_err(), "UUID parser rejects malformed text"),
+        None => assert!(parsed.is_none(), "UUID parser rejects malformed text"),
     }
 }
 

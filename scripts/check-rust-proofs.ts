@@ -153,27 +153,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 const deadline = performance.now() + 300_000;
 const toolchain = await rustToolchain();
-const graphText = await command(
+// The proofs import the owned production parser by path. Metadata still checks its locked graph;
+// resolving an unrelated upstream parser would not verify the reduced build's implementation.
+await command(
   toolchain.cargo,
   ["metadata", "--manifest-path", "rust/proofs/Cargo.toml", "--locked", "--format-version", "1"],
   process.cwd(),
   toolchain.env,
 );
-// A direct parser proof must execute the same dependency as the shipped wrapper.
-const graph = JSON.parse(graphText) as {
-  packages: { id: string; name: string }[];
-  resolve: { nodes: { id: string; deps: { name: string; pkg: string }[] }[] } | null;
-};
-const parserFor = (name: string) => {
-  const owner = graph.packages.find((pkg) => pkg.name === name);
-  return graph.resolve?.nodes
-    .find((node) => node.id === owner?.id)
-    ?.deps.find((dep) => dep.name === "uuid")?.pkg;
-};
-if (!parserFor("uuid-slug") || parserFor("uuid-slug") !== parserFor("uuid-slug-proofs"))
-  throw new Error(
-    "Rust parser proofs must resolve the product's uuid dependency. Align rust/proofs/Cargo.toml and its lockfile before proving a different implementation.",
-  );
 const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-proofs-"));
 const reportPath = join(scratch, "report.json");
 let passed = false;

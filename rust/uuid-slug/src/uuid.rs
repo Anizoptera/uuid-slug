@@ -199,6 +199,7 @@ pub struct Uuid([u8; 16]);
 // Both UUID types own the same wire-order bytes. Converting through text would add
 // formatting, parsing and allocation without establishing any additional invariant.
 /// Preserve all 128 bits from the `uuid` crate without allocating or checking the version.
+#[cfg(feature = "uuid-interop")]
 impl From<uuid::Uuid> for Uuid {
     #[inline]
     fn from(uuid: uuid::Uuid) -> Self {
@@ -207,6 +208,7 @@ impl From<uuid::Uuid> for Uuid {
 }
 
 /// Transfer all UUID bits to the `uuid` crate without allocating.
+#[cfg(feature = "uuid-interop")]
 impl From<Uuid> for uuid::Uuid {
     #[inline]
     fn from(uuid: Uuid) -> Self {
@@ -440,11 +442,20 @@ impl Uuid {
 impl FromStr for Uuid {
     type Err = Error;
     fn from_str(text: &str) -> Result<Self, Error> {
-        // The ASCII parser enforces our complete UUID grammar, including case-insensitive URNs.
-        // Detailed upstream diagnostics would be discarded when mapping to our typed error.
-        uuid::Uuid::try_parse_ascii(text.as_bytes())
-            .map(|id| Self(*id.as_bytes()))
-            .map_err(|_| Error::new(ErrorCode::InvalidUuid))
+        // Both backends enforce the same grammar. Keep the package error independent
+        // of upstream diagnostics and avoid compiling upstream in a reduced build.
+        #[cfg(feature = "uuid-interop")]
+        {
+            uuid::Uuid::try_parse_ascii(text.as_bytes())
+                .map(|id| Self(*id.as_bytes()))
+                .map_err(|_| Error::new(ErrorCode::InvalidUuid))
+        }
+        #[cfg(not(feature = "uuid-interop"))]
+        {
+            crate::uuid_text::parse_uuid_text(text.as_bytes())
+                .map(Self)
+                .ok_or_else(|| Error::new(ErrorCode::InvalidUuid))
+        }
     }
 }
 /// Lowercase hyphenated text, the default UUID spelling.
@@ -456,14 +467,22 @@ impl fmt::Display for Uuid {
 /// `{:x}`: lowercase hyphenated text, the same as `Display`.
 impl fmt::LowerHex for Uuid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::LowerHex::fmt(&uuid::Uuid::from_bytes(self.0).hyphenated(), f)
+        #[cfg(feature = "uuid-interop")]
+        let text = uuid::Uuid::from_bytes(self.0).hyphenated();
+        #[cfg(not(feature = "uuid-interop"))]
+        let text = crate::uuid_text::Hyphenated(self.0);
+        fmt::LowerHex::fmt(&text, f)
     }
 }
 /// `{:X}`: uppercase hyphenated text, the TypeScript `UUID_TEXT_UPPERCASE` spelling.
 /// Formatting writes into the caller's writer without allocating.
 impl fmt::UpperHex for Uuid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::UpperHex::fmt(&uuid::Uuid::from_bytes(self.0).hyphenated(), f)
+        #[cfg(feature = "uuid-interop")]
+        let text = uuid::Uuid::from_bytes(self.0).hyphenated();
+        #[cfg(not(feature = "uuid-interop"))]
+        let text = crate::uuid_text::Hyphenated(self.0);
+        fmt::UpperHex::fmt(&text, f)
     }
 }
 
@@ -486,6 +505,7 @@ mod tests {
     use alloc::{borrow::ToOwned, string::ToString};
 
     #[test]
+    #[cfg(feature = "uuid-interop")]
     fn external_uuid_conversions_preserve_each_wire_bit() -> Result<(), Error> {
         // Single-bit and inverted-bit inputs include every version/variant field;
         // known-version examples alone would miss accidental RFC normalization.

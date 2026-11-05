@@ -15,14 +15,15 @@ exclude = ["benches/"]
 all-features = true
 
 [features]
-default = ["std", "fast-rng"]
+default = ["std", "fast-rng", "uuid-interop"]
+uuid-interop = ["dep:uuid"]
 std = []
 fast-rng = ["std", "os-rng", "dep:chacha20"]
 os-rng = ["dep:getrandom"]
 wasm-js = ["std", "os-rng", "getrandom/wasm_js", "dep:js-sys"]
 
 [dependencies]
-uuid = { version = "1.29", default-features = false }
+uuid = { version = "1.29", default-features = false, optional = true }
 getrandom = { version = "0.4", default-features = false, optional = true }
 chacha20 = { version = "0.10.2", default-features = false, features = ["rng"], optional = true }
 
