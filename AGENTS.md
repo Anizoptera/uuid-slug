@@ -32,7 +32,7 @@ BEFORE each read, measure its bytes in a separate call. Store and size generated
 
 Prepare releases only. Release version changes, tags, publication, finalization and `bun run release` require final explicit maintainer authorization for each operation; plans, credentials and checks grant no permission. Other remote writes (pushes, pull requests, settings) also need explicit authorization.
 
-When a selected registry fails, preserve the original package selection and retained artifacts on retry; do not turn a partial joint release into a completed single-package release. Follow `dev/release.md` §Publication and recovery.
+When a selected registry fails, preserve the original package selection and retained artifacts on retry; do not turn a partial joint release into a completed single-package release. Verify CI publication against that run's retained `release-evidence`; local archives can differ even when all file contents match. Follow `dev/release.md` §Publication and recovery.
 
 Fix wrong, missing or unreachable instructions first, then the plan, then implementation. A guidance repair never completes a requested code repair: keep that work open until the implementation and affected checks are finished. Anything in this project that surprises you (a rule, tool, check or behavior that contradicts what you expected) MUST be reported to the user at once and written into the `AGENTS.md` that the next agent would load at that moment, so nobody hits it twice. Put the trigger and required action in visible `AGENTS.md`; unread rules cannot prevent mistakes.
 
