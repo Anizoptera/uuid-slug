@@ -383,7 +383,7 @@ checksum = "4a0e2d11620c50695fe12bbbfde96b3477fe606e7284c22d505c12ce51214514"
 
 [[package]]
 name = "uuid-slug"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "chacha20",
  "getrandom",
@@ -394,7 +394,7 @@ dependencies = [
 
 [[package]]
 name = "uuid-slug-benchmark"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "getrandom",
  "serde_json",
@@ -404,7 +404,7 @@ dependencies = [
 
 [[package]]
 name = "uuid-slug-bridge"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "napi",
  "napi-build",
