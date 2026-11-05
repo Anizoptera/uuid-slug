@@ -94,7 +94,7 @@ export async function checkCrateDocumentation(crateRoot: string): Promise<void> 
     { timeoutMs: PACK_TIMEOUT_MS },
   );
   const stable = await rustToolchain(root);
-  for (const features of [[], ["--no-default-features"]]) {
+  for (const features of [[], ["--no-default-features"], ["--all-features"]]) {
     await command(
       stable.cargo,
       [...stable.cargoArgs, "test", "--manifest-path", manifest, "--doc", "--locked", ...features],
