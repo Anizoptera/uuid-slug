@@ -44,7 +44,7 @@ Native and WASI Rust use `SystemTime` for configured fraction bits. Browser WebA
 | Keyless `parseUuid` of UUID text or a plain slug | `Uuid::parse_uuid`; masked slugs go through their codec |
 | Masking-codec `parseUuid` of mixed textual forms | `UuidV7MaskingCodec::parse_uuid` |
 | `UUID_TEXT_UPPERCASE` output | `{:X}` formatting; `{:x}` and `Display` give lowercase. Both write into the caller's formatter without allocating |
-| Plain slug conversion | `Uuid::to_plain_uuid_slug`, `Uuid::from_plain_uuid_slug` |
+| Plain slug conversion | `Uuid::to_plain_uuid_slug`, `Uuid::from_plain_uuid_slug`; `display_plain_uuid_slug` borrows a UUID for formatting without an intermediate owned slug |
 | UUID version and generic/v4/v7 guards; `Uuid.inspect` | Parse once, then `Uuid::uuid_version`, `uuid_variant`, `is_uuid_v4`, `is_uuid_v7`, `is_rfc_uuid_variant`, `extract_uuid_v7_unix_ms` and comparison with `NIL_UUID` or `MAX_UUID`. Rust returns each field on demand instead of an inspection object |
 | Canonical nil and max UUID values | `NIL_UUID`, `MAX_UUID` |
 | Base64url UUID payload | `UuidSlugAlphabet::Base64Url.uuid_bytes_to_plain_slug`, `plain_slug_to_uuid_bytes`, `plain_slug_to_uuid_bytes_into` |

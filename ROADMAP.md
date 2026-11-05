@@ -54,7 +54,7 @@ Implementation comparisons update only `bench/results/implementations.md`; show 
 
 The SIMD, CPU-specific and batch study is authorized now. Compare complete calls and resource costs before proposing API or feature changes; keep normal single-ID calls primary. One push through `88956ed` is authorized and complete; further pushes require authorization.
 
-Results, input captures and limits: `bench/results/implementations.md` §CPU, WASM and API experiments; decisions and reopening conditions: `bench/decisions.md` §CPU, WASM and API candidates. Production algorithms, dependencies, APIs and runtime defaults remain unchanged. Native AMD performance remains unmeasured; Rosetta and Zen 4 compilation do not substitute for it. Existing semantics may be reconsidered for demonstrated value; a requirement change still needs a maintainer ruling.
+Results, input captures and limits: `bench/results/implementations.md` §CPU, WASM and API experiments; decisions and reopening conditions: `bench/decisions.md` §CPU, WASM and API candidates. Production qualification below adds borrowed slug formatting; rejected decoder/inlining candidates leave existing calls unchanged. Native AMD performance remains unmeasured; Rosetta and Zen 4 compilation do not substitute for it. Existing semantics may be reconsidered for demonstrated value; a requirement change still needs a maintainer ruling.
 
 Article preservation is source-only: no reproduction, formula checks or independent validation of its published results. Vault commits `a4998afa5` and `49ebad592` preserve its reported matrix, plots, historical results, failure conditions and mechanisms; Vault checks and source-conservation checking pass. The separate UUID experiments distinguish portable modules, enabled instructions, JS crossings, runtime compilation and native AOT. Correct host-specific npm references and secure generation replays supersede the initial pilot's limitations.
 
@@ -75,17 +75,26 @@ Article preservation is source-only: no reproduction, formula checks or independ
 - [ ] Before any production adoption, integrate the selected measured candidate with direct proofs, real typed errors and affected complete-call/resource checks. Account for dispatch, allocation, code size and maintenance; preserve wire formats, secure entropy, ownership and safety requirements. Prefer the safe scalar short decoder when evidence supports it without a dependency, not a SIMD label. Specialized instructions require support detection before execution and a portable fallback. No optimization API/default change is approved merely by these experiments.
 - [ ] Obtain native AMD hardware evidence before choosing an AMD-specific implementation; Rosetta and compilation results cannot establish native speed or dispatch cost.
 
-### Measured improvements awaiting production evaluation
+### Production evaluation
 
 Prioritize existing single-ID calls before new API surface. The measurements below are M4 prototype evidence, not shipped guarantees or approval to change public contracts. `bench/results/implementations.md` §CPU, WASM and API experiments owns the measurements; `dev/cross-language.md` §Rust optimization owns separation of API, runtime, retained-code and compilation costs. The production-adoption task above applies to every candidate; repeat no unchanged experiments solely for reassurance.
 
-- [ ] Integrate the safe 22-character scalar base64url decoder candidate: 18.08 → 9.42 ns/UUID, no added dependency or unsafe code. Compare the stronger upstream scalar fallback before selecting the final body; preserve canonical padding rejection, typed failures, caller-buffer atomicity and no allocation. Prove the selected production body and keep single/batch users on it only where sharing adds no unwanted cost.
+Retain a kernel only when its production-body proofs, complete callers and resource/code-removal checks support it. New batch/API contracts remain separate decisions; release and remote-write permissions are unchanged.
+
+Current production evaluation:
+
+- [x] Record complete-call rejection evidence for the scalar base64, shared base32 and parser-inlining candidates; remove their prototype-only adoption claims.
+- [x] Qualify the borrowed plain-slug formatter with paired timing, allocation, production-body proofs and linked consumers.
+- [x] Commit the formatter with its generated API report and consumer changelog entry; run the complete repository check and both optimized WASM profiles.
+- [x] Preserve the deciding inputs/results and verification receipt in the canonical report's local production evidence archive; remove disposable scratch. Base64 formatting improves and both alphabets avoid intermediate allocation; base32 speed and native AMD performance remain unestablished.
+
+- [x] Evaluate the safe 22-character scalar base64url decoder in production. Actual owned/caller-buffer calls show no gain; retain the existing decoder, padding rejection, typed failures, atomic writes and zero allocation. Prototype savings do not justify adoption.
 - [ ] Integrate the fixed-buffer base32 decoder with stack case normalization: 25.66 → 14.16 ns/UUID in the prototype, with wider window variation. Preserve mixed-case input and padding rules; avoid the initial wrapper's temporary String. Retain only a complete-call gain without allocation, dependency or unused-code regression.
 - [ ] Evaluate the adapted SIMD UUID parser for production: 4.54 → 3.25 ns/UUID; parse-to-owned-slug also improves, 22.44 → 18.44 ns. Preserve compact, canonical, wrapped and mixed-case URN grammar and real errors. Compare dispatch and compilation costs against the owned scalar backend; isolate optional instructions/dependencies when sharing would burden ordinary consumers.
 - [ ] Evaluate SIMD owned UUID formatting: 25.90 → 19.80 ns/UUID including safe UTF-8 validation. Preserve exact case and formatting; do not apply the writer variant indiscriminately because one writer window loses. Keep the owned/interoperability backends mutually exclusive and retain only needed upstream code with provenance.
 - [ ] Evaluate the 16-byte SIMD base64url encoder: 19.50 → 17.47 ns/UUID. Require a complete-call/resource gain that earns its dispatch and maintenance; compare a minimal attributed kernel with an optional dependency and compile only the needed capabilities. Keep current base32 encoding, whose refined candidate shows no gain.
-- [ ] Evaluate the two small public-parser inlining annotations: 4.56 → 4.00 ns/UUID. Retain only if native and WASM consumer code size, compilation and complete-call evidence justify this small absolute saving; do not broaden inlining or require LTO.
-- [ ] Design a borrowed Rust slug Display adapter for callers formatting a newly encoded UUID directly: base64/base32 writer cost falls to 0.515–0.538× / 0.575–0.613× and avoids one allocation. Compare realistic call sites with existing owned slug values and direct writer methods; expose only the shape that removes caller work, with low-level encoding kept private.
+- [x] Evaluate the two small public-parser inlining annotations. Actual parsing saves about 0.16 ns, but uppercase formatting loses about 1.47 ns; reject both annotations without broadening inlining or requiring LTO.
+- [x] Add `Uuid::display_plain_uuid_slug` for directly formatting a borrowed UUID. Both alphabets avoid one intermediate allocation; production base64 cost is 0.669–0.739× the owned route, while base32 speed remains unresolved. Existing owned slugs remain appropriate for storage; low-level encoding stays private.
 - [ ] Evaluate a Rust ASCII UUID-text byte parser entry: 6.79 → 2.27 ns/UUID versus UTF-8 validation plus the public parser. Separate omitted UTF-8 work from inlining, preserve full text grammar and typed diagnostics, and distinguish its name/types from raw 16-byte UUID input. Add no export unless actual byte-buffer callers benefit.
 
 ### Batch API extraction
