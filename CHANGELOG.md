@@ -6,6 +6,10 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ## [0.6.0]
 
+### Breaking changes
+
+- TypeScript generation forwarding overloads change `Parameters`-derived input types. For example, `Parameters<UuidV7Generator["generateUuidV7"]>[0]` now includes text-case presets and `undefined`, so code that reads `.at` directly no longer compiles. Use `Omit<GenerateUuidV7Options, "generator">` for generator settings, or the matching exported generation-options type for other calls; use the full inferred union only when forwarding every accepted input.
+
 ### Added
 
 - TypeScript masking codecs support 16-byte binary transport through `uuidToMaskedBytes`, `maskedBytesToUuidBytes` and `maskedBytesToUuidString`, without slug encoding. Readers accept input offsets and caller-owned output, so decoding packet fields needs no temporary view. Binary uses the existing keys and timestamp range but checks 12 bits rather than text's 16; neither check authenticates an ID. Sentinels retain raw UUID bytes. Use the explicit masked-byte readers before UUID conversion or inspection: raw and masked bytes can represent different UUIDs. Types reject known masked bytes in raw formatting, plain encoding and generic UUID readers, including offset calls with explicit output types. Caller-buffer writes leave storage unchanged on failure, including overlapping input and output.

@@ -396,6 +396,6 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
     pendingReleaseVersion,
   );
   console.log(
-    `npm API: compatible with ${tag}; Rust publication compatibility is checked against registry archives during release preparation.`,
+    `npm API: ${manifest.version} satisfies the required version increase from ${tag}; this does not mean every old call is compatible. Rust publication compatibility is checked against registry archives during release preparation.`,
   );
 }

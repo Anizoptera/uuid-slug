@@ -457,6 +457,7 @@ export function typeScriptApiSections(
         .filter((row) => row.family === name)
         .map(({ text }) => text);
     const rows: DiffGroup["rows"] = [];
+    let reordered = false;
     for (const name of new Set(
       [...rowsOf(previous), ...rowsOf(current)].map((row) => row.family),
     )) {
@@ -466,6 +467,7 @@ export function typeScriptApiSections(
       // Kept overloads in another order or count change overload resolution; only the whole
       // family before and after shows that, since a row-by-row diff of identical text is empty.
       if (shared(was, is) !== shared(is, was)) {
+        reordered = true;
         rows.push(...removedRows(was), ...addedRows(is));
       } else {
         rows.push(
@@ -474,11 +476,12 @@ export function typeScriptApiSections(
         );
       }
     }
-    const target = breakingRoots.has(root)
-      ? sections.breaking
-      : rows.some(([prefix]) => prefix === "- ")
-        ? sections.changed
-        : sections.added;
+    const target =
+      reordered || breakingRoots.has(root)
+        ? sections.breaking
+        : rows.some(([prefix]) => prefix === "- ")
+          ? sections.changed
+          : sections.added;
     if (exportedRoots.has(root)) target.push({ roots: [root], rows });
     else hidden.push({ root, target });
   }

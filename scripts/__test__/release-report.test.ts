@@ -88,22 +88,6 @@ test("compatibility follows unexported types an export uses", async () => {
   });
 });
 
-test("compatible overload reordering stays out of breaking release notes", async () => {
-  const string = "export declare function read(value: string): string;";
-  const number = "export declare function read(value: number): number;";
-  const before = `${string}\n${number}`;
-  const after = `${number}\n${string}`;
-  const incompatible = await incompatibleExports(before, after);
-  expect([...incompatible]).toEqual([]);
-  const sections = typeScriptApiSections(
-    normalizeDeclarations(before),
-    normalizeDeclarations(after),
-    incompatible,
-  );
-  expect(sections.breaking).toBe("");
-  expect(sections.changed).toContain("@@ read @@");
-});
-
 test("a compatible change to a branded export stays compatible", async () => {
   // Each file's `unique symbol` is a distinct type, so without shared brands every branded result
   // would look unrelated across versions and any touched export would read as breaking.
