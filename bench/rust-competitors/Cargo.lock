@@ -833,7 +833,6 @@ version = "0.6.1-dev"
 dependencies = [
  "chacha20",
  "getrandom 0.4.3",
- "uuid",
 ]
 
 [[package]]
