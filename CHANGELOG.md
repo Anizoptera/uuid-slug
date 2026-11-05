@@ -4,6 +4,10 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ## [Unreleased]
 
+### Breaking changes
+
+- Rust builds with `default-features = false` must enable `uuid-interop` for conversions to and from `uuid::Uuid`. Defaults keep interoperability enabled. Without it, parsing and formatting use attributed `uuid` kernels, so the reduced library has no runtime dependencies; generation and identifier formats are unchanged. The owned formatter contains the same ASCII-only unchecked UTF-8 conversion instead of keeping all unsafe code in dependencies. This change requires a minor release before 1.0.
+
 ### Changed
 
 - Rust metadata includes UUIDv7 and short-UUID keywords, plus `no-std` and `wasm` categories. npm keywords also cover base32/base64, GUIDs, filesystem-safe output and masking to make these capabilities easier to find.

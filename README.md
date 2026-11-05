@@ -378,3 +378,5 @@ Report bugs through [GitHub issues](https://github.com/Anizoptera/uuid-slug/issu
 ## License
 
 Apache-2.0. Copyright 2026 Anizoptera and Art Shendrik.
+
+The Rust UUID text parser and hyphenated formatter reuse code from the [uuid crate and its contributors](https://github.com/uuid-rs/uuid), under its MIT license. Only these text-conversion kernels are copied; generation, slug encoding and masking are separate. `uuid-interop` (enabled by default) uses `uuid` directly for parsing, formatting and `uuid::Uuid` conversions, and excludes the copied backend at compile time. Upstream source and license attribution are included with the copied code.

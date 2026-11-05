@@ -17,16 +17,16 @@ Derive engineering choices from the maintainer's requests and interface principl
 
 - [ ] Verify the crates.io trusted-publishing exchange on the next authorized unpublished version (`dev/release.md`); a same-version retry skips authentication and cannot prove the configuration works.
 
-## Optional UUID interoperability: implementation needs rulings
+## Active: optional UUID interoperability
 
-Keep accepted text, output, errors and issued IDs unchanged. The experiment supports a dependency-free reduced build, not a faster default (`bench/decisions.md` §Optional UUID interoperability). Before implementation, rule on gating the released conversions under the published deprecation policy and on copying an unchecked formatter into a crate promising no unsafe code of its own. Select parser and formatter separately; keep ordinary single-ID calls primary and batch implementation outside this comparison.
+Implement the approved default-on `uuid-interop`: enabled builds use upstream parsing, formatting and byte interoperability; disabled builds compile only the attributed parser/formatter kernels. Keep generation, accepted text, output, typed errors and issued IDs unchanged. Local unchecked ASCII formatting is approved; deny unrelated unsafe code and review upstream changes before syncing. Gate the released conversions in the next minor release, with migration documented but no prior deprecation release required. Preserve source/license credit in both READMEs. Versions, pushes and publication still need separate authorization.
 
-- [x] Compare complete parsing, formatting and composed calls with defaults enabled and disabled in randomized paired release processes; retain unchanged and added-work controls and uncertainty.
-- [x] Measure resolved dependencies, fresh-target compilation and native/optimized-WASM sizes with interoperability off/on; measured consumers execute natively and in all three browser engines.
-- [x] Compile a registry-published 0.6.0 caller and the same caller with the feature off/on; only the feature-off interoperability calls fail, with missing `From` implementations.
-- [x] Record the optional-feature proposal, direct upstream-copy comparisons, correctness and allocation evidence, limits and migration costs in `bench/decisions.md`; retain local inputs and remove scratch.
-- [ ] Before implementing `uuid-interop`, obtain a ruling on default-on interoperability and migration for released reduced-feature callers; keep current conversions available until then.
-- [ ] Before copying the unchecked formatter into production, obtain a ruling on changing the published no-local-unsafe boundary; keep the current boundary until then.
+- [x] Correct dependency/safety guidance, release-policy exception, feature documentation and matching README attribution before implementation.
+- [ ] Copy only required upstream parser/formatter kernels with revision/license provenance, scoped unsafe reasoning and compile-time backend exclusion.
+- [ ] Gate `From` interoperability and its examples/tests; refresh every affected lockfile and packaged API baseline, preserving default behavior.
+- [ ] Exercise malformed text, every payload bit, case, formatter failure and allocations through both feature selections; verify actual reduced dependency graphs.
+- [ ] Run native/debug/release, compiler-floor and optimized browser/WASI checks, then the complete routine check on the final tree.
+- [ ] Update measured conclusions for the implemented backend, inspect the packaged crate and credit files, remove scratch and commit verified changes.
 
 ## Deferred comparison research
 

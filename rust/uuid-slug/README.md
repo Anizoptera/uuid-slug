@@ -124,7 +124,7 @@ To use an existing reversible transform, construct a `UuidV7Mask` with `from_per
 
 ## Interoperability
 
-Convert directly between this crate's `Uuid`, `uuid::Uuid` and `[u8; 16]` with `.into()`. These conversions preserve every bit without allocating or formatting text, including UUID versions and variants this crate does not generate.
+Convert directly between this crate's `Uuid` and `[u8; 16]` with `.into()`. Enable `uuid-interop` (on by default) for the same conversions with `uuid::Uuid`. These conversions preserve every bit without allocating or formatting text, including UUID versions and variants this crate does not generate.
 
 The example also needs `uuid` as a direct dependency of your app. If missing, add this under `[dependencies]` in your app's `Cargo.toml`:
 
@@ -136,6 +136,7 @@ uuid = { version = "1", default-features = false }
 use uuid_slug::{Uuid, UuidSlugAlphabet};
 
 # fn main() -> Result<(), uuid_slug::Error> {
+# #[cfg(feature = "uuid-interop")] {
 let external = uuid::Uuid::from_bytes([0x55; 16]);
 let id: Uuid = external.into();
 let slug = id.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url);
@@ -144,6 +145,7 @@ assert_eq!(restored, external);
 
 let bytes: [u8; 16] = id.into();
 assert_eq!(Uuid::try_from(bytes.as_slice())?, id);
+# }
 # Ok(())
 # }
 ```
@@ -276,11 +278,11 @@ match Uuid::from_uuid_string(user_input) {
 
 ## Features
 
-Defaults enable `std` and `fast-rng`. `fast-rng` uses a per-thread ChaCha12 generator seeded from the OS. It reseeds after 64 KB or a native process-ID change; seed failures return `rng_unavailable`.
+Defaults enable `std`, `fast-rng` and `uuid-interop`. `fast-rng` uses a per-thread ChaCha12 generator seeded from the OS. It reseeds after 64 KB or a native process-ID change; seed failures return `rng_unavailable`.
 
 For an OS draw on every call, disable defaults and enable `os-rng`; `fill_os_random_bytes` always draws directly from the OS. Add `std` for `SystemTime` methods and current-time generation. Browser generation uses `wasm-js`, which includes `std` and `os-rng`.
 
-With default features disabled, the crate uses `no_std` plus `alloc`: conversions, masking, migration, derivation and explicit Unix-millisecond generation remain available. Your target must provide an allocator and pointer-width/8-bit atomics. `std` alone adds standard-library time without an entropy dependency.
+With default features disabled, the crate has no runtime dependencies and uses `no_std` plus `alloc`: conversions, masking, migration, derivation and explicit Unix-millisecond generation remain available. Your target must provide an allocator and pointer-width/8-bit atomics. `std` alone adds standard-library time without an entropy dependency. Add `uuid-interop` explicitly if a reduced build needs `uuid::Uuid` conversions.
 
 Supply entropy through the `_with_random_fill` methods, or enable `os-rng` on a supported host. Custom callbacks must fill every requested byte or return an error. Production IDs require cryptographically secure entropy; successful partial fills cannot be detected.
 
@@ -308,3 +310,5 @@ Check the [changelog](https://github.com/Anizoptera/uuid-slug/blob/main/CHANGELO
 ## License
 
 [Apache-2.0](https://github.com/Anizoptera/uuid-slug/blob/main/LICENSE).
+
+The Rust UUID text parser and hyphenated formatter reuse code from the [uuid crate and its contributors](https://github.com/uuid-rs/uuid), under its MIT license. Only these text-conversion kernels are copied; generation, slug encoding and masking are separate. `uuid-interop` (enabled by default) uses `uuid` directly for parsing, formatting and `uuid::Uuid` conversions, and excludes the copied backend at compile time. Upstream source and license attribution are included with the copied code.
