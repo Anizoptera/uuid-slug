@@ -1,6 +1,7 @@
 //! Pack the fixed UUID wire layouts without constructing a general-purpose codec.
 use crate::UuidSlugAlphabet;
 use alloc::{boxed::Box, string::String};
+use core::fmt;
 
 // Keep format arithmetic shared with source-importing verification adapters, not public callers.
 pub(crate) const fn bits_per_character(alphabet: UuidSlugAlphabet) -> usize {
@@ -59,6 +60,53 @@ pub(super) fn encode_identifier_bits(
     // Boxing drops String's capacity word from every stored slug and still permits
     // pointer-preserving transfer back to String.
     out.into_boxed_str()
+}
+
+// Borrow UUID bytes until formatting; the caller's writer owns any allocation or I/O.
+pub(super) struct PlainUuidSlugDisplay<'a> {
+    bytes: &'a [u8; 16],
+    write_ascii: fn(&[u8; 16]) -> ([u8; 26], usize),
+}
+
+impl<'a> PlainUuidSlugDisplay<'a> {
+    #[inline]
+    pub(super) fn new(bytes: &'a [u8; 16], alphabet: UuidSlugAlphabet) -> Self {
+        // Formatting erases caller constants; select a writer here so an unused alphabet
+        // disappears even when the standard formatter invokes this adapter indirectly.
+        let write_ascii = match alphabet {
+            UuidSlugAlphabet::Base64Url => plain_uuid_slug_ascii::<6>,
+            UuidSlugAlphabet::Base32Hex => plain_uuid_slug_ascii::<5>,
+        };
+        Self { bytes, write_ascii }
+    }
+}
+
+impl fmt::Display for PlainUuidSlugDisplay<'_> {
+    #[inline]
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let (ascii, length) = (self.write_ascii)(self.bytes);
+        let text = core::str::from_utf8(&ascii[..length]).map_err(|_| fmt::Error)?;
+        formatter.write_str(text)
+    }
+}
+
+// The production formatter and its symbolic proof share this bounded ASCII construction.
+#[inline]
+pub(super) fn plain_uuid_slug_ascii<const BITS: usize>(bytes: &[u8; 16]) -> ([u8; 26], usize) {
+    const { assert!(BITS == 5 || BITS == 6) };
+    let alphabet = if BITS == 6 {
+        UuidSlugAlphabet::Base64Url
+    } else {
+        UuidSlugAlphabet::Base32Hex
+    };
+    let mut ascii = [0; 26];
+    let mut written = 0;
+    let length = 128usize.div_ceil(BITS);
+    write_identifier_bits(alphabet, bytes, length, |symbol| {
+        ascii[written] = symbol;
+        written += 1;
+    });
+    (ascii, written)
 }
 
 // Heap and formatter sinks must select exactly the same symbols and block geometry.

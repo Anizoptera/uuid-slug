@@ -323,6 +323,7 @@ impl core::panic::unwind_safe::UnwindSafe for uuid_slug::PlainUuidSlug
 pub struct uuid_slug::Uuid(_)
 impl uuid_slug::Uuid
 pub const fn uuid_slug::Uuid::as_uuid_bytes(&self) -> &[u8; 16]
+pub fn uuid_slug::Uuid::display_plain_uuid_slug(&self, alphabet: uuid_slug::UuidSlugAlphabet) -> impl core::fmt::Display + '_
 pub fn uuid_slug::Uuid::extract_uuid_v7_payload(&self, layout: uuid_slug::UuidV7PayloadLayout) -> core::result::Result<uuid_slug::UuidV7Payload, uuid_slug::Error>
 pub fn uuid_slug::Uuid::extract_uuid_v7_unix_ms(&self) -> core::result::Result<u64, uuid_slug::Error>
 pub fn uuid_slug::Uuid::from_plain_uuid_slug<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(plain_uuid_slug: &Input) -> core::result::Result<Self, uuid_slug::Error>
@@ -991,6 +992,7 @@ impl core::panic::unwind_safe::UnwindSafe for uuid_slug::PlainUuidSlug
 pub struct uuid_slug::Uuid(_)
 impl uuid_slug::Uuid
 pub const fn uuid_slug::Uuid::as_uuid_bytes(&self) -> &[u8; 16]
+pub fn uuid_slug::Uuid::display_plain_uuid_slug(&self, alphabet: uuid_slug::UuidSlugAlphabet) -> impl core::fmt::Display + '_
 pub fn uuid_slug::Uuid::extract_uuid_v7_payload(&self, layout: uuid_slug::UuidV7PayloadLayout) -> core::result::Result<uuid_slug::UuidV7Payload, uuid_slug::Error>
 pub fn uuid_slug::Uuid::extract_uuid_v7_unix_ms(&self) -> core::result::Result<u64, uuid_slug::Error>
 pub fn uuid_slug::Uuid::from_plain_uuid_slug<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized>(plain_uuid_slug: &Input) -> core::result::Result<Self, uuid_slug::Error>

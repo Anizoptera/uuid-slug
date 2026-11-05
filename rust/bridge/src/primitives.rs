@@ -130,13 +130,18 @@ pub(super) fn encode(request: &Value, alphabet: UuidSlugAlphabet) -> Result<Valu
     if tail > 15 || (tail_bits == 0 && tail != 0) {
         return Err(failure(alphabet));
     }
+    if tail_bits == 0 {
+        // Shared wire cases must exercise the borrowed sink as well as owned masked output.
+        return Ok(json!(format!(
+            "{}",
+            bit_encoding::PlainUuidSlugDisplay::new(&bytes, alphabet)
+        )));
+    }
     let mut payload = [0; 17];
     payload[..16].copy_from_slice(&bytes);
     payload[16] = (tail as u8) << 4;
     Ok(json!(bit_encoding::encode_identifier_bits(
-        alphabet,
-        &payload[..if tail_bits == 0 { 16 } else { 17 }],
-        128 + tail_bits,
+        alphabet, &payload, 132,
     )))
 }
 

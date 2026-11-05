@@ -364,6 +364,21 @@ impl Uuid {
     pub fn to_plain_uuid_slug(&self, alphabet: UuidSlugAlphabet) -> PlainUuidSlug {
         alphabet.uuid_bytes_to_plain_slug(&self.0)
     }
+    /// Borrow this UUID for plain-slug formatting without constructing an owned slug.
+    /// Emits 22 base64url or 26 lowercase base32hex characters when formatted; accepts every UUID version.
+    /// The adapter allocates nothing; errors and allocation from the destination follow that writer's contract.
+    ///
+    /// ```
+    /// use uuid_slug::{Uuid, UuidSlugAlphabet};
+    /// let uuid = Uuid::from_uuid_bytes_array([0; 16]);
+    /// assert_eq!(format!("{}", uuid.display_plain_uuid_slug(UuidSlugAlphabet::Base64Url)), "AAAAAAAAAAAAAAAAAAAAAA");
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn display_plain_uuid_slug(&self, alphabet: UuidSlugAlphabet) -> impl fmt::Display + '_ {
+        // Keep the UUID borrowed and let the existing bit writer target bounded stack storage.
+        crate::bit_encoding::PlainUuidSlugDisplay::new(&self.0, alphabet)
+    }
     /// Copy the UUID to a checked destination range; failure does not write.
     pub fn write_uuid_bytes(&self, out: &mut [u8], offset: usize) -> Result<(), Error> {
         let target = range(out.len(), offset)?;

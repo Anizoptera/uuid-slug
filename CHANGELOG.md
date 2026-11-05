@@ -12,6 +12,10 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 - Rust conversions to and from `uuid::Uuid` require opt-in `uuid-interop` (`cargo add uuid-slug --features uuid-interop`). Defaults retain secure generation and omit `uuid`. Both selections preserve accepted text, output, errors and identifier formats. This change requires a minor release before 1.0.
 
+### Added
+
+- Rust `Uuid::display_plain_uuid_slug(alphabet)` formats a borrowed UUID directly as base64url or base32hex without allocating an intermediate owned slug. Use it with a formatter or writer; the destination controls its own allocation and errors. Existing owned-slug conversions are unchanged.
+
 ### Changed
 
 - Rust generation documentation distinguishes fewer OS entropy requests from syscall-free generation: native draws also check process identity for fork detection.

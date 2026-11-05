@@ -177,6 +177,16 @@ fn verify_encoding<
         encoded, expected,
         "encoding must preserve every payload bit and canonical padding"
     );
+    if BYTES == 16 {
+        let bytes: &[u8; 16] = payload.as_slice().try_into().unwrap();
+        let (ascii, length) = crate::bit_encoding::plain_uuid_slug_ascii::<BITS>(bytes);
+        assert_eq!(length, CHARS, "borrowed slug has exactly its canonical length");
+        assert!(ascii.is_ascii(), "borrowed slug storage contains only ASCII");
+        assert_eq!(
+            ascii[..length], expected,
+            "borrowed slug preserves every payload bit and canonical padding"
+        );
+    }
 }
 
 #[kani::proof]

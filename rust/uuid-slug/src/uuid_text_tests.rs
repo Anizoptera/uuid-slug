@@ -1,5 +1,5 @@
 // Exercise the public boundary in both feature selections; neither backend is its own oracle.
-use crate::{Error, ErrorCode, Uuid};
+use crate::{Error, ErrorCode, Uuid, UuidSlugAlphabet};
 use alloc::{borrow::ToOwned, format, string::String, string::ToString};
 use core::fmt::{self, Write};
 
@@ -83,7 +83,7 @@ fn uuid_text_rejects_corruption_without_changing_the_accepted_grammar() {
 }
 
 #[test]
-fn uuid_text_preserves_every_bit_and_propagates_writer_failures() -> Result<(), Error> {
+fn uuid_formatting_preserves_every_bit_and_propagates_writer_failures() -> Result<(), Error> {
     struct Refuse;
     impl Write for Refuse {
         fn write_str(&mut self, _: &str) -> fmt::Result {
@@ -112,6 +112,11 @@ fn uuid_text_preserves_every_bit_and_propagates_writer_failures() -> Result<(), 
             assert_eq!(*Uuid::from_uuid_string(&expected)?.as_uuid_bytes(), bytes);
             assert!(write!(&mut Refuse, "{id}").is_err());
             assert!(write!(&mut Refuse, "{id:X}").is_err());
+            for alphabet in [UuidSlugAlphabet::Base64Url, UuidSlugAlphabet::Base32Hex] {
+                let slug = format!("{}", id.display_plain_uuid_slug(alphabet));
+                assert_eq!(alphabet.plain_slug_to_uuid_bytes(&slug)?, bytes);
+                assert!(write!(&mut Refuse, "{}", id.display_plain_uuid_slug(alphabet)).is_err());
+            }
         }
     }
     Ok(())

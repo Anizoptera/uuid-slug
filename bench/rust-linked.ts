@@ -53,6 +53,15 @@ const consumers: Record<string, LinkedRustConsumer> = {
   "encode-base32": consumer(
     'let id = Uuid::from_uuid_bytes_array(black_box([0; 16])); assert_eq!(id.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex).as_str(), "00000000000000000000000000");',
   ),
+  "display-base64": consumer(
+    'let id = Uuid::from_uuid_bytes_array(black_box([0; 16])); assert_eq!(format!("{}", id.display_plain_uuid_slug(UuidSlugAlphabet::Base64Url)), "AAAAAAAAAAAAAAAAAAAAAA");',
+  ),
+  "display-base32": consumer(
+    'let id = Uuid::from_uuid_bytes_array(black_box([0; 16])); assert_eq!(format!("{}", id.display_plain_uuid_slug(UuidSlugAlphabet::Base32Hex)), "00000000000000000000000000");',
+  ),
+  "display-both": consumer(
+    'let id = Uuid::from_uuid_bytes_array(black_box([0; 16])); for (alphabet, expected) in [(UuidSlugAlphabet::Base64Url, "AAAAAAAAAAAAAAAAAAAAAA"), (UuidSlugAlphabet::Base32Hex, "00000000000000000000000000")] { assert_eq!(format!("{}", id.display_plain_uuid_slug(black_box(alphabet))), expected); }',
+  ),
   "encode-both": consumer(
     'let id = Uuid::from_uuid_bytes_array(black_box([0; 16])); for (alphabet, expected) in [(UuidSlugAlphabet::Base64Url, "AAAAAAAAAAAAAAAAAAAAAA"), (UuidSlugAlphabet::Base32Hex, "00000000000000000000000000")] { assert_eq!(id.to_plain_uuid_slug(black_box(alphabet)).as_str(), expected); }',
   ),
