@@ -50,26 +50,33 @@ pub(super) fn encode_identifier_bits(
 ) -> Box<str> {
     // Callers select 128 UUID bits or 132 masked bits; zero padding must not become payload.
     let bits = bits_per_character(alphabet);
-    let symbols: &[u8] = match alphabet {
-        UuidSlugAlphabet::Base64Url => BASE64URL_SYMBOLS,
-        UuidSlugAlphabet::Base32Hex => BASE32HEX_SYMBOLS,
-    };
     let length = payload_bits.div_ceil(bits);
     let mut out = String::with_capacity(length);
     // Expose the checked ASCII range so String::push need not handle multibyte characters.
     let mut write = |symbol| out.push(char::from(symbol & 0x7f));
-    match alphabet {
-        UuidSlugAlphabet::Base64Url => {
-            encode_blocks::<3, 4, 6, _>(symbols, bytes, length, &mut write)
-        }
-        UuidSlugAlphabet::Base32Hex => {
-            encode_blocks::<5, 8, 5, _>(symbols, bytes, length, &mut write)
-        }
-    }
+    write_identifier_bits(alphabet, bytes, length, &mut write);
     // Safe ASCII writes avoid a UTF-8 validation pass; exact capacity avoids shrink reallocations.
     // Boxing drops String's capacity word from every stored slug and still permits
     // pointer-preserving transfer back to String.
     out.into_boxed_str()
+}
+
+// Heap and formatter sinks must select exactly the same symbols and block geometry.
+#[inline]
+fn write_identifier_bits(
+    alphabet: UuidSlugAlphabet,
+    bytes: &[u8],
+    length: usize,
+    mut write: impl FnMut(u8),
+) {
+    match alphabet {
+        UuidSlugAlphabet::Base64Url => {
+            encode_blocks::<3, 4, 6, _>(BASE64URL_SYMBOLS, bytes, length, &mut write)
+        }
+        UuidSlugAlphabet::Base32Hex => {
+            encode_blocks::<5, 8, 5, _>(BASE32HEX_SYMBOLS, bytes, length, &mut write)
+        }
+    }
 }
 
 #[inline]
