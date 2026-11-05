@@ -53,7 +53,7 @@ The API check (`bun run api:check:built`, run by the commit hook and `bun run ch
 
 On the tagged commit, the tag is the current release, so the check compares it with the prior release and enforces the structural minimum version.
 
-Use v0.4.0 as the first release-history baseline because older tags do not contain compiler-derived API reports. An API must be deprecated in one published release before removal. Remove it only in a later major release, or a later minor release while the major version is zero. The approved `uuid-interop` feature change is an exception: it may gate the existing Rust conversions in the next minor release without a prior deprecation release; callers needing `uuid::Uuid` conversions must explicitly enable that feature. Issued identifiers and conversion semantics must remain unchanged.
+Use v0.4.0 as the first release-history baseline because older tags do not contain compiler-derived API reports. Before 1.0, breaking changes require a new minor release; from 1.0, they require a new major release. Document consumer migration, including features that become opt-in. Deprecate an API in one published release before removing it entirely; moving an existing API behind an opt-in feature is a breaking availability change, not complete removal. Changing version numbers does not waive issued-ID compatibility.
 
 Package manifests are the only owners of package metadata. Routine checks compare their public settings with the latest release. `publish-clean` validates the exact npm tarball. The Cargo release path validates the exact `.crate` after `cargo package`. Declaration reports contain no manifest copy.
 
