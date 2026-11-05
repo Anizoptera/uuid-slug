@@ -20,7 +20,8 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Includes cold setup, package checks and paired performance runs on a shared runner.
+    timeout-minutes: 15
     outputs:
       node-matrix: ${{ steps.runtimes.outputs.matrix }}
     steps:

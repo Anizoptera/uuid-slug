@@ -8,6 +8,10 @@ Keep one Rust crate and the dependency-free npm package, optional `std`, Rust's 
 
 Derive engineering choices from the maintainer's requests and interface principles; escalate every taste decision and unresolved material contract, priority or risk decision. Versions, tags, pushes, publication, remote settings/secrets and finalization each require explicit authorization; this plan grants none. Keep dependent repairs with their task. Record acceptance commands, revisions, features, profiles, targets and coverage limits in the existing evidence owner; durable contracts stay outside this plan.
 
+## Active: push workflow repair
+
+- [ ] Repair the `check` job's five-minute timeout after run `42070071835` exceeded it during performance checks; preserve all checks and local deadlines, validate the workflow, then verify a new push run after push authorization.
+
 ## Crates.io trusted publishing
 
 - [ ] Verify the crates.io trusted-publishing exchange on the next authorized unpublished version (`dev/release.md`); a same-version retry skips authentication and cannot prove the configuration works.
