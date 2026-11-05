@@ -20,8 +20,6 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # Includes cold setup, package checks and paired performance runs on a shared runner.
-    timeout-minutes: 15
     outputs:
       node-matrix: ${{ steps.runtimes.outputs.matrix }}
     steps:
@@ -53,8 +51,6 @@ jobs:
 
   rust-native:
     runs-on: ${{ matrix.runner }}
-    # Cold toolchains and shared runners need headroom beyond the local check budget.
-    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -153,7 +149,6 @@ jobs:
   runtimes:
     needs: check
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
@@ -202,7 +197,6 @@ jobs:
   # the runtimes matrix owns the Node engines floor. dev/cross-language.md §Runtime floors.
   floors:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -217,8 +211,6 @@ jobs:
   # Keep timing outside the Rust-profile matrix and its combined WASM verification budget.
   timing-web:
     runs-on: ubuntu-latest
-    # Shared-runner setup and benchmark variance need headroom beyond local feedback limits.
-    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -250,8 +242,6 @@ jobs:
   # Browser execution and Wasm compilation need tools outside the main packed-artifact check.
   browser:
     runs-on: ubuntu-latest
-    # Includes browser downloads, Rust/Wasm compilation and execution in every engine.
-    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:

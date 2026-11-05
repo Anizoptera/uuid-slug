@@ -28,7 +28,6 @@ jobs:
   prepare:
     needs: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     outputs:
       selected: ${{ steps.packages.outputs.selected }}
     permissions:
@@ -104,7 +103,6 @@ jobs:
        (needs.prepare.outputs.selected == 'npm' && needs.publish-crate.result == 'skipped'))
     needs: [prepare, publish-crate]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     permissions:
       id-token: write
     steps:
@@ -132,7 +130,6 @@ jobs:
     if: needs.prepare.outputs.selected != 'npm'
     needs: prepare
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     permissions:
       id-token: write
     steps:
@@ -171,7 +168,6 @@ jobs:
       (needs.publish-npm.result == 'success' || needs.publish-npm.result == 'skipped') &&
       (needs.publish-crate.result == 'success' || needs.publish-crate.result == 'skipped')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     permissions:
       contents: write
       id-token: write

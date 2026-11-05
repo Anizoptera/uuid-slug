@@ -10,7 +10,7 @@ Derive engineering choices from the maintainer's requests and interface principl
 
 ## Active: push workflow repair
 
-- [x] Replace the `check` job's five-minute deadline with the existing timing-job allowance; `actionlint .github/workflows/check.yml` passes and all checks and local deadlines remain unchanged.
+- [x] Remove unsupported custom job deadlines from both workflows; actionlint passes, with platform limits, all checks and local/subprocess deadlines preserved.
 - [ ] After push authorization, verify a new GitHub run through the main checks and dependent Node matrix; local validation does not prove hosted completion.
 
 ## Crates.io trusted publishing
