@@ -46,6 +46,9 @@ async function inspectFixture(extra: Record<string, string>, rejection?: string)
 test("crate validation accepts library sources and rejects forbidden contents", async () => {
   // Rejections alone pass even if a later guard refuses every legitimate archive.
   await inspectFixture({});
+  const copiedBackend = { [`${root}src/uuid_text.rs`]: "// copied UUID text kernels" };
+  await inspectFixture(copiedBackend, "LICENSE-UUID-MIT");
+  await inspectFixture({ ...copiedBackend, [`${root}LICENSE-UUID-MIT`]: "MIT permission notice" });
   await inspectFixture({ "other/Cargo.toml": "" }, "Forbidden crate path");
   await inspectFixture({ [`${root}benches/codec.rs`]: "fn main() {}" }, "Forbidden crate path");
   await inspectFixture({ [`${root}src/libuuid_slug.so`]: "" }, "Compiled payload");

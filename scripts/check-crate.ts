@@ -47,6 +47,9 @@ export async function inspectCrate(crate: string, version: string): Promise<void
     "README.md",
     "src/lib.rs",
   ];
+  // A copied backend must carry its upstream permission notice even when the default
+  // feature selects the dependency; Cargo still ships both source alternatives.
+  if (files.has(`${root}src/uuid_text.rs`)) required.push("LICENSE-UUID-MIT");
   for (const name of required)
     if (!files.has(`${root}${name}`)) throw new Error(`Crate has no ${name}.`);
 
