@@ -124,9 +124,9 @@ To use an existing reversible transform, construct a `UuidV7Mask` with `from_per
 
 ## Interoperability
 
-Convert directly between this crate's `Uuid` and `[u8; 16]` with `.into()`. Enable `uuid-interop` (on by default) for the same conversions with `uuid::Uuid`. These conversions preserve every bit without allocating or formatting text, including UUID versions and variants this crate does not generate.
+Convert directly between this crate's `Uuid` and `[u8; 16]` with `.into()`. Enable `uuid-interop` for the same conversions with `uuid::Uuid`. These conversions preserve every bit without allocating or formatting text, including UUID versions and variants this crate does not generate.
 
-The example also needs `uuid` as a direct dependency of your app. If missing, add this under `[dependencies]` in your app's `Cargo.toml`:
+Enable `uuid-interop` on this dependency (`cargo add uuid-slug --features uuid-interop`). The example also needs `uuid` as a direct dependency of your app; add this under `[dependencies]`:
 
 ```toml
 uuid = { version = "1", default-features = false }
@@ -278,7 +278,7 @@ match Uuid::from_uuid_string(user_input) {
 
 ## Features
 
-Defaults enable `std`, `fast-rng` and `uuid-interop`. `fast-rng` uses a per-thread ChaCha12 generator seeded from the OS. It reseeds after 64 KB or a native process-ID change; seed failures return `rng_unavailable`.
+Defaults enable `std` and `fast-rng`, without `uuid`. `fast-rng` uses a per-thread ChaCha12 generator seeded through `getrandom` on native and WASM targets. It reseeds after 64 KB or a native process-ID change; seed failures return `rng_unavailable`. Browser entropy requires `wasm-js`.
 
 For an OS draw on every call, disable defaults and enable `os-rng`; `fill_os_random_bytes` always draws directly from the OS. Add `std` for `SystemTime` methods and current-time generation. Browser generation uses `wasm-js`, which includes `std` and `os-rng`.
 
@@ -311,4 +311,4 @@ Check the [changelog](https://github.com/Anizoptera/uuid-slug/blob/main/CHANGELO
 
 [Apache-2.0](https://github.com/Anizoptera/uuid-slug/blob/main/LICENSE).
 
-The Rust UUID text parser and hyphenated formatter reuse code from the [uuid crate and its contributors](https://github.com/uuid-rs/uuid), under its MIT license. Only these text-conversion kernels are copied; generation, slug encoding and masking are separate. `uuid-interop` (enabled by default) uses `uuid` directly for parsing, formatting and `uuid::Uuid` conversions, and excludes the copied backend at compile time. Upstream source and license attribution are included with the copied code.
+The Rust UUID text parser and hyphenated formatter reuse code from the [uuid crate and its contributors](https://github.com/uuid-rs/uuid), under its MIT license. Only these text-conversion kernels are copied; generation, slug encoding and masking are separate. The opt-in `uuid-interop` feature uses `uuid` directly for parsing, formatting and `uuid::Uuid` conversions, and excludes the copied backend at compile time. Upstream source and license attribution are included with the copied code.

@@ -6,7 +6,7 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ### Breaking changes
 
-- Rust builds with `default-features = false` must enable `uuid-interop` for conversions to and from `uuid::Uuid`. Defaults keep interoperability enabled. Both selections preserve accepted text, output, errors and identifier formats. This change requires a minor release before 1.0.
+- Rust callers must enable `uuid-interop` for conversions to and from `uuid::Uuid`; defaults no longer include `uuid`. Both selections preserve accepted text, output, errors and identifier formats. Secure generation remains enabled by default. This change requires a minor release before 1.0.
 
 ### Changed
 

@@ -44,6 +44,8 @@ Derive choices/checks from owning rulings and in-scope evidence. Ask ONLY about 
 - Code that contradicts its own contract is a bug (example: a method ignores the generator its constructor took). Fix it and add a test that fails without the fix.
 - A `bench/decisions.md` entry records a measurement, not a maintainer ruling. When code changes make its description of the code false, correct the entry in the same commit. Do not re-run the benchmark for this: new measurements need an explicit request (§Work scope). Audit findings need the failing call, trigger, consequence and normal-call control. Separate observed from possible harm; misuse alone does not prove ordinary-call harm or release impact.
 
+Agreement with a capability does not approve a default proposed beside it. Check each default and added dependency against the maintainer's actual goal and words; an agent proposal is not a ruling. Keep optional integration opt-in, and preserve required secure behavior rather than deleting its dependencies to satisfy a count.
+
 Keep adversarial hardening off default paths; ordinary calls must not pay for it. Extra hardening requires an explicit request and a non-default path; read `dev/interface.md` §Capabilities and runtime work. Preserve input validation, secure randomness, caller ownership and wire integrity. JavaScript may accept calls TypeScript rejects; that alone justifies neither wider types nor a release blocker.
 
 ## Public API simplicity
