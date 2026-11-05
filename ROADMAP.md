@@ -22,7 +22,7 @@ Derive engineering choices from the maintainer's requests and interface principl
 Compare an independent UUID core with optional `uuid` interoperability, including delegation to upstream parsing/formatting when that feature is enabled. Preserve all accepted text, output, errors and issued IDs. Experiments may change isolated copies; changing published feature defaults or interoperability availability requires a proposal and ruling after evidence. Measure single-ID calls first; keep unrelated batch implementation out of this comparison.
 
 - [x] Screen retained parser/formatter candidates, independent grammar/bit/allocation checks, optional interoperability and compile-time backend selection; local evidence is in `bench/reports/optional-uuid.3ajuDc`.
-- [ ] Compare unchanged upstream parser bodies and formatting algorithms, isolating checked UTF-8 conversion from upstream's unchecked ASCII invariant; earlier scalar prototypes cannot decide whether owning upstream code pays.
+- [ ] Compare copied upstream parser/formatter bodies through the same direct formatting-trait call, without an extra helper; seal inputs and executables before timing, and separate checked UTF-8 from upstream's ASCII invariant.
 - [ ] Reject candidates that change grammar, case, UUID bits, formatting, error behavior or allocation ownership; prove the corpus detects a valid-shaped wrong result.
 - [ ] Compare complete parsing, formatting and composed calls in isolated release processes with alternating order and an unchanged control; retain uncertainty and resource costs.
 - [ ] Measure resolved dependencies, isolated consumer compilation and native/optimized-WASM sizes with interoperability off and on; execute the measured artifacts.
