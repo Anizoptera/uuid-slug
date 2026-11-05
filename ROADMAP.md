@@ -12,6 +12,16 @@ Derive engineering choices from the maintainer's requests and interface principl
 
 - [ ] Verify the crates.io trusted-publishing exchange on the next authorized unpublished version (`dev/release.md`); a same-version retry skips authentication and cannot prove the configuration works.
 
+## Active: optional UUID interoperability experiments
+
+Compare an independent UUID core with optional `uuid` interoperability, including delegation to upstream parsing/formatting when that feature is enabled. Preserve all accepted text, output, errors and issued IDs. Experiments may change isolated copies; changing published feature defaults or interoperability availability requires a proposal and ruling after evidence. Measure single-ID calls first; keep unrelated batch implementation out of this comparison.
+
+- [ ] Reuse the retained parser/formatter candidates and independent corpus against current sources; compare upstream, owned core, owned core with interoperability, and feature-selected upstream delegation.
+- [ ] Reject candidates that change grammar, case, UUID bits, formatting, error behavior or allocation ownership; prove the corpus detects a valid-shaped wrong result.
+- [ ] Compare complete parsing, formatting and composed calls in isolated release processes with alternating order and an unchanged control; retain uncertainty and resource costs.
+- [ ] Measure resolved dependencies, isolated consumer compilation and native/optimized-WASM sizes with interoperability off and on; execute the measured artifacts.
+- [ ] Propose feature defaults and backend selection from the combined evidence, including reduced-build compatibility, maintenance cost and migration; update the evidence owner and remove experiment scratch.
+
 ## Deferred comparison research
 
 Compare maintained TypeScript runtimes and native Rust/Wasm feature variants on equivalent complete API jobs, using warmed minified JavaScript and release Rust/Wasm; exclude debug and disabled-JIT runs. Separate per-ID bridge crossings from compiled Rust loops. These research tasks are not release gates; new measurements require the consumer-call authorization and evidence required by `AGENTS.md` and `bench/AGENTS.md`.
