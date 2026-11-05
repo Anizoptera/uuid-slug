@@ -10,7 +10,7 @@ fn hex(byte: u8) -> Option<u8> {
 }
 
 // Grammar positions express RFC text, not the production parser's implementation or tables.
-fn reference<const N: usize>(text: &[u8; N]) -> Option<[u8; 16]> {
+pub(crate) fn reference<const N: usize>(text: &[u8; N]) -> Option<[u8; 16]> {
     let start = match N {
         32 | 36 => 0,
         38 if text[0] == b'{' && text[37] == b'}' => 1,

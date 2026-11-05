@@ -115,6 +115,8 @@ fn write_hyphenated(bytes: &[u8; 16], f: &mut fmt::Formatter<'_>, upper: bool) -
     // format_hyphenated initializes all 36 output bytes from those digits or '-'.
     // The local array stays alive and unmodified throughout write_str. No caller
     // bytes are interpreted as UTF-8, and no unchecked buffer access is needed.
+    // Kani's uuid_text::hyphenated_format proves ASCII, payload and case for every input;
+    // refresh it with `bun scripts/check-rust-proofs.ts uuid_text::hyphenated_format`.
     f.write_str(unsafe { core::str::from_utf8_unchecked(&text) })
 }
 

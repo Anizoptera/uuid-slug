@@ -13,6 +13,14 @@ const decodingAssertions = [
 const paddingAssertion = "nonzero decoder padding must fail";
 const tailAssertion = "decoded tail must fit four bits";
 const availableHarnesses = [
+  {
+    name: "uuid_text::hyphenated_format",
+    assertions: [
+      "UUID formatter emits only ASCII for every payload and case",
+      "UUID formatter preserves every payload byte in canonical positions",
+      "UUID formatter uses exactly the requested hexadecimal case",
+    ],
+  },
   ...["empty_words_match_bytes", "one_word_matches_bytes", "two_words_match_bytes"].map((name) => ({
     name: `hash_contract::${name}`,
     assertions: ["word hashing equals little-endian byte hashing for every key and payload"],
