@@ -70,6 +70,29 @@ if (product.version !== version)
   throw new Error(`Rust product version ${product.version} does not match package.json ${version}`);
 const features = product.features;
 
+// A source-level optional flag is insufficient: another default feature can enable
+// the dependency indirectly. Check the actual ordinary consumer graph before tests.
+const defaultGraph = await run(
+  [
+    "cargo",
+    "tree",
+    "--manifest-path",
+    "rust/uuid-slug/Cargo.toml",
+    "--edges",
+    "normal",
+    "--prefix",
+    "none",
+    "--format",
+    "{p}",
+    "--locked",
+  ],
+  true,
+);
+if (defaultGraph.split("\n").some((line) => line.startsWith("uuid v")))
+  throw new Error(
+    "Default Rust builds must not depend on uuid. Keep uuid-interop opt-in; enable it only in callers that need interoperability.",
+  );
+
 // Feature unification in workspace tests can hide a product's missing optional dependency.
 // Deduplicate equivalent selections, such as default and fast-rng.
 function enabledFeatures(names: string[], enabled = new Set<string>()): Set<string> {

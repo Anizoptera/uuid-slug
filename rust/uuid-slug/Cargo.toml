@@ -15,7 +15,8 @@ exclude = ["benches/"]
 all-features = true
 
 [features]
-default = ["std", "fast-rng", "uuid-interop"]
+# Secure generation is ordinary; third-party UUID interoperability is an explicit caller choice.
+default = ["std", "fast-rng"]
 uuid-interop = ["dep:uuid"]
 std = []
 fast-rng = ["std", "os-rng", "dep:chacha20"]
