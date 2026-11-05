@@ -10,6 +10,7 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ### Changed
 
+- Rust generation documentation distinguishes fewer OS entropy requests from syscall-free generation: native draws also check process identity for fork detection.
 - Rust parsing and formatting use attributed `uuid` kernels when interoperability is disabled, leaving the reduced library without runtime dependencies. Enabled builds use upstream directly and exclude the owned backend. The owned formatter uses an ASCII-only unchecked UTF-8 conversion; safety documentation now describes its invariant rather than only where unsafe code resides.
 - Rust metadata includes UUIDv7 and short-UUID keywords, plus `no-std` and `wasm` categories. npm keywords also cover base32/base64, GUIDs, filesystem-safe output and masking to make these capabilities easier to find.
 - Rust installation examples use crates.io dependencies instead of local checkout paths. The crate README explains representation sizes, buffer reuse, TypeScript compatibility and stored-ID recovery, with the shared animated diagram, a simpler default masking example and direct API links from both READMEs.
