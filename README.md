@@ -52,7 +52,7 @@ Use your favorite TS/JS package manager (npm/bun/pnpm/yarn/..), e.g.:
 bun install @anizoptera/uuid-slug
 ```
 
-Rust: `cargo add uuid-slug`. Build browser WASM from the Rust crate with `wasm-js`.
+[Rust](https://crates.io/crates/uuid-slug): `cargo add uuid-slug` · [Rust API reference](https://docs.rs/uuid-slug/latest/uuid_slug/). Build browser WASM from the Rust crate with `wasm-js`.
 
 
 ## Quick start
@@ -348,7 +348,7 @@ Types catch UUID-version and plain/masked mix-ups; results retain text case and 
 
 The npm package uses ES modules. Native APIs and portable TypeScript are selected automatically for each runtime and output, so the caller code does not need to choose or coordinate the implementations. When the runtime supports it, the implementation is chosen statically through the `package.json` exports.
 
-The [Rust crate](rust/uuid-slug) uses the same identifier formats. Cross-language masked reads require matching seeds, iteration counts and timestamp ranges; see [cross-language contracts](docs/cross-language.md).
+The [Rust crate](https://crates.io/crates/uuid-slug) uses the same identifier formats. Cross-language masked reads require matching seeds, iteration counts and timestamp ranges; see [cross-language contracts](docs/cross-language.md).
 
 | Runtime | Package code |
 | --- | --- |

@@ -1,19 +1,26 @@
 # uuid-slug
 
-The crate generates UUIDv4/v7 and encodes any UUID as a 22-character base64url or 26-character base32hex slug. UUIDv7 fields can be masked with a key; lowercase masked slugs use 27 characters for case-insensitive filenames.
+Fast UUIDv4/v7 generation, short UUID slugs, and reversible UUIDv7 masking for Rust and WebAssembly. One UUID works as a database key, a short URL ID or a lowercase filename; every representation converts back to the same UUID.
 
-After the first crates.io publication, install with:
+- [Keep existing UUIDs](#representations). Plain base64url slugs are 39% shorter than UUID text, without changing database keys or adding a mapping table. Any UUID version works; plain decoding needs no key.
+- [Hide UUIDv7 timestamps and fields](#convert-and-mask-existing-uuids). Keyed masking keeps public IDs short. [Key rotation and migration](#key-rotation) keep issued IDs readable when keys or formats change.
+- [Avoid temporary byte buffers](#caller-owned-storage). Generate or decode directly into a packet or database buffer; failed calls leave that storage unchanged. Parse once into an owned `Uuid` and reuse it for conversion and inspection.
+- [Fast generation, low allocations and small builds](#features). OS-seeded, per-thread ChaCha12 avoids an OS call per UUID. Caller-buffer APIs avoid output allocations; unused functions can be removed from the linked application.
+- [Control UUIDv7 time and order](#generation-and-timestamps). Use recorded times, clock-rollback policies, sub-millisecond fields, timestamp extraction and database range keys. Ordinary generation needs no setup.
+- [Use Rust values throughout](#interoperability). Convert directly to and from `uuid::Uuid` and `[u8; 16]`. Distinct plain/masked slug types prevent representation mix-ups; failures return `Result` with stable error codes.
+- [Share IDs with TypeScript](#typescript-and-stored-ids). Rust and TypeScript read the same plain and masked formats. Native, browser WASM, WASI and `no_std` with `alloc` builds share the same encodings.
+
+[Install](#install) · [Quick start](#generate-an-id) · [Representations](#representations) · [Features](#features) · [API reference](https://docs.rs/uuid-slug/latest/uuid_slug/)
+
+## Install
+
+Rust 1.97 or newer is required.
 
 ```sh
 cargo add uuid-slug
 ```
 
-Rust 1.97 or newer is required. Before publication, use a local checkout by adding this dependency to your application's `Cargo.toml`, adjusting the repository path:
-
-```toml
-[dependencies]
-uuid-slug = { path = "../uuid-slug/rust/uuid-slug" }
-```
+Defaults include secure UUIDv4/v7 generation. For browser WebAssembly, enable `wasm-js`; for conversion-only or `no_std` builds, [disable default features](#features).
 
 ## Generate an ID
 
@@ -35,10 +42,30 @@ println!("UUID: {id}; URL slug: {url_id}");
 
 Both generators return an owned `Uuid`; generation failures propagate with `?`. Module-level UUIDv7 calls do not promise ordering. Use a [created generator](#generation-and-timestamps) when you need a shared sequence or clock policy.
 
+IDs can be assigned offline, so related records can reference each other before saving or syncing. Generation uses fresh randomness: retain the first ID for retries. Collisions remain possible; use a uniqueness constraint where duplicates could overwrite or misidentify data.
+
+## Representations
+
+These examples represent the same UUID. Plain slugs encode its 16 bytes with standard base64url or base32hex, so other implementations can decode them too. Masked forms need the matching key and settings.
+
+| Form | Size | Example | Use |
+| --- | --- | --- | --- |
+| UUID text | 36 characters | `0198abcd-1234-7abc-9def-0123456789ab` | Standard UUID columns and APIs |
+| UUID bytes | 16 bytes | `01 98 ab cd 12 34 7a bc 9d ef 01 23 45 67 89 ab` | Binary storage and transport |
+| Plain base64url | 22 characters | `AZirzRI0eryd7wEjRWeJqw` | Short URLs; case-sensitive; 39% shorter than UUID text |
+| Plain base32hex | 26 characters | `06canj8i6htbp7ff04hkaps9lc` | Lowercase filenames; 28% shorter; UUIDv7 timestamp order under ASCII comparison |
+| Masked base64url | 22 characters | `ap225Qa_y6wN5LQCJgwH0z` | UUIDv7 URLs with hidden fields; case-sensitive; 39% shorter |
+| Masked base32hex | 27 characters | `daerdp86nv5qo3f4mg12c307qco` | Masked UUIDv7 filenames; lowercase; 25% shorter |
+| Masked bytes | 16 bytes | `6a 9d b6 e5 06 bf cb ac 0d e4 b4 02 26 0c 07 d3` | Masked UUIDv7 transport without text encoding |
+
+Masked examples use the public test mask. Production masking requires a private seed. Masked output has no chronological order; plain base64url is mostly time-ordered for UUIDv7, but exact text ordering needs base32hex. Preserve base64url case: lowercasing changes the ID. Base32hex writes lowercase and accepts mixed case.
+
+Encode an existing UUID with `Uuid::to_plain_uuid_slug`; decode incoming slugs with `Uuid::from_plain_uuid_slug` before querying the same database key. Parsing once into `Uuid` avoids repeated text decoding when several operations need the ID.
+
 ## Convert and mask existing UUIDs
 
 ```rust
-use uuid_slug::{UuidSlugAlphabet, Uuid, UuidV7MaskingCodec, UuidV7MaskingCodecOptions, derive_uuid_v7_mask};
+use uuid_slug::{UuidSlugAlphabet, Uuid, UuidV7MaskingCodec, derive_uuid_v7_mask};
 
 # fn main() -> Result<(), uuid_slug::Error> {
 let uuid = Uuid::from_uuid_string("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
@@ -46,10 +73,7 @@ let filename = uuid.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex);
 assert_eq!(Uuid::from_plain_uuid_slug(&filename)?, uuid);
 
 let mask = derive_uuid_v7_mask(b"replace-with-your-own-secret-seed", 1)?;
-let masking_codec = UuidV7MaskingCodec::from_options(UuidV7MaskingCodecOptions {
-    masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
-    ..UuidV7MaskingCodecOptions::new(mask)
-})?;
+let masking_codec = UuidV7MaskingCodec::new(mask);
 let masked = masking_codec.uuid_to_masked_slug(uuid)?;
 assert_eq!(masking_codec.masked_slug_to_uuid(&masked)?, uuid);
 let binary = masking_codec.uuid_to_masked_bytes(uuid)?;
@@ -64,11 +88,13 @@ Slug conversions return `PlainUuidSlug`, `MaskedUuidV7Slug`, or `MaskedOrSentine
 
 Parse stored plain-slug text with `text.parse::<PlainUuidSlug>()?`; it validates padding and normalizes base32hex to lowercase without encoding the UUID again. Codec and configuration values support `Debug` while keeping mask keys hidden.
 
+### Read plain and masked input
+
 Keyless parsers accept strings, typed plain slugs and their standard borrowed or owned containers through `KeylessUuidText`. They reject typed masked slugs: pass those to their masking codec. For a `MaskedOrSentinelUuidV7Slug`, select its `Sentinel` variant before keyless decoding. A sentinel is a named, reserved UUIDv7 that the codec leaves unmasked.
 
 Custom string wrappers can pass `.as_str()`, but a string no longer tells the compiler whether it was masked. For generic input, use `Input: KeylessUuidText + ?Sized`. To pass the parser as a function pointer with ordinary string coercions, use `let parse: fn(&str) -> Result<Uuid, uuid_slug::Error> = Uuid::parse_uuid`.
 
-Use `UuidV7MaskingCodec::new(mask)` for base64url output with no sentinels or previous keys. Use `UuidV7MaskingCodec::from_options(options)?` to select those settings or a different timestamp range. Both require an explicit mask; only configured construction can return a validation error.
+Use `UuidV7MaskingCodec::new(mask)` for base64url output with no sentinels or previous keys. Use `UuidV7MaskingCodec::from_options(options)?` for those settings or a different timestamp range; set `masked_slug_alphabet: UuidSlugAlphabet::Base32Hex` for lowercase masked filenames. Both require an explicit mask; only configured construction can return a validation error. Construct the codec once and reuse it so per-ID calls need no key derivation.
 
 Use `masking_codec.parse_uuid(text)?` when input may be UUID text, a plain slug or a masked slug. Registered sentinels take priority. For ambiguous 22-character text, the first passing mask decides the UUID; plain decoding applies only when every mask rejects it. Callback failures are returned, not retried as plain text. Use `Uuid::from_plain_uuid_slug` or `masked_slug_to_uuid` when you know the source. The returned `Uuid` owns its bytes without retaining the codec or keys.
 
@@ -78,11 +104,19 @@ Plain slugs preserve all 128 UUID bits without version, variant or timestamp lim
 
 Use `uuid_to_masked_bytes_into` and `masked_bytes_to_uuid_bytes_into` for caller-owned storage; failure leaves the entire buffer unchanged. Raw UUID conversion accepts every 16-byte value, including masked bytes, so byte content cannot uniquely identify the representation. Choose the reader from the known format.
 
+### Masking limits
+
 Masking supports UUIDv7 only. It replaces the recognizable UUIDv7 layout, including its timestamp, with a keyed reversible payload. Its cryptographic strength is not established. An incorrect key can pass the check and return the wrong UUID. Additional read keys can increase false matches. Look up decoded records and check caller access.
 
 Use `uuid_v7_test_mask()` only for examples and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs.
 
 Masking stores a timestamp offset from `timestamp_range_start_unix_ms` and restores the UUID's timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`. Timestamps outside that range are rejected, never truncated. Plain slugs retain the full UUIDv7 timestamp range. Registered sentinels are never masked.
+
+### Sentinels and custom masks
+
+Reserve recognizable IDs for tests, debugging or tracing with `UuidV7MaskingCodecOptions::sentinels`: each entry pairs a name with a UUIDv7. Codecs precompute their plain slugs and leave them unmasked, even after key rotation. Keep the definitions while those IDs remain in use.
+
+To use an existing reversible transform, construct a `UuidV7Mask` with `from_permutation_functions` and pass it to the codec. The two callbacks must undo each other over all 16-byte inputs; callback errors propagate. Retain the transform implementation as well as its keys to read issued IDs.
 
 ## Interoperability
 
@@ -214,6 +248,8 @@ The crate accepts every RFC 9562 UUIDv7 and preserves all 74 payload bits. Pass 
 
 `uuid_v7_bounds(start, end)` returns the inclusive lowest and highest UUIDv7 search keys. Pass `None` for a single millisecond. Pass the result directly to `BTreeMap::range` or another `RangeBounds<Uuid>` consumer; comparisons must use UUID byte order.
 
+Use `Uuid::extract_uuid_v7_unix_ms()` to read the encoded timestamp without a database lookup. Keep a separate field for editable dates or finer precision; a generator can advance logical time to preserve order. `UuidV7TimestampWindow::validate_uuid_v7` rejects timestamps outside a configured distance from a reference time; `UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms` decodes and validates a masked slug with its keys.
+
 ## Errors
 
 Failures return `Error`, retaining any underlying cause. Match `Error::code()` against `ErrorCode`; use `ErrorCode::as_str()` when a text protocol needs the shared TypeScript spelling. `Display` explains the failure. Do not parse its text: messages can change.
@@ -250,9 +286,21 @@ For conversions alone, or when your application supplies time and entropy, disab
 
 ```toml
 [dependencies]
-uuid-slug = { path = "../uuid-slug/rust/uuid-slug", default-features = false }
+uuid-slug = { version = "0.6", default-features = false }
 ```
 
 For browser WebAssembly generation, add `features = ["wasm-js"]` to that declaration. For WASI generation, use defaults or `features = ["std", "os-rng"]`; the WASI host supplies clock and entropy access. Keep the JavaScript feature for browser integration.
 
 Features select host capabilities and dependencies, independently of UUID version or slug alphabet. A v4-only or v7-only application does not need a per-version feature. Unused functions can be removed from the linked application, but enabling a feature still affects its dependency graph and compilation. Other dependencies can also enable features through Cargo feature unification.
+
+## TypeScript and stored IDs
+
+The [TypeScript package](https://www.npmjs.com/package/@anizoptera/uuid-slug) reads and writes the same plain slugs, masked slugs and masked bytes. Masked reads across languages need matching seed bytes, iteration counts and timestamp-range starts, plus the same sentinel definitions or custom transform when used. See the [cross-language guide](https://github.com/Anizoptera/uuid-slug/blob/main/docs/cross-language.md).
+
+Supported identifier formats remain readable across upgrades. Keep private seeds, iteration counts, range settings and sentinel definitions while stored IDs need them; key rotation changes new output, not the keys needed to read old output. Plain slugs recover UUIDs with standard base64url/base32hex decoders, without this crate. The [wire format](https://github.com/Anizoptera/uuid-slug/blob/main/docs/design.md) is documented for independent implementations.
+
+Check the [changelog](https://github.com/Anizoptera/uuid-slug/blob/main/CHANGELOG.md) and [release policy](https://github.com/Anizoptera/uuid-slug/blob/main/docs/release.md) before upgrading. Report bugs through [GitHub issues](https://github.com/Anizoptera/uuid-slug/issues).
+
+## License
+
+[Apache-2.0](https://github.com/Anizoptera/uuid-slug/blob/main/LICENSE).
