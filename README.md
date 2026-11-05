@@ -52,7 +52,7 @@ Use your favorite TS/JS package manager (npm/bun/pnpm/yarn/..), e.g.:
 bun install @anizoptera/uuid-slug
 ```
 
-_The [Rust crate](rust/uuid-slug) and WASM builds live in this repo but are not yet published._
+Rust: `cargo add uuid-slug`. Build browser WASM from the Rust crate with `wasm-js`.
 
 
 ## Quick start
