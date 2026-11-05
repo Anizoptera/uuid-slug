@@ -8,6 +8,11 @@ Keep one Rust crate and the dependency-free npm package, optional `std`, Rust's 
 
 Derive engineering choices from the maintainer's requests and interface principles; escalate every taste decision and unresolved material contract, priority or risk decision. Versions, tags, pushes, publication, remote settings/secrets and finalization each require explicit authorization; this plan grants none. Keep dependent repairs with their task. Record acceptance commands, revisions, features, profiles, targets and coverage limits in the existing evidence owner; durable contracts stay outside this plan.
 
+## Optional UUID completion audit
+
+- [x] Compare backend selection, dependency defaults, source credits and secure generation with their implementations; correct the README's OS-call claim and release instructions that omit all-feature doctests.
+- [x] Documentation corrections match the RNG implementation and archive checker; the documentation-only diff and commit hook pass. Batch/SIMD research below remains unfinished, writer timings establish no general speed win, and hosted workflows still need an authorized push.
+
 ## Active: push workflow repair
 
 - [x] Remove unsupported custom job deadlines from both workflows; actionlint passes, with platform limits, all checks and local/subprocess deadlines preserved.
