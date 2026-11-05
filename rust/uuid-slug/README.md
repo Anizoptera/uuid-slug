@@ -62,6 +62,10 @@ Masked examples use the public test mask. Production masking requires a private 
 
 Encode an existing UUID with `Uuid::to_plain_uuid_slug`; decode incoming slugs with `Uuid::from_plain_uuid_slug` before querying the same database key. Parsing once into `Uuid` avoids repeated text decoding when several operations need the ID.
 
+[![One UUID as text, bytes, plain base64url/base32hex slugs and masked UUIDv7 slugs, with colours tracing its fields](https://raw.githubusercontent.com/Anizoptera/uuid-slug/main/docs/assets/uuid-representations.svg)](https://raw.githubusercontent.com/Anizoptera/uuid-slug/main/docs/assets/uuid-representations.svg)
+
+[Open the interactive diagram](https://raw.githubusercontent.com/Anizoptera/uuid-slug/main/docs/assets/uuid-representations.svg) and hover a field to trace it through the representations.
+
 ## Convert and mask existing UUIDs
 
 ```rust
