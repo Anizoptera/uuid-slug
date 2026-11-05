@@ -54,10 +54,12 @@ Implementation comparisons update only `bench/results/implementations.md`; show 
 The SIMD, CPU-specific and batch study is authorized now. Compare complete calls and resource costs before proposing API or feature changes; keep normal single-ID calls primary. One push through `88956ed` is authorized and complete; further pushes require authorization.
 
 - [ ] Acquire and inspect Nugine's SIMD implementations and APIs; map supported architectures, runtime dispatch, scalar fallbacks, grammar and output ownership against this package.
+- [ ] Compare non-SIMD kernels too: scalar arithmetic/tables, compiler vectorization and CPU tuning, bit-operation support, batching of entropy/time and dispatch placement; prioritize the local CPU and common AMD64/ARM64 variants, labeling native, emulated and compile-only evidence.
 - [ ] Execute native and WebAssembly scalar/SIMD parsing, formatting and slug-conversion comparisons, including boundary batch sizes, dispatch, output validation, allocations and linked size; distinguish executed architectures from compile-only coverage.
 - [ ] Execute secure scalar/batched generation and npm complete-call comparisons; measure bridge overhead and tree shaking separately from kernel throughput.
 - [ ] Evaluate Rust and npm API call sites and optional-feature/export designs from measured gains and caller burden; preserve conclusions, rejected alternatives and limits in `bench/decisions.md`.
 - [ ] Inspect the pushed workflow results, finish focused verification, remove disposable scratch and commit the study; remind the maintainer to provide roadmap/release-note refinement details.
+- [ ] After the experiments and API evaluation, apply every suitable existing Rust proof technique to the absorbed UUID parser/formatter and any additional Rust code: extend production-body proofs for uncovered byte/arithmetic, capacity and failure-atomicity obligations, and state the remaining host/compiler assumptions.
 
 - [ ] Explore native CPU instructions and instruction-set extensions across supported CPU architectures for single-UUID operations. Compare complete consumer calls with the portable implementation.
 - [ ] Evaluate bulk UUID parsing, formatting, generation and slug conversion, including [Nugine SIMD](https://github.com/Nugine/simd). Preserve mixed-case URNs, lowercase base32hex, unchanged output on failure and each ID's encoding boundary. Compare complete calls, including dispatch and JS/Rust crossings; decide API fit and build cost separately for Rust and TypeScript, keeping single/few-ID calls primary.
