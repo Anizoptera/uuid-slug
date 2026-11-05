@@ -28,10 +28,11 @@ Implementation comparisons update only `bench/results/implementations.md`; show 
 - [ ] Decide later whether to also publish to JSR, where Deno can load the TypeScript source; it needs a ruling against the one-npm-package rule in `dev/cross-language.md`, a condition-free Deno entry and slow-types checks.
 - [ ] Propose cross-project guidance requiring packed-consumer checks to match real installed package layouts; change external guidance only with explicit approval.
 
-## Deferred Rust CPU optimizations
+## Deferred CPU and batch optimizations
 
 Future exploration only; do not start it during release preparation.
 
 - [ ] Explore native CPU instructions and instruction-set extensions across supported CPU architectures for single-UUID operations. Compare complete consumer calls with the portable implementation.
-- [ ] Explore batched UUID operations separately, including SIMD where useful; batch gains must not slow single-UUID calls.
+- [ ] Evaluate bulk UUID parsing, formatting, generation and slug conversion, including [Nugine SIMD](https://github.com/Nugine/simd). Preserve mixed-case URNs, lowercase base32hex, unchanged output on failure and each ID's encoding boundary. Compare complete calls, including dispatch and JS/Rust crossings; decide API fit and build cost separately for Rust and TypeScript, keeping single/few-ID calls primary.
+- [ ] Evaluate borrowed formatting adapters, direct text-buffer writers and existing owned slug values for Rust streaming callers. Establish allocation and complete-call gains before proposing exports; keep low-level output machinery internal unless callers benefit from it.
 - [ ] Retain a specialized path only for demonstrated gains on actual target hardware, accounting for dispatch, allocation, code size and maintenance. Preserve wire formats, secure entropy, ownership, safety requirements and a portable fallback; detect CPU support before executing optional instructions.

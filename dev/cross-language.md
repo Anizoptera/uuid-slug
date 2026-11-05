@@ -110,6 +110,8 @@ Use Rust features for host capabilities. Defaults enable `std` and `fast-rng`; `
 
 Design Rust calls so consumers compile and retain only the capabilities their application needs; verify compilation cost, linked code and runtime work separately.
 
+Keep single-ID and few-ID calls primary. Evaluate bulk processing separately in Rust and TypeScript: API complexity, ordinary-call performance and resource use, retained code and compilation cost are independent. Share optimizations when those costs remain acceptable; otherwise isolate them with Rust feature flags or removable TypeScript exports. A compatible API can still need separate compilation. A separate npm subpath still needs the [packed-consumer evidence](interface.md#package-entries) that named root imports cannot provide.
+
 | Concern | TypeScript | Rust |
 | --- | --- | --- |
 | What identifies unused work | A bundler follows ESM imports and uses side-effect information. | The compiler and linker follow reachable calls and data in the consumer program. A public method is not automatically a retained binary export. |
