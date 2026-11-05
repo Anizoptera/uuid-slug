@@ -1858,3 +1858,103 @@ A/A uses identical artifacts in separate processes. Its worst median displacemen
 | unmask/binary/caller-buffer | ts/node | 0.52× [0.52–0.54] |
 | unmask/binary/owned | ts/node | 0.55× [0.55–0.56] |
 | unmask/binary/text | ts/node | 0.55× [0.54–0.55] |
+
+## CPU, WASM and API experiments — 2026-11-05
+
+These experiments identify implementation candidates; they do not change production algorithms, dependencies, APIs or default runtimes. Execution is Apple M4 Max/macOS ARM64. AMD64 baseline and feature builds execute under Rosetta, not AMD hardware; Zen 4 is compile-only. Native AMD performance remains unmeasured. Local results, input hashes, source captures and diagnostics: [evidence archive](../reports/cpu-wasm-2026-11-05/evidence.tar.gz), untracked and unavailable in another checkout. The older report above remains a separate comparison; these results do not connect to its normalized scale.
+
+Each comparison has three fresh four-process ABBA/BAAB windows, randomized orientation and fresh environment padding. Each process executes a warm-up and five recorded batches of approximately 100,000 calls. Each process contributes its median batch cost; each window compares the medians of its two candidate and two reference processes. Tables give the median of three window costs and the observed candidate/reference ratio range. Ranges are not confidence intervals, per-call latency percentiles or proof of another machine's performance. Full results remain observable; invocation resources include work, not isolated startup.
+
+Rust is 1.99.1, release optimization level 3. Nugine UUID/base64 kernels include released 0.8.0; base32 uses unreleased `dff9585` (0.9.0-dev). The alternative `base64` crate is 0.23.1. WASM uses repository-resolved Binaryen 132. Dispatch is outside timed native per-ID loops; decoders use fixed output buffers. The corpus checks 1,620,736 grammar, payload, padding and formatting mutations; SWAR additionally checks 12,255,232 byte mutations. Sampled equivalence is not an all-input proof. Successive prototype snapshots are distinct inputs; metadata hashes identify each measured version.
+
+### Native complete calls
+
+Costs are ns/ID; ratios below one favor the candidate. Owned strings include allocation and normalization.
+
+| Candidate / call | Current → candidate | Three-window ratio range |
+| --- | ---: | ---: |
+| Adapted uuid-simd parser | 4.54 → 3.25 | 0.690–0.720 |
+| SIMD owned UUID formatter, including safe UTF-8 validation | 25.90 → 19.80 | 0.735–0.810 |
+| SIMD UUID writer | 10.52 → 7.89 | 0.736–1.123 |
+| base64-simd encoder | 19.50 → 17.47 | 0.749–0.917 |
+| base64-simd decoder, scalar fallback | 18.95 → 8.15 | 0.429–0.450 |
+| Safe eight-character scalar decoder prototype | 18.08 → 9.42 | 0.505–0.533 |
+| Base32 encoder, in-place lowercase normalization | 19.66 → 20.08 | 1.018–1.061 |
+| Base32 decoder, stack uppercase normalization | 25.66 → 14.16 | 0.547–0.853 |
+| UUID parse → owned base64url slug | 22.44 → 18.44 | 0.714–0.900 |
+| SWAR parser | 4.48 → 28.35 | 6.176–6.425 |
+| Inline public parser wrappers | 4.56 → 4.00 | 0.873–0.881 |
+
+The fast 22-character base64 decoder uses eight-character scalar groups: upstream's SIMD decoding starts at 38 characters. The safe prototype preserves that grouping with bounded writes into a private 16-byte array, with no new unsafe code or dependency. It is a useful candidate independently of SIMD. Base64 encoding of 16 bytes reaches the vector path. Both UUID-sized base32 operations use scalar tails: vector loops begin at 36 input bytes / 42 encoded characters. A crate's name does not establish which mechanism executes.
+
+The initial base32 wrapper allocates twice for encoding and once for decoding, versus the library's one and zero. Its 1.5× encoding loss is superseded by in-place normalization; stack uppercase conversion removes the decoding temporary. The refined adapter demonstrates no encoding gain. The SIMD UUID writer loses in one window; the 0.56 ns wrapper-inlining gain is specific to this parser call, not a general API claim.
+
+Scalar `u128` encoding loses: base64 ratios 1.798–1.835, base32 1.910–1.997. Its base64 decoder loses (1.281–1.325); the small base32 decode saving (0.951–0.972) does not justify broad replacement. Pair-table formatting loses (1.044–1.083), arithmetic formatting loses in every window, and `base64` 0.23.1 loses both encoding (1.203–1.377) and fixed-buffer decoding (1.369–1.428).
+
+M4 tuning gives no general gain: current base32 encoding has median ratio 1.038. Disabling loop/SLP vectorization makes current parsing 5.619× and parse-to-slug 1.899× slower. Fat LTO plus embedded bitcode and one code-generation unit loses: parser 1.128×, writer 1.620×, base64 decoder 1.203× and base32 encoder 1.319×. These are whole-build differences, not isolated effects of each setting.
+
+Thin consumers preserve real typed errors through candidate fallback. File-size changes are +128 bytes for base64 encoding, +112 for base32 encoding and zero for both decoders; retained Mach-O sections and feature graphs distinguish alignment from code. Earlier apparent savings around 17 KB compared different errors and are invalid for equivalent consumers. Single cold builds cannot establish compilation-time distributions; the candidate base64 graph includes uuid-simd and is not a minimal decoder-only compile graph.
+
+### JavaScript crossings and standalone runtimes
+
+Packed consumers resolve actual production adapters: Node's native module, Bun's source adapter and Deno's compiled portable adapter. The job converts UUID text to owned base64url slugs; this table uses 64 IDs per host batch. WASM includes binding and input/output conversion with observable returned strings.
+
+| Host | JS map, ns/ID | WASM SIMD per-ID | WASM SIMD batch |
+| --- | ---: | ---: | ---: |
+| Node 26.13.0 | about 107 | 161 | 244 |
+| Bun 1.4.4 | about 63 | 153 | 183 |
+| Deno 2.9.8 | about 66 | 154 | 230 |
+| Chromium 156.0.8078.4 | about 58 | 185 | 232 |
+| Firefox 157.0 | about 120 | 310 | 340 |
+| WebKit 27.2 | about 70–80 | 235 | 270 |
+
+Sizes 1, 4, 16, 64, 256, 1024 and 4096 establish no reason to replace JavaScript with these WASM bindings. Original Node/Bun browser-bundle rows are superseded by host-specific replays; browser rows use that bundle correctly. Coarse browser clocks and a Bun 4096-ID outlier remain in the evidence. A loop/map change produces no consistent general gain.
+
+WASI loops avoid per-ID JS crossings and answer a different question. With the SIMD/O2 module, approximate parser / base64-decoder / parse-to-slug costs are Node 7.62/14.17/20.36 ns, Bun 5.31/11.84/16.29, Deno 11.16/19.72/27.63, explicit Wasmer Cranelift 4.19/11.92/12.58 and WAVM 4.38/10.49/11.02. Wasmtime's separate windows give roughly 4.5/12.6/13.4. Wasmer 7.5.0's explicit LLVM mode loses parsing and the composed call (about 66/88 ns), while base64 decoding takes about 9.6 ns; this describes the tested CLI configuration, not every LLVM configuration. Explicit Wasmer V8 loses against Cranelift on these eight calls. No runtime wins every measured decision axis.
+
+### Optimizers, AOT and features
+
+Binaryen O3/Oz shrink the SIMD module from 377,027 bytes (O2) to 353,300/351,413 bytes, without uniformly improving eight calls. Wasmtime O3 parsing ratios are 1.018–1.033; Wasmer O3 parsing 1.033–1.046; WAVM Oz base32 encoding 1.029–1.052. The maintained O2 pipeline stays unchanged; size savings remain a real alternative.
+
+```text
+Rust release → Binaryen O2 → portable WASM → runtime JIT
+                                        ↘ WAVM compile → embedded host object → --precompiled
+```
+
+WAVM compile embeds target-specific native code, not standalone wasm-to-wasm optimization. Apply Binaryen first; retain the portable artifact and match CPU/OS/runtime revision for the object. One AOT compilation takes 7.39 s / about 278 MB peak RSS; its artifact is 1,194,327 bytes. Repeated AOT invocations have median wall time 0.08 s / about 40.5 MB RSS versus 0.13 s / 38.6 MB for paired Wasmer Cranelift. Uncached WAVM takes seconds and hundreds of MB, so rejecting it from uncached cost would miss the AOT alternative. These are whole-job costs, not isolated startup measurements. The conversion corpus passes through the AOT artifact.
+
+Finite feature probes execute MVP, SIMD, relaxed SIMD and four wide-arithmetic operations with result assertions. Tested defaults on this ARM64 host:
+
+| Engine | SIMD | Relaxed SIMD | All four wide-arithmetic probes |
+| --- | --- | --- | --- |
+| Node 26.13.0 | Pass | Pass | Reject |
+| Bun 1.4.4 | Pass | Pass | Pass |
+| Deno 2.9.8 | Pass | Pass | Reject by default; pass with `--v8-flags=--experimental-wasm-wide_arithmetic` |
+| Wasmtime 50.0.1 | Pass | Pass | Pass |
+| Wasmer 7.5.0 default / LLVM | Pass | Pass | Pass |
+| Wasmer V8 | Pass | Reject | Reject |
+| Wasmer Singlepass ARM64 | Reject | Reject | Reject |
+| WAVM nightly 2026-04-05 | Pass | Reject | Reject |
+| Chromium 156 | Pass | Pass | Reject by default; pass with `--js-flags=--wasm-wide_arithmetic` |
+| Firefox 157 / WebKit 27.2 | Pass | Pass | Pass |
+
+Node rejects the tested experimental flag before MVP. Chromium accepts an invalid flag too: that control still rejects wide operations while the intended flag executes them. WAVM's initial `--abi=none` configuration rejects even MVP; corrected auto-ABI execution establishes MVP/SIMD support. The earlier configuration failure does not establish absent SIMD. These UUID kernels do not use wide arithmetic; extra features alone prove no UUID speed gain.
+
+### Secure generation and API shape
+
+Generation uses production OS-seeded ChaCha12 in an isolated crate copy. Real macOS `getentropy` interception establishes typed seed failure, unchanged caller buffers and retry; the no-injection expected-failure control fails. A reseed failure after partial private output returns no partial owned batch; retry succeeds. The backend splits requests at 256 bytes: an entropy request is not necessarily one syscall. This does not certify another OS/WASM entropy source.
+
+| Prototype / call | Reference → candidate, ns/ID | Three-window ratio range | Boundary |
+| --- | ---: | ---: | --- |
+| Chunked v4, 64 IDs | 13.72 → 6.84 | 0.496–0.499 | Existing RNG, one private output allocation |
+| Chunked v4, 32,768 IDs | 13.25 → 6.50 | 0.490–0.498 | Benefit survives reseed boundary |
+| Chunked v7, 64 IDs | 32.48 → 14.50 | 0.443–0.454 | One clock snapshot, fresh generator per batch |
+| Chunked v7, 32,768 IDs | 32.19 → 13.08 | 0.402–0.408 | Changed clock/state semantics |
+| Chunked v7, one ID | 41.62 → 52.98 | 1.154–1.289 | Keep ordinary single-ID call |
+| Borrowed base64 slug Display | 24.18 → 12.77 | 0.515–0.538 | Avoids constructing an owned slug solely to write it |
+| Borrowed base32 slug Display | 23.88 → 14.09 | 0.575–0.613 | Existing encoder, different sink |
+| ASCII-byte text parser | 6.79 → 2.27 | 0.323–0.342 | Removes UTF-8 validation and changes inlining boundary |
+
+Unchunked v4 requests above the production 64 KB reseed threshold fall back to direct OS entropy: at 8192 IDs, cost is 4.438–4.594× repeated calls. Bounded chunks avoid the cliff without replacing the RNG. A more intrusive stream builder consuming the exact remaining seed budget gives no clear gain over chunking. Direct OS entropy per v4 is about 36–38× slower here; bulk amortization does not beat ChaCha on v4. V7 pooling needs `4N+6` entropy bytes at an unchanged timestamp, not `10N`; it uses a second allocation and handles counter carry through the actual provider.
+
+Borrowed Display removes a measured 22/26-byte allocation per newly formatted UUID; writing an already-owned slug is already allocation-free. It composes with normal formatting without a new writer trait. Direct writer methods remain a live alternative if call sites justify them. An ASCII-text byte entry needs a name distinct from raw UUID bytes; its result is not a general 3× parser claim. Bulk output ownership, failure atomicity, clock snapshots and generator-state ownership need an explicit contract. Changed behavior remains a useful alternative, not an automatic rejection. None of these public entry points is implemented by this study.
