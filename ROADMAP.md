@@ -10,7 +10,7 @@ Derive engineering choices from the maintainer's requests and interface principl
 
 ## Crates.io trusted publishing
 
-- [ ] With settings authorization, configure and read back trusted publishing before removing/revoking the bootstrap credential (`dev/release.md`). Verify the exchange on the next authorized unpublished version; a same-version retry skips authentication.
+- [ ] Verify the crates.io trusted-publishing exchange on the next authorized unpublished version (`dev/release.md`); a same-version retry skips authentication and cannot prove the configuration works.
 
 ## Deferred comparison research
 
