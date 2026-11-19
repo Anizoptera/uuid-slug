@@ -3,6 +3,13 @@ import { command } from "./command";
 import { annotateRustApi, rustDeprecations } from "./rust-deprecations";
 import type { Rustdoc } from "./rust-deprecations";
 
+// The compiler implements its auto traits for every type, and the floating nightly keeps adding
+// unstable ones (`Forget` and `Move` arrived in 1.102). No stable caller can name them, so they are
+// no part of the published API, yet each new one turns the whole baseline red without a source
+// change. Drop each such trait here when nightly adds it. `Freeze` is equally unstable but predates
+// this filter and stays in the reviewed baseline: removing it would be a report-only API change.
+const nightlyOnlyAutoTrait = /^impl\b.* core::marker::(?:Forget|Move) for /u;
+
 /** Extract signatures and deprecations from the same crate bytes for local and release checks. */
 export async function extractRustApi(
   root: string,
@@ -25,7 +32,7 @@ export async function extractRustApi(
     ["All features", "all", "--all-features"],
     ["No default features", "minimal", "--no-default-features"],
   ] as const) {
-    const source = await command(
+    const extracted = await command(
       "cargo",
       [
         "public-api",
@@ -40,6 +47,10 @@ export async function extractRustApi(
       root,
       environment,
     );
+    const source = extracted
+      .split("\n")
+      .filter((line) => !nightlyOnlyAutoTrait.test(line))
+      .join("\n");
     const rustdoc = (await Bun.file(
       join(metadata.target_directory, "doc/uuid_slug.json"),
     ).json()) as Rustdoc;
