@@ -5,6 +5,8 @@ edition = "2024"
 publish = false
 
 [dependencies]
+# Exact so each benchmark row names the release it measured; competitors still move to their latest stable release
+# (root AGENTS.md), by editing these versions with the lockfile.
 fast-uuid-v7 = "=0.1.10"
 hyperuuid = "=1.1.0"
 id-forge = "=1.0.0"
