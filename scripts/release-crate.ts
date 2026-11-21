@@ -61,6 +61,12 @@ const stagedAgents = join(crateDirectory, "AGENTS.md");
 async function withConsumerAgents(run: () => Promise<void>): Promise<void> {
   const dirty = (await Bun.$`git status --porcelain -- ${crateDirectory}`.text()).trim();
   if (dirty) throw new Error(`Commit crate sources before packaging; uncommitted:\n${dirty}`);
+  // The `finally` below deletes this path, so it must be ours: a tracked file there is clean
+  // (passes the check above) and would be overwritten, then deleted.
+  if (await Bun.file(stagedAgents).exists())
+    throw new Error(
+      `${stagedAgents} must not exist: packaging stages rust/AGENTS.consumer.md there and deletes it afterwards. Move maintainer rules to rust/AGENTS.md.`,
+    );
   await copyFile("rust/AGENTS.consumer.md", stagedAgents);
   try {
     await run();
