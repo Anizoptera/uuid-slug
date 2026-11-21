@@ -72,10 +72,14 @@ if (!demangler)
 // characters; registers (`%eax`), immediates (`$4`) and relocation operators (`:lo12:`, `@GOTOFF`)
 // stay outside a token or are not symbols.
 const token = /[A-Za-z_.$][\w.$]*/g;
-// Assembler-local names: ELF uses `.L…` and rustc's `anon.…`; Mach-O uses `L…`/`l…`, which
-// no global can start with because Mach-O prefixes every global with `_`.
+// rustc's anonymous constants (`anon.<hash>.<n>`, Mach-O `_anon.…`/`l_anon.…`): with several
+// codegen units LLVM promotes them to globals defined in another unit's file, so they are
+// resolved through a definition map shared by the whole build, never compared by name.
+const anonymous = (name: string) => /^(?:_|l_)?anon\./.test(name);
+// Names renamed in first-use order: assembler-local labels (ELF `.L…`; Mach-O `L…`/`l…`, which no
+// global can start with because Mach-O prefixes every global with `_`) and anonymous constants.
 const local = (name: string, macho: boolean) =>
-  macho ? /^[Ll]/.test(name) : name.startsWith(".L") || name.startsWith("anon.");
+  anonymous(name) || (macho ? /^[Ll]/.test(name) : name.startsWith(".L"));
 // Global symbols are compared demangled with hashes removed (legacy `::h<hex>`, v0 `[hex]`
 // disambiguators, LLVM's `(.llvm.<N>)` local-copy suffix). Editing the mangled form instead is wrong: v0 back-references are byte
 // offsets into the mangled string, so dropping a variable-length hash corrupts every later part.
@@ -198,8 +202,13 @@ try {
     const names = new Map(symbols.map((symbol, index) => [symbol, unhash(rust[index] ?? symbol)]));
     const global = (symbol: string) => names.get(symbol) ?? symbol;
 
-    const map = new Map<string, string>();
-    for (const { crate, macho, bodies, data } of parsed) {
+    const shared = new Map(
+      parsed.flatMap((file) => [...file.data].filter(([name]) => anonymous(name))),
+    );
+    const map = new Map<string, string[]>();
+    for (const { crate, macho, bodies, data: own } of parsed) {
+      // Local labels resolve in their own file; anonymous constants anywhere in the build.
+      const data = { get: (symbol: string) => own.get(symbol) ?? shared.get(symbol) };
       // Pass 2: per function, rename its local labels in first-use order and append the
       // definitions of local data it reaches, so the text has no per-build name left in it.
       for (const [name, lines] of bodies) {
@@ -211,7 +220,7 @@ try {
             let renamed = labels.get(symbol);
             if (!renamed) {
               labels.set(symbol, (renamed = `.L${labels.size}`));
-              if (data.has(symbol)) reached.push(symbol);
+              if (data.get(symbol)) reached.push(symbol);
             }
             return renamed;
           });
@@ -222,17 +231,23 @@ try {
         }
         const rustName = global(name);
         if (!rustName.includes("uuid_slug") || rustName.includes("uuid_simd")) continue;
-        let key = `${rustName} (in ${crate})`;
-        // Instances still alike differ only in an elided hash; file order numbers them stably.
-        for (let copy = 2; map.has(key); copy++) key = `${rustName} (in ${crate}) #${copy}`;
-        map.set(key, text.join("\n"));
+        // Copies that demangle alike (generic instances whose hashes were removed) compare as a
+        // set, sorted below, so neither file order nor codegen-unit partitioning pairs them.
+        const key = `${rustName} (in ${crate})`;
+        map.set(key, [...(map.get(key) ?? []), text.join("\n")]);
       }
     }
     if (map.size === 0)
       throw new Error(
         `No uuid_slug functions in ${files.length} assembly files: wrong build or emit path.`,
       );
-    return map;
+    return new Map(
+      [...map].map(([key, texts]) => {
+        // eslint-disable-next-line unicorn/no-array-sort -- Private list; ES2022 has no toSorted.
+        texts.sort();
+        return [key, texts.join("\n\n")];
+      }),
+    );
   };
 
   // Separate build directories let both builds run at once; both settle before cleanup removes
