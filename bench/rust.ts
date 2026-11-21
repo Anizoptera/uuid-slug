@@ -55,10 +55,13 @@ async function run(command: readonly string[], env: Readonly<Record<string, stri
   return { elapsedMs, output, resources };
 }
 
-// `UUID_SLUG_CODEC_TARGET=wasm32-wasip1` times the codec as WebAssembly with simd128 under Node's V8
-// (the browsers' engine). uuid-simd formats with SIMD there, and one wasm binary runs on every host
-// CPU without per-CPU kernel choice, so a wasm verdict must hold on each runner's CPU.
-const wasmCodec = process.env.UUID_SLUG_CODEC_TARGET === "wasm32-wasip1";
+// `UUID_SLUG_CODEC_TARGET=<triple>` times the codec for a target the host can run, so feature
+// paths that only other targets select get measured: `i686-unknown-linux-gnu` (uuid-simd's
+// run-time x86 detection on 32-bit) or `wasm32-wasip1`, built with simd128 and run under Node's V8
+// (the browsers' engine). One wasm binary runs on every host CPU without per-CPU kernel choice, so
+// a wasm verdict must hold on each runner's CPU.
+const codecTarget = process.env.UUID_SLUG_CODEC_TARGET;
+const wasmCodec = codecTarget === "wasm32-wasip1";
 const codecCommand = (executable: string) =>
   wasmCodec ? ["node", "bench/wasi-run.mjs", executable] : [executable];
 
@@ -76,7 +79,7 @@ async function buildCodec(features: readonly string[] = [], manifest = "rust/Car
       "--no-run",
       "--locked",
       "--message-format=json",
-      ...(wasmCodec ? ["--target", "wasm32-wasip1"] : []),
+      ...(codecTarget ? ["--target", codecTarget] : []),
       ...features,
     ],
     wasmCodec ? { CARGO_TARGET_WASM32_WASIP1_RUSTFLAGS: "-C target-feature=+simd128" } : {},

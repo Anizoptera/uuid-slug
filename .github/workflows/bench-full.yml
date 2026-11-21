@@ -65,3 +65,6 @@ jobs:
       - run: bun install --frozen-lockfile && UUID_SLUG_CODEC_FEATURES=uuid-simd bun bench/rust.ts --codec
       # The same pairs as simd128 WebAssembly under the image's Node (V8): one wasm binary serves every host CPU.
       - run: node --version && UUID_SLUG_CODEC_TARGET=wasm32-wasip1 UUID_SLUG_CODEC_FEATURES=uuid-simd bun bench/rust.ts --codec
+      # 32-bit x86 takes uuid-simd's run-time-detected kernels too; x86_64 Linux runs i686 binaries.
+      - if: runner.os == 'Linux' && runner.arch == 'X64'
+        run: sudo apt-get update -q && sudo apt-get install -y -q gcc-multilib && rustup target add i686-unknown-linux-gnu && UUID_SLUG_CODEC_TARGET=i686-unknown-linux-gnu UUID_SLUG_CODEC_FEATURES=uuid-simd bun bench/rust.ts --codec
