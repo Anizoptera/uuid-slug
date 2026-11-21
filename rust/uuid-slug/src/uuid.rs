@@ -470,8 +470,8 @@ impl FromStr for Uuid {
 // spellings are ASCII, so `&str` needs no separate path and bytes need no UTF-8 pre-pass.
 pub(crate) fn parse_uuid_text(text: &[u8]) -> Result<Uuid, Error> {
     // SIMD takes only accepted text; every rejection falls through to the scalar grammar below.
-    // x86_64 only: AMD runs gained 2x on canonical text, while on Apple M4 every parse difference
-    // stayed within build-layout noise (bench/decisions.md). Elsewhere this function compiles
+    // x86_64 only, hyphenated and braced text only: AMD runs gained 2x on canonical text, while on
+    // Apple M4 every parse difference stayed within build-layout noise (bench/decisions.md). Elsewhere this function compiles
     // exactly like the default build; formatting still uses SIMD everywhere.
     #[cfg(all(feature = "uuid-simd", target_arch = "x86_64"))]
     if let Some(bytes) = crate::simd_text::parse(text) {

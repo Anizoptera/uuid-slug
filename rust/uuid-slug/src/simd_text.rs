@@ -9,18 +9,16 @@
 use core::fmt;
 use uuid_simd::{AsOut, AsciiCase};
 
-#[cfg(any(test, target_arch = "x86_64"))]
-const URN_PREFIX: &[u8; 9] = b"urn:uuid:";
-
+/// Hyphenated (36) and braced (38) text only. Compact and URN text stay scalar: on AMD Zen 4
+/// (EPYC 9V74) they measured 1.06-1.22x and 1.41-1.63x slower with SIMD while Zen 3 gained or held
+/// (bench/decisions.md); cause unresolved, and the feature must never slow a call.
 #[cfg(any(test, target_arch = "x86_64"))]
 pub(crate) fn parse(text: &[u8]) -> Option<[u8; 16]> {
-    // Upstream matches the URN prefix case-sensitively; the package grammar does not.
-    let body = match text.split_at_checked(URN_PREFIX.len()) {
-        Some((prefix, rest)) if rest.len() == 36 && prefix.eq_ignore_ascii_case(URN_PREFIX) => rest,
-        _ => text,
-    };
+    if !matches!(text.len(), 36 | 38) {
+        return None;
+    }
     let mut out = [0u8; 16];
-    uuid_simd::parse(body, out.as_out()).ok()?;
+    uuid_simd::parse(text, out.as_out()).ok()?;
     Some(out)
 }
 

@@ -91,9 +91,9 @@ fn simd_parses_every_accepted_spelling_to_the_scalar_bytes() {
     for bytes in payloads() {
         for text in spellings(&bytes) {
             assert_eq!(scalar_parse(&text), Some(bytes), "scalar oracle {text:?}");
-            // Every accepted spelling must take the SIMD path, or the feature silently stops
-            // doing anything.
-            let expected = Some(bytes);
+            // Hyphenated and braced text must take the SIMD path, or the feature silently stops
+            // doing anything; compact and URN text must stay scalar (see simd_text::parse).
+            let expected = matches!(text.len(), 36 | 38).then_some(bytes);
             assert_eq!(simd_text::parse(&text), expected, "simd {text:?}");
         }
     }
