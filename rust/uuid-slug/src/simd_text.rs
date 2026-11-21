@@ -9,8 +9,10 @@
 use core::fmt;
 use uuid_simd::{AsOut, AsciiCase};
 
+#[cfg(any(test, target_arch = "x86_64"))]
 const URN_PREFIX: &[u8; 9] = b"urn:uuid:";
 
+#[cfg(any(test, target_arch = "x86_64"))]
 pub(crate) fn parse(text: &[u8]) -> Option<[u8; 16]> {
     // Upstream's 32-digit kernel never beat the owned scalar parser in paired runs on Apple M4
     // (bench/decisions.md), so compact text goes straight to the scalar grammar.
