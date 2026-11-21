@@ -45,7 +45,8 @@
     "!src/AGENTS.md",
     "!src/CLAUDE.md",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "AGENTS.consumer.md"
   ],
   "type": "module",
   "sideEffects": false,
@@ -187,6 +188,9 @@
     "node": ">=20"
   },
   "publish-clean": {
+    "renameFiles": {
+      "AGENTS.consumer.md": "AGENTS.md"
+    },
     "validateArtifact": [
       "bun",
       "scripts/check-artifact.ts"

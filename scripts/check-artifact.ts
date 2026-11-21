@@ -140,11 +140,23 @@ export async function inspectArtifact(
     const entries = await archive.files();
     if (!entries.has("package/package.json"))
       throw new Error("Archive has no package/package.json.");
+    // publish-clean's renameFiles ships AGENTS.consumer.md as the root AGENTS.md. Match bytes, not
+    // the name: the repository-root maintainer AGENTS.md has the same name and must never ship.
+    const consumerAgents = entries.get("package/AGENTS.md");
+    if (
+      !consumerAgents ||
+      (await consumerAgents.text()) !==
+        (await Bun.file(path.join(project, "AGENTS.consumer.md")).text())
+    )
+      throw new Error(
+        "package/AGENTS.md must be AGENTS.consumer.md shipped through publish-clean renameFiles.",
+      );
     await Promise.all(
       [...entries].map(async ([name, file]) => {
         if (
-          !name.startsWith("package/") ||
-          name.split("/").some((part) => part === ".." || FORBIDDEN_PATHS.has(part))
+          name !== "package/AGENTS.md" &&
+          (!name.startsWith("package/") ||
+            name.split("/").some((part) => part === ".." || FORBIDDEN_PATHS.has(part)))
         )
           throw new Error(`Forbidden artifact path: ${name}`);
         if (
