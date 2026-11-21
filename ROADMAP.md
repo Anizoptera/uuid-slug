@@ -13,8 +13,7 @@ Derive engineering choices from the maintainer's requests and interface principl
 Finish these before preparing 0.7.0. A pending maintainer ruling is a short question, never a reason to drop an item: ask it when the item starts. WASM work stays out of this sprint. Use only free or already-paid hardware (GitHub-hosted runners, existing servers); measure with `bench/AGENTS.md`'s noise-tolerant method.
 
 - [ ] Push `main` once the full all-runtime check passes (authorized).
-- [ ] SIMD parser and owned formatter: prefer an optional `uuid-simd` dependency (default features off) if it covers our whole grammar (it lacks case-insensitive URN prefixes; strip those ourselves); otherwise scoped unsafe kernels by default with that dependency as an opt-in replacement, per `rust/AGENTS.md`. Run the existing grammar tests with the feature on, measure on M4 and native AMD, record the outcome in `bench/decisions.md`. The base32 fixed-buffer decoder was slower (rejected) and the SIMD base64url encoder gains nothing over production (dropped).
-- [ ] Native AMD evidence (task below): a `workflow_dispatch` benchmark job that logs the CPU model, skips non-AMD runners and compares baseline and candidate in one job.
+- [ ] Decide `uuid-simd` retention from native AMD runs: dispatch `bench-full.yml` with suite `rust-codec-amd` (repeat until an AMD runner is logged), then keep the opt-in feature only if it gains without a material loss elsewhere, else delete it with its test, CHANGELOG entry and `dev/cross-language.md` row. M4 evidence and the open compact-parse context effect are in `bench/decisions.md`. If kept, the crate README, `rust/AGENTS.consumer.md` and `docs/security.md` (its unsafe-code sentence) need maintainer-approved wording before release.
 
 ## Optional UUID completion audit
 
