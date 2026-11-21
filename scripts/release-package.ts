@@ -2,7 +2,7 @@ import { mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { command, PACK_TIMEOUT_MS } from "./command";
 import { preflightRelease } from "./release-notes";
-import { registryIntegrity, verifyIntegrity } from "./registry-integrity";
+import { awaitPublished, registryIntegrity, verifyIntegrity } from "./registry-integrity";
 
 const reviewedDirectory = "release-artifacts/reviewed-npm";
 const PREPARE = "prepare";
@@ -67,7 +67,7 @@ async function releasePackage(cwd: string, tag: string, mode: ReleaseMode): Prom
       mode,
       reviewedArchive: reviewed,
     });
-  const published = existing ?? (await registryIntegrity(url));
+  const published = existing ?? (await awaitPublished(() => registryIntegrity(url)));
   if (!published)
     throw new Error("npm upload is not observable yet; retry when the registry exposes it.");
   verifyIntegrity(reviewedBytes, published);

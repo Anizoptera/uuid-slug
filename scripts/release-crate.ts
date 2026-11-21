@@ -4,6 +4,7 @@ import { appendFile, copyFile, mkdir, mkdtemp, readdir, rm } from "node:fs/promi
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkCrateDocumentation, inspectCrate } from "./check-crate";
+import { awaitPublished } from "./registry-integrity";
 import { preflightRelease } from "./release-notes";
 import { rustToolchain } from "./rust-toolchain";
 
@@ -133,7 +134,7 @@ async function releaseCrate(mode: string): Promise<void> {
     );
     verifyCrateChecksum(await Bun.file(packaged).bytes(), expected);
   }
-  const published = existing ?? (await crateChecksum(version));
+  const published = existing ?? (await awaitPublished(() => crateChecksum(version)));
   if (!published)
     throw new Error("Crate upload is not observable yet; retry when crates.io exposes it.");
   verifyCrateChecksum(bytes, published);

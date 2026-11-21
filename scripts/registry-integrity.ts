@@ -21,6 +21,24 @@ export async function registryIntegrity(url: string): Promise<string | undefined
   return integrity;
 }
 
+/**
+ * Read back a just-uploaded version until the registry exposes it. Uploads can return before their
+ * readback is visible, and failing at once forces a manual rerun; the deadline only bounds a
+ * registry that never exposes the version.
+ */
+export async function awaitPublished<T>(
+  read: () => Promise<T | undefined>,
+  deadlineMs = 600_000,
+  intervalMs = 10_000,
+): Promise<T | undefined> {
+  const deadline = Date.now() + deadlineMs;
+  for (;;) {
+    const value = await read();
+    if (value !== undefined || Date.now() >= deadline) return value;
+    await Bun.sleep(intervalMs);
+  }
+}
+
 if (import.meta.main) {
   const [tarball, url] = process.argv.slice(2);
   if (!tarball || !url)

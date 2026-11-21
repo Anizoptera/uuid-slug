@@ -7,7 +7,7 @@ import { rejects } from "node:assert/strict";
 import { inspectArtifact } from "../scripts/check-artifact";
 import { tagReleaseFixture } from "./release-fixture";
 import { releaseNotes } from "../scripts/release-notes";
-import { verifyIntegrity } from "../scripts/registry-integrity";
+import { awaitPublished, verifyIntegrity } from "../scripts/registry-integrity";
 import type { ReleaseReport } from "../scripts/release-report";
 
 async function rustReleaseFixture(root: string, version: string): Promise<void> {
@@ -236,4 +236,13 @@ test("artifact validation rejects a credential-bearing repack before publication
     else process.env.UUID_SLUG_EXPECTED_ARCHIVE = previous;
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("post-upload readback waits for the registry instead of failing on its first miss", async () => {
+  const answers = [undefined, undefined, "sha512-x"];
+  let reads = 0;
+  expect(await awaitPublished(async () => answers[reads++], 1_000, 0)).toBe("sha512-x");
+  expect(reads).toBe(3);
+  // The deadline bounds a registry that never exposes the version.
+  expect(await awaitPublished(async () => undefined, 0, 0)).toBeUndefined();
 });

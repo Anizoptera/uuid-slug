@@ -83,7 +83,7 @@ If the crate job reports "No Trusted Publishing config found", supply the first-
 
 Check publication against the registry itself (`curl https://registry.npmjs.org/@anizoptera%2Fuuid-slug`, `https://crates.io/api/v1/crates/uuid-slug`): `bun pm view` can answer from a stale cache and report a published version as missing.
 
-If an upload returns before its registry readback is visible, recheck the registry and verify its checksum against the original CI evidence before retrying failed jobs with `gh run rerun RUN_ID --failed`. Download that run's archives with `gh run download RUN_ID --name release-evidence --dir DIR`; a local repack is not the publication authority, even when its file contents match. Keep the published tag fixed and both selected packages in recovery.
+Both publish jobs keep reading back a just-uploaded version for up to ten minutes (`awaitPublished` in `scripts/registry-integrity.ts`), because registries can expose it later than the upload returns. If the readback is still not visible, recheck the registry and verify its checksum against the original CI evidence before retrying failed jobs with `gh run rerun RUN_ID --failed`. Download that run's archives with `gh run download RUN_ID --name release-evidence --dir DIR`; a local repack is not the publication authority, even when its file contents match. Keep the published tag fixed and both selected packages in recovery.
 
 Create or update one draft GitHub release. Publish missing npm or crates.io artifacts only after checking whether that exact version already exists. Existing versions must match the retained bytes; never overwrite or attest different content. Attach only registry-matching archives and reproducible notes.
 
