@@ -315,7 +315,17 @@ export async function verifyEvolution(
   const deprecatedTypeScript = typescriptDeprecations(oldTsSource);
   const deprecatedRust = rustDeprecations(oldRust);
   removals("TypeScript", oldTsEntries, newTsEntries, (entry) => deprecatedTypeScript.has(entry));
-  removals("Rust", oldRustEntries, newRustEntries, (entry) => deprecatedRust.has(entry));
+  // Moving an item behind an opt-in feature (gone without default features, still present with all
+  // features) is a breaking availability change, not removal: it needs the breaking-release
+  // boundary checked below, never a prior deprecation (dev/release.md §Evidence and notes).
+  const optedIn = (entry: string) =>
+    newRustEntries.has(entry.replace(/^No default features: /, () => "All features: "));
+  removals(
+    "Rust",
+    oldRustEntries,
+    newRustEntries,
+    (entry) => deprecatedRust.has(entry) || optedIn(entry),
+  );
   const changed =
     packageLevels.some((level) => level !== "patch") ||
     oldTsNormalized !== newTsNormalized ||
@@ -328,7 +338,7 @@ export async function verifyEvolution(
     [...oldRustEntries].some((entry) => !newRustEntries.has(entry));
   if (removed && !removalBoundary(previousVersion, currentVersion))
     throw new Error(
-      `Deprecated API removal requires the next major release, or next minor in 0.x. Option 1: keep the API for this release. Option 2: ${versionGuidance}`,
+      `Removing API, or moving it behind an opt-in feature, requires the next major release, or next minor in 0.x. Option 1: keep the API available by default for this release. Option 2: ${versionGuidance}`,
     );
   const levels: ReleaseLevel[] = [
     ...packageLevels,

@@ -145,12 +145,15 @@ test("inline Rust deprecation authorizes only its feature surface and declaratio
   );
 });
 
-test("Rust feature-surface removal remains visible", async () => {
+test("moving Rust API behind an opt-in feature needs a breaking release, not deprecation", async () => {
   const item = "pub fn uuid_slug::decode()";
   const before = reports("", item, "(none)", item);
-  const after = reports("", item, "(none)", "");
+  const optIn = reports("", item, "(none)", "");
+  await verifyEvolution("0.4.0", "0.5.0", before, optIn);
+  await rejects(verifyEvolution("0.4.0", "0.4.1", before, optIn), /opt-in feature/);
+  // Gone from every feature surface is still a removal that needs a published deprecation.
   await rejects(
-    verifyEvolution("0.4.0", "0.5.0", before, after),
+    verifyEvolution("0.4.0", "0.5.0", before, reports("", "", "(none)", "")),
     /Rust removes API that was not deprecated/,
   );
 });
