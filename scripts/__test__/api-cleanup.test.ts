@@ -43,10 +43,13 @@ test.each(vitestHosts)(
           cwd: root,
           env: { ...process.env, TMPDIR: files, UUID_SLUG_TEST_RUNTIME: runtime },
           stdout: "pipe",
-          stderr: "inherit",
+          // Captured, never inherited: the interrupted launcher prints `"node" exited with code
+          // 143` and Deno's Vitest logs a RangeError, which read as real failures in check logs.
+          stderr: "pipe",
           timeout: verificationTimeoutMs(5000),
         },
       );
+      const errors = new Response(child.stderr).text();
       try {
         const reader = child.stdout.getReader();
         let output = "";
@@ -66,10 +69,16 @@ test.each(vitestHosts)(
         // noise is expected here; the launcher still exits nonzero, which is asserted below.
         child.kill("SIGTERM");
         while (!(await reader.read()).done) {
-          /* Drain inherited worker output through termination. */
+          /* Drain worker output through termination. */
         }
         expect(await child.exited).not.toBe(0);
         expect(await readdir(files)).toEqual([]);
+      } catch (cause) {
+        child.kill();
+        await child.exited;
+        throw new Error(`${runtime} interruption check failed; launcher stderr:\n${await errors}`, {
+          cause,
+        });
       } finally {
         child.kill();
         await child.exited;
