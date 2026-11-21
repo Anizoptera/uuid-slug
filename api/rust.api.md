@@ -649,7 +649,9 @@ pub const uuid_slug::MAX_UUID: uuid_slug::Uuid
 pub const uuid_slug::MAX_UUID_V7_UNIX_MS: u64
 pub const uuid_slug::NIL_UUID: uuid_slug::Uuid
 pub trait uuid_slug::KeylessUuidText: uuid_slug::text::sealed::Text
+impl uuid_slug::KeylessUuidText for [u8]
 impl uuid_slug::KeylessUuidText for alloc::string::String
+impl uuid_slug::KeylessUuidText for alloc::vec::Vec<u8>
 impl uuid_slug::KeylessUuidText for str
 impl uuid_slug::KeylessUuidText for uuid_slug::PlainUuidSlug
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for &Input
@@ -658,6 +660,7 @@ impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::Keyles
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::arc::Arc<Input>
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::rc::Rc<Input>
 impl<Input: uuid_slug::KeylessUuidText + alloc::borrow::ToOwned + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::borrow::Cow<'_, Input>
+impl<const N: usize> uuid_slug::KeylessUuidText for [u8; N]
 pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
 pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, cancellation: core::option::Option<uuid_slug::UuidV7MaskDerivationCancellation>) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::fill_os_random_bytes(out: &mut [u8]) -> core::result::Result<(), uuid_slug::Error>
@@ -1306,7 +1309,9 @@ pub const uuid_slug::MAX_UUID: uuid_slug::Uuid
 pub const uuid_slug::MAX_UUID_V7_UNIX_MS: u64
 pub const uuid_slug::NIL_UUID: uuid_slug::Uuid
 pub trait uuid_slug::KeylessUuidText: uuid_slug::text::sealed::Text
+impl uuid_slug::KeylessUuidText for [u8]
 impl uuid_slug::KeylessUuidText for alloc::string::String
+impl uuid_slug::KeylessUuidText for alloc::vec::Vec<u8>
 impl uuid_slug::KeylessUuidText for str
 impl uuid_slug::KeylessUuidText for uuid_slug::PlainUuidSlug
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for &Input
@@ -1315,6 +1320,7 @@ impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::Keyles
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::arc::Arc<Input>
 impl<Input: uuid_slug::KeylessUuidText + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::rcs::rc::Rc<Input>
 impl<Input: uuid_slug::KeylessUuidText + alloc::borrow::ToOwned + ?core::marker::Sized> uuid_slug::KeylessUuidText for alloc::borrow::Cow<'_, Input>
+impl<const N: usize> uuid_slug::KeylessUuidText for [u8; N]
 pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
 pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, cancellation: core::option::Option<uuid_slug::UuidV7MaskDerivationCancellation>) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::generate_uuid_v4_into_with_random_fill(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>

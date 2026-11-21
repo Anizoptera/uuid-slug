@@ -14,6 +14,7 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ### Added
 
+- Rust `Uuid::parse_uuid` (and the other keyless parsers) accept byte input: `&[u8]`, `[u8; N]` and `Vec<u8>`. Exactly 16 bytes are a raw UUID, as in TypeScript's `parseUuid`; other lengths are ASCII UUID text or plain slugs, parsed straight from network or file buffers without a separate UTF-8 check. `&str` parsing also skips its UTF-16 length count for ASCII input.
 - Rust `Uuid::display_plain_uuid_slug(alphabet)` formats a borrowed UUID directly as base64url or base32hex without allocating an intermediate owned slug. Use it with a formatter or writer; the destination controls its own allocation and errors. Existing owned-slug conversions are unchanged.
 
 ### Changed

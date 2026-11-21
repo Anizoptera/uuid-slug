@@ -46,7 +46,7 @@ impl FromStr for PlainUuidSlug {
 
     fn from_str(text: &str) -> Result<Self, Error> {
         // Validate the wire payload once, then retain its spelling rather than encode it again.
-        text::from_plain_uuid_slug(text)?;
+        text::from_plain_uuid_slug(text.as_bytes())?;
         Ok(Self(if text.len() == 26 {
             text.to_ascii_lowercase().into_boxed_str()
         } else {
@@ -336,6 +336,7 @@ impl Uuid {
     }
     /// Parse UUID text or a plain base64url/base32hex slug without a key.
     /// UUID text may be hyphenated, compact, a UUID URN, or brace-wrapped hyphenated text. Mixed case is accepted.
+    /// Byte input (`&[u8]`, `[u8; N]`, `Vec<u8>`) of exactly 16 bytes is a raw UUID; other byte lengths are parsed as ASCII text without a UTF-8 pre-check.
     /// Decode masked slugs with [`crate::UuidV7MaskingCodec::masked_slug_to_uuid`] instead.
     ///
     /// ```compile_fail
@@ -344,7 +345,11 @@ impl Uuid {
     /// ```
     #[inline]
     pub fn parse_uuid<Input: KeylessUuidText + ?Sized>(uuid: &Input) -> Result<Self, Error> {
-        text::parse_uuid(uuid.as_uuid_text())
+        let text = uuid.as_uuid_text();
+        match <[u8; 16]>::try_from(text) {
+            Ok(raw) if uuid.is_bytes() => Ok(Self(raw)),
+            _ => text::parse_uuid(text),
+        }
     }
     /// Read a 22-character base64url or 26-character base32hex plain slug; its length selects the alphabet.
     ///
@@ -457,21 +462,24 @@ impl Uuid {
 impl FromStr for Uuid {
     type Err = Error;
     fn from_str(text: &str) -> Result<Self, Error> {
-        // Both backends enforce the same grammar. Keep the package error independent
-        // of upstream diagnostics and avoid compiling upstream in a reduced build.
-        #[cfg(feature = "uuid-interop")]
-        {
-            uuid::Uuid::try_parse_ascii(text.as_bytes())
-                .map(|id| Self(*id.as_bytes()))
-                .map_err(|_| Error::new(ErrorCode::InvalidUuid))
-        }
-        #[cfg(not(feature = "uuid-interop"))]
-        {
-            crate::uuid_text::parse_uuid_text(text.as_bytes())
-                .map(Self)
-                .ok_or_else(|| Error::new(ErrorCode::InvalidUuid))
-        }
+        parse_uuid_text(text.as_bytes())
     }
+}
+
+// One byte-level UUID-text parser for `FromStr` and every `KeylessUuidText` input: all accepted
+// spellings are ASCII, so `&str` needs no separate path and bytes need no UTF-8 pre-pass.
+pub(crate) fn parse_uuid_text(text: &[u8]) -> Result<Uuid, Error> {
+    // Both backends enforce the same grammar. Keep the package error independent
+    // of upstream diagnostics and avoid compiling upstream in a reduced build.
+    #[cfg(feature = "uuid-interop")]
+    let parsed = uuid::Uuid::try_parse_ascii(text)
+        .ok()
+        .map(|id| *id.as_bytes());
+    #[cfg(not(feature = "uuid-interop"))]
+    let parsed = crate::uuid_text::parse_uuid_text(text);
+    parsed
+        .map(Uuid)
+        .ok_or_else(|| Error::new(ErrorCode::InvalidUuid))
 }
 /// Lowercase hyphenated text, the default UUID spelling.
 impl fmt::Display for Uuid {

@@ -74,7 +74,7 @@ pub(crate) fn normalize(slug: &str) -> Result<([u8; 16], u8), Error> {
         UuidSlugAlphabet::Base64Url
     };
     let mut mixed = [0; 16];
-    let outer = alphabet.decode_into(slug, &mut mixed, 4)?;
+    let outer = alphabet.decode_into(slug.as_bytes(), &mut mixed, 4)?;
     Ok((mixed, outer))
 }
 
@@ -164,7 +164,7 @@ mod tests {
             };
             let mut raw = [0; 16];
             UuidSlugAlphabet::Base64Url
-                .decode_into(case["plain"].as_str().unwrap(), &mut raw, 0)
+                .decode_into(case["plain"].as_str().unwrap().as_bytes(), &mut raw, 0)
                 .unwrap();
             let (mixed, tail) = mask_bytes(&raw, mask, 0).unwrap();
             assert_eq!(

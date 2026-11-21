@@ -885,7 +885,11 @@ impl UuidSlugMigrationDecoder<'_> {
             UuidSlugAlphabet::Base64Url
         };
         let mut bytes = [0; 16];
-        let tail = alpha.decode_into(slug, &mut bytes, if base32_plain { 0 } else { 4 })?;
+        let tail = alpha.decode_into(
+            slug.as_bytes(),
+            &mut bytes,
+            if base32_plain { 0 } else { 4 },
+        )?;
         let raw = Uuid::from_uuid_bytes_array(bytes);
         let reserved = if (original || plain) && length != 27 {
             self.codec

@@ -46,7 +46,7 @@ impl UuidSlugAlphabet {
     /// Decode an identifier transactionally; invalid input cannot modify the caller's bytes.
     pub(crate) fn decode_into(
         self,
-        text: &str,
+        text: &[u8],
         out: &mut [u8; 16],
         tail_bits: u8,
     ) -> Result<u8, Error> {
@@ -61,7 +61,7 @@ impl UuidSlugAlphabet {
     // plain UUID and masked payload layouts, not one decoder body per input type.
     fn decode_identifier<const TAIL_BITS: u8>(
         self,
-        text: &str,
+        text: &[u8],
         out: &mut [u8; 16],
     ) -> Result<u8, Error> {
         match TAIL_BITS {
@@ -69,19 +69,20 @@ impl UuidSlugAlphabet {
                 let expected = 128usize.div_ceil(crate::bit_encoding::bits_per_character(self));
                 if text.len() != expected {
                     return Err(self.error().with_message(format!(
-                        "Plain {} slug must contain {expected} ASCII characters; got {} UTF-8 bytes.",
+                        "Plain {} slug must contain {expected} ASCII characters; got {} bytes.",
                         self.name(),
                         text.len()
                     )));
                 }
                 let mut decoded = [0; 16];
-                crate::bit_encoding::decode_identifier_bits(self, text.as_bytes(), &mut decoded)
-                    .map_err(|_| {
+                crate::bit_encoding::decode_identifier_bits(self, text, &mut decoded).map_err(
+                    |_| {
                         self.error().with_message(format!(
                             "Plain {} slug contains an invalid character or nonzero trailing bits.",
                             self.name()
                         ))
-                    })?;
+                    },
+                )?;
                 *out = decoded;
                 Ok(0)
             }
@@ -89,17 +90,17 @@ impl UuidSlugAlphabet {
                 let length = 132usize.div_ceil(crate::bit_encoding::bits_per_character(self));
                 let length_error = || {
                     self.error().with_message(format!(
-                        "Masked {} slug must contain {length} ASCII characters; got {} UTF-8 bytes.",
+                        "Masked {} slug must contain {length} ASCII characters; got {} bytes.",
                         self.name(),
                         text.len()
                     ))
                 };
                 let (decoded, tail) = match self {
                     Self::Base64Url => crate::bit_encoding::decode_masked_base64(
-                        text.as_bytes().try_into().map_err(|_| length_error())?,
+                        text.try_into().map_err(|_| length_error())?,
                     ),
                     Self::Base32Hex => crate::bit_encoding::decode_masked_base32(
-                        text.as_bytes().try_into().map_err(|_| length_error())?,
+                        text.try_into().map_err(|_| length_error())?,
                     ),
                 }
                 .map_err(|failure| {
@@ -201,7 +202,7 @@ mod tests {
             for tail in 0..16 {
                 let text = alphabet.encode_tail(&bytes, tail, 4)?;
                 let mut out = [0; 16];
-                assert_eq!(alphabet.decode_into(&text, &mut out, 4)?, tail);
+                assert_eq!(alphabet.decode_into(text.as_bytes(), &mut out, 4)?, tail);
                 assert_eq!(out, bytes);
                 if alphabet == UuidSlugAlphabet::Base32Hex {
                     for padding in 1..8 {
@@ -213,16 +214,7 @@ mod tests {
                             .ok_or(Error::new(ErrorCode::InvalidUuidSlug))?;
                         alias[26] = symbols[last | padding];
                         let mut untouched = [0xab; 16];
-                        assert!(
-                            alphabet
-                                .decode_into(
-                                    std::str::from_utf8(&alias)
-                                        .map_err(|_| Error::new(ErrorCode::InvalidUuidSlug))?,
-                                    &mut untouched,
-                                    4,
-                                )
-                                .is_err()
-                        );
+                        assert!(alphabet.decode_into(&alias, &mut untouched, 4,).is_err());
                         assert_eq!(untouched, [0xab; 16]);
                     }
                 }
@@ -241,16 +233,7 @@ mod tests {
             // The chosen bytes encode with an even final digit in both alphabets.
             alias[last] += 1;
             let mut out = [0xab; 16];
-            assert!(
-                alphabet
-                    .decode_into(
-                        std::str::from_utf8(&alias)
-                            .map_err(|_| Error::new(ErrorCode::InvalidUuidSlug))?,
-                        &mut out,
-                        0
-                    )
-                    .is_err()
-            );
+            assert!(alphabet.decode_into(&alias, &mut out, 0).is_err());
             assert_eq!(out, [0xab; 16]);
         }
         Ok(())
