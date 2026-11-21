@@ -665,6 +665,7 @@ pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iteration
 pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, cancellation: core::option::Option<uuid_slug::UuidV7MaskDerivationCancellation>) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::fill_os_random_bytes(out: &mut [u8]) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4() -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
+pub fn uuid_slug::generate_uuid_v4_batch(out: &mut [uuid_slug::Uuid]) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_into(out: &mut [u8], offset: usize) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_into_with_random_fill(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_with_random_fill(fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>

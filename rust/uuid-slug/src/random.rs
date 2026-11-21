@@ -55,6 +55,63 @@ impl RandomSource {
         self.remaining -= output.len();
         Ok(())
     }
+
+    /// Stream `units * UNIT` random bytes to `sink` in whole units, following the same reseed
+    /// schedule as repeated `fill` calls of one unit each.
+    ///
+    /// Every seed the stream will need is drawn in one OS request BEFORE the first byte reaches
+    /// `sink`, so a seed failure publishes no output and leaves this source unchanged; a batch is
+    /// all-or-nothing like a single draw. A sub-unit remainder of the current stream is skipped,
+    /// exactly as `fill` reseeds when fewer bytes remain than one draw needs.
+    fn fill_units<const UNIT: usize>(
+        &mut self,
+        units: usize,
+        process_id: u32,
+        mut seed_from_os: impl FnMut(&mut [u8]) -> Result<(), Error>,
+        mut sink: impl FnMut(&[u8]),
+    ) -> Result<(), Error> {
+        // Chunks are whole units, so a sink never sees a draw split across calls.
+        const BUFFER_BYTES: usize = 1024;
+        let total = units.checked_mul(UNIT).ok_or_else(|| {
+            Error::new(ErrorCode::InvalidBuffer).with_message("Batch size overflows usize bytes.")
+        })?;
+        let current = if self.process_id == process_id {
+            self.rng.as_ref().map_or(0, |_| self.remaining)
+        } else {
+            0
+        };
+        let usable = (current / UNIT * UNIT).min(total);
+        let per_seed = RESEED_BYTES / UNIT * UNIT;
+        let mut seeds = alloc::vec![0; (total - usable).div_ceil(per_seed) * 32];
+        if !seeds.is_empty() {
+            seed_from_os(&mut seeds)?;
+        }
+        let mut buffer = [0; BUFFER_BYTES];
+        let chunk_bytes = BUFFER_BYTES / UNIT * UNIT;
+        let mut emit = |rng: &mut ChaCha12Rng, mut bytes: usize| {
+            while bytes > 0 {
+                let chunk = &mut buffer[..bytes.min(chunk_bytes)];
+                rng.fill_bytes(chunk);
+                sink(chunk);
+                bytes -= chunk.len();
+            }
+        };
+        if let Some(rng) = self.rng.as_mut().filter(|_| usable > 0) {
+            emit(rng, usable);
+            self.remaining -= usable;
+        }
+        let mut left = total - usable;
+        for seed in seeds.as_chunks::<32>().0 {
+            let mut rng = ChaCha12Rng::from_seed(*seed);
+            let bytes = left.min(per_seed);
+            emit(&mut rng, bytes);
+            left -= bytes;
+            self.rng = Some(rng);
+            self.remaining = RESEED_BYTES - bytes;
+            self.process_id = process_id;
+        }
+        Ok(())
+    }
 }
 
 thread_local! {
@@ -63,6 +120,22 @@ thread_local! {
 }
 
 pub(crate) fn fill_random_bytes(output: &mut [u8]) -> Result<(), Error> {
+    with_source(|source, process_id| source.fill(output, process_id, fill_os_random_bytes))
+}
+
+/// Stream `units` draws of `UNIT` bytes each to `sink`; see `RandomSource::fill_units`.
+pub(crate) fn fill_random_units<const UNIT: usize>(
+    units: usize,
+    sink: impl FnMut(&[u8]),
+) -> Result<(), Error> {
+    with_source(|source, process_id| {
+        source.fill_units::<UNIT>(units, process_id, fill_os_random_bytes, sink)
+    })
+}
+
+fn with_source(
+    draw: impl FnOnce(&mut RandomSource, u32) -> Result<(), Error>,
+) -> Result<(), Error> {
     // Browser/WASI instances have no native fork; process::id is unsupported on some of them.
     #[cfg(any(unix, windows))]
     let process_id = std::process::id();
@@ -70,14 +143,14 @@ pub(crate) fn fill_random_bytes(output: &mut [u8]) -> Result<(), Error> {
     let process_id = 0;
     RANDOM
         .try_with(|source| {
-            source
-                .try_borrow_mut()
-                .map_err(|_| {
+            draw(
+                &mut *source.try_borrow_mut().map_err(|_| {
                     Error::new(ErrorCode::RngUnavailable).with_message(
                         "Random generator is already borrowed; retry outside the active draw.",
                     )
-                })?
-                .fill(output, process_id, fill_os_random_bytes)
+                })?,
+                process_id,
+            )
         })
         .map_err(|_| {
             Error::new(ErrorCode::RngUnavailable).with_message(
@@ -178,6 +251,61 @@ mod tests {
         assert_ne!(output, parent);
         assert_eq!(source.process_id, 2);
         assert_eq!(draws, 3);
+        Ok(())
+    }
+
+    // A deterministic "OS" whose bytes depend only on how many bytes it has served, so one
+    // request for k seeds returns exactly what k single-seed requests would.
+    fn counting_os() -> impl FnMut(&mut [u8]) -> Result<(), Error> {
+        let mut served = 0u64;
+        move |seed| {
+            for byte in seed.iter_mut() {
+                served += 1;
+                *byte = (served.wrapping_mul(0x9e37_79b9_7f4a_7c15) >> 56) as u8;
+            }
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn batched_units_equal_repeated_single_draws() -> Result<(), Error> {
+        // Misaligned leftovers (10 bytes) and a batch crossing two reseeds must follow the
+        // single-draw schedule exactly: same bytes, same remaining budget afterwards.
+        for (prefix, units) in [(0, 1), (10, 63), (RESEED_BYTES - 10, 5), (10, 2 * 4096 + 7)] {
+            let (mut single, mut batch) = (RandomSource::new(), RandomSource::new());
+            let (mut single_os, mut batch_os) = (counting_os(), counting_os());
+            single.fill(&mut vec![0; prefix.max(1)], 1, &mut single_os)?;
+            batch.fill(&mut vec![0; prefix.max(1)], 1, &mut batch_os)?;
+            let mut expected = Vec::new();
+            for _ in 0..units {
+                let mut draw = [0; 16];
+                single.fill(&mut draw, 1, &mut single_os)?;
+                expected.extend_from_slice(&draw);
+            }
+            let mut actual = Vec::new();
+            batch.fill_units::<16>(units, 1, &mut batch_os, |chunk| {
+                assert_eq!(chunk.len() % 16, 0);
+                actual.extend_from_slice(chunk);
+            })?;
+            assert_eq!(actual, expected, "prefix {prefix}, units {units}");
+            assert_eq!(batch.remaining, single.remaining);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn failed_batch_seed_publishes_nothing_and_keeps_state() -> Result<(), Error> {
+        let mut source = RandomSource::new();
+        source.fill(&mut [0; 32], 1, counting_os())?;
+        let remaining = source.remaining;
+        let result = source.fill_units::<16>(
+            RESEED_BYTES / 16,
+            1,
+            |_| Err(Error::new(ErrorCode::RngUnavailable)),
+            |_| panic!("no output before every seed succeeds"),
+        );
+        assert_eq!(result.unwrap_err().code(), ErrorCode::RngUnavailable);
+        assert_eq!(source.remaining, remaining);
         Ok(())
     }
 }

@@ -421,6 +421,47 @@ pub fn generate_uuid_v4() -> Result<Uuid, Error> {
     generate_uuid_v4_with_random_fill(fill_default_random_bytes)
 }
 
+/// Fill `out` with version-4 UUIDs from the same secure entropy provider as [`generate_uuid_v4`].
+///
+/// Use it when a job needs many IDs at once (bulk inserts, fixtures, pre-allocated pools): it
+/// pays the per-call entropy bookkeeping once per batch instead of once per ID, without
+/// allocating output. The caller owns the slice, so allocation and how much to generate per call (and so
+/// how long one call runs) stay under the caller's control. On error nothing is written.
+#[cfg(feature = "os-rng")]
+pub fn generate_uuid_v4_batch(out: &mut [Uuid]) -> Result<(), Error> {
+    // One thread-local borrow, fork check and reseed decision per call instead of per ID; seeds
+    // are drawn before any write, so failure leaves `out` unchanged (random::fill_units).
+    #[cfg(feature = "fast-rng")]
+    {
+        let mut slots = out.iter_mut();
+        crate::random::fill_random_units::<16>(slots.len(), |chunk| {
+            // Zip the chunk FIRST: `zip` pulls its left side before learning the right is empty, so
+            // `slots.zip(chunk)` would drop one slot per chunk and leave it unwritten.
+            for (random, slot) in chunk.as_chunks::<16>().0.iter().zip(slots.by_ref()) {
+                *slot = uuid_v4_from_random(*random);
+            }
+        })
+    }
+    // Without the stream there is no per-call state to amortize; stage the OS bytes so a failed
+    // read still writes nothing.
+    #[cfg(not(feature = "fast-rng"))]
+    {
+        let mut random = alloc::vec![0; out.len() * 16];
+        fill_os_random_bytes(&mut random)?;
+        for (slot, random) in out.iter_mut().zip(random.as_chunks::<16>().0) {
+            *slot = uuid_v4_from_random(*random);
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "os-rng")]
+fn uuid_v4_from_random(mut bytes: [u8; 16]) -> Uuid {
+    bytes[6] = (bytes[6] & 15) | 0x40;
+    bytes[8] = (bytes[8] & 63) | 0x80;
+    Uuid::from_uuid_bytes_array(bytes)
+}
+
 /// Generate UUIDv4 into 16 bytes at `offset`, using the same secure entropy provider as [`generate_uuid_v4`].
 /// Invalid storage or entropy failure leaves the whole buffer unchanged.
 #[cfg(feature = "os-rng")]

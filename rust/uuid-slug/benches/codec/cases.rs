@@ -35,6 +35,12 @@ pub fn visit(visitor: &mut impl Recorder) -> Result<(), Error> {
         // callback probes cannot reveal whether clock reads or formatting erase entropy savings.
         use uuid_slug::generate_uuid_v4;
         measure!("generation/v4/bytes", &ids, |_| generate_uuid_v4().unwrap());
+        // Reported per call of 64 IDs; divide by 64 to compare with the single-ID row above.
+        let mut batch = [uuid_slug::NIL_UUID; 64];
+        measure!("generation/v4/batch-64", &ids, |_| {
+            uuid_slug::generate_uuid_v4_batch(&mut batch).unwrap();
+            batch[63]
+        });
         measure!("generation/v4/text", &ids, |_| {
             generate_uuid_v4().unwrap().to_string()
         });

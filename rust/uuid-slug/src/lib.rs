@@ -38,7 +38,9 @@ pub use generation::{
     generate_uuid_v4_into_with_random_fill, generate_uuid_v4_with_random_fill, uuid_v7_bounds,
 };
 #[cfg(feature = "os-rng")]
-pub use generation::{fill_os_random_bytes, generate_uuid_v4, generate_uuid_v4_into};
+pub use generation::{
+    fill_os_random_bytes, generate_uuid_v4, generate_uuid_v4_batch, generate_uuid_v4_into,
+};
 #[cfg(all(feature = "std", feature = "os-rng"))]
 pub use generation::{generate_uuid_v7, generate_uuid_v7_into};
 pub use mask::{

@@ -73,3 +73,17 @@ fn system_time_and_current_time_buffer_calls_keep_the_selected_span() -> Result<
     assert!(packet_uuid(&packet)?.is_uuid_v7());
     Ok(())
 }
+
+#[test]
+fn v4_batches_fill_every_slot_with_distinct_v4_ids() -> Result<(), Error> {
+    // 5,000 IDs cross the 64 KB reseed point (4,096 IDs) inside one call.
+    let mut ids = vec![crate::NIL_UUID; 5_000];
+    crate::generate_uuid_v4_batch(&mut ids)?;
+    assert!(ids.iter().all(Uuid::is_uuid_v4));
+    assert_eq!(
+        ids.iter().collect::<std::collections::HashSet<_>>().len(),
+        ids.len()
+    );
+    crate::generate_uuid_v4_batch(&mut [])?;
+    Ok(())
+}
