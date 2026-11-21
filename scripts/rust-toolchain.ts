@@ -3,13 +3,15 @@ import { delimiter, dirname, join } from "node:path";
 import { command } from "./command";
 
 export async function rustToolchain(root = process.cwd(), channel?: string) {
-  const [cargo, rustc] = await Promise.all(
-    ["cargo", "rustc"].map(async (tool) =>
-      (
-        await command("rustup", ["which", ...(channel ? ["--toolchain", channel] : []), tool], root)
-      ).trim(),
-    ),
-  );
+  // Sequential on purpose: on a machine without the pinned toolchain each `rustup which` installs
+  // it, and two concurrent installs race on rustup's download directory ("could not rename
+  // 'downloaded' file"). The first call installs; the second only reads.
+  const which = async (tool: string) =>
+    (
+      await command("rustup", ["which", ...(channel ? ["--toolchain", channel] : []), tool], root)
+    ).trim();
+  const rustc = await which("rustc");
+  const cargo = await which("cargo");
   if (!cargo || !rustc)
     throw new Error("rustup did not resolve Cargo and rustc for this checkout.");
   const bin = dirname(rustc);
