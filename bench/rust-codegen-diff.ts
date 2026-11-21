@@ -145,7 +145,8 @@ try {
 
     const parsed = await Promise.all(
       files.map(async (file) => {
-        const lines = (await Bun.file(file).text()).split("\n");
+        const source = await Bun.file(file).text();
+        const lines = source.split("\n");
         // LLVM ends every Mach-O assembly file with this directive and never writes it for ELF.
         const macho = lines.includes(".subsections_via_symbols");
         // Pass 1: function bodies and data definitions. A function is named by the last global
@@ -208,7 +209,7 @@ try {
           macho,
           bodies,
           data,
-          symbols: new Set(lines.join("\n").match(token)?.filter(mangled)),
+          symbols: new Set(source.match(token)?.filter(mangled)),
         };
       }),
     );
@@ -223,12 +224,14 @@ try {
       parsed.flatMap((file) => [...file.data].filter(([name]) => anonymous(name))),
     );
     const map = new Map<string, string[]>();
-    for (const { crate, macho, bodies, data: own } of parsed) {
+    for (const { crate, macho, bodies, data } of parsed) {
       // Local labels resolve in their own file; anonymous constants anywhere in the build.
-      const data = { get: (symbol: string) => own.get(symbol) ?? shared.get(symbol) };
-      // Pass 2: per function, rename its local labels in first-use order and append the
-      // definitions of local data it reaches, so the text has no per-build name left in it.
+      const definition = (symbol: string) => data.get(symbol) ?? shared.get(symbol);
+      // Pass 2: per `uuid_slug` function, rename its local labels in first-use order and append
+      // the definitions of local data it reaches, so the text has no per-build name left in it.
       for (const [name, lines] of bodies) {
+        const rustName = global(name);
+        if (!rustName.includes("uuid_slug") || rustName.includes("uuid_simd")) continue;
         const labels = new Map<string, string>();
         const reached: string[] = [];
         const rename = (line: string) =>
@@ -237,17 +240,15 @@ try {
             let renamed = labels.get(symbol);
             if (!renamed) {
               labels.set(symbol, (renamed = `.L${labels.size}`));
-              if (data.get(symbol)) reached.push(symbol);
+              if (definition(symbol)) reached.push(symbol);
             }
             return renamed;
           });
         const text = lines.map(rename);
         for (let index = 0; index < reached.length; index++) {
           const symbol = reached[index] ?? "";
-          text.push(`${labels.get(symbol)}:`, ...(data.get(symbol) ?? []).map(rename));
+          text.push(`${labels.get(symbol)}:`, ...(definition(symbol) ?? []).map(rename));
         }
-        const rustName = global(name);
-        if (!rustName.includes("uuid_slug") || rustName.includes("uuid_simd")) continue;
         // Copies that demangle alike (generic instances whose hashes were removed) compare as a
         // set, sorted below, so neither file order nor codegen-unit partitioning pairs them.
         const key = `${rustName} (in ${crate})`;
