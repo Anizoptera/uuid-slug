@@ -8,11 +8,6 @@ Keep one Rust crate and the dependency-free npm package, optional `std`, Rust's 
 
 Derive engineering choices from the maintainer's requests and interface principles; escalate every taste decision and unresolved material contract, priority or risk decision. Versions, tags, pushes, publication, remote settings/secrets and finalization each require explicit authorization; this plan grants none. Keep dependent repairs with their task. Record acceptance commands, revisions, features, profiles, targets and coverage limits in the existing evidence owner; durable contracts stay outside this plan.
 
-## Active: pre-0.7.0 sprint
-
-Finish these before preparing 0.7.0. A pending maintainer ruling is a short question, never a reason to drop an item: ask it when the item starts. WASM work stays out of this sprint. Use only free or already-paid hardware (GitHub-hosted runners, existing servers); measure with `bench/AGENTS.md`'s noise-tolerant method.
-
-
 ## Optional UUID completion audit
 
 - [x] Compare backend selection, dependency defaults, source credits and secure generation with their implementations; correct the README's OS-call claim and release instructions that omit all-feature doctests.
