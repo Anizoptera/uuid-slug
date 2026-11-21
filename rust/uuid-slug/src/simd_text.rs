@@ -14,11 +14,6 @@ const URN_PREFIX: &[u8; 9] = b"urn:uuid:";
 
 #[cfg(any(test, target_arch = "x86_64"))]
 pub(crate) fn parse(text: &[u8]) -> Option<[u8; 16]> {
-    // Compact text goes straight to the scalar grammar until AMD runs show upstream's 32-digit
-    // kernel winning; M4 comparisons of it stayed within layout noise (bench/decisions.md).
-    if text.len() == 32 {
-        return None;
-    }
     // Upstream matches the URN prefix case-sensitively; the package grammar does not.
     let body = match text.split_at_checked(URN_PREFIX.len()) {
         Some((prefix, rest)) if rest.len() == 36 && prefix.eq_ignore_ascii_case(URN_PREFIX) => rest,
