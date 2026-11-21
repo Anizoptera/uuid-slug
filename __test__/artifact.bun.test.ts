@@ -49,14 +49,29 @@ const manifest = {
   exports: repositoryManifest.exports,
   imports: repositoryManifest.imports,
 };
+const consumerAgents = await Bun.file(new URL("../AGENTS.consumer.md", import.meta.url)).text();
 const base = {
   "package/package.json": JSON.stringify(manifest),
+  "package/AGENTS.md": consumerAgents,
   "package/dist/index.js": "export {};",
   "package/dist/node/runtime.js": "export {};",
   "package/src/index.ts": "export {};",
 };
 
 test("refuses an archive without its manifest", () => rejected({}, "no package/package.json"));
+// The maintainer AGENTS.md shares the shipped name; only the consumer text may pass under it.
+test("refuses a package without the consumer AGENTS.md", () => {
+  const { "package/AGENTS.md": _, ...withoutAgents } = base;
+  return rejected(withoutAgents, "package/AGENTS.md must be AGENTS.consumer.md");
+});
+test("refuses the maintainer AGENTS.md under the consumer name", async () =>
+  rejected(
+    {
+      ...base,
+      "package/AGENTS.md": await Bun.file(new URL("../AGENTS.md", import.meta.url)).text(),
+    },
+    "package/AGENTS.md must be AGENTS.consumer.md",
+  ));
 for (const field of [
   "dependencies",
   "devDependencies",
