@@ -7,8 +7,11 @@
 // 16 units, adding any code reshuffles partitioning and inlining in unrelated functions, which
 // would report differences no feature-specific code causes (pass `--codegen-units 16` to see them).
 //
-// Output: one line per differing or one-sided function, then the identical count. Addresses,
-// symbol hashes, `.llvm.N` suffixes and RIP-relative offsets are normalised away first. The run
+// Output: one line per differing or one-sided function, then the identical count. Only what
+// linking moves is normalised away: absolute addresses, x86 RIP-relative displacements, aarch64
+// `adrp` pages with their one `#lo12` use, symbol hashes and `.llvm.N` suffixes. Immediates and
+// call/jump targets (by symbol name) stay, so a changed constant or callee reports a difference;
+// a reference moved to different data does not, the price of ignoring data layout. The run
 // fails when either build yields no `uuid_slug` function: an empty disassembly would otherwise
 // compare "identical" and certify nothing.
 //
@@ -30,6 +33,7 @@ const codegenUnits = option("--codegen-units", "1");
 // `--no-default` compares the reduced builds (no `std`), where a feature can select other kernels.
 const base = args.includes("--no-default") ? ["--no-default-features"] : [];
 const target = option("--target", "x86_64-unknown-linux-gnu");
+const show = option("--show", "");
 const repo = join(import.meta.dir, "..");
 
 async function output(argv: string[], env: Record<string, string | undefined> = process.env) {
@@ -39,7 +43,17 @@ async function output(argv: string[], env: Record<string, string | undefined> = 
     new Response(child.stderr).text(),
     child.exited,
   ]);
-  if (code !== 0) throw new Error(`${argv.join(" ")} exited ${code}:\n${stderr.slice(-4000)}`);
+  if (code !== 0) {
+    // `--message-format=json` sends compiler and linker errors to stdout; show their text too.
+    const rendered = stdout
+      .split("\n")
+      .filter((line) => line.startsWith("{"))
+      .map((line) => JSON.parse(line))
+      .filter((entry) => entry.reason === "compiler-message")
+      .map((entry) => entry.message.rendered)
+      .join("");
+    throw new Error(`${argv.join(" ")} exited ${code}:\n${(rendered + stderr).slice(-4000)}`);
+  }
   return stdout;
 }
 
@@ -50,6 +64,10 @@ const objdump =
   );
 if (!objdump)
   throw new Error("llvm-objdump not found: install LLVM (brew install llvm, apt install llvm).");
+
+// Link-time noise in a symbol: the per-build hash and LLVM's local-copy suffix.
+const symbol = (name: string) =>
+  name.replace(/ \(\.llvm\.\d+\)|\.llvm\.\d+/g, "").replace(/::h[0-9a-f]{16}/g, "");
 
 const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-codegen-diff-"));
 try {
@@ -64,8 +82,13 @@ try {
   };
   if (target === "x86_64-unknown-linux-gnu" && !(platform() === "linux" && arch() === "x64")) {
     const zig = process.env.UUID_SLUG_ZIG ?? Bun.which("zig");
-    if (!zig)
-      throw new Error("Cross-linking for x86_64 Linux needs zig; set UUID_SLUG_ZIG to its binary.");
+    // An asdf shim is found on PATH yet fails here, because this repository pins no zig; the
+    // link would then fail as an unexplained `cc` error deep in Cargo's output.
+    const runs = zig && Bun.spawnSync([zig, "version"], { cwd: repo }).exitCode === 0;
+    if (!runs)
+      throw new Error(
+        `Cross-linking for x86_64 Linux needs a zig that runs in this repository (${zig ?? "none found"} does not); set UUID_SLUG_ZIG to the zig binary itself, e.g. ~/.asdf/installs/zig/<version>/bin/zig.`,
+      );
     const linker = join(scratch, "cc");
     await writeFile(linker, `#!/bin/sh\nexec "${zig}" cc -target x86_64-linux-gnu "$@"\n`);
     await chmod(linker, 0o755);
@@ -114,24 +137,53 @@ try {
     const map = new Map<string, string>();
     let name: string | undefined;
     let body: string[] = [];
+    let pages = new Set<string>();
     const flush = () => {
       if (!name?.includes("uuid_slug") || name.includes("uuid_simd")) return;
       let key = name;
       // Distinct monomorphizations can demangle to one name; keep each under its own key.
       for (let copy = 2; map.has(key); copy++) key = `${name} #${copy}`;
+      // Alignment filler after a function's last instruction belongs to the layout, not the code.
+      while (body.length > 0 && /^(?:nop\b|udf\s+#0x0$|int3$)/.test(body.at(-1)!)) body.pop();
       map.set(key, body.join("\n"));
     };
     for (const line of disassembly.split("\n")) {
       const header = /^[0-9a-f]+ <(.+)>:$/.exec(line);
       if (header) {
         flush();
-        name = header[1]!.replace(/ \(\.llvm\.\d+\)$/, "").replace(/::h[0-9a-f]{16}$/, "");
+        name = symbol(header[1]!);
         body = [];
+        pages = new Set();
         continue;
       }
       const instruction = /^\s*[0-9a-f]+:\s+(.*)$/.exec(line);
-      if (instruction)
-        body.push(instruction[1]!.replace(/-?0x[0-9a-f]+|<[^>]*>|\.llvm\.\d+/g, () => "@"));
+      if (!instruction) continue;
+      let text = instruction[1]!
+        .replace(/\s+# (?:0x)?[0-9a-f]+ <[^>]*>$/, "")
+        .replace(/-?0x[0-9a-f]+(?=\(%rip\))/g, () => "@")
+        // The target annotation always ends the line, which takes nested names such as
+        // `<<T as Display>::fmt+0x8c>` whole. An offset is code only inside this function (a
+        // branch); elsewhere it locates data or a Mach-O stub by its nearest symbol, i.e. layout.
+        .replace(/(?:0x)?[0-9a-f]+ <(.*)>$/, (_, annotation: string) => {
+          const named = symbol(annotation);
+          const owner = named.replace(/\+0x[0-9a-f]+$/, () => "");
+          return `<${owner === name ? named : owner}>`;
+        });
+      // aarch64 addresses data as `adrp xN, page` plus one `#lo12` use of xN; both move with
+      // layout (the page is labelled by whatever symbol precedes it), like x86 RIP offsets.
+      const page = /^adrp\s+(\w+),/.exec(text);
+      if (page) {
+        pages.add(page[1]!);
+        text = text.replace(/<.*>$/, () => "<page>");
+      } else
+        for (const register of pages) {
+          const lo12 = new RegExp(`((?:\\b|\\[)${register}, #)0x[0-9a-f]+`);
+          if (!lo12.test(text)) continue;
+          text = text.replace(lo12, (_, prefix: string) => `${prefix}@`);
+          pages.delete(register);
+          break;
+        }
+      body.push(text);
     }
     flush();
     if (map.size === 0)
@@ -145,8 +197,12 @@ try {
   for (const [name, body] of baseline) {
     const other = candidate.get(name);
     if (other === undefined) console.log(`only default: ${name}`);
-    else if (other !== body) console.log(`differs: ${name}`);
-    else identical++;
+    else if (other !== body) {
+      console.log(`differs: ${name}`);
+      // The normalised bodies, so a reader can tell real change from layout this script missed.
+      if (show && name.includes(show))
+        console.log(`--- default\n${body}\n--- ${feature}\n${other}\n---`);
+    } else identical++;
   }
   for (const name of candidate.keys())
     if (!baseline.has(name)) console.log(`only ${feature}: ${name}`);
