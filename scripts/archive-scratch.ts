@@ -144,8 +144,12 @@ export async function archiveAndRemoveScratch(directory: string, reports: string
   await mkdir(reportRoot, { recursive: true });
   const destination = await mkdtemp(join(reportRoot, `${basename(scratch)}-`));
   const archive = join(destination, "artifacts.tar.gz");
+  // Publish by rename: a run killed mid-tar (a failing sibling stage stops this one) must leave
+  // a `.partial` file, never a truncated archive under the name diagnosis trusts.
+  const partial = `${archive}.partial`;
   try {
-    await command("tar", ["-czf", archive, "-C", scratch, "."], reportRoot);
+    await command("tar", ["-czf", partial, "-C", scratch, "."], reportRoot);
+    await rename(partial, archive);
   } catch (error) {
     await rm(destination, { recursive: true, force: true });
     throw error;

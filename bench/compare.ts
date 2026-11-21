@@ -650,10 +650,16 @@ async function main(): Promise<void> {
     const baselineOut = join(scratch, "baseline-artifacts");
     const candidateOut = join(scratch, "candidate-artifacts");
     const driverRoot = project;
-    const [baseline, candidate] = await Promise.all([
+    // Drain both packs before surfacing a failure: Promise.all would let the surviving pack keep
+    // writing into scratch after cleanup has archived and removed it.
+    const [baselinePack, candidatePack] = await Promise.allSettled([
       packArtifacts(baselineRoot, baselineOut),
       packArtifacts(candidateRoot, candidateOut),
     ]);
+    if (baselinePack.status === "rejected") throw baselinePack.reason;
+    if (candidatePack.status === "rejected") throw candidatePack.reason;
+    const baseline = baselinePack.value;
+    const candidate = candidatePack.value;
     // Explicit source experiments still run, including byte-identical timing controls.
     if (regressionCheck && !sourceParts && !patchOption) {
       const identity = await compareArtifacts(baseline.root, candidate.root);
