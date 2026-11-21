@@ -1,4 +1,4 @@
-// Compare the x86_64 machine code of every `uuid_slug` function in the codec bench binary between
+// Compare the machine code (x86_64 Linux by default, `--target <triple>` for another) of every `uuid_slug` function in the codec bench binary between
 // default features and default + one opt-in feature (default `uuid-simd`).
 //
 // Why this exists: on some CPUs (AMD Zen 4/5) identical code moves up to about ±20% between two
@@ -13,7 +13,7 @@
 // compare "identical" and certify nothing.
 //
 // Needs `llvm-objdump` (PATH or Homebrew's llvm). Off x86_64 Linux it cross-links with
-// `zig cc` (UUID_SLUG_ZIG overrides the path).
+// `zig cc` (UUID_SLUG_ZIG overrides the path); any other target must be the host's own.
 import { arch, platform } from "node:os";
 import { mkdtemp, rm, writeFile, chmod } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -27,7 +27,7 @@ const option = (name: string, fallback: string) => {
 };
 const feature = option("--feature", "uuid-simd");
 const codegenUnits = option("--codegen-units", "1");
-const target = "x86_64-unknown-linux-gnu";
+const target = option("--target", "x86_64-unknown-linux-gnu");
 const repo = join(import.meta.dir, "..");
 
 async function output(argv: string[], env: Record<string, string | undefined> = process.env) {
@@ -60,7 +60,7 @@ try {
     CARGO_PROFILE_RELEASE_CODEGEN_UNITS: codegenUnits,
     CARGO_PROFILE_BENCH_CODEGEN_UNITS: codegenUnits,
   };
-  if (!(platform() === "linux" && arch() === "x64")) {
+  if (target === "x86_64-unknown-linux-gnu" && !(platform() === "linux" && arch() === "x64")) {
     const zig = process.env.UUID_SLUG_ZIG ?? Bun.which("zig");
     if (!zig)
       throw new Error("Cross-linking for x86_64 Linux needs zig; set UUID_SLUG_ZIG to its binary.");
@@ -148,7 +148,7 @@ try {
   }
   for (const name of candidate.keys()) if (!base.has(name)) console.log(`only ${feature}: ${name}`);
   console.log(
-    `${identical} identical uuid_slug functions (${base.size} default, ${candidate.size} ${feature}; codegen units ${codegenUnits})`,
+    `${identical} identical uuid_slug functions (${base.size} default, ${candidate.size} ${feature}; codegen units ${codegenUnits}, ${target})`,
   );
 } finally {
   await rm(scratch, { recursive: true, force: true });
