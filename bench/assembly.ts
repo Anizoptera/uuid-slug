@@ -15,13 +15,15 @@ const anonymous = (name: string) => /^(?:_|l_)?anon\./.test(name);
 // global can start with because Mach-O prefixes every global with `_`) and anonymous constants.
 const local = (name: string, macho: boolean) =>
   anonymous(name) || (macho ? /^[Ll]/.test(name) : name.startsWith(".L"));
-// Global symbols are compared demangled with hashes removed (legacy `::h<hex>`, v0 `[hex]`
-// disambiguators, LLVM's `(.llvm.<N>)` local-copy suffix). Editing the mangled form instead is
+// Global symbols are compared demangled with hashes removed (legacy `::h<hex>`, LLVM's
+// `(.llvm.<N>)` local-copy suffix). `llvm-cxxfilt` already omits v0 crate disambiguators, so no
+// bracket is stripped: a pattern for them would also erase slice types such as `[f32]`, whose letters
+// are all hex digits. Editing the mangled form instead is
 // wrong: v0 back-references are byte offsets into the mangled string, so dropping a
 // variable-length hash corrupts every later part.
 const mangled = (name: string) => /^_{1,2}(?:R|ZN)/.test(name);
 export const unhash = (name: string) =>
-  name.replace(/::h[0-9a-f]{16}\b|\[[0-9a-f]+\]| \(\.llvm\.\d+\)/g, () => "");
+  name.replace(/::h[0-9a-f]{16}\b| \(\.llvm\.\d+\)/g, () => "");
 
 export function parseAssembly(file: string, source: string) {
   const lines = source.split("\n");

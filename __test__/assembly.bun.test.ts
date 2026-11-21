@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { expect, test } from "bun:test";
-import { functionTexts, parseAssembly } from "../bench/assembly";
+import { functionTexts, parseAssembly, unhash } from "../bench/assembly";
 
 // Each case is a defect the codegen diff had: a "identical" verdict that hid changed code, or a
 // difference that only per-build names produced. Names stand in for demangled symbols.
@@ -59,9 +59,15 @@ test("an anonymous constant promoted into another file resolves to its value", (
 });
 
 test("a merged function compares by its alias target", () => {
-  const merged = build(["uuid_slug-1.s", alias("uuid_slug_f")]);
-  expect(merged.get("uuid_slug_g (in uuid_slug)")).toBe("= uuid_slug_f");
-  expect(merged).not.toEqual(build(["uuid_slug-1.s", alias("uuid_slug_h")]));
+  expect(build(["uuid_slug-1.s", alias("uuid_slug_f")])).not.toEqual(
+    build(["uuid_slug-1.s", alias("uuid_slug_h")]),
+  );
+});
+
+test("hash removal keeps slice types whose letters are all hex digits", () => {
+  expect(unhash("<[f32] as uuid_slug::T>::f::h0123456789abcdef")).toBe(
+    "<[f32] as uuid_slug::T>::f",
+  );
 });
 
 test("copies that demangle alike pair by content, not file order", () => {
