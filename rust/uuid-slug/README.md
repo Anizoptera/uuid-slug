@@ -296,6 +296,8 @@ cargo add uuid-slug --no-default-features
 
 For browser WebAssembly generation, add `--features wasm-js` to that command. For WASI generation, use defaults or `--features std,os-rng`; the WASI host supplies clock and entropy access. Keep the JavaScript feature for browser integration.
 
+Enable `uuid-simd` (`cargo add uuid-slug --features uuid-simd`) to use SIMD kernels from the [uuid-simd crate](https://docs.rs/uuid-simd) for UUID text: hyphenated formatting on every target, and parsing of hyphenated and braced text on x86_64 (AVX2 or SSE4.1, detected at run time with `std`). Compact and URN text, and parsing on other targets, keep the scalar parser. Accepted text, output and errors are the same as without it. It is off by default.
+
 Features select host capabilities and dependencies, independently of UUID version or slug alphabet. A v4-only or v7-only application does not need a per-version feature. Unused functions can be removed from the linked application, but enabling a feature still affects its dependency graph and compilation. Other dependencies can also enable features through Cargo feature unification.
 
 ## TypeScript and stored IDs

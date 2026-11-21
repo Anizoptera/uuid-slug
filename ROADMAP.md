@@ -12,7 +12,6 @@ Derive engineering choices from the maintainer's requests and interface principl
 
 Finish these before preparing 0.7.0. A pending maintainer ruling is a short question, never a reason to drop an item: ask it when the item starts. WASM work stays out of this sprint. Use only free or already-paid hardware (GitHub-hosted runners, existing servers); measure with `bench/AGENTS.md`'s noise-tolerant method.
 
-- [ ] Close `uuid-simd` retention: Zen 4 lost on compact and URN parses, so SIMD parsing now takes only hyphenated and braced text on x86_64. Every SIMD path gained on Zen 3/4/5 after the gate. Timing cannot certify the other rows on Zen 4/5 (identical code moves up to about ±20% between builds; `bench/decisions.md`), so their evidence is machine-code identity: with one codegen unit only UUID text parsing and formatting differ between the builds (`bench/decisions.md`). If kept, the crate README, `rust/AGENTS.consumer.md` and `docs/security.md` (its unsafe-code sentence) need maintainer-approved wording before release.
 
 ## Optional UUID completion audit
 

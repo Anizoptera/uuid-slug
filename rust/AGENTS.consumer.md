@@ -2,7 +2,7 @@
 
 Rules for code that calls this crate. The README beside this file and the item docs explain every call; read them before using an API you have not used.
 
-- Keep the default features (`std`, `fast-rng`) for ordinary generation. Enable `uuid-interop` only to convert to or from `uuid::Uuid`; it is off by default and the defaults never compile `uuid`. With `--no-default-features` the crate is `no_std` + `alloc`: supply time and entropy through the `_at_unix_ms` and `_with_random_fill` methods. See README "Features".
+- Keep the default features (`std`, `fast-rng`) for ordinary generation. Enable `uuid-interop` only to convert to or from `uuid::Uuid`; it is off by default and the defaults never compile `uuid`. With `--no-default-features` the crate is `no_std` + `alloc`: supply time and entropy through the `_at_unix_ms` and `_with_random_fill` methods. See README "Features". Enable `uuid-simd` only to speed up UUID text formatting and x86_64 hyphenated or braced parsing; accepted text, output and errors stay the same.
 - Every fallible call returns `Result<_, uuid_slug::Error>`. Branch on `error.code()`, never on the message text.
 - Store `Uuid` (or its 16 bytes) as the record's identity. Slugs are spellings of the same 128 bits; convert at the edge, no mapping table.
 - `Uuid::parse_uuid` is the one keyless reader: UUID text, plain slugs, `&str`, `String`, or byte input. Exactly 16 bytes are a raw UUID; other byte lengths are ASCII text, so parse network or file buffers directly instead of validating UTF-8 first.
