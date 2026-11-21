@@ -164,12 +164,13 @@ try {
         for (const line of lines) {
           const type = /^\t\.type\t([^,]+),@function$/.exec(line)?.[1];
           if (type) types.add(type);
+          const label = /^([^\s:#]+):/.exec(line)?.[1];
+          if (label) labelled.add(label);
           if (body) {
             if (line === "\t.cfi_endproc" || line === "\tend_function") body = undefined;
             else body.push(line);
             continue;
           }
-          const label = /^([^\s:#]+):/.exec(line)?.[1];
           // LLVM merges identical functions into `name = target` (Mach-O: `.set name, target`,
           // a directive it also uses for local temporaries); the target is that function's code.
           const [, aliased = "", original = ""] =
@@ -185,7 +186,6 @@ try {
             bodies.set(owner, (body = line.startsWith("\t.functype") ? [line] : []));
             block = undefined;
           } else if (label) {
-            labelled.add(label);
             if (!local(label, macho)) owner = label;
             data.set(label, (block = data.get(label) ?? block ?? []));
           } else if (
@@ -207,6 +207,7 @@ try {
         return {
           crate: basename(file).split("-")[0] ?? "",
           macho,
+          labelled,
           bodies,
           data,
           symbols: new Set(source.match(token)?.filter(mangled)),
@@ -224,7 +225,7 @@ try {
       parsed.flatMap((file) => [...file.data].filter(([name]) => anonymous(name))),
     );
     const map = new Map<string, string[]>();
-    for (const { crate, macho, bodies, data } of parsed) {
+    for (const { crate, macho, labelled, bodies, data } of parsed) {
       // Local labels resolve in their own file; anonymous constants anywhere in the build.
       const definition = (symbol: string) => data.get(symbol) ?? shared.get(symbol);
       // Pass 2: per `uuid_slug` function, rename its local labels in first-use order and append
@@ -236,7 +237,11 @@ try {
         const reached: string[] = [];
         const rename = (line: string) =>
           line.replace(token, (symbol) => {
-            if (!local(symbol, macho)) return global(symbol);
+            // Only a defined label is one: Mach-O's `L`/`l` prefix also starts instructions
+            // (`ldr`, `lsl`), and renaming those in first-use order would equate code that differs
+            // only in which instruction it uses.
+            if (!anonymous(symbol) && !(labelled.has(symbol) && local(symbol, macho)))
+              return global(symbol);
             let renamed = labels.get(symbol);
             if (!renamed) {
               labels.set(symbol, (renamed = `.L${labels.size}`));
