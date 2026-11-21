@@ -153,6 +153,8 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
       variants.push(variant);
       console.log(JSON.stringify({ prepared: variant }));
     }
+  // Per-process median of rounds, keyed by manifest, feature selection and operation.
+  const medians: Record<string, number[]> = {};
   if (!prepareOnly)
     for (let repetition = 0; repetition < 3; repetition++) {
       for (let index = 0; index < variants.length; index++) {
@@ -181,8 +183,34 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
             records,
           }),
         );
+        for (const operation of new Set(records.map((row) => row.operation))) {
+          const times = records
+            .filter((row) => row.operation === operation)
+            .map((row) => row.nsPerCall)
+            // eslint-disable-next-line unicorn/no-array-sort -- map() returned a fresh private array; toSorted exceeds the compiler library floor.
+            .sort((a, b) => a - b);
+          (medians[`${variant.manifest}\n${variant.features}\n${operation}`] ??= [])[repetition] =
+            times[times.length >> 1] ?? Number.NaN;
+        }
       }
     }
+  // Paired verdict per repetition: each opt-in feature against `default` in the same manifest,
+  // same repetition and process order, so drift between repetitions cancels. Read it beside rows
+  // whose code is identical in both builds (bench/AGENTS.md: layout-noise band).
+  for (const manifest of manifests)
+    for (const features of codecFeatureSelections.slice(2))
+      for (const key of Object.keys(medians).filter((name) =>
+        name.startsWith(`${resolve(manifest)}\n${features}\n`),
+      )) {
+        const operation = key.split("\n")[2];
+        const base = medians[`${resolve(manifest)}\ndefault\n${operation}`] ?? [];
+        const ratios = (medians[key] ?? []).map((ns, index) =>
+          (ns / (base[index] ?? Number.NaN)).toFixed(3),
+        );
+        console.error(
+          `${features} vs default ${operation}: ${base.map((ns) => ns.toFixed(2)).join("/")} -> ${(medians[key] ?? []).map((ns) => ns.toFixed(2)).join("/")} ns, ratios ${ratios.join(" ")}`,
+        );
+      }
   process.exit(0);
 }
 
