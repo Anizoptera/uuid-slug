@@ -14,7 +14,7 @@ Finish these before preparing 0.7.0. A pending maintainer ruling is a short ques
 
 - [ ] Update every outdated dev dependency to latest stable; keep the deliberate `typescript-checker` and `typescript-floor` pins. Check Cargo dependencies too.
 - [ ] Refine the roadmap and `CHANGELOG.md` release notes after the SIMD/CPU experiments; needs the maintainer's details (changelog reminder).
-- [ ] Production evaluation below: base32 fixed-buffer decoder, SIMD parser, SIMD owned formatter, SIMD base64url encoder. SIMD needs a runtime or compile-time feature check with the owned scalar code as fallback (`is_x86_feature_detected!` needs `std`, which is optional), and production-body proofs; confirm how far Kani handles SIMD intrinsics before relying on it.
+- [ ] Production evaluation below: base32 fixed-buffer decoder, SIMD parser, SIMD owned formatter, SIMD base64url encoder. SIMD needs a runtime or compile-time feature check with the owned scalar code as fallback (`is_x86_feature_detected!` needs `std`, which is optional), and verification per `rust/AGENTS.md`: proofs where a prover can model the body, comparison against the proven scalar body elsewhere.
 - [ ] ASCII byte parser entry and v4/v7 batch APIs: ask the caller-demand and v7 clock/state rulings, then implement what they approve.
 - [ ] Native AMD evidence (task below).
 - [ ] Add `bench/rust-competitors/target/` to `.gitignore`.
