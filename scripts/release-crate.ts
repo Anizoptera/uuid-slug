@@ -7,6 +7,7 @@ import { preflightRelease } from "./release-notes";
 import { rustToolchain } from "./rust-toolchain";
 
 const reviewedDirectory = "rust/target/reviewed-crate";
+const extractedDirectory = "rust/target/extracted-crate";
 const userAgent = "uuid-slug release (https://github.com/Anizoptera/uuid-slug)";
 
 export function verifyCrateChecksum(bytes: Uint8Array, checksum: string): void {
@@ -93,13 +94,15 @@ async function releaseCrate(mode: string): Promise<void> {
       throw new Error("Reviewed crate directory must be empty before packaging.");
     await withConsumerAgents(() => cargo(toolchain, ["package", "--allow-dirty"]));
     await inspectCrate(packaged, version);
-    // Package verification only compiles the library; run fixtures and docs from extracted bytes.
-    await cargo(
-      toolchain,
-      ["test", "--all-features"],
-      join("rust/target/package", `uuid-slug-${version}`, "Cargo.toml"),
-    );
-    await checkCrateDocumentation(join("rust/target/package", `uuid-slug-${version}`));
+    // Package verification only compiles the library; run fixtures and docs from the archive's
+    // own bytes. Extract it here rather than reuse Cargo's verification directory: with
+    // `build.build-dir` configured, Cargo unpacks there instead of `target/package`.
+    await rm(extractedDirectory, { recursive: true, force: true });
+    await mkdir(extractedDirectory, { recursive: true });
+    await Bun.$`tar -xzf ${packaged} -C ${extractedDirectory}`;
+    const extracted = join(extractedDirectory, `uuid-slug-${version}`);
+    await cargo(toolchain, ["test", "--all-features"], join(extracted, "Cargo.toml"));
+    await checkCrateDocumentation(extracted);
     await copyFile(packaged, reviewed);
     return;
   }
