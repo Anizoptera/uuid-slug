@@ -46,16 +46,19 @@ export async function syncReleaseVersion(cwd: string, version: string): Promise<
       throw new Error("Rust version update changed another manifest field; no file was written.");
     await Bun.write(file, updated);
   }
-  // Cargo updates only workspace package entries without resolving newer dependencies.
+  // `--workspace` updates only workspace package entries without resolving newer dependencies.
+  // No `--offline`: it adds no pinning, only a demand that every locked crate is already in the
+  // local Cargo cache, which a fresh checkout or CI runner lacks (bench competitors included).
   const manifests = ["rust/Cargo.toml"];
   // The benchmark is a path consumer; its lock records the workspace package's version too.
   if (await Bun.file(`${cwd}/bench/rust-competitors/Cargo.toml`).exists())
     manifests.push("bench/rust-competitors/Cargo.toml");
   for (const manifestPath of manifests) {
-    const child = Bun.spawn(
-      ["cargo", "update", "--workspace", "--manifest-path", manifestPath, "--offline"],
-      { cwd, stdout: "ignore", stderr: "inherit" },
-    );
+    const child = Bun.spawn(["cargo", "update", "--workspace", "--manifest-path", manifestPath], {
+      cwd,
+      stdout: "ignore",
+      stderr: "inherit",
+    });
     if ((await child.exited) !== 0)
       throw new Error("Cargo could not synchronize the release lockfile; do not tag.");
   }
