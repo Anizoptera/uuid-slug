@@ -69,4 +69,4 @@ jobs:
           bun-version-file: .tool-versions
       - env:
           RUSTFLAGS: ${{ inputs.rustflags }}
-        run: bun install --frozen-lockfile && UUID_SLUG_CODEC_FEATURES=uuid-simd bun bench/rust.ts --codec
+        run: bun install --frozen-lockfile && UUID_SLUG_CODEC_FEATURES=uuid-simd,no-default+uuid-simd bun bench/rust.ts --codec

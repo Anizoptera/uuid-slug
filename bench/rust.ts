@@ -92,6 +92,8 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
   if (!manifests.length) manifests.push("rust/Cargo.toml");
   // Opt-in features (comma-separated, e.g. `uuid-simd`) each add a default-plus-feature variant to
   // the same paired, order-alternated schedule, so a candidate kernel is timed against production.
+  // A `no-default+` prefix (e.g. `no-default+uuid-simd`) pairs the feature with the reduced build
+  // instead: without `std` a feature can select different kernels (no run-time CPU detection).
   const codecFeatureSelections = [
     "no-default",
     "default",
@@ -123,7 +125,9 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
           ? ["--no-default-features"]
           : features === "default"
             ? []
-            : ["--features", features],
+            : features.startsWith("no-default+")
+              ? ["--no-default-features", "--features", features.slice("no-default+".length)]
+              : ["--features", features],
         manifest,
       );
       for (const source of sources) {
@@ -203,7 +207,7 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
         }
       }
     }
-  // Paired verdict per repetition: each opt-in feature against `default` in the same manifest,
+  // Paired verdict per repetition: each opt-in feature against its base build in the same manifest,
   // same repetition and process order, so drift between repetitions cancels. Read it beside rows
   // whose code is identical in both builds (bench/AGENTS.md: layout-noise band).
   for (const manifest of manifests)
@@ -212,12 +216,13 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
         name.startsWith(`${resolve(manifest)}\n${features}\n`),
       )) {
         const operation = key.split("\n")[2];
-        const base = medians[`${resolve(manifest)}\ndefault\n${operation}`] ?? [];
+        const baseline = features.startsWith("no-default+") ? "no-default" : "default";
+        const base = medians[`${resolve(manifest)}\n${baseline}\n${operation}`] ?? [];
         const ratios = (medians[key] ?? []).map((ns, index) =>
           (ns / (base[index] ?? Number.NaN)).toFixed(3),
         );
         console.error(
-          `${features} vs default ${operation}: ${base.map((ns) => ns.toFixed(2)).join("/")} -> ${(medians[key] ?? []).map((ns) => ns.toFixed(2)).join("/")} ns, ratios ${ratios.join(" ")}`,
+          `${features} vs ${baseline} ${operation}: ${base.map((ns) => ns.toFixed(2)).join("/")} -> ${(medians[key] ?? []).map((ns) => ns.toFixed(2)).join("/")} ns, ratios ${ratios.join(" ")}`,
         );
       }
   process.exit(0);
