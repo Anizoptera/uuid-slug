@@ -26,6 +26,8 @@ const base = Object.fromEntries(
     "src/lib.rs",
   ].map((name) => [`${root}${name}`, ""]),
 );
+// release-crate.ts stages the consumer instructions as the crate-root AGENTS.md.
+base[`${root}AGENTS.md`] = await Bun.file("rust/AGENTS.consumer.md").text();
 
 async function inspectFixture(extra: Record<string, string>, rejection?: string): Promise<void> {
   const directory = await mkdtemp(join(tmpdir(), "uuid-slug-crate-"));
@@ -49,6 +51,7 @@ test("crate validation accepts library sources and rejects forbidden contents", 
   const copiedBackend = { [`${root}src/uuid_text.rs`]: "// copied UUID text kernels" };
   await inspectFixture(copiedBackend, "LICENSE-UUID-MIT");
   await inspectFixture({ ...copiedBackend, [`${root}LICENSE-UUID-MIT`]: "MIT permission notice" });
+  await inspectFixture({ [`${root}AGENTS.md`]: "maintainer rules" }, "Crate AGENTS.md must be");
   await inspectFixture({ "other/Cargo.toml": "" }, "Forbidden crate path");
   await inspectFixture({ [`${root}benches/codec.rs`]: "fn main() {}" }, "Forbidden crate path");
   await inspectFixture({ [`${root}src/libuuid_slug.so`]: "" }, "Compiled payload");

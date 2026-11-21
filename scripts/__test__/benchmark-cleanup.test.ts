@@ -541,7 +541,13 @@ test("packed artifact failures retain their inputs and remove executable scratch
   try {
     const manifest = JSON.stringify({ dependencies: { unexpected: "1" } });
     const tarball = join(scratch, "invalid.tgz");
-    await Bun.write(tarball, new Bun.Archive({ "package/package.json": manifest }));
+    await Bun.write(
+      tarball,
+      new Bun.Archive({
+        "package/package.json": manifest,
+        "package/AGENTS.md": await Bun.file(join(project, "AGENTS.consumer.md")).text(),
+      }),
+    );
     const child = Bun.spawn([process.execPath, "scripts/check-artifact.ts", tarball], {
       cwd: project,
       env: { ...process.env, TMPDIR: scratch },
