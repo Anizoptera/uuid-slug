@@ -6,9 +6,19 @@ export async function rustToolchain(root = process.cwd(), channel?: string) {
   // Sequential on purpose: on a machine without the pinned toolchain each `rustup which` installs
   // it, and two concurrent installs race on rustup's download directory ("could not rename
   // 'downloaded' file"). The first call installs; the second only reads.
+  // The first call can download and install the whole toolchain, which takes minutes on a cold
+  // CI runner; command()'s default 30 s deadline would kill a healthy install.
   const which = async (tool: string) =>
     (
-      await command("rustup", ["which", ...(channel ? ["--toolchain", channel] : []), tool], root)
+      await command(
+        "rustup",
+        ["which", ...(channel ? ["--toolchain", channel] : []), tool],
+        root,
+        undefined,
+        {
+          timeoutMs: 600_000,
+        },
+      )
     ).trim();
   const rustc = await which("rustc");
   const cargo = await which("cargo");

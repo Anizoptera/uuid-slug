@@ -10,6 +10,15 @@ import { codecOutput, codecTimingOutput } from "./rust-codec-output";
 
 const toolchain = await rustToolchain();
 
+// Results are read per CPU model, but ARM Linux reports no model name through os.cpus(); lscpu
+// names the core (for example Neoverse-N2) there.
+const cpuModel = await (async () => {
+  const model = cpus()[0]?.model;
+  if (model && model !== "unknown") return model;
+  const lscpu = Bun.which("lscpu") ? await new Response(Bun.spawn(["lscpu"]).stdout).text() : "";
+  return /^Model name:\s*(.+)$/m.exec(lscpu)?.[1]?.trim() ?? model;
+})();
+
 // Bun can return bigint CPU counters despite declaring number in its types.
 function cpuMicros(value: number | bigint): number {
   return Number(value);
@@ -94,7 +103,7 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
   console.log(
     JSON.stringify({
       host: `${process.platform}/${process.arch}`,
-      cpu: cpus()[0]?.model,
+      cpu: cpuModel,
       rust: (await run(["rustc", "-Vv"])).output.trim(),
       filter,
       prepareOnly,
@@ -226,7 +235,7 @@ if (process.argv[2] === "--generation") {
   console.log(
     JSON.stringify({
       host: `${process.platform}/${process.arch}`,
-      cpu: cpus()[0]?.model,
+      cpu: cpuModel,
       rust: (await run(["rustc", "-Vv"])).output.trim(),
       builds: variants.map(({ name, build }) => ({
         name,
@@ -288,7 +297,7 @@ const emitRawSamples = process.env.UUID_SLUG_RUST_BENCH_RAW === "1";
 console.log(
   JSON.stringify({
     host: `${process.platform}/${process.arch}`,
-    cpu: cpus()[0]?.model,
+    cpu: cpuModel,
     rust: (await run(["rustc", "-Vv"])).output.trim(),
     lanes: nativeLanes.map((lane) => lane.label),
   }),

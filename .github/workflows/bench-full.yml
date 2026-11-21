@@ -36,7 +36,7 @@ jobs:
 
   # Native evidence for Rust codec kernels on every CPU family GitHub offers for free: the
   # ubuntu-latest pool mixes AMD EPYC (Zen 3/4/5) and Intel Xeon generations, ubuntu-24.04-arm is
-  # an ARM server core, macos-15-intel an older Intel Mac. SIMD speed differs per CPU, so each job
+  # an ARM server core, macos-15-intel an older Intel Mac, macos-latest an Apple M1. SIMD speed differs per CPU, so each job
   # logs its CPU; read results per CPU model. Windows runners share the Linux pools' CPUs.
   # bench/rust.ts --codec times production against each opt-in feature in one paired,
   # order-alternated schedule on one machine, which keeps a noisy shared runner usable.
@@ -57,6 +57,8 @@ jobs:
           - { runner: ubuntu-24.04-arm, replicate: 2 }
           - { runner: macos-15-intel, replicate: 1 }
           - { runner: macos-15-intel, replicate: 2 }
+          - { runner: macos-latest, replicate: 1 }
+          - { runner: macos-latest, replicate: 2 }
     steps:
       - run: uname -m && { lscpu 2>/dev/null | grep -iE 'model name|vendor' || sysctl -n machdep.cpu.brand_string; }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
