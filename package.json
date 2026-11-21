@@ -187,6 +187,9 @@
     "deno": ">=1.29",
     "node": ">=20"
   },
+  "patchedDependencies": {
+    "vitest@5.1.1": "patches/vitest@5.1.1.patch"
+  },
   "publish-clean": {
     "renameFiles": {
       "AGENTS.consumer.md": "AGENTS.md"
