@@ -14,24 +14,19 @@ extern crate std;
 // feature, which our `std` enables. Swapping our proven scalar code for another scalar copy cannot
 // gain and was never measured, so SIMD text is selected only where uuid-simd really runs SIMD, and
 // every other build compiles exactly like one without the feature. Each call wraps ONE item or
-// statement; `if` and `unless` must keep the same predicate.
+// statement. `if` and `unless` share the single predicate below (`any(p)` is `p`), so they cannot
+// drift apart and leave a build with both or neither text backend.
 macro_rules! simd_text_cfg {
-    (if $($one:tt)*) => {
-        #[cfg(all(feature = "uuid-simd", any(
-            all(any(target_arch = "x86", target_arch = "x86_64"), any(feature = "std", target_feature = "sse4.1")),
-            all(target_arch = "aarch64", target_feature = "neon"),
-            all(target_arch = "wasm32", target_feature = "simd128"),
-        )))]
-        $($one)*
-    };
-    (unless $($one:tt)*) => {
-        #[cfg(not(all(feature = "uuid-simd", any(
+    (@ $operator:ident $($one:tt)*) => {
+        #[cfg($operator(all(feature = "uuid-simd", any(
             all(any(target_arch = "x86", target_arch = "x86_64"), any(feature = "std", target_feature = "sse4.1")),
             all(target_arch = "aarch64", target_feature = "neon"),
             all(target_arch = "wasm32", target_feature = "simd128"),
         ))))]
         $($one)*
     };
+    (if $($one:tt)*) => { simd_text_cfg!(@ any $($one)*); };
+    (unless $($one:tt)*) => { simd_text_cfg!(@ not $($one)*); };
 }
 
 mod alphabet;
