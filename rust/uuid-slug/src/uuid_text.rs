@@ -3,7 +3,9 @@
 // https://github.com/uuid-rs/uuid/blob/266c044a/src/fmt.rs
 // Keep only generic parsing and hyphenated output: generation, UUID objects,
 // detailed upstream errors and caller-buffer adapters are not needed here.
-// Review upstream changes against these kernels before updating the source revision.
+// Review upstream changes against these kernels before updating the source revision. The version
+// above and both links name ONE release: change them together, taking the commit from that
+// release's `.cargo_vcs_info.json` in Cargo's registry source, never by editing the version alone.
 simd_text_cfg!(unless use core::fmt;);
 
 pub(crate) fn parse_uuid_text(text: &[u8]) -> Option<[u8; 16]> {
