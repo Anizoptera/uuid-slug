@@ -34,7 +34,14 @@ export async function rehearseRelease(): Promise<void> {
       `\n## [Unreleased]\n\n## [${version}]\n\nRelease rehearsal.\n`,
     ),
   );
-  await run("bun", ["run", "version:set", version]);
+  // The release path itself: `pnpm version` writes package.json, then the `version` lifecycle
+  // script syncs the Cargo manifests and lockfiles (version:set accepts only -dev versions).
+  const packageJson = await Bun.file("package.json").text();
+  await Bun.write(
+    "package.json",
+    packageJson.replace(`"version": "${manifest.version}"`, `"version": "${version}"`),
+  );
+  await run("bun", ["scripts/release-notes.ts", "--sync"]);
   const identity = ["-c", "user.name=release-rehearsal", "-c", "user.email=rehearsal@invalid"];
   await run("git", [...identity, "commit", "--all", "--quiet", "--message", version], {
     UUID_SLUG_RELEASE_VERSION: version,
