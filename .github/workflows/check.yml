@@ -144,6 +144,11 @@ jobs:
               done
             done
           done
+      # Last in the leg: it commits a stable version and tag into this checkout. Reuses the release
+      # tools installed above; a tag run skips it because release.yml then prepares for real.
+      - name: Rehearse release preparation
+        if: matrix.runner == 'ubuntu-24.04' && github.ref_type != 'tag'
+        run: bun scripts/release-rehearsal.ts
 
   # Exercise every supported major and newer native capabilities without asserting ordering.
   runtimes:
