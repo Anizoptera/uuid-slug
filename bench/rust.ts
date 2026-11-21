@@ -6,6 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import { buildRustBridge } from "../scripts/rust-bridge";
 import { nativeMatrix } from "../scripts/rust-native-matrix";
 import { rustToolchain } from "../scripts/rust-toolchain";
+import { codecTargetRustflags } from "./codec-targets";
 import { codecOutput, codecTimingOutput } from "./rust-codec-output";
 
 const toolchain = await rustToolchain();
@@ -82,7 +83,12 @@ async function buildCodec(features: readonly string[] = [], manifest = "rust/Car
       ...(codecTarget ? ["--target", codecTarget] : []),
       ...features,
     ],
-    wasmCodec ? { CARGO_TARGET_WASM32_WASIP1_RUSTFLAGS: "-C target-feature=+simd128" } : {},
+    codecTarget && codecTargetRustflags(codecTarget).length > 0
+      ? {
+          [`CARGO_TARGET_${codecTarget.toUpperCase().replaceAll("-", "_")}_RUSTFLAGS`]:
+            codecTargetRustflags(codecTarget).join(" "),
+        }
+      : {},
   );
   const artifacts = build.output
     .trim()

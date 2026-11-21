@@ -31,6 +31,7 @@ import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { rustToolchain } from "../scripts/rust-toolchain";
+import { codecTargetRustflags } from "./codec-targets";
 
 const args = process.argv.slice(2);
 const option = (name: string, fallback: string) => {
@@ -107,7 +108,11 @@ try {
       // reach only the bench crate.
       CARGO_TARGET_DIR: join(root, "target"),
       CARGO_BUILD_BUILD_DIR: join(root, "build"),
-      CARGO_ENCODED_RUSTFLAGS: [...flags.filter(Boolean), "--emit=asm,link"].join("\x1f"),
+      CARGO_ENCODED_RUSTFLAGS: [
+        ...flags.filter(Boolean),
+        ...codecTargetRustflags(target),
+        "--emit=asm,link",
+      ].join("\x1f"),
       CARGO_PROFILE_BENCH_CODEGEN_UNITS: codegenUnits,
     };
     await output(
@@ -143,11 +148,13 @@ try {
         const lines = (await Bun.file(file).text()).split("\n");
         // LLVM ends every Mach-O assembly file with this directive and never writes it for ELF.
         const macho = lines.includes(".subsections_via_symbols");
-        // Pass 1: function bodies and data definitions. On ELF and Mach-O every function sits
-        // between unwind directives (`.cfi_startproc` … `.cfi_endproc`) and is named by the last
-        // global label before them; any other label starts a data definition, which runs to the
-        // next label or to a directive that starts another item.
+        // Pass 1: function bodies and data definitions. A function is named by the last global
+        // label and sits between unwind directives on ELF and Mach-O (`.cfi_startproc` …
+        // `.cfi_endproc`) or, in WebAssembly, which has none, between its `.functype` signature
+        // (kept: a changed signature is a change) and `end_function`. Any other label starts a data
+        // definition, which runs to the next label or to a directive that starts another item.
         const types = new Set<string>();
+        const labelled = new Set<string>();
         const bodies = new Map<string, string[]>();
         const data = new Map<string, string[]>();
         let owner: string | undefined;
@@ -157,7 +164,7 @@ try {
           const type = /^\t\.type\t([^,]+),@function$/.exec(line)?.[1];
           if (type) types.add(type);
           if (body) {
-            if (line === "\t.cfi_endproc") body = undefined;
+            if (line === "\t.cfi_endproc" || line === "\tend_function") body = undefined;
             else body.push(line);
             continue;
           }
@@ -169,11 +176,15 @@ try {
           if (aliased && !local(aliased, macho)) {
             bodies.set(aliased, [`= ${original}`]);
             block = undefined;
-          } else if (line === "\t.cfi_startproc" && owner) {
+          } else if (
+            owner &&
+            (line === "\t.cfi_startproc" || line.startsWith(`\t.functype\t${owner} `))
+          ) {
             data.delete(owner);
-            bodies.set(owner, (body = []));
+            bodies.set(owner, (body = line.startsWith("\t.functype") ? [line] : []));
             block = undefined;
           } else if (label) {
+            labelled.add(label);
             if (!local(label, macho)) owner = label;
             data.set(label, (block = data.get(label) ?? block ?? []));
           } else if (
@@ -182,11 +193,14 @@ try {
             block = undefined;
           else block?.push(line);
         }
-        // ELF names each function in `.type`, independently of the brackets: a function the
-        // brackets missed would otherwise drop out of both builds silently.
-        const missed = [...types].filter((name) => !bodies.has(name));
+        // `.type` (ELF and WebAssembly) names each function independently of the brackets; with a
+        // label it is defined here (without one it is an import). A defined function the brackets
+        // missed would otherwise drop out of both builds silently.
+        const missed = [...types].filter((name) => labelled.has(name) && !bodies.has(name));
         if (missed.length > 0)
-          throw new Error(`${file}: functions without unwind brackets: ${missed.join(", ")}`);
+          throw new Error(
+            `${file}: defined functions without a recognised start/end bracket (extend pass 1): ${missed.join(", ")}`,
+          );
         // The crate whose file defines a function tells apart instances that demangle alike
         // (the same generic instantiated in both crates).
         return {
