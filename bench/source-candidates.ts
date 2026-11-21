@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { cp, mkdtemp, mkdir, writeFile, symlink, rm } from "node:fs/promises";
+import { cp, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
@@ -9,6 +9,7 @@ import { command } from "../scripts/command";
 import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
 import type { CandidateGroup } from "./candidate-sources";
 import { sampleMedian } from "./statistics";
+import { extractRevisionTree } from "./revision-tree";
 
 const project = join(import.meta.dir, "..");
 async function proof(
@@ -260,12 +261,7 @@ try {
   const bundles = join(report, "bundles");
   await mkdir(bundles);
   // Proof edits never touch the shared working tree; failures cannot erase another agent's edits.
-  // An archive preserves the committed graph without creating a branch or Git worktree.
-  const archive = join(workRoot, "source.tar");
-  await command("git", ["archive", "--format=tar", "--output", archive, revision], project);
-  await mkdir(tree);
-  await command("tar", ["-xf", archive, "-C", tree], project);
-  await symlink(join(project, "node_modules"), join(tree, "node_modules"), "dir");
+  await extractRevisionTree(project, revision, tree, join(workRoot, "source.tar"));
   await command("bun", ["run", "build"], tree);
   // Snapshots are text artifacts, not extra compiler inputs under bench/**/*.ts.
   await writeFile(join(report, "source.txt"), source);

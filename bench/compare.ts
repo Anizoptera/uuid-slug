@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -11,6 +11,7 @@ import type { Page } from "playwright";
 import { command, PACK_TIMEOUT_MS } from "../scripts/command";
 import { archiveAndRemoveScratch, deduplicateCapturedPackage } from "../scripts/archive-scratch";
 import { compareArtifacts } from "./identical-artifacts";
+import { extractRevisionTree } from "./revision-tree";
 import { describeSamples, medianConfidence, medianConfidence95 } from "./statistics";
 import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
 import type { CandidateGroup } from "./candidate-sources";
@@ -538,49 +539,21 @@ async function main(): Promise<void> {
   const candidateRoot = isolatedCandidate ? join(scratch, "candidate") : project;
   let sourceReport: string | undefined;
   try {
-    // Committed archives isolate package builds without changing branches or Git worktrees.
-    const baselineArchive = join(scratch, "baseline.tar");
-    await command(
-      "git",
-      [
-        "archive",
-        "--format=tar",
-        "--output",
-        baselineArchive,
-        baselineRef,
-        "--",
-        ...SOURCE_ARCHIVE_PATHS,
-      ],
+    await extractRevisionTree(
       project,
+      baselineRef,
+      baselineRoot,
+      join(scratch, "baseline.tar"),
+      SOURCE_ARCHIVE_PATHS,
     );
-    await mkdir(baselineRoot);
-    await command("tar", ["-xf", baselineArchive, "-C", baselineRoot], project);
-    await symlink(join(project, "node_modules"), join(baselineRoot, "node_modules"), "dir");
-    // Compare code under one toolchain: an older ref's pins would time a different runtime, and a
-    // tool pinned since that ref (asdf refuses unpinned commands) would fail the baseline outright.
-    await rm(join(baselineRoot, ".tool-versions"), { force: true });
-    await symlink(join(project, ".tool-versions"), join(baselineRoot, ".tool-versions"));
-    if (isolatedCandidate) {
-      const candidateArchive = join(scratch, "candidate.tar");
-      await command(
-        "git",
-        [
-          "archive",
-          "--format=tar",
-          "--output",
-          candidateArchive,
-          candidateRef ?? "HEAD",
-          "--",
-          ...SOURCE_ARCHIVE_PATHS,
-        ],
+    if (isolatedCandidate)
+      await extractRevisionTree(
         project,
+        candidateRef ?? "HEAD",
+        candidateRoot,
+        join(scratch, "candidate.tar"),
+        SOURCE_ARCHIVE_PATHS,
       );
-      await mkdir(candidateRoot);
-      await command("tar", ["-xf", candidateArchive, "-C", candidateRoot], project);
-      await symlink(join(project, "node_modules"), join(candidateRoot, "node_modules"), "dir");
-      await rm(join(candidateRoot, ".tool-versions"), { force: true });
-      await symlink(join(project, ".tool-versions"), join(candidateRoot, ".tool-versions"));
-    }
     if (sourceParts) {
       // Pack the same committed graph with one maintained substitution. Never edit production
       // merely to measure a candidate, and retain the exact replacement outside the scratch tree.
