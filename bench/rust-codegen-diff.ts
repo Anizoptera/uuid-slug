@@ -1,5 +1,6 @@
-// Compare the machine code (x86_64 Linux by default, `--target <triple>` for another) of every `uuid_slug` function in the codec bench binary between
-// default features and default + one opt-in feature (default `uuid-simd`).
+// Compare the machine code (x86_64 Linux by default, `--target <triple>` for another) of every
+// `uuid_slug` function in the codec bench between default features and default + one opt-in
+// feature (default `uuid-simd`).
 //
 // Why this exists: on some CPUs (AMD Zen 4/5) identical code moves up to about ±20% between two
 // builds, so timing cannot show that a feature leaves an unrelated path unchanged. Identical
@@ -7,20 +8,26 @@
 // 16 units, adding any code reshuffles partitioning and inlining in unrelated functions, which
 // would report differences no feature-specific code causes (pass `--codegen-units 16` to see them).
 //
-// Output: one line per differing or one-sided function, then the identical count. Only what
-// linking moves is normalised away: absolute addresses, x86 RIP-relative displacements, aarch64
-// `adrp` pages with their one `#lo12` use, symbol hashes and `.llvm.N` suffixes. Immediates and
-// call/jump targets (by symbol name) stay, so a changed constant or callee reports a difference;
-// a reference moved to different data does not, the price of ignoring data layout. The run
-// fails when either build yields no `uuid_slug` function: an empty disassembly would otherwise
-// compare "identical" and certify nothing.
+// It compares rustc's assembly (`--emit=asm`), the last fully symbolic form of the code: every
+// callee, constant and jump table is a name, and constants are defined as text beside the code.
+// Linked binaries and object files were rejected: addresses, section offsets and relocation
+// addends (REL targets such as i686 store them inside instructions and data) encode placement, so
+// erasing it needs per-architecture rules that either miss placement or erase real differences.
+// In assembly only names vary per build, and two renamings erase them without losing anything:
+// crate hashes are stripped from global symbols, and local labels (`.L…`, `anon.…`) are renamed
+// in first-use order. Renaming is one-to-one, so a changed constant, callee or branch still
+// differs. A function's text includes the definitions of the local data it reaches (constant
+// pools, jump tables, strings), so a changed constant counts as a change of the function using it.
+// The run fails when either build yields no `uuid_slug` function: an empty map would otherwise
+// compare "identical" and certify nothing. The link step runs the no-op `true`, so no cross linker
+// is needed on any target.
 //
-// Needs `llvm-objdump` (PATH or Homebrew's llvm). Off x86_64 Linux it cross-links with
-// `zig cc` (UUID_SLUG_ZIG overrides the path); any other target must be the host's own.
-import { arch, platform } from "node:os";
-import { mkdtemp, rm, writeFile, chmod } from "node:fs/promises";
+// Output: one line per differing or one-sided function, then the identical count; `--show <name>`
+// prints both normalised texts of matching differing functions. Needs LLVM's `llvm-cxxfilt` (PATH
+// or Homebrew's llvm) to print Rust names.
+import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { rustToolchain } from "../scripts/rust-toolchain";
 
 const args = process.argv.slice(2);
@@ -36,172 +43,182 @@ const target = option("--target", "x86_64-unknown-linux-gnu");
 const show = option("--show", "");
 const repo = join(import.meta.dir, "..");
 
-async function output(argv: string[], env: Record<string, string | undefined> = process.env) {
-  const child = Bun.spawn(argv, { cwd: repo, env, stdout: "pipe", stderr: "pipe" });
+async function output(argv: string[], env: Record<string, string | undefined>, stdin?: string) {
+  const child = Bun.spawn(argv, {
+    cwd: repo,
+    env,
+    stdin: stdin === undefined ? "ignore" : Buffer.from(stdin),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   const [stdout, stderr, code] = await Promise.all([
     new Response(child.stdout).text(),
     new Response(child.stderr).text(),
     child.exited,
   ]);
-  if (code !== 0) {
-    // `--message-format=json` sends compiler and linker errors to stdout; show their text too.
-    const rendered = stdout
-      .split("\n")
-      .filter((line) => line.startsWith("{"))
-      .map((line) => JSON.parse(line))
-      .filter((entry) => entry.reason === "compiler-message")
-      .map((entry) => entry.message.rendered)
-      .join("");
-    throw new Error(`${argv.join(" ")} exited ${code}:\n${(rendered + stderr).slice(-4000)}`);
-  }
+  if (code !== 0) throw new Error(`${argv.join(" ")} exited ${code}:\n${stderr.slice(-4000)}`);
   return stdout;
 }
 
-const objdump =
-  Bun.which("llvm-objdump") ??
-  ["/opt/homebrew/opt/llvm/bin/llvm-objdump", "/usr/local/opt/llvm/bin/llvm-objdump"].find(
+const demangler =
+  Bun.which("llvm-cxxfilt") ??
+  ["/opt/homebrew/opt/llvm/bin/llvm-cxxfilt", "/usr/local/opt/llvm/bin/llvm-cxxfilt"].find(
     (path) => Bun.file(path).size > 0,
   );
-if (!objdump)
-  throw new Error("llvm-objdump not found: install LLVM (brew install llvm, apt install llvm).");
+if (!demangler)
+  throw new Error("llvm-cxxfilt not found: install LLVM (brew install llvm, apt install llvm).");
 
-// Link-time noise in a symbol: the per-build hash and LLVM's local-copy suffix.
-const symbol = (name: string) =>
-  name.replace(/ \(\.llvm\.\d+\)|\.llvm\.\d+/g, "").replace(/::h[0-9a-f]{16}/g, "");
+// Assembly is a flat token language, so a lexer pattern is enough: symbols are runs of these
+// characters; registers (`%eax`), immediates (`$4`) and relocation operators (`:lo12:`, `@GOTOFF`)
+// stay outside a token or are not symbols.
+const token = /[A-Za-z_.$][\w.$]*/g;
+const local = (name: string) => name.startsWith(".L") || name.startsWith("anon.");
+// Global symbols are compared demangled with hashes removed (legacy `::h<hex>`, v0 `[hex]`
+// disambiguators, LLVM's `(.llvm.<N>)` local-copy suffix). Editing the mangled form instead is wrong: v0 back-references are byte
+// offsets into the mangled string, so dropping a variable-length hash corrupts every later part.
+const mangled = (name: string) => name.startsWith("_R") || name.startsWith("_ZN");
+const unhash = (name: string) =>
+  name.replace(/::h[0-9a-f]{16}\b|\[[0-9a-f]+\]| \(\.llvm\.\d+\)/g, () => "");
 
 const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-codegen-diff-"));
 try {
   const toolchain = await rustToolchain(repo);
-  const env: Record<string, string> = {
-    ...toolchain.env,
-    // Symbols are needed to name functions; stripping removes only the table, never moves code.
-    CARGO_PROFILE_RELEASE_STRIP: "none",
-    CARGO_PROFILE_BENCH_STRIP: "none",
-    CARGO_PROFILE_RELEASE_CODEGEN_UNITS: codegenUnits,
-    CARGO_PROFILE_BENCH_CODEGEN_UNITS: codegenUnits,
-  };
-  if (target === "x86_64-unknown-linux-gnu" && !(platform() === "linux" && arch() === "x64")) {
-    const zig = process.env.UUID_SLUG_ZIG ?? Bun.which("zig");
-    // An asdf shim is found on PATH yet fails here, because this repository pins no zig; the
-    // link would then fail as an unexplained `cc` error deep in Cargo's output.
-    const runs = zig && Bun.spawnSync([zig, "version"], { cwd: repo }).exitCode === 0;
-    if (!runs)
-      throw new Error(
-        `Cross-linking for x86_64 Linux needs a zig that runs in this repository (${zig ?? "none found"} does not); set UUID_SLUG_ZIG to the zig binary itself, e.g. ~/.asdf/installs/zig/<version>/bin/zig.`,
-      );
-    const linker = join(scratch, "cc");
-    await writeFile(linker, `#!/bin/sh\nexec "${zig}" cc -target x86_64-linux-gnu "$@"\n`);
-    await chmod(linker, 0o755);
-    env.CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = linker;
-  }
 
-  const functions = async (features: string[]) => {
-    const build = await output(
+  const functions = async (features: string[], build: string) => {
+    const root = join(scratch, build);
+    const flags =
+      process.env.CARGO_ENCODED_RUSTFLAGS?.split("\x1f") ??
+      process.env.RUSTFLAGS?.split(/\s+/) ??
+      [];
+    const env = {
+      ...toolchain.env,
+      // Own build directories, so both builds never share artifacts and every `.s` found belongs
+      // to this build. `--emit=asm` in RUSTFLAGS reaches the library too; `cargo rustc` arguments
+      // reach only the bench crate.
+      CARGO_TARGET_DIR: join(root, "target"),
+      CARGO_BUILD_BUILD_DIR: join(root, "build"),
+      CARGO_ENCODED_RUSTFLAGS: [...flags.filter(Boolean), "--emit=asm,link"].join("\x1f"),
+      CARGO_PROFILE_BENCH_CODEGEN_UNITS: codegenUnits,
+    };
+    await output(
       [
         toolchain.cargo,
         ...toolchain.cargoArgs,
-        "bench",
+        "rustc",
         "--manifest-path",
         "rust/Cargo.toml",
         "-p",
         "uuid-slug",
         "--bench",
         "codec",
-        "--no-run",
+        "--profile",
+        "bench",
         "--locked",
         "--target",
         target,
-        "--message-format=json",
+        "--quiet",
         ...features,
+        "--",
+        "-C",
+        "linker=true",
       ],
       env,
     );
-    const executable = build
-      .trim()
-      .split("\n")
-      .map((line) => JSON.parse(line))
-      .find(
-        (entry) =>
-          entry.reason === "compiler-artifact" &&
-          entry.target?.name === "codec" &&
-          entry.executable,
-      )?.executable;
-    if (!executable) throw new Error("Cargo reported no codec executable.");
-    const disassembly = await output([
-      objdump,
-      "-d",
-      "--no-show-raw-insn",
-      "--demangle",
-      executable,
-    ]);
-    const map = new Map<string, string>();
-    let name: string | undefined;
-    let body: string[] = [];
-    let pages = new Set<string>();
-    const flush = () => {
-      if (!name?.includes("uuid_slug") || name.includes("uuid_simd")) return;
-      let key = name;
-      // Distinct monomorphizations can demangle to one name; keep each under its own key.
-      for (let copy = 2; map.has(key); copy++) key = `${name} #${copy}`;
-      // Alignment filler after a function's last instruction belongs to the layout, not the code.
-      while (body.length > 0 && /^(?:nop\b|udf\s+#0x0$|int3$)/.test(body.at(-1)!)) body.pop();
-      map.set(key, body.join("\n"));
-    };
-    for (const line of disassembly.split("\n")) {
-      const header = /^[0-9a-f]+ <(.+)>:$/.exec(line);
-      if (header) {
-        flush();
-        name = symbol(header[1]!);
-        body = [];
-        pages = new Set();
-        continue;
-      }
-      const instruction = /^\s*[0-9a-f]+:\s+(.*)$/.exec(line);
-      if (!instruction) continue;
-      let text = instruction[1]!
-        .replace(/\s+# (?:0x)?[0-9a-f]+ <[^>]*>$/, "")
-        .replace(/-?0x[0-9a-f]+(?=\(%rip\))/g, () => "@")
-        // The target annotation always ends the line, which takes nested names such as
-        // `<<T as Display>::fmt+0x8c>` whole. An offset is code only inside this function (a
-        // branch); elsewhere it locates data or a Mach-O stub by its nearest symbol, i.e. layout.
-        .replace(/(?:0x)?[0-9a-f]+ <(.*)>$/, (_, annotation: string) => {
-          const named = symbol(annotation);
-          const owner = named.replace(/\+0x[0-9a-f]+$/, () => "");
-          return `<${owner === name ? named : owner}>`;
-        });
-      // aarch64 addresses data as `adrp xN, page` plus one `#lo12` use of xN; both move with
-      // layout (the page is labelled by whatever symbol precedes it), like x86 RIP offsets.
-      const page = /^adrp\s+(\w+),/.exec(text);
-      if (page) {
-        pages.add(page[1]!);
-        text = text.replace(/<.*>$/, () => "<page>");
-      } else
-        for (const register of pages) {
-          const lo12 = new RegExp(`((?:\\b|\\[)${register}, #)0x[0-9a-f]+`);
-          if (!lo12.test(text)) continue;
-          text = text.replace(lo12, (_, prefix: string) => `${prefix}@`);
-          pages.delete(register);
-          break;
+    const files = (await readdir(root, { recursive: true }))
+      .filter((path) => /^(?:uuid_slug|codec)-[0-9a-f]+(?:\..+)?\.s$/.test(basename(path)))
+      .map((path) => join(root, path));
+
+    const parsed = await Promise.all(
+      files.map(async (file) => {
+        const lines = (await Bun.file(file).text()).split("\n");
+        // Pass 1: function bodies (from `name:` after `.type name,@function` to `.Lfunc_end…:`) and
+        // data definitions (the lines after a label outside functions, up to the next label or directive
+        // that starts another item).
+        const types = new Set<string>();
+        const bodies = new Map<string, string[]>();
+        const data = new Map<string, string[]>();
+        let body: string[] | undefined;
+        let block: string[] | undefined;
+        for (const line of lines) {
+          const type = /^\t\.type\t([^,]+),@function$/.exec(line)?.[1];
+          if (type) types.add(type);
+          const label = /^([^\s:#]+):/.exec(line)?.[1];
+          if (body) {
+            if (label?.startsWith(".Lfunc_end")) body = undefined;
+            else body.push(line);
+            continue;
+          }
+          if (label && types.has(label)) {
+            bodies.set(label, (body = []));
+            block = undefined;
+          } else if (label) data.set(label, (block = data.get(label) ?? block ?? []));
+          else if (/^\t\.(?:section|text|data|type|size|globl|hidden|weak)\b/.test(line))
+            block = undefined;
+          else block?.push(line);
         }
-      body.push(text);
+        // The crate whose file defines a function tells apart instances that demangle alike
+        // (the same generic instantiated in both crates).
+        return {
+          crate: basename(file).split("-")[0] ?? "",
+          bodies,
+          data,
+          symbols: new Set(lines.join("\n").match(token)?.filter(mangled)),
+        };
+      }),
+    );
+    const symbols = [...new Set(parsed.flatMap((file) => [...file.symbols]))];
+    const rust = (await output([demangler], process.env, symbols.join("\n"))).split("\n");
+    const names = new Map(symbols.map((symbol, index) => [symbol, unhash(rust[index] ?? symbol)]));
+    const global = (symbol: string) => names.get(symbol) ?? symbol;
+
+    const map = new Map<string, string>();
+    for (const { crate, bodies, data } of parsed) {
+      // Pass 2: per function, rename its local labels in first-use order and append the
+      // definitions of local data it reaches, so the text has no per-build name left in it.
+      for (const [name, lines] of bodies) {
+        const labels = new Map<string, string>();
+        const reached: string[] = [];
+        const rename = (line: string) =>
+          line.replace(token, (symbol) => {
+            if (!local(symbol)) return global(symbol);
+            let renamed = labels.get(symbol);
+            if (!renamed) {
+              labels.set(symbol, (renamed = `.L${labels.size}`));
+              if (data.has(symbol)) reached.push(symbol);
+            }
+            return renamed;
+          });
+        const text = lines.map(rename);
+        for (let index = 0; index < reached.length; index++) {
+          const symbol = reached[index] ?? "";
+          text.push(`${labels.get(symbol)}:`, ...(data.get(symbol) ?? []).map(rename));
+        }
+        const rustName = global(name);
+        if (!rustName.includes("uuid_slug") || rustName.includes("uuid_simd")) continue;
+        let key = `${rustName} (in ${crate})`;
+        // Instances still alike differ only in an elided hash; file order numbers them stably.
+        for (let copy = 2; map.has(key); copy++) key = `${rustName} (in ${crate}) #${copy}`;
+        map.set(key, text.join("\n"));
+      }
     }
-    flush();
     if (map.size === 0)
-      throw new Error(`No uuid_slug functions in ${executable}: symbols missing or wrong binary.`);
+      throw new Error(
+        `No uuid_slug functions in ${files.length} assembly files: wrong build or emit path.`,
+      );
     return map;
   };
 
-  const baseline = await functions(base);
-  const candidate = await functions([...base, "--features", feature]);
+  const baseline = await functions(base, "base");
+  const candidate = await functions([...base, "--features", feature], "feature");
   let identical = 0;
-  for (const [name, body] of baseline) {
+  for (const [name, text] of baseline) {
     const other = candidate.get(name);
     if (other === undefined) console.log(`only default: ${name}`);
-    else if (other !== body) {
+    else if (other !== text) {
       console.log(`differs: ${name}`);
-      // The normalised bodies, so a reader can tell real change from layout this script missed.
+      // The normalised texts, so a reader can check a difference against the source change.
       if (show && name.includes(show))
-        console.log(`--- default\n${body}\n--- ${feature}\n${other}\n---`);
+        console.log(`--- default\n${text}\n--- ${feature}\n${other}\n---`);
     } else identical++;
   }
   for (const name of candidate.keys())
