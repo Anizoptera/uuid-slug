@@ -8,6 +8,10 @@ on:
         type: choice
         options: [full, rust-codec-amd]
         default: full
+      rustflags:
+        description: Extra RUSTFLAGS for both rust-codec-amd builds (layout experiments)
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -61,4 +65,6 @@ jobs:
         with:
           bun-version-file: .tool-versions
       - if: steps.cpu.outputs.amd == 'true'
+        env:
+          RUSTFLAGS: ${{ inputs.rustflags }}
         run: bun install --frozen-lockfile && UUID_SLUG_CODEC_FEATURES=uuid-simd bun bench/rust.ts --codec
