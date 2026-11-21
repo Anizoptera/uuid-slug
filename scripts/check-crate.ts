@@ -52,6 +52,11 @@ export async function inspectCrate(crate: string, version: string): Promise<void
   if (files.has(`${root}src/uuid_text.rs`)) required.push("LICENSE-UUID-MIT");
   for (const name of required)
     if (!files.has(`${root}${name}`)) throw new Error(`Crate has no ${name}.`);
+  // release-crate.ts stages rust/AGENTS.consumer.md as the crate-root AGENTS.md; compare bytes so
+  // any other AGENTS.md (a maintainer file, a stale copy) is refused.
+  const agents = files.get(`${root}AGENTS.md`);
+  if (!agents || (await agents.text()) !== (await Bun.file("rust/AGENTS.consumer.md").text()))
+    throw new Error("Crate AGENTS.md must be rust/AGENTS.consumer.md staged by release-crate.ts.");
 
   const manifestFile = files.get(`${root}Cargo.toml`);
   if (!manifestFile) throw new Error("Crate has no Cargo.toml.");

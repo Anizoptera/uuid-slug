@@ -1,6 +1,6 @@
 // Publish only a crate that matches the verified archive and the registry's checksum.
 import { createHash } from "node:crypto";
-import { appendFile, copyFile, mkdir, readdir } from "node:fs/promises";
+import { appendFile, copyFile, mkdir, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { checkCrateDocumentation, inspectCrate } from "./check-crate";
 import { preflightRelease } from "./release-notes";
@@ -51,6 +51,24 @@ async function cargo(
   if ((await child.exited) !== 0) throw new Error(`cargo ${args[0]} failed.`);
 }
 
+const crateDirectory = "rust/uuid-slug";
+const stagedAgents = join(crateDirectory, "AGENTS.md");
+
+// Consumers get rust/AGENTS.consumer.md as the crate-root AGENTS.md, but a tracked file there would
+// auto-load for maintainers editing the crate. Cargo cannot rename on packing: an ignored file never
+// ships, and `include` also ships ignored junk. So stage an untracked copy only while Cargo runs and
+// allow exactly that one dirty path; the crate's VCS record then honestly says `dirty`.
+async function withConsumerAgents(run: () => Promise<void>): Promise<void> {
+  const dirty = (await Bun.$`git status --porcelain -- ${crateDirectory}`.text()).trim();
+  if (dirty) throw new Error(`Commit crate sources before packaging; uncommitted:\n${dirty}`);
+  await copyFile("rust/AGENTS.consumer.md", stagedAgents);
+  try {
+    await run();
+  } finally {
+    await rm(stagedAgents, { force: true });
+  }
+}
+
 async function releaseCrate(mode: string): Promise<void> {
   if (!["prepare", "check", "publish"].includes(mode))
     throw new Error("Usage: release-crate.ts prepare|check|publish");
@@ -67,7 +85,7 @@ async function releaseCrate(mode: string): Promise<void> {
     await mkdir(reviewedDirectory, { recursive: true });
     if ((await readdir(reviewedDirectory)).length)
       throw new Error("Reviewed crate directory must be empty before packaging.");
-    await cargo(toolchain, ["package"]);
+    await withConsumerAgents(() => cargo(toolchain, ["package", "--allow-dirty"]));
     await inspectCrate(packaged, version);
     // Package verification only compiles the library; run fixtures and docs from extracted bytes.
     await cargo(
@@ -88,7 +106,7 @@ async function releaseCrate(mode: string): Promise<void> {
   if (existing) verifyCrateChecksum(bytes, existing);
   if (mode === "check") {
     // Repack without building dependency code in the credential-bearing job.
-    await cargo(toolchain, ["package", "--no-verify"]);
+    await withConsumerAgents(() => cargo(toolchain, ["package", "--no-verify", "--allow-dirty"]));
     verifyCrateChecksum(await Bun.file(packaged).bytes(), expected);
     const output = process.env.GITHUB_OUTPUT;
     if (!output) throw new Error("GITHUB_OUTPUT is required for the release preflight.");
@@ -97,7 +115,9 @@ async function releaseCrate(mode: string): Promise<void> {
   }
   if (!existing) {
     verifyCrateChecksum(await Bun.file(packaged).bytes(), expected);
-    await cargo(toolchain, ["publish", "--no-verify", "--registry", "crates-io"]);
+    await withConsumerAgents(() =>
+      cargo(toolchain, ["publish", "--no-verify", "--allow-dirty", "--registry", "crates-io"]),
+    );
     verifyCrateChecksum(await Bun.file(packaged).bytes(), expected);
   }
   const published = existing ?? (await crateChecksum(version));
