@@ -78,20 +78,16 @@ const stagedReports = staged.filter(
   (path) => path === "api/typescript.api.d.ts" || path === "api/rust.api.md",
 );
 // A formatter upgrade can re-indent a report without changing any declaration; demanding a
-// changelog line then forces a fake consumer entry. `git diff -w --quiet` exits 0 when the staged
-// change is whitespace only, so only a real declaration change requires CHANGELOG.md.
+// changelog line then forces a fake consumer entry. Compare staged and HEAD bytes with ALL
+// whitespace removed: `git diff -w` keeps line breaks, and re-indentation often joins lines.
+// A report missing at HEAD (first generation) yields undefined and so counts as a change.
+const squash = (spec: string) => {
+  const shown = Bun.spawnSync(["git", "show", spec]);
+  return shown.exitCode === 0 ? shown.stdout.toString().replace(/\s+/g, "") : undefined;
+};
 const missingChangelog =
-  stagedReports.length > 0 &&
   !staged.includes("CHANGELOG.md") &&
-  Bun.spawnSync([
-    "git",
-    "diff",
-    "--cached",
-    "--ignore-all-space",
-    "--quiet",
-    "--",
-    ...stagedReports,
-  ]).exitCode !== 0
+  stagedReports.some((path) => squash(`:${path}`) !== squash(`HEAD:${path}`))
     ? "The staged api/ report changes the public API, but CHANGELOG.md is not staged. Add a line under\n" +
       "## [Unreleased] saying what callers gain or must change and why, then stage it with this commit."
     : undefined;
