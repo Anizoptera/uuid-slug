@@ -6,10 +6,10 @@ on:
       suite:
         description: Benchmark to run
         type: choice
-        options: [full, rust-codec-x86]
+        options: [full, rust-codec]
         default: full
       rustflags:
-        description: Extra RUSTFLAGS for both rust-codec-x86 builds (layout experiments)
+        description: Extra RUSTFLAGS for both rust-codec builds (layout experiments)
         type: string
         default: ""
 
@@ -34,22 +34,31 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run bench:full
 
-  # Native x86_64 evidence for Rust codec kernels. GitHub's ubuntu-latest pool mixes AMD EPYC
-  # (Zen 3/4/5) and Intel Xeon generations whose SIMD speed differs, so each job logs its CPU and
-  # times on whatever it drew; read results per CPU model.
+  # Native evidence for Rust codec kernels on every CPU family GitHub offers for free: the
+  # ubuntu-latest pool mixes AMD EPYC (Zen 3/4/5) and Intel Xeon generations, ubuntu-24.04-arm is
+  # an ARM server core, macos-15-intel an older Intel Mac. SIMD speed differs per CPU, so each job
+  # logs its CPU; read results per CPU model. Windows runners share the Linux pools' CPUs.
   # bench/rust.ts --codec times production against each opt-in feature in one paired,
   # order-alternated schedule on one machine, which keeps a noisy shared runner usable.
-  rust-codec-x86:
-    if: inputs.suite == 'rust-codec-x86'
-    runs-on: ubuntu-latest
+  rust-codec:
+    if: inputs.suite == 'rust-codec'
+    runs-on: ${{ matrix.runner }}
     # Parallel copies land on independent runners: each is a replicate on its own machine, and
-    # several draws make most CPU generations in the pool likely in one dispatch.
+    # four ubuntu-latest draws make most generations in that mixed pool likely in one dispatch.
     strategy:
       fail-fast: false
       matrix:
-        replicate: [1, 2, 3, 4, 5, 6]
+        include:
+          - { runner: ubuntu-latest, replicate: 1 }
+          - { runner: ubuntu-latest, replicate: 2 }
+          - { runner: ubuntu-latest, replicate: 3 }
+          - { runner: ubuntu-latest, replicate: 4 }
+          - { runner: ubuntu-24.04-arm, replicate: 1 }
+          - { runner: ubuntu-24.04-arm, replicate: 2 }
+          - { runner: macos-15-intel, replicate: 1 }
+          - { runner: macos-15-intel, replicate: 2 }
     steps:
-      - run: grep -m1 'model name' /proc/cpuinfo
+      - run: uname -m && { lscpu 2>/dev/null | grep -iE 'model name|vendor' || sysctl -n machdep.cpu.brand_string; }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
