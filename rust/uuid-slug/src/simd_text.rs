@@ -14,8 +14,8 @@ const URN_PREFIX: &[u8; 9] = b"urn:uuid:";
 
 #[cfg(any(test, target_arch = "x86_64"))]
 pub(crate) fn parse(text: &[u8]) -> Option<[u8; 16]> {
-    // Upstream's 32-digit kernel never beat the owned scalar parser in paired runs on Apple M4
-    // (bench/decisions.md), so compact text goes straight to the scalar grammar.
+    // Compact text goes straight to the scalar grammar until AMD runs show upstream's 32-digit
+    // kernel winning; M4 comparisons of it stayed within layout noise (bench/decisions.md).
     if text.len() == 32 {
         return None;
     }
