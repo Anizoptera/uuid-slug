@@ -10,6 +10,32 @@ use crate::{Error, ErrorCode, Uuid, UuidV7PayloadLayout};
 use alloc::format;
 #[cfg(all(feature = "os-rng", not(feature = "fast-rng")))]
 use fill_os_random_bytes as fill_default_random_bytes;
+#[cfg(all(feature = "os-rng", not(feature = "fast-rng")))]
+use fill_os_random_bytes as fill_default_random_bytes_bulk;
+
+// A batch pool can exceed the stream's 64 KB reseed budget, where a single `fill` would bypass
+// the stream for direct OS entropy; streaming whole bytes keeps it on the bounded ChaCha path.
+#[cfg(feature = "fast-rng")]
+fn fill_default_random_bytes_bulk(out: &mut [u8]) -> Result<(), Error> {
+    let mut cursor = 0;
+    crate::random::fill_random_units::<1>(out.len(), |chunk| {
+        out[cursor..cursor + chunk.len()].copy_from_slice(chunk);
+        cursor += chunk.len();
+    })
+}
+
+// The current-time source for every clock-reading generation call.
+#[cfg(all(feature = "std", feature = "os-rng"))]
+fn current_instant() -> Result<UuidV7Instant, Error> {
+    #[cfg(all(target_arch = "wasm32", target_os = "unknown", feature = "wasm-js"))]
+    return float_instant(js_sys::Date::now());
+    #[cfg(all(target_arch = "wasm32", target_os = "unknown", not(feature = "wasm-js")))]
+    return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(
+        "Current-time UUIDv7 generation on wasm32-unknown-unknown requires the wasm-js feature or an explicit Unix timestamp.",
+    ));
+    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+    system_instant(std::time::SystemTime::now())
+}
 
 pub use crate::generation_state::MAX_UUID_V7_UNIX_MS;
 
@@ -251,25 +277,57 @@ impl UuidV7Generator {
     /// Generate at the system clock with secure randomness.
     #[cfg(all(feature = "std", feature = "os-rng"))]
     pub fn generate_uuid_v7(&mut self) -> Result<Uuid, Error> {
-        #[cfg(all(target_arch = "wasm32", target_os = "unknown", feature = "wasm-js"))]
-        let reading = float_instant(js_sys::Date::now())?;
-        #[cfg(all(
-            target_arch = "wasm32",
-            target_os = "unknown",
-            not(feature = "wasm-js")
-        ))]
-        return Err(
-            Error::new(ErrorCode::InvalidTimestamp).with_message(
-                "Current-time UUIDv7 generation on wasm32-unknown-unknown requires the wasm-js feature or an explicit Unix timestamp.",
-            ),
-        );
-        #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-        let reading = system_instant(std::time::SystemTime::now())?;
-        #[cfg(any(
-            not(all(target_arch = "wasm32", target_os = "unknown")),
-            feature = "wasm-js"
-        ))]
-        self.generate_uuid_v7_from_instant(reading, fill_default_random_bytes)
+        self.generate_uuid_v7_from_instant(current_instant()?, fill_default_random_bytes)
+    }
+    /// Fill `out` with UUIDv7s from one current clock reading, continuing this generator's sequence.
+    ///
+    /// The result is exactly what `out.len()` back-to-back [`Self::generate_uuid_v7`] calls could
+    /// return within one clock reading: under the default preserve policy every ID is greater than
+    /// the previous one and than everything this generator issued before. It costs less per ID than
+    /// repeated calls. The caller owns the slice, so allocation and how long one call runs stay
+    /// under its control. On error nothing is written and the sequence is unchanged.
+    #[cfg(all(feature = "std", feature = "os-rng"))]
+    pub fn generate_uuid_v7_batch(&mut self, out: &mut [Uuid]) -> Result<(), Error> {
+        if out.is_empty() {
+            return Ok(());
+        }
+        let reading = current_instant()?;
+        // One reading is a legal schedule for N calls (they may all fall inside one clock tick),
+        // so continuing the sequence keeps every ordering promise while reading the clock once.
+        //
+        // Entropy is pooled and drawn BEFORE any write: continuation needs 4 bytes per ID and each
+        // reseed 6 more. The first ID may reseed, and a reseed inside the batch needs the whole
+        // 42-bit sequence saturated, so `2 + len / 1024` reseeds is a margin no real batch reaches.
+        // Exceeding it would top up from the default source mid-batch; only an OS failure at that
+        // point could then leave earlier slots written.
+        let reseeds = 2 + out.len() / 1024;
+        let pool_len = out
+            .len()
+            .checked_mul(4)
+            .and_then(|bytes| bytes.checked_add(6 * reseeds))
+            .ok_or_else(|| {
+                Error::new(ErrorCode::InvalidBuffer)
+                    .with_message("Batch size overflows usize bytes.")
+            })?;
+        let mut pool = alloc::vec![0; pool_len];
+        fill_default_random_bytes_bulk(&mut pool)?;
+        let mut state = Self { ..*self };
+        let mut cursor = 0;
+        let mut take = |buffer: &mut [u8]| match pool.get(cursor..cursor + buffer.len()) {
+            Some(bytes) => {
+                buffer.copy_from_slice(bytes);
+                cursor += buffer.len();
+                Ok(())
+            }
+            None => fill_default_random_bytes(buffer),
+        };
+        // A rollback error can only arise on the first ID (one reading), before any write. The
+        // only later error is sequence exhaustion at MAX_UUID_V7_UNIX_MS, a clock in year 10889.
+        for slot in out.iter_mut() {
+            *slot = state.generate_uuid_v7_from_instant(reading, &mut take)?;
+        }
+        *self = state;
+        Ok(())
     }
     /// Generate from a supplied `SystemTime` with secure randomness, using this generator's fraction bits and rollback policy.
     #[cfg(all(feature = "std", feature = "os-rng"))]

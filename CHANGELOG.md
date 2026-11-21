@@ -16,6 +16,7 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 - Rust `Uuid::parse_uuid` (and the other keyless parsers) accept byte input: `&[u8]`, `[u8; N]` and `Vec<u8>`. Exactly 16 bytes are a raw UUID, as in TypeScript's `parseUuid`; other lengths are ASCII UUID text or plain slugs, parsed straight from network or file buffers without a separate UTF-8 check. `&str` parsing also skips its UTF-16 length count for ASCII input.
 - Rust `generate_uuid_v4_batch(&mut [Uuid])` fills a caller-owned slice with UUIDv4s from the default secure generator at a lower cost per ID than repeated `generate_uuid_v4` calls, with no output allocation. The caller chooses the batch size, so allocation and the length of one call stay under its control; an entropy failure writes nothing.
+- Rust `UuidV7Generator::generate_uuid_v7_batch(&mut [Uuid])` fills a caller-owned slice from one clock reading while continuing the generator's sequence, so batch IDs keep the same strict ordering as repeated `generate_uuid_v7` calls at a fraction of their per-ID cost. On error nothing is written and the sequence is unchanged.
 - Rust `Uuid::display_plain_uuid_slug(alphabet)` formats a borrowed UUID directly as base64url or base32hex without allocating an intermediate owned slug. Use it with a formatter or writer; the destination controls its own allocation and errors. Existing owned-slug conversions are unchanged.
 
 ### Changed

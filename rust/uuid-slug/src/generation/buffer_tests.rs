@@ -87,3 +87,30 @@ fn v4_batches_fill_every_slot_with_distinct_v4_ids() -> Result<(), Error> {
     crate::generate_uuid_v4_batch(&mut [])?;
     Ok(())
 }
+
+#[test]
+fn v7_batches_continue_one_strictly_increasing_sequence() -> Result<(), Error> {
+    for fraction_bits in [0, 12] {
+        let mut generator =
+            UuidV7Generator::new().with_sub_millisecond_fraction_bits(fraction_bits)?;
+        let first = generator.generate_uuid_v7()?;
+        let mut ids = vec![crate::NIL_UUID; 5_000];
+        generator.generate_uuid_v7_batch(&mut ids)?;
+        let mut more = vec![crate::NIL_UUID; 3];
+        generator.generate_uuid_v7_batch(&mut more)?;
+        let last = generator.generate_uuid_v7()?;
+        let all: Vec<Uuid> = [first]
+            .into_iter()
+            .chain(ids)
+            .chain(more)
+            .chain([last])
+            .collect();
+        assert!(all.iter().all(Uuid::is_uuid_v7));
+        assert!(
+            all.windows(2).all(|pair| pair[0] < pair[1]),
+            "fraction bits {fraction_bits}"
+        );
+        generator.generate_uuid_v7_batch(&mut [])?;
+    }
+    Ok(())
+}

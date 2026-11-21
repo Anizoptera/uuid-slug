@@ -50,6 +50,12 @@ pub fn visit(visitor: &mut impl Recorder) -> Result<(), Error> {
         measure!("generation/v7/bytes", &ids, |_| {
             generator.generate_uuid_v7().unwrap()
         });
+        // Reported per call of 64 IDs; divide by 64 to compare with the single-ID row above.
+        #[cfg(feature = "std")]
+        measure!("generation/v7/batch-64", &ids, |_| {
+            generator.generate_uuid_v7_batch(&mut batch).unwrap();
+            batch[63]
+        });
         #[cfg(feature = "std")]
         measure!("generation/v7/text", &ids, |_| {
             generator.generate_uuid_v7().unwrap().to_string()
