@@ -116,3 +116,48 @@ fn v7_batches_continue_one_strictly_increasing_sequence() -> Result<(), Error> {
     }
     Ok(())
 }
+
+// A counter overflow inside a batch reseeds from the top-up source after earlier slots are
+// written. A failed top-up must still leave the caller's slots and the sequence unchanged, and a
+// working one must keep the IDs strictly increasing across the overflow.
+#[cfg(feature = "std")]
+#[test]
+fn batch_counter_overflow_keeps_order_and_writes_nothing_on_top_up_failure() -> Result<(), Error> {
+    use crate::generation::UuidV7Instant;
+    use crate::generation_state::MAX_SEQUENCE;
+    let reading = UuidV7Instant {
+        unix_ms: 1000,
+        fraction_12: 0,
+    };
+    // All-ones seeds start the counter at MAX_SEQUENCE, so the overflow reseed is followed by a
+    // second one; the pool budgets only one reseed, so that second draw reaches `top_up`.
+    let pool = |bytes: &mut [u8]| {
+        bytes.fill(0xff);
+        Ok(())
+    };
+    let near_overflow = || -> Result<UuidV7Generator, Error> {
+        let mut generator = UuidV7Generator::new();
+        let mut one = [Uuid::from_uuid_bytes_array([0; 16])];
+        generator.fill_uuid_v7_batch(&mut one, reading, pool, |_| unreachable!())?;
+        generator.sequence = MAX_SEQUENCE - 1;
+        Ok(generator)
+    };
+    let sentinel = Uuid::from_uuid_bytes_array([0xa5; 16]);
+
+    let mut generator = near_overflow()?;
+    let mut out = [sentinel; 4];
+    let failed = generator.fill_uuid_v7_batch(&mut out, reading, pool, |_| {
+        Err(Error::new(ErrorCode::RngUnavailable))
+    });
+    assert_eq!(failed.unwrap_err().code(), ErrorCode::RngUnavailable);
+    assert_eq!(out, [sentinel; 4]);
+    assert_eq!(generator.sequence, MAX_SEQUENCE - 1);
+
+    let mut out = [sentinel; 4];
+    generator.fill_uuid_v7_batch(&mut out, reading, pool, |bytes| {
+        bytes.fill(0x33);
+        Ok(())
+    })?;
+    assert!(out.windows(2).all(|pair| pair[0] < pair[1]), "{out:?}");
+    Ok(())
+}

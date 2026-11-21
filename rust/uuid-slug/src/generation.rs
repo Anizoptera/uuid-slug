@@ -291,26 +291,38 @@ impl UuidV7Generator {
         if out.is_empty() {
             return Ok(());
         }
-        let reading = current_instant()?;
+        self.fill_uuid_v7_batch(
+            out,
+            current_instant()?,
+            fill_default_random_bytes_bulk,
+            fill_default_random_bytes,
+        )
+    }
+    // Entropy sources are parameters so tests can fail the mid-batch top-up through this real body.
+    #[cfg(all(feature = "std", feature = "os-rng"))]
+    fn fill_uuid_v7_batch(
+        &mut self,
+        out: &mut [Uuid],
+        reading: UuidV7Instant,
+        fill_pool: impl FnOnce(&mut [u8]) -> Result<(), Error>,
+        mut top_up: impl FnMut(&mut [u8]) -> Result<(), Error>,
+    ) -> Result<(), Error> {
         // One reading is a legal schedule for N calls (they may all fall inside one clock tick),
         // so continuing the sequence keeps every ordering promise while reading the clock once.
         //
-        // Entropy is pooled and drawn BEFORE any write: continuation needs 4 bytes per ID and each
-        // reseed 6 more. The first ID may reseed, and a reseed inside the batch needs the whole
-        // 42-bit sequence saturated, so `2 + len / 1024` reseeds is a margin no real batch reaches.
-        // Exceeding it would top up from the default source mid-batch; only an OS failure at that
-        // point could then leave earlier slots written.
-        let reseeds = 2 + out.len() / 1024;
+        // Entropy is pooled and drawn BEFORE any write: the first ID may reseed (10 bytes), each
+        // later one continues the counter (4 bytes). Within one reading, the only later reseed is
+        // counter overflow at MAX_SEQUENCE, which costs 10 bytes from `top_up` instead.
         let pool_len = out
             .len()
             .checked_mul(4)
-            .and_then(|bytes| bytes.checked_add(6 * reseeds))
+            .and_then(|bytes| bytes.checked_add(6))
             .ok_or_else(|| {
                 Error::new(ErrorCode::InvalidBuffer)
                     .with_message("Batch size overflows usize bytes.")
             })?;
         let mut pool = alloc::vec![0; pool_len];
-        fill_default_random_bytes_bulk(&mut pool)?;
+        fill_pool(&mut pool)?;
         let mut state = Self { ..*self };
         let mut cursor = 0;
         let mut take = |buffer: &mut [u8]| match pool.get(cursor..cursor + buffer.len()) {
@@ -319,12 +331,26 @@ impl UuidV7Generator {
                 cursor += buffer.len();
                 Ok(())
             }
-            None => fill_default_random_bytes(buffer),
+            None => top_up(buffer),
         };
-        // A rollback error can only arise on the first ID (one reading), before any write. The
-        // only later error is sequence exhaustion at MAX_UUID_V7_UNIX_MS, a clock in year 10889.
-        for slot in out.iter_mut() {
-            *slot = state.generate_uuid_v7_from_instant(reading, &mut take)?;
+        // Rollback errors can only arise here, on the first ID, before any write.
+        let first = state.generate_uuid_v7_from_instant(reading, &mut take)?;
+        // Overflow inside this batch (probability about len / 2^counter_bits) needs a fallible
+        // top-up after earlier slots are written; only then keep the caller's slots, so a failed
+        // top-up (or sequence exhaustion at MAX_UUID_V7_UNIX_MS) still writes nothing.
+        let overflows = MAX_SEQUENCE - state.sequence < out.len() as u64;
+        let saved = overflows.then(|| out.to_vec());
+        out[0] = first;
+        for index in 1..out.len() {
+            match state.generate_uuid_v7_from_instant(reading, &mut take) {
+                Ok(id) => out[index] = id,
+                Err(error) => {
+                    if let Some(saved) = saved {
+                        out.copy_from_slice(&saved);
+                    }
+                    return Err(error);
+                }
+            }
         }
         *self = state;
         Ok(())
