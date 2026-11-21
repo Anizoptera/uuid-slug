@@ -663,14 +663,16 @@ async function main(): Promise<void> {
     // Explicit source experiments still run, including byte-identical timing controls.
     if (regressionCheck && !sourceParts && !patchOption) {
       const identity = await compareArtifacts(baseline.root, candidate.root);
-      // Custom conditions or loaders may select source. Only normal Node execution can use
-      // compiled identity; source and browser comparisons retain the full-file requirement.
+      // Custom conditions or loaders may select source. Normal Node execution and Deno (whose
+      // `deno` export and `#runtime` conditions select dist only) use compiled identity; Bun uses
+      // transpiled-source identity; browser comparisons retain the full-file requirement.
       selectedRuntimes = selectedRuntimes.filter((runtime) => {
         const unchanged =
           identity.all ||
+          (runtime === "bun" && identity.bunSource) ||
           (identity.compiled &&
-            !process.env.NODE_OPTIONS &&
-            (runtime === "node" || runtime === "node-jitless"));
+            (runtime === "deno" ||
+              (!process.env.NODE_OPTIONS && (runtime === "node" || runtime === "node-jitless"))));
         if (unchanged)
           console.error(`Skipping ${runtime} timing: its packed executable files are identical.`);
         return !unchanged;

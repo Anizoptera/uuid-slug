@@ -21,7 +21,7 @@ async function shippedFiles(root: string, relative = ""): Promise<string[]> {
 export async function compareArtifacts(
   baseline: string,
   candidate: string,
-): Promise<{ readonly all: boolean; readonly compiled: boolean }> {
+): Promise<{ readonly all: boolean; readonly compiled: boolean; readonly bunSource: boolean }> {
   // Normal Node calls load compiled code, not source or declarations. Compare both views once;
   // source hosts and custom Node options need the full graph. Keep manifests and assets in both.
   // Remove the compiled exemption if built code starts reading source or declaration files.
@@ -51,8 +51,31 @@ export async function compareArtifacts(
       return left.equals(right);
     }),
   );
+  // The Bun runtime executes Bun.Transpiler output for src/*.ts, so equal transpiled text is equal
+  // executed code even when types or formatting differ. The dropped PURE hints above matter only to
+  // bundlers, which this view never answers for. A source that starts depending on type-directed
+  // emit (decorator metadata, const enums) would break this equivalence.
+  const transpiler = new Bun.Transpiler({ loader: "ts" });
+  const bunSourceEqual = await Promise.all(
+    files.map(async (name, index) => {
+      if (equal[index] || name.endsWith(".d.ts")) return true;
+      if (
+        !name.startsWith("src/") ||
+        !name.endsWith(".ts") ||
+        !beforeFiles.has(name) ||
+        !afterFiles.has(name)
+      )
+        return false;
+      const [left, right] = await Promise.all([
+        readFile(join(baseline, name), "utf8"),
+        readFile(join(candidate, name), "utf8"),
+      ]);
+      return transpiler.transformSync(left) === transpiler.transformSync(right);
+    }),
+  );
   return {
     all: equal.every(Boolean),
+    bunSource: bunSourceEqual.every(Boolean),
     compiled: equal.every(
       (same, index) =>
         same ||
