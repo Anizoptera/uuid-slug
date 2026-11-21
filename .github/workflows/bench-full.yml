@@ -37,6 +37,12 @@ jobs:
   rust-codec-amd:
     if: inputs.suite == 'rust-codec-amd'
     runs-on: ubuntu-latest
+    # Parallel copies land on independent runners: each is a replicate on its own machine, and
+    # several draws make every CPU generation in the pool (Zen 3/4/5) likely in one dispatch.
+    strategy:
+      fail-fast: false
+      matrix:
+        replicate: [1, 2, 3, 4]
     steps:
       - id: cpu
         run: |
