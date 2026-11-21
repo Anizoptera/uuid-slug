@@ -13,7 +13,7 @@ Derive engineering choices from the maintainer's requests and interface principl
 Finish these before preparing 0.7.0. A pending maintainer ruling is a short question, never a reason to drop an item: ask it when the item starts. WASM work stays out of this sprint. Use only free or already-paid hardware (GitHub-hosted runners, existing servers); measure with `bench/AGENTS.md`'s noise-tolerant method.
 
 - [ ] Push `main` once the full all-runtime check passes (authorized).
-- [ ] Decide `uuid-simd` retention from native AMD runs: dispatch `bench-full.yml` with suite `rust-codec-amd` (repeat until an AMD runner is logged), then keep the opt-in feature only if it gains without a material loss elsewhere, else delete it with its test, CHANGELOG entry and `dev/cross-language.md` row. M4 evidence and the open compact-parse context effect are in `bench/decisions.md`. If kept, the crate README, `rust/AGENTS.consumer.md` and `docs/security.md` (its unsafe-code sentence) need maintainer-approved wording before release.
+- [ ] Close `uuid-simd` retention: two Zen 3 runs show large gains on every SIMD path and only noise-band movement elsewhere, and parsing is gated to x86_64. Still measure (dispatch `bench-full.yml` suite `rust-codec-amd`; the runner CPU is random) Zen 4 without the inline hint, and upstream's compact kernel on AMD by removing the skip in `simd_text::parse` for one run. Delete the feature with its test, CHANGELOG entry and `dev/cross-language.md` row if Zen 4 shows a material loss outside the noise band. If kept, the crate README, `rust/AGENTS.consumer.md` and `docs/security.md` (its unsafe-code sentence) need maintainer-approved wording before release.
 
 ## Optional UUID completion audit
 
