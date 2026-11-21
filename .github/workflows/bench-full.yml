@@ -2,6 +2,12 @@ name: Benchmark Full
 
 on:
   workflow_dispatch:
+    inputs:
+      suite:
+        description: Benchmark to run
+        type: choice
+        options: [full, rust-codec-amd]
+        default: full
 
 permissions:
   contents: read
@@ -12,6 +18,7 @@ concurrency:
 
 jobs:
   bench-full:
+    if: inputs.suite == 'full'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -22,3 +29,30 @@ jobs:
           bun-version-file: .tool-versions
       - run: bun install --frozen-lockfile
       - run: bun run bench:full
+
+  # Native AMD evidence for Rust codec kernels. GitHub's ubuntu-latest pool is mostly AMD EPYC
+  # (Zen 3/4/5) but sometimes Intel, so the CPU is logged and a non-AMD runner skips the timing.
+  # bench/rust.ts --codec times production against each opt-in feature in one paired,
+  # order-alternated schedule on one machine, which keeps a noisy shared runner usable.
+  rust-codec-amd:
+    if: inputs.suite == 'rust-codec-amd'
+    runs-on: ubuntu-latest
+    steps:
+      - id: cpu
+        run: |
+          grep -m1 'model name' /proc/cpuinfo
+          if grep -q AuthenticAMD /proc/cpuinfo; then
+            echo amd=true >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Non-AMD runner; dispatch again for AMD evidence."
+          fi
+      - if: steps.cpu.outputs.amd == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: steps.cpu.outputs.amd == 'true'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .tool-versions
+      - if: steps.cpu.outputs.amd == 'true'
+        run: bun install --frozen-lockfile && UUID_SLUG_CODEC_FEATURES=uuid-simd bun bench/rust.ts --codec

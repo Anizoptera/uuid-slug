@@ -81,6 +81,13 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
   const prepareOnly = process.argv[2] === "--codec-build";
   const manifests = process.argv.slice(3);
   if (!manifests.length) manifests.push("rust/Cargo.toml");
+  // Opt-in features (comma-separated, e.g. `uuid-simd`) each add a default-plus-feature variant to
+  // the same paired, order-alternated schedule, so a candidate kernel is timed against production.
+  const codecFeatureSelections = [
+    "no-default",
+    "default",
+    ...(process.env.UUID_SLUG_CODEC_FEATURES ?? "").split(",").filter(Boolean),
+  ];
   const filter =
     process.env.UUID_SLUG_PROFILE_FILTER ??
     "parse/,format/,plain/,mask/,unmask/,decode/,sentinel/,migration/,construct/";
@@ -101,8 +108,15 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
   );
   const variants = [];
   for (const manifest of manifests)
-    for (const defaults of [false, true]) {
-      const build = await buildCodec(defaults ? [] : ["--no-default-features"], manifest);
+    for (const features of codecFeatureSelections) {
+      const build = await buildCodec(
+        features === "no-default"
+          ? ["--no-default-features"]
+          : features === "default"
+            ? []
+            : ["--features", features],
+        manifest,
+      );
       for (const source of sources) {
         if (!(await readFile(join(dirname(build.source), source.name))).equals(source.bytes))
           throw new Error(
@@ -132,7 +146,7 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
         );
       const variant = {
         manifest: resolve(manifest),
-        defaults,
+        features,
         executable: build.executable,
         prepared,
       };
@@ -161,7 +175,7 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
         console.log(
           JSON.stringify({
             manifest: variant.manifest,
-            defaults: variant.defaults,
+            features: variant.features,
             repetition,
             resources: result.resources,
             records,
