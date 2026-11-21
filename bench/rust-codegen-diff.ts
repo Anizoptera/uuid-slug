@@ -14,17 +14,19 @@
 // addends (REL targets such as i686 store them inside instructions and data) encode placement, so
 // erasing it needs per-architecture rules that either miss placement or erase real differences.
 // In assembly only names vary per build, and two renamings erase them without losing anything:
-// crate hashes are stripped from global symbols, and local labels (`.L…`, `anon.…`) are renamed
-// in first-use order. Renaming is one-to-one, so a changed constant, callee or branch still
-// differs. A function's text includes the definitions of the local data it reaches (constant
-// pools, jump tables, strings), so a changed constant counts as a change of the function using it.
+// global symbols are demangled and stripped of hashes, and local labels and anonymous constants
+// are renamed in first-use order. Renaming is one-to-one, so a changed constant, callee or branch
+// still differs. A function's text includes the definitions of the local data it reaches (constant
+// pools, jump tables, strings), so a changed constant counts as a change of the function using it;
+// a merged function compares as `= <target>`. ELF and Mach-O targets are read; on ELF every
+// `.type` function must be found, so a parser gap fails instead of shrinking both sides.
 // The run fails when either build yields no `uuid_slug` function: an empty map would otherwise
 // compare "identical" and certify nothing. The link step runs the no-op `true`, so no cross linker
 // is needed on any target.
 //
 // Output: one line per differing or one-sided function, then the identical count; `--show <name>`
 // prints both normalised texts of matching differing functions. Needs LLVM's `llvm-cxxfilt` (PATH
-// or Homebrew's llvm) to print Rust names.
+// or Homebrew's llvm): names are demangled before their hashes are removed.
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
@@ -81,8 +83,9 @@ const anonymous = (name: string) => /^(?:_|l_)?anon\./.test(name);
 const local = (name: string, macho: boolean) =>
   anonymous(name) || (macho ? /^[Ll]/.test(name) : name.startsWith(".L"));
 // Global symbols are compared demangled with hashes removed (legacy `::h<hex>`, v0 `[hex]`
-// disambiguators, LLVM's `(.llvm.<N>)` local-copy suffix). Editing the mangled form instead is wrong: v0 back-references are byte
-// offsets into the mangled string, so dropping a variable-length hash corrupts every later part.
+// disambiguators, LLVM's `(.llvm.<N>)` local-copy suffix). Editing the mangled form instead is
+// wrong: v0 back-references are byte offsets into the mangled string, so dropping a
+// variable-length hash corrupts every later part.
 const mangled = (name: string) => /^_{1,2}(?:R|ZN)/.test(name);
 const unhash = (name: string) =>
   name.replace(/::h[0-9a-f]{16}\b|\[[0-9a-f]+\]| \(\.llvm\.\d+\)/g, () => "");
