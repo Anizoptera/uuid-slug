@@ -20,3 +20,4 @@ playwright-report/
 *.tmp
 *.temp
 *.tsbuildinfo
+bench/rust-competitors/target/
