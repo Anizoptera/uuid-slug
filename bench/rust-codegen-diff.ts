@@ -72,11 +72,14 @@ if (!demangler)
 // characters; registers (`%eax`), immediates (`$4`) and relocation operators (`:lo12:`, `@GOTOFF`)
 // stay outside a token or are not symbols.
 const token = /[A-Za-z_.$][\w.$]*/g;
-const local = (name: string) => name.startsWith(".L") || name.startsWith("anon.");
+// Assembler-local names: ELF uses `.L…` and rustc's `anon.…`; Mach-O uses `L…`/`l…`, which
+// no global can start with because Mach-O prefixes every global with `_`.
+const local = (name: string, macho: boolean) =>
+  macho ? /^[Ll]/.test(name) : name.startsWith(".L") || name.startsWith("anon.");
 // Global symbols are compared demangled with hashes removed (legacy `::h<hex>`, v0 `[hex]`
 // disambiguators, LLVM's `(.llvm.<N>)` local-copy suffix). Editing the mangled form instead is wrong: v0 back-references are byte
 // offsets into the mangled string, so dropping a variable-length hash corrupts every later part.
-const mangled = (name: string) => name.startsWith("_R") || name.startsWith("_ZN");
+const mangled = (name: string) => /^_{1,2}(?:R|ZN)/.test(name);
 const unhash = (name: string) =>
   name.replace(/::h[0-9a-f]{16}\b|\[[0-9a-f]+\]| \(\.llvm\.\d+\)/g, () => "");
 
@@ -131,35 +134,57 @@ try {
     const parsed = await Promise.all(
       files.map(async (file) => {
         const lines = (await Bun.file(file).text()).split("\n");
-        // Pass 1: function bodies (from `name:` after `.type name,@function` to `.Lfunc_end…:`) and
-        // data definitions (the lines after a label outside functions, up to the next label or directive
-        // that starts another item).
+        // LLVM ends every Mach-O assembly file with this directive and never writes it for ELF.
+        const macho = lines.includes(".subsections_via_symbols");
+        // Pass 1: function bodies and data definitions. On ELF and Mach-O every function sits
+        // between unwind directives (`.cfi_startproc` … `.cfi_endproc`) and is named by the last
+        // global label before them; any other label starts a data definition, which runs to the
+        // next label or to a directive that starts another item.
         const types = new Set<string>();
         const bodies = new Map<string, string[]>();
         const data = new Map<string, string[]>();
+        let owner: string | undefined;
         let body: string[] | undefined;
         let block: string[] | undefined;
         for (const line of lines) {
           const type = /^\t\.type\t([^,]+),@function$/.exec(line)?.[1];
           if (type) types.add(type);
-          const label = /^([^\s:#]+):/.exec(line)?.[1];
           if (body) {
-            if (label?.startsWith(".Lfunc_end")) body = undefined;
+            if (line === "\t.cfi_endproc") body = undefined;
             else body.push(line);
             continue;
           }
-          if (label && types.has(label)) {
-            bodies.set(label, (body = []));
+          const label = /^([^\s:#]+):/.exec(line)?.[1];
+          // LLVM merges identical functions into `name = target` (Mach-O: `.set name, target`,
+          // a directive it also uses for local temporaries); the target is that function's code.
+          const [, aliased = "", original = ""] =
+            /^(\S+) = (\S+)$/.exec(line) ?? /^\t\.set\t(\S+), (\S+)$/.exec(line) ?? [];
+          if (aliased && !local(aliased, macho)) {
+            bodies.set(aliased, [`= ${original}`]);
             block = undefined;
-          } else if (label) data.set(label, (block = data.get(label) ?? block ?? []));
-          else if (/^\t\.(?:section|text|data|type|size|globl|hidden|weak)\b/.test(line))
+          } else if (line === "\t.cfi_startproc" && owner) {
+            data.delete(owner);
+            bodies.set(owner, (body = []));
+            block = undefined;
+          } else if (label) {
+            if (!local(label, macho)) owner = label;
+            data.set(label, (block = data.get(label) ?? block ?? []));
+          } else if (
+            /^\t\.(?:section|text|data|type|size|globl|private_extern|hidden|weak)\b/.test(line)
+          )
             block = undefined;
           else block?.push(line);
         }
+        // ELF names each function in `.type`, independently of the brackets: a function the
+        // brackets missed would otherwise drop out of both builds silently.
+        const missed = [...types].filter((name) => !bodies.has(name));
+        if (missed.length > 0)
+          throw new Error(`${file}: functions without unwind brackets: ${missed.join(", ")}`);
         // The crate whose file defines a function tells apart instances that demangle alike
         // (the same generic instantiated in both crates).
         return {
           crate: basename(file).split("-")[0] ?? "",
+          macho,
           bodies,
           data,
           symbols: new Set(lines.join("\n").match(token)?.filter(mangled)),
@@ -167,12 +192,14 @@ try {
       }),
     );
     const symbols = [...new Set(parsed.flatMap((file) => [...file.symbols]))];
-    const rust = (await output([demangler], process.env, symbols.join("\n"))).split("\n");
+    // `-n` keeps leading underscores; Mach-O's extra `_` before the Rust prefix is dropped here.
+    const unprefixed = symbols.map((symbol) => symbol.replace(/^__/, () => "_"));
+    const rust = (await output([demangler, "-n"], process.env, unprefixed.join("\n"))).split("\n");
     const names = new Map(symbols.map((symbol, index) => [symbol, unhash(rust[index] ?? symbol)]));
     const global = (symbol: string) => names.get(symbol) ?? symbol;
 
     const map = new Map<string, string>();
-    for (const { crate, bodies, data } of parsed) {
+    for (const { crate, macho, bodies, data } of parsed) {
       // Pass 2: per function, rename its local labels in first-use order and append the
       // definitions of local data it reaches, so the text has no per-build name left in it.
       for (const [name, lines] of bodies) {
@@ -180,7 +207,7 @@ try {
         const reached: string[] = [];
         const rename = (line: string) =>
           line.replace(token, (symbol) => {
-            if (!local(symbol)) return global(symbol);
+            if (!local(symbol, macho)) return global(symbol);
             let renamed = labels.get(symbol);
             if (!renamed) {
               labels.set(symbol, (renamed = `.L${labels.size}`));
