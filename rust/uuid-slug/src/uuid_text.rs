@@ -1,4 +1,4 @@
-// UUID text kernels adapted from uuid 1.29.0, MIT license (../LICENSE-UUID-MIT).
+// UUID text kernels adapted from uuid 1.29.3, MIT license (../LICENSE-UUID-MIT).
 // https://github.com/uuid-rs/uuid/blob/4643e607/src/parser.rs
 // https://github.com/uuid-rs/uuid/blob/4643e607/src/fmt.rs
 // Keep only generic parsing and hyphenated output: generation, UUID objects,
