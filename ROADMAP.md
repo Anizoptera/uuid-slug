@@ -8,6 +8,17 @@ Keep one Rust crate and the dependency-free npm package, optional `std`, Rust's 
 
 Derive engineering choices from the maintainer's requests and interface principles; escalate every taste decision and unresolved material contract, priority or risk decision. Versions, tags, pushes, publication, remote settings/secrets and finalization each require explicit authorization; this plan grants none. Keep dependent repairs with their task. Record acceptance commands, revisions, features, profiles, targets and coverage limits in the existing evidence owner; durable contracts stay outside this plan.
 
+## Active: pre-0.7.0 sprint
+
+Finish these before preparing 0.7.0. A pending maintainer ruling is a short question, never a reason to drop an item: ask it when the item starts. WASM work stays out of this sprint. Use only free or already-paid hardware (GitHub-hosted runners, existing servers); measure with `bench/AGENTS.md`'s noise-tolerant method.
+
+- [ ] Update every outdated dev dependency to latest stable; keep the deliberate `typescript-checker` and `typescript-floor` pins. Check Cargo dependencies too.
+- [ ] Refine the roadmap and `CHANGELOG.md` release notes after the SIMD/CPU experiments; needs the maintainer's details (changelog reminder).
+- [ ] Production evaluation below: base32 fixed-buffer decoder, SIMD parser, SIMD owned formatter, SIMD base64url encoder. SIMD needs a runtime or compile-time feature check with the owned scalar code as fallback (`is_x86_feature_detected!` needs `std`, which is optional), and production-body proofs; confirm how far Kani handles SIMD intrinsics before relying on it.
+- [ ] ASCII byte parser entry and v4/v7 batch APIs: ask the caller-demand and v7 clock/state rulings, then implement what they approve.
+- [ ] Native AMD evidence (task below).
+- [ ] Add `bench/rust-competitors/target/` to `.gitignore`.
+
 ## Optional UUID completion audit
 
 - [x] Compare backend selection, dependency defaults, source credits and secure generation with their implementations; correct the README's OS-call claim and release instructions that omit all-feature doctests.
@@ -73,7 +84,7 @@ Article preservation is source-only: no reproduction, formula checks or independ
 - [x] Evaluate borrowed Display against constructing an owned slug solely for writing; record allocation savings and why existing owned slug values need no optimization. Keep direct writer methods as an alternative, not another public export without caller demand.
 - [x] Compare ASCII-text bytes against UTF-8 validation plus the public parser; preserve the distinction from raw 16-byte UUID input and record the inlining confound.
 - [ ] Before any production adoption, integrate the selected measured candidate with direct proofs, real typed errors and affected complete-call/resource checks. Account for dispatch, allocation, code size and maintenance; preserve wire formats, secure entropy, ownership and safety requirements. Prefer the safe scalar short decoder when evidence supports it without a dependency, not a SIMD label. Specialized instructions require support detection before execution and a portable fallback. No optimization API/default change is approved merely by these experiments.
-- [ ] Obtain native AMD hardware evidence before choosing an AMD-specific implementation; Rosetta and compilation results cannot establish native speed or dispatch cost.
+- [ ] Obtain native AMD hardware evidence before choosing an AMD-specific implementation; Rosetta and compilation results cannot establish native speed or dispatch cost. Use GitHub `ubuntu-latest` runners (mostly AMD EPYC 7763/9V74/9V45, i.e. Zen 3/4/5, sometimes Intel Xeon): log the CPU model per job, exclude non-AMD runs, compare candidates within one job. The existing `cpx11` servers (AMD EPYC, Zen 3 in Ashburn per Hetzner's CPU FAQ) are a second source; follow Karakuri's host inventory rules before any VPS access. Running the workflow needs push authorization.
 
 ### Production evaluation
 
@@ -105,6 +116,8 @@ Extract a batch API only for a concrete bulk caller when measured end-to-end gai
 - [ ] Evaluate a separate UUIDv7 batch contract: about 2.2–2.5× faster with one clock snapshot and a fresh generator per batch, but one-ID batches lose. Decide clock/state ownership explicitly, including configured generators and continuation across calls; do not silently substitute batch semantics for repeated calls. Pool only required entropy (`4N+6` at unchanged time in the tested prototype), handle carry through the real provider, and account for its extra allocation. Confirm the consumer-visible contract before adding an API.
 
 ### Conditional WASM improvements
+
+Out of scope for the pre-0.7.0 sprint.
 
 - [ ] Resolve whether WAVM offers a viable portable WASM-to-WASM optimization path before integrating it. Accept only portable optimized WASM, never native AOT objects, including inside a `.wasm` custom section (`dev/cross-language.md` §Rust optimization). The captured compile help lists unoptimized/optimized LLVM IR, native object, native assembly and `precompiled-wasm`; the tested latter output embeds native code and does not qualify. No pure-WASM optimizer output is established; retain Binaryen unless an actual supported path produces a useful portable artifact.
 - [ ] Evaluate Binaryen O3/Oz only when a concrete WASM consumer values the measured module-size reduction (377,027 → 353,300/351,413 bytes) enough to accept its recorded per-call losses. Keep O2 otherwise; do not infer a general speed gain from smaller output.
