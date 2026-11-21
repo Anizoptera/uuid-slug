@@ -1,13 +1,13 @@
 // Publish only a crate that matches the verified archive and the registry's checksum.
 import { createHash } from "node:crypto";
-import { appendFile, copyFile, mkdir, readdir, rm } from "node:fs/promises";
+import { appendFile, copyFile, mkdir, mkdtemp, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkCrateDocumentation, inspectCrate } from "./check-crate";
 import { preflightRelease } from "./release-notes";
 import { rustToolchain } from "./rust-toolchain";
 
 const reviewedDirectory = "rust/target/reviewed-crate";
-const extractedDirectory = "rust/target/extracted-crate";
 const userAgent = "uuid-slug release (https://github.com/Anizoptera/uuid-slug)";
 
 export function verifyCrateChecksum(bytes: Uint8Array, checksum: string): void {
@@ -96,13 +96,17 @@ async function releaseCrate(mode: string): Promise<void> {
     await inspectCrate(packaged, version);
     // Package verification only compiles the library; run fixtures and docs from the archive's
     // own bytes. Extract it here rather than reuse Cargo's verification directory: with
-    // `build.build-dir` configured, Cargo unpacks there instead of `target/package`.
-    await rm(extractedDirectory, { recursive: true, force: true });
-    await mkdir(extractedDirectory, { recursive: true });
-    await Bun.$`tar -xzf ${packaged} -C ${extractedDirectory}`;
-    const extracted = join(extractedDirectory, `uuid-slug-${version}`);
-    await cargo(toolchain, ["test", "--all-features"], join(extracted, "Cargo.toml"));
-    await checkCrateDocumentation(extracted);
+    // `build.build-dir` configured, Cargo unpacks there instead of `target/package`. The copy must
+    // sit outside `rust/`, or Cargo reads it as an undeclared member of that workspace.
+    const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-crate-"));
+    try {
+      await Bun.$`tar -xzf ${packaged} -C ${scratch}`;
+      const extracted = join(scratch, `uuid-slug-${version}`);
+      await cargo(toolchain, ["test", "--all-features"], join(extracted, "Cargo.toml"));
+      await checkCrateDocumentation(extracted);
+    } finally {
+      await rm(scratch, { recursive: true, force: true });
+    }
     await copyFile(packaged, reviewed);
     return;
   }
