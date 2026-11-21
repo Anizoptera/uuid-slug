@@ -19,6 +19,8 @@ Drop `--smoke` for repeated measurements.
 | Compare TypeScript, native Rust and WASM implementations | `bun run bench:implementations` (`--smoke` checks wiring only) |
 | Compare Rust generators | `bun run bench:competitors:rust` |
 | Inspect linked Rust consumers in release and ThinLTO builds | `bun bench/rust-linked.ts /path/to/extracted/crate [consumer ...]` (set `LLVM_NM` if `llvm-nm` is not on PATH; browser checks require matching `wasm-bindgen-cli` and the installed Playwright engines) |
+| Time an opt-in Rust codec feature against the default build | `UUID_SLUG_CODEC_FEATURES=uuid-simd bun bench/rust.ts --codec` (`UUID_SLUG_CODEC_TARGET=wasm32-wasip1` or `i686-unknown-linux-gnu` times another target the host can run; on GitHub runner CPUs, dispatch the Benchmark Full workflow with suite `rust-codec`) |
+| Show which Rust functions a feature changes, by machine code | `bun bench/rust-codegen-diff.ts` (`--target <triple>`, `--no-default`, `--codegen-units 16`, `--show <name>`; needs LLVM's `llvm-cxxfilt`) |
 | Record timing and resource use | `bun run bench:profile` |
 | Add native CPU and allocation profiles | `bun run bench:profile:native` |
 | Compare against a Git revision | `bun run bench:compare BASELINE_REF` |
