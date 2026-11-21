@@ -408,7 +408,7 @@ dependencies = [
 
 [[package]]
 name = "uuid-slug"
-version = "0.6.1-dev"
+version = "0.7.0"
 dependencies = [
  "chacha20",
  "getrandom",
@@ -420,7 +420,7 @@ dependencies = [
 
 [[package]]
 name = "uuid-slug-benchmark"
-version = "0.6.1-dev"
+version = "0.7.0"
 dependencies = [
  "getrandom",
  "serde_json",
@@ -430,7 +430,7 @@ dependencies = [
 
 [[package]]
 name = "uuid-slug-bridge"
-version = "0.6.1-dev"
+version = "0.7.0"
 dependencies = [
  "napi",
  "napi-build",
