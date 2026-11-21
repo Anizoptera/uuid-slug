@@ -5,7 +5,7 @@
     "": {
       "name": "@anizoptera/uuid-slug",
       "devDependencies": {
-        "@anizoptera/publish-clean": "^0.11.0",
+        "@anizoptera/publish-clean": "^0.12.0",
         "@arethetypeswrong/cli": "^0.18.5",
         "@arethetypeswrong/core": "^0.18.5",
         "@bytecodealliance/jco": "^1.42.0",
@@ -76,7 +76,7 @@
 
     "@andrewbranch/untar.js": ["@andrewbranch/untar.js@1.0.4", "", {}, "sha512-pVXSwPsLuw8IGLo2Di0EaOfsk+ntVvpkk942J/sHYIkwvtKUakEcPh7HBgZ6tuimgzKSEHgCvO4XgQ05DEbwDw=="],
 
-    "@anizoptera/publish-clean": ["@anizoptera/publish-clean@0.11.0", "", { "bin": { "publish-clean": "dist/cli.js" } }, "sha512-BCmFJ0UGzkybyTF8Cm3XIzt0LatMwkcjPJFidpz1U+j/Ic61SVVh5U3JvLVr55RKjW3Rhp3EjhBM5Xh+kvsB8w=="],
+    "@anizoptera/publish-clean": ["@anizoptera/publish-clean@0.12.0", "", { "bin": { "publish-clean": "dist/cli.js" } }, "sha512-GvMW/frzRu6c/dFmqcTx4j53y6DtMwLcms3/j0KXcN4pvUr5CcH263XFMR0AtU0W1SOxKXgPrmaF4C3+zXcAXw=="],
 
     "@arethetypeswrong/cli": ["@arethetypeswrong/cli@0.18.5", "", { "dependencies": { "@arethetypeswrong/core": "0.18.5", "chalk": "^4.1.2", "cli-table3": "^0.6.3", "commander": "^10.0.1", "marked": "^9.1.2", "marked-terminal": "^7.1.0", "semver": "^7.5.4" }, "bin": { "attw": "./dist/index.js" } }, "sha512-gM+8vRsQOD/Uc7EnBedUhkG5OCsDWE4uoak5QvomGpMpaky0Eh41p04nIMgrWb8EOmqZUJGc6zz9hsP6E56R7g=="],
 

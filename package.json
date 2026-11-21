@@ -134,7 +134,7 @@
     "perf:check:all": "bun run build && UUID_SLUG_COMPARE_RUNTIMES=all bun bench/check.ts"
   },
   "devDependencies": {
-    "@anizoptera/publish-clean": "^0.11.0",
+    "@anizoptera/publish-clean": "^0.12.0",
     "@arethetypeswrong/cli": "^0.18.5",
     "@arethetypeswrong/core": "^0.18.5",
     "@bytecodealliance/jco": "^1.42.0",
