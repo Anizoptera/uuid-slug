@@ -132,6 +132,11 @@ export function registryVersion<T>(
 ): T | undefined {
   if (history.versions.size === 0) return undefined;
   const release = history.versions.get(version);
+  // A version older than the package's first publication predates it on this registry (the crate
+  // began at 0.6.0 while npm began earlier), so it has no comparison there. Only a gap inside the
+  // published range means the history was deleted or disagrees with Git.
+  const before = (other: string) => Bun.semver.order(version, other) < 0;
+  if (!release && [...history.versions.keys()].every(before)) return undefined;
   if (!release)
     throw new Error(
       `${registry} has history but no ${version}; Git and registry history disagree.`,

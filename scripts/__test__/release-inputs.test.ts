@@ -103,5 +103,21 @@ describe("release registry history", () => {
     expect(() =>
       registryVersion({ versions: new Map([["0.2.0", "bytes"]]) }, "0.3.0", "npm"),
     ).toThrow("Git and registry history disagree");
+    // A selected version from before the package's first publication there has no comparison.
+    expect(
+      registryVersion({ versions: new Map([["0.6.0", "bytes"]]) }, "0.5.0", "crates.io"),
+    ).toBeUndefined();
+    expect(() =>
+      registryVersion(
+        {
+          versions: new Map([
+            ["0.4.0", "bytes"],
+            ["0.6.0", "bytes"],
+          ]),
+        },
+        "0.5.0",
+        "crates.io",
+      ),
+    ).toThrow("Git and registry history disagree");
   });
 });
