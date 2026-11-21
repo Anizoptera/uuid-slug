@@ -78,12 +78,19 @@ const stagedReports = staged.filter(
   (path) => path === "api/typescript.api.d.ts" || path === "api/rust.api.md",
 );
 // A formatter upgrade can re-indent a report without changing any declaration; demanding a
-// changelog line then forces a fake consumer entry. Compare staged and HEAD bytes with ALL
-// whitespace removed: `git diff -w` keeps line breaks, and re-indentation often joins lines.
+// changelog line then forces a fake consumer entry. `git diff -w` keeps line breaks, and
+// re-indentation often joins lines, so whitespace is dropped beside punctuation and collapsed to
+// one space between words: deleting it everywhere would also hide `a b` becoming `ab`.
 // A report missing at HEAD (first generation) yields undefined and so counts as a change.
 const squash = (spec: string) => {
   const shown = Bun.spawnSync(["git", "show", spec]);
-  return shown.exitCode === 0 ? shown.stdout.toString().replace(/\s+/g, "") : undefined;
+  return shown.exitCode === 0
+    ? shown.stdout
+        .toString()
+        .replace(/\s+/g, () => " ")
+        .replace(/ (?=\W)|(?<=\W) /g, () => "")
+        .trim()
+    : undefined;
 };
 const missingChangelog =
   !staged.includes("CHANGELOG.md") &&
