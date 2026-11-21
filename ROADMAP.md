@@ -12,17 +12,9 @@ Derive engineering choices from the maintainer's requests and interface principl
 
 Finish these before preparing 0.7.0. A pending maintainer ruling is a short question, never a reason to drop an item: ask it when the item starts. WASM work stays out of this sprint. Use only free or already-paid hardware (GitHub-hosted runners, existing servers); measure with `bench/AGENTS.md`'s noise-tolerant method.
 
-- [ ] Update every outdated dev dependency to latest stable; keep the deliberate `typescript-checker` and `typescript-floor` pins. Check Cargo dependencies too.
-- [ ] Refine the roadmap and `CHANGELOG.md` release notes after the SIMD/CPU experiments; needs the maintainer's details (changelog reminder).
-- [ ] Production evaluation below: base32 fixed-buffer decoder, SIMD parser, SIMD owned formatter, SIMD base64url encoder. SIMD needs a runtime or compile-time feature check with the owned scalar code as fallback (`is_x86_feature_detected!` needs `std`, which is optional), and verification per `rust/AGENTS.md`: proofs where a prover can model the body, comparison against the proven scalar body elsewhere.
-- [ ] Rust ASCII byte parsing (approved): design the minimal idiomatic API, preferring one parse entry that accepts both text and ASCII bytes by argument type over a second method; same grammar and typed errors.
-- [ ] Rust UUIDv4 batch generation (approved): fill a caller slice in bounded chunks from the existing ChaCha entropy; single-ID path unchanged.
-- [ ] Rust UUIDv7 batch (approved to explore): measure both continuing-generator semantics and fresh-state-per-batch, choose by real use cases; the only fixed constraint is proper entropy.
-- [ ] Release notes (ruled): drop the changelog reminder; notes list only consumer-visible changes against 0.6.0.
-- [ ] Pushing uuid-slug `main` is authorized after the full check passes (and for the AMD job). publish-clean 0.12.0 release is authorized after its full check passes.
-- [ ] Native AMD evidence (task below).
-- [ ] Add `bench/rust-competitors/target/` to `.gitignore`.
-- [ ] Ship consumer agent instructions: `AGENTS.consumer.md` (npm) and `rust/AGENTS.consumer.md` (crate), each packed as `AGENTS.md` at its package root so maintainer agents never load them. Content: the minimal context an agent using the package would miss in sources and doc comments (choosing the API for a job, traps such as overlapping 22-character plain/masked base64url and explicit masking keys, Rust features); link README sections instead of repeating them. Neither npm `files` nor Cargo `include` renames, so design the copy-in/remove step inside the existing release packing, assert both packed archives contain it, and record the packaging rule in its owner when it lands. Text is public documentation: the maintainer approves the exact wording.
+- [ ] Push `main` once the full all-runtime check passes (authorized).
+- [ ] SIMD parser and owned formatter: prefer an optional `uuid-simd` dependency (default features off) if it covers our whole grammar (it lacks case-insensitive URN prefixes; strip those ourselves); otherwise scoped unsafe kernels by default with that dependency as an opt-in replacement, per `rust/AGENTS.md`. Run the existing grammar tests with the feature on, measure on M4 and native AMD, record the outcome in `bench/decisions.md`. The base32 fixed-buffer decoder was slower (rejected) and the SIMD base64url encoder gains nothing over production (dropped).
+- [ ] Native AMD evidence (task below): a `workflow_dispatch` benchmark job that logs the CPU model, skips non-AMD runners and compares baseline and candidate in one job.
 
 ## Optional UUID completion audit
 
