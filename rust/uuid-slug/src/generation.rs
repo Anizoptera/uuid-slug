@@ -10,7 +10,7 @@ use crate::{Error, ErrorCode, Uuid, UuidV7PayloadLayout};
 use alloc::format;
 #[cfg(all(feature = "os-rng", not(feature = "fast-rng")))]
 use fill_os_random_bytes as fill_default_random_bytes;
-#[cfg(all(feature = "os-rng", not(feature = "fast-rng")))]
+#[cfg(all(feature = "std", feature = "os-rng", not(feature = "fast-rng")))]
 use fill_os_random_bytes as fill_default_random_bytes_bulk;
 
 // A batch pool can exceed the stream's 64 KB reseed budget, where a single `fill` would bypass

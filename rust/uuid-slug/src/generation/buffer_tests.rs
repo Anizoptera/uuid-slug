@@ -1,4 +1,5 @@
 use crate::{Error, ErrorCode, Uuid, UuidV7Generator, generate_uuid_v4_into};
+use alloc::vec;
 
 // Only the selected UUID span may change, even when time validation fails after range validation.
 fn packet_uuid(packet: &[u8; 24]) -> Result<Uuid, Error> {
@@ -89,6 +90,7 @@ fn v4_batches_fill_every_slot_with_distinct_v4_ids() -> Result<(), Error> {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn v7_batches_continue_one_strictly_increasing_sequence() -> Result<(), Error> {
     for fraction_bits in [0, 12] {
         let mut generator =
@@ -99,7 +101,7 @@ fn v7_batches_continue_one_strictly_increasing_sequence() -> Result<(), Error> {
         let mut more = vec![crate::NIL_UUID; 3];
         generator.generate_uuid_v7_batch(&mut more)?;
         let last = generator.generate_uuid_v7()?;
-        let all: Vec<Uuid> = [first]
+        let all: alloc::vec::Vec<Uuid> = [first]
             .into_iter()
             .chain(ids)
             .chain(more)
