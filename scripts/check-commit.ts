@@ -74,9 +74,24 @@ const selected = checks.filter((check) => staged.some(check.affects));
 // A changed API report is the one consumer-visible change a script can see for certain; behaviour
 // changes without one rely on the AGENTS.md rule. Documentation in api/ is not a report.
 // Writing the entry now keeps its reason.
+const stagedReports = staged.filter(
+  (path) => path === "api/typescript.api.d.ts" || path === "api/rust.api.md",
+);
+// A formatter upgrade can re-indent a report without changing any declaration; demanding a
+// changelog line then forces a fake consumer entry. `git diff -w --quiet` exits 0 when the staged
+// change is whitespace only, so only a real declaration change requires CHANGELOG.md.
 const missingChangelog =
-  staged.some((path) => path === "api/typescript.api.d.ts" || path === "api/rust.api.md") &&
-  !staged.includes("CHANGELOG.md")
+  stagedReports.length > 0 &&
+  !staged.includes("CHANGELOG.md") &&
+  Bun.spawnSync([
+    "git",
+    "diff",
+    "--cached",
+    "--ignore-all-space",
+    "--quiet",
+    "--",
+    ...stagedReports,
+  ]).exitCode !== 0
     ? "The staged api/ report changes the public API, but CHANGELOG.md is not staged. Add a line under\n" +
       "## [Unreleased] saying what callers gain or must change and why, then stage it with this commit."
     : undefined;
