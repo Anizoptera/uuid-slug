@@ -57,12 +57,12 @@ test("packed identity cannot hide changed source, output, metadata or files", as
       });
       await writeFile(filename, original);
     }
-    for (const name of ["src/extra.ts", "dist/index.d.ts"]) {
+    for (const name of ["src/extra.ts", "dist/index.d.ts", "dist/index.d.ts.map"]) {
       await writeFile(join(after, name), "export type Value = string;");
       expect(await compareArtifacts(before, after)).toEqual({
         all: false,
         compiled: true,
-        bunSource: name.endsWith(".d.ts"),
+        bunSource: !name.startsWith("src/"),
       });
       await copyFile(join(after, name), join(before, name));
       await writeFile(join(after, name), "export type Value = number;");
@@ -76,7 +76,7 @@ test("packed identity cannot hide changed source, output, metadata or files", as
       expect(await compareArtifacts(before, after)).toEqual({
         all: false,
         compiled: true,
-        bunSource: name.endsWith(".d.ts"),
+        bunSource: !name.startsWith("src/"),
       });
       await rm(join(before, name));
     }

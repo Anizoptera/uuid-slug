@@ -17,6 +17,10 @@ async function shippedFiles(root: string, relative = ""): Promise<string[]> {
   return groups.flat().sort();
 }
 
+// Declarations and their maps serve editors and compilers; no runtime executes them, and a
+// source reflow shifts every declaration-map mapping even when the emitted `.d.ts` is unchanged.
+const isDeclaration = (name: string) => name.endsWith(".d.ts") || name.endsWith(".d.ts.map");
+
 /** Compare real packed outputs before spending time measuring an unchanged implementation. */
 export async function compareArtifacts(
   baseline: string,
@@ -58,7 +62,7 @@ export async function compareArtifacts(
   const transpiler = new Bun.Transpiler({ loader: "ts" });
   const bunSourceEqual = await Promise.all(
     files.map(async (name, index) => {
-      if (equal[index] || name.endsWith(".d.ts")) return true;
+      if (equal[index] || isDeclaration(name)) return true;
       if (
         !name.startsWith("src/") ||
         !name.endsWith(".ts") ||
@@ -79,7 +83,7 @@ export async function compareArtifacts(
     compiled: equal.every(
       (same, index) =>
         same ||
-        files[index]?.endsWith(".d.ts") ||
+        isDeclaration(files[index] ?? "") ||
         (files[index]?.startsWith("src/") && files[index]?.endsWith(".ts")),
     ),
   };
