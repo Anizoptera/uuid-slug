@@ -4,6 +4,7 @@
 // Keep only generic parsing and hyphenated output: generation, UUID objects,
 // detailed upstream errors and caller-buffer adapters are not needed here.
 // Review upstream changes against these kernels before updating the source revision.
+#[cfg(not(feature = "uuid-simd"))]
 use core::fmt;
 
 pub(crate) fn parse_uuid_text(text: &[u8]) -> Option<[u8; 16]> {
@@ -93,23 +94,16 @@ const fn decode_hex32(hex: &[u8; 32]) -> Option<[u8; 16]> {
     Some(buf)
 }
 
-pub(crate) struct Hyphenated(pub(crate) [u8; 16]);
-
-impl fmt::LowerHex for Hyphenated {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write_hyphenated(&self.0, f, false)
-    }
-}
-
-impl fmt::UpperHex for Hyphenated {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write_hyphenated(&self.0, f, true)
-    }
-}
-
+// The owned formatter compiles only when it is the selected writer (neither `uuid-simd` nor
+// `uuid-interop`); the module itself is already excluded under `uuid-interop`.
+#[cfg(not(feature = "uuid-simd"))]
 #[inline]
 #[allow(unsafe_code)]
-fn write_hyphenated(bytes: &[u8; 16], f: &mut fmt::Formatter<'_>, upper: bool) -> fmt::Result {
+pub(crate) fn write_hyphenated(
+    bytes: &[u8; 16],
+    f: &mut fmt::Formatter<'_>,
+    upper: bool,
+) -> fmt::Result {
     let text = format_hyphenated(bytes, upper);
     // SAFETY: format_simple maps both nibbles of every byte to ASCII hex;
     // format_hyphenated initializes all 36 output bytes from those digits or '-'.
@@ -120,12 +114,14 @@ fn write_hyphenated(bytes: &[u8; 16], f: &mut fmt::Formatter<'_>, upper: bool) -
     f.write_str(unsafe { core::str::from_utf8_unchecked(&text) })
 }
 
+#[cfg(not(feature = "uuid-simd"))]
 // Upstream's arithmetic avoids a retained lookup table; each input is one masked nibble.
 #[inline]
 const fn nibble_to_hex(nibble: u8, alpha_offset: u8) -> u8 {
     nibble + b'0' + if nibble > 9 { alpha_offset } else { 0 }
 }
 
+#[cfg(not(feature = "uuid-simd"))]
 #[inline]
 const fn format_simple(src: &[u8; 16], upper: bool) -> [u8; 32] {
     let alpha_offset = if upper { 0x07 } else { 0x27 };
@@ -140,6 +136,7 @@ const fn format_simple(src: &[u8; 16], upper: bool) -> [u8; 32] {
     dst
 }
 
+#[cfg(not(feature = "uuid-simd"))]
 #[inline]
 const fn format_hyphenated(src: &[u8; 16], upper: bool) -> [u8; 36] {
     let simple = format_simple(src, upper);

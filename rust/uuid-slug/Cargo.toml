@@ -18,7 +18,9 @@ all-features = true
 # Secure generation is ordinary; third-party UUID interoperability is an explicit caller choice.
 default = ["std", "fast-rng"]
 uuid-interop = ["dep:uuid"]
-std = []
+# SIMD UUID text parsing and hyphenated formatting; `std` adds run-time CPU detection.
+uuid-simd = ["dep:uuid-simd"]
+std = ["uuid-simd?/std", "uuid-simd?/detect"]
 fast-rng = ["std", "os-rng", "dep:chacha20"]
 os-rng = ["dep:getrandom"]
 wasm-js = ["std", "os-rng", "getrandom/wasm_js", "dep:js-sys"]
@@ -27,6 +29,7 @@ wasm-js = ["std", "os-rng", "getrandom/wasm_js", "dep:js-sys"]
 uuid = { version = "1.29", default-features = false, optional = true }
 getrandom = { version = "0.4", default-features = false, optional = true }
 chacha20 = { version = "0.10.2", default-features = false, features = ["rng"], optional = true }
+uuid-simd = { version = "0.8.0", default-features = false, optional = true }
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
 # Date::now needs neither promise helpers nor dynamic JavaScript evaluation.

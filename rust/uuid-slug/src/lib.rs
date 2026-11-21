@@ -25,7 +25,11 @@ mod random;
 mod siphash;
 mod text;
 mod uuid;
-// Backend selection is compile-time: interoperability never compiles a second text engine.
+// Text backends are chosen at compile time, so an unselected engine never compiles.
+#[cfg(feature = "uuid-simd")]
+mod simd_text;
+#[cfg(all(test, feature = "uuid-simd"))]
+mod simd_text_tests;
 #[cfg(not(feature = "uuid-interop"))]
 mod uuid_text;
 #[cfg(test)]

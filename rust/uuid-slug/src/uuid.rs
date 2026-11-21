@@ -469,7 +469,12 @@ impl FromStr for Uuid {
 // One byte-level UUID-text parser for `FromStr` and every `KeylessUuidText` input: all accepted
 // spellings are ASCII, so `&str` needs no separate path and bytes need no UTF-8 pre-pass.
 pub(crate) fn parse_uuid_text(text: &[u8]) -> Result<Uuid, Error> {
-    // Both backends enforce the same grammar. Keep the package error independent
+    // SIMD takes only accepted text; every rejection falls through to the scalar grammar below.
+    #[cfg(feature = "uuid-simd")]
+    if let Some(bytes) = crate::simd_text::parse(text) {
+        return Ok(Uuid(bytes));
+    }
+    // Both scalar backends enforce the same grammar. Keep the package error independent
     // of upstream diagnostics and avoid compiling upstream in a reduced build.
     #[cfg(feature = "uuid-interop")]
     let parsed = uuid::Uuid::try_parse_ascii(text)
@@ -481,6 +486,22 @@ pub(crate) fn parse_uuid_text(text: &[u8]) -> Result<Uuid, Error> {
         .map(Uuid)
         .ok_or_else(|| Error::new(ErrorCode::InvalidUuid))
 }
+// One hyphenated writer per backend, chosen at compile time so unselected engines never compile:
+// opt-in SIMD first (fastest measured), then opt-in upstream `uuid`, else the owned kernels.
+#[cfg(feature = "uuid-simd")]
+use crate::simd_text::write_hyphenated;
+#[cfg(not(any(feature = "uuid-interop", feature = "uuid-simd")))]
+use crate::uuid_text::write_hyphenated;
+#[cfg(all(feature = "uuid-interop", not(feature = "uuid-simd")))]
+fn write_hyphenated(bytes: &[u8; 16], f: &mut fmt::Formatter<'_>, upper: bool) -> fmt::Result {
+    let text = uuid::Uuid::from_bytes(*bytes).hyphenated();
+    if upper {
+        fmt::UpperHex::fmt(&text, f)
+    } else {
+        fmt::LowerHex::fmt(&text, f)
+    }
+}
+
 /// Lowercase hyphenated text, the default UUID spelling.
 impl fmt::Display for Uuid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -490,22 +511,14 @@ impl fmt::Display for Uuid {
 /// `{:x}`: lowercase hyphenated text, the same as `Display`.
 impl fmt::LowerHex for Uuid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        #[cfg(feature = "uuid-interop")]
-        let text = uuid::Uuid::from_bytes(self.0).hyphenated();
-        #[cfg(not(feature = "uuid-interop"))]
-        let text = crate::uuid_text::Hyphenated(self.0);
-        fmt::LowerHex::fmt(&text, f)
+        write_hyphenated(&self.0, f, false)
     }
 }
 /// `{:X}`: uppercase hyphenated text, the TypeScript `UUID_TEXT_UPPERCASE` spelling.
 /// Formatting writes into the caller's writer without allocating.
 impl fmt::UpperHex for Uuid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        #[cfg(feature = "uuid-interop")]
-        let text = uuid::Uuid::from_bytes(self.0).hyphenated();
-        #[cfg(not(feature = "uuid-interop"))]
-        let text = crate::uuid_text::Hyphenated(self.0);
-        fmt::UpperHex::fmt(&text, f)
+        write_hyphenated(&self.0, f, true)
     }
 }
 
