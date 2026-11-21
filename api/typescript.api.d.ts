@@ -469,9 +469,8 @@ declare type UuidGenerationTextCase<Input> = Input extends UuidTextCase
   ? Input
   : Input extends object
     ? "textCase" extends keyof Input
-      ?
-          | Extract<Input["textCase"], UuidTextCase>
-          | (undefined extends Input["textCase"] ? typeof UUID_TEXT_LOWERCASE : never)
+      ? | Extract<Input["textCase"], UuidTextCase>
+        | (undefined extends Input["textCase"] ? typeof UUID_TEXT_LOWERCASE : never)
       : typeof UUID_TEXT_LOWERCASE
     : typeof UUID_TEXT_LOWERCASE;
 export declare type UuidInput = string | UuidByteInput | AnyUuid | UuidSlugError;
