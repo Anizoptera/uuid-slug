@@ -18,6 +18,7 @@ Finish these before preparing 0.7.0. A pending maintainer ruling is a short ques
 - [ ] ASCII byte parser entry and v4/v7 batch APIs: ask the caller-demand and v7 clock/state rulings, then implement what they approve.
 - [ ] Native AMD evidence (task below).
 - [ ] Add `bench/rust-competitors/target/` to `.gitignore`.
+- [ ] Ship consumer agent instructions: `AGENTS.consumer.md` (npm) and `rust/AGENTS.consumer.md` (crate), each packed as `AGENTS.md` at its package root so maintainer agents never load them. Content: the minimal context an agent using the package would miss in sources and doc comments (choosing the API for a job, traps such as overlapping 22-character plain/masked base64url and explicit masking keys, Rust features); link README sections instead of repeating them. Neither npm `files` nor Cargo `include` renames, so design the copy-in/remove step inside the existing release packing, assert both packed archives contain it, and record the packaging rule in its owner when it lands. Text is public documentation: the maintainer approves the exact wording.
 
 ## Optional UUID completion audit
 
