@@ -4,6 +4,8 @@ Notable changes per release, newest first. Each version's GitHub Release notes a
 
 ## [Unreleased]
 
+## [0.7.0]
+
 ### Breaking changes
 
 - Rust conversions to and from `uuid::Uuid` require opt-in `uuid-interop` (`cargo add uuid-slug --features uuid-interop`). Defaults retain secure generation and omit `uuid`. Both selections preserve accepted text, output, errors and identifier formats. This change requires a minor release before 1.0.
