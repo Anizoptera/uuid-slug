@@ -235,8 +235,15 @@ try {
     return map;
   };
 
-  const baseline = await functions(base, "base");
-  const candidate = await functions([...base, "--features", feature], "feature");
+  // Separate build directories let both builds run at once; both settle before cleanup removes
+  // their directories, so a failing build never leaves the other writing into deleted scratch.
+  const [first, second] = await Promise.allSettled([
+    functions(base, "base"),
+    functions([...base, "--features", feature], "feature"),
+  ]);
+  if (first.status === "rejected") throw first.reason;
+  if (second.status === "rejected") throw second.reason;
+  const [baseline, candidate] = [first.value, second.value];
   let identical = 0;
   for (const [name, text] of baseline) {
     const other = candidate.get(name);
