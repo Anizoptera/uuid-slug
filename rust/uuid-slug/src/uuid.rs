@@ -468,6 +468,9 @@ impl FromStr for Uuid {
 
 // One byte-level UUID-text parser for `FromStr` and every `KeylessUuidText` input: all accepted
 // spellings are ASCII, so `&str` needs no separate path and bytes need no UTF-8 pre-pass.
+// Without the hint, the SIMD call grows this function past the inlining threshold and every
+// scalar fallback (compact text) pays an extra call: measured +16-22% on parse/compact (M4).
+#[cfg_attr(feature = "uuid-simd", inline)]
 pub(crate) fn parse_uuid_text(text: &[u8]) -> Result<Uuid, Error> {
     // SIMD takes only accepted text; every rejection falls through to the scalar grammar below.
     #[cfg(feature = "uuid-simd")]

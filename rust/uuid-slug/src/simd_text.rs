@@ -12,7 +12,7 @@ use uuid_simd::{AsOut, AsciiCase};
 const URN_PREFIX: &[u8; 9] = b"urn:uuid:";
 
 pub(crate) fn parse(text: &[u8]) -> Option<[u8; 16]> {
-    // Upstream's 32-digit kernel lost to the owned scalar parser in every paired run on Apple M4
+    // Upstream's 32-digit kernel never beat the owned scalar parser in paired runs on Apple M4
     // (bench/decisions.md), so compact text goes straight to the scalar grammar.
     if text.len() == 32 {
         return None;
