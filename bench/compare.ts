@@ -556,6 +556,10 @@ async function main(): Promise<void> {
     await mkdir(baselineRoot);
     await command("tar", ["-xf", baselineArchive, "-C", baselineRoot], project);
     await symlink(join(project, "node_modules"), join(baselineRoot, "node_modules"), "dir");
+    // Compare code under one toolchain: an older ref's pins would time a different runtime, and a
+    // tool pinned since that ref (asdf refuses unpinned commands) would fail the baseline outright.
+    await rm(join(baselineRoot, ".tool-versions"), { force: true });
+    await symlink(join(project, ".tool-versions"), join(baselineRoot, ".tool-versions"));
     if (isolatedCandidate) {
       const candidateArchive = join(scratch, "candidate.tar");
       await command(
@@ -574,6 +578,8 @@ async function main(): Promise<void> {
       await mkdir(candidateRoot);
       await command("tar", ["-xf", candidateArchive, "-C", candidateRoot], project);
       await symlink(join(project, "node_modules"), join(candidateRoot, "node_modules"), "dir");
+      await rm(join(candidateRoot, ".tool-versions"), { force: true });
+      await symlink(join(project, ".tool-versions"), join(candidateRoot, ".tool-versions"));
     }
     if (sourceParts) {
       // Pack the same committed graph with one maintained substitution. Never edit production
