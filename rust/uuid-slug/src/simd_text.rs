@@ -12,6 +12,11 @@ use uuid_simd::{AsOut, AsciiCase};
 const URN_PREFIX: &[u8; 9] = b"urn:uuid:";
 
 pub(crate) fn parse(text: &[u8]) -> Option<[u8; 16]> {
+    // Upstream's 32-digit kernel lost to the owned scalar parser in every paired run on Apple M4
+    // (bench/decisions.md), so compact text goes straight to the scalar grammar.
+    if text.len() == 32 {
+        return None;
+    }
     // Upstream matches the URN prefix case-sensitively; the package grammar does not.
     let body = match text.split_at_checked(URN_PREFIX.len()) {
         Some((prefix, rest)) if rest.len() == 36 && prefix.eq_ignore_ascii_case(URN_PREFIX) => rest,

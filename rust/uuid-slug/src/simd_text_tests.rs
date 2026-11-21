@@ -91,7 +91,10 @@ fn simd_parses_every_accepted_spelling_to_the_scalar_bytes() {
     for bytes in payloads() {
         for text in spellings(&bytes) {
             assert_eq!(scalar_parse(&text), Some(bytes), "scalar oracle {text:?}");
-            assert_eq!(simd_text::parse(&text), Some(bytes), "simd {text:?}");
+            // Compact text is routed to the faster scalar parser; every other spelling must take
+            // the SIMD path, or the feature silently stops doing anything.
+            let expected = (text.len() != 32).then_some(bytes);
+            assert_eq!(simd_text::parse(&text), expected, "simd {text:?}");
         }
     }
 }
