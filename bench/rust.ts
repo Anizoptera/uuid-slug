@@ -55,21 +55,32 @@ async function run(command: readonly string[], env: Readonly<Record<string, stri
   return { elapsedMs, output, resources };
 }
 
+// `UUID_SLUG_CODEC_TARGET=wasm32-wasip1` times the codec as WebAssembly with simd128 under Node's V8
+// (the browsers' engine). uuid-simd formats with SIMD there, and one wasm binary runs on every host
+// CPU without per-CPU kernel choice, so a wasm verdict must hold on each runner's CPU.
+const wasmCodec = process.env.UUID_SLUG_CODEC_TARGET === "wasm32-wasip1";
+const codecCommand = (executable: string) =>
+  wasmCodec ? ["node", "bench/wasi-run.mjs", executable] : [executable];
+
 async function buildCodec(features: readonly string[] = [], manifest = "rust/Cargo.toml") {
-  const build = await run([
-    "cargo",
-    "bench",
-    "--manifest-path",
-    manifest,
-    "-p",
-    "uuid-slug",
-    "--bench",
-    "codec",
-    "--no-run",
-    "--locked",
-    "--message-format=json",
-    ...features,
-  ]);
+  const build = await run(
+    [
+      "cargo",
+      "bench",
+      "--manifest-path",
+      manifest,
+      "-p",
+      "uuid-slug",
+      "--bench",
+      "codec",
+      "--no-run",
+      "--locked",
+      "--message-format=json",
+      ...(wasmCodec ? ["--target", "wasm32-wasip1"] : []),
+      ...features,
+    ],
+    wasmCodec ? { CARGO_TARGET_WASM32_WASIP1_RUSTFLAGS: "-C target-feature=+simd128" } : {},
+  );
   const artifacts = build.output
     .trim()
     .split("\n")
@@ -134,7 +145,7 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
       }
       const prepared = codecOutput(
         (
-          await run([build.executable], {
+          await run(codecCommand(build.executable), {
             UUID_SLUG_PROFILE_FILTER: filter,
             UUID_SLUG_CODEC_PREPARE_ONLY: "1",
           })
@@ -169,7 +180,7 @@ if (["--codec", "--codec-build"].includes(process.argv[2] ?? "")) {
       for (let index = 0; index < variants.length; index++) {
         const variant = variants[repetition % 2 ? variants.length - 1 - index : index];
         if (!variant) throw new Error("Missing Rust codec candidate");
-        const result = await run([variant.executable], {
+        const result = await run(codecCommand(variant.executable), {
           UUID_SLUG_PROFILE_FILTER: filter,
           UUID_SLUG_CODEC_PREPARE_ONLY: "",
           UUID_SLUG_TIMING_PADDING: randomBytes(randomInt(1, 2049)).toString("hex"),

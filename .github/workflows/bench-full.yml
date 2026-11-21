@@ -30,10 +30,9 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run bench:full
 
-  # Native evidence for Rust codec kernels on every CPU family GitHub offers for free: the
-  # ubuntu-latest pool mixes AMD EPYC (Zen 3/4/5) and Intel Xeon generations, ubuntu-24.04-arm is
-  # an ARM server core, macos-15-intel an older Intel Mac, macos-latest an Apple M1. SIMD speed differs per CPU, so each job
-  # logs its CPU; read results per CPU model. Windows runners share the Linux pools' CPUs.
+  # Native evidence for Rust codec kernels on the CPU families GitHub's free runners offer: x86 and
+  # ARM Linux, Intel and Apple-silicon macOS. Pools change and mix CPU generations, so each job logs
+  # its CPU; read results per CPU model (bench/decisions.md records which models were measured).
   # bench/rust.ts --codec times production against each opt-in feature in one paired,
   # order-alternated schedule on one machine, which keeps a noisy shared runner usable.
   rust-codec:
@@ -64,3 +63,5 @@ jobs:
         with:
           bun-version-file: .tool-versions
       - run: bun install --frozen-lockfile && UUID_SLUG_CODEC_FEATURES=uuid-simd bun bench/rust.ts --codec
+      # The same pairs as simd128 WebAssembly under the image's Node (V8): one wasm binary serves every host CPU.
+      - run: node --version && UUID_SLUG_CODEC_TARGET=wasm32-wasip1 UUID_SLUG_CODEC_FEATURES=uuid-simd bun bench/rust.ts --codec
