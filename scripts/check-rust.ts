@@ -116,6 +116,10 @@ const selections = [
       names: [name],
       args: ["--no-default-features", "--features", name],
     })),
+  // Each feature above runs without `std`, which hides paths an opt-in feature takes only with it:
+  // uuid-simd selects its run-time-detected x86 SIMD kernels, and their oracle tests, only with
+  // `std` (`simd_text_cfg!`). One all-features run covers those on every CI runner's CPU.
+  { names: Object.keys(product.features), args: ["--all-features"] },
 ];
 const checked = new Set<string>();
 for (const selection of fast ? selections.slice(0, 1) : selections) {
