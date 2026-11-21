@@ -471,12 +471,12 @@ impl FromStr for Uuid {
 pub(crate) fn parse_uuid_text(text: &[u8]) -> Result<Uuid, Error> {
     // SIMD takes only accepted text; every rejection falls through to the scalar grammar below.
     // x86_64 only, hyphenated and braced text only: AMD runs gained 2x on canonical text, while on
-    // Apple M4 every parse difference stayed within build-layout noise (bench/decisions.md). Elsewhere this function compiles
-    // exactly like the default build; formatting still uses SIMD everywhere.
-    #[cfg(all(feature = "uuid-simd", target_arch = "x86_64"))]
-    if let Some(bytes) = crate::simd_text::parse(text) {
+    // Apple M4 every parse difference stayed within build-layout noise (bench/decisions.md).
+    // Elsewhere, and wherever `simd_text_cfg!` selects no SIMD, this compiles like the default build.
+    #[cfg(target_arch = "x86_64")]
+    simd_text_cfg!(if if let Some(bytes) = crate::simd_text::parse(text) {
         return Ok(Uuid(bytes));
-    }
+    });
     // Both scalar backends enforce the same grammar. Keep the package error independent
     // of upstream diagnostics and avoid compiling upstream in a reduced build.
     #[cfg(feature = "uuid-interop")]
@@ -491,19 +491,18 @@ pub(crate) fn parse_uuid_text(text: &[u8]) -> Result<Uuid, Error> {
 }
 // One hyphenated writer per backend, chosen at compile time so unselected engines never compile:
 // opt-in SIMD first (fastest measured), then opt-in upstream `uuid`, else the owned kernels.
-#[cfg(feature = "uuid-simd")]
-use crate::simd_text::write_hyphenated;
-#[cfg(not(any(feature = "uuid-interop", feature = "uuid-simd")))]
-use crate::uuid_text::write_hyphenated;
-#[cfg(all(feature = "uuid-interop", not(feature = "uuid-simd")))]
-fn write_hyphenated(bytes: &[u8; 16], f: &mut fmt::Formatter<'_>, upper: bool) -> fmt::Result {
+simd_text_cfg!(if use crate::simd_text::write_hyphenated;);
+#[cfg(not(feature = "uuid-interop"))]
+simd_text_cfg!(unless use crate::uuid_text::write_hyphenated;);
+#[cfg(feature = "uuid-interop")]
+simd_text_cfg!(unless fn write_hyphenated(bytes: &[u8; 16], f: &mut fmt::Formatter<'_>, upper: bool) -> fmt::Result {
     let text = uuid::Uuid::from_bytes(*bytes).hyphenated();
     if upper {
         fmt::UpperHex::fmt(&text, f)
     } else {
         fmt::LowerHex::fmt(&text, f)
     }
-}
+});
 
 /// Lowercase hyphenated text, the default UUID spelling.
 impl fmt::Display for Uuid {

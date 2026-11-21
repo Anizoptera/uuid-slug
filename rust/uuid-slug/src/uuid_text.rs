@@ -4,8 +4,7 @@
 // Keep only generic parsing and hyphenated output: generation, UUID objects,
 // detailed upstream errors and caller-buffer adapters are not needed here.
 // Review upstream changes against these kernels before updating the source revision.
-#[cfg(not(feature = "uuid-simd"))]
-use core::fmt;
+simd_text_cfg!(unless use core::fmt;);
 
 pub(crate) fn parse_uuid_text(text: &[u8]) -> Option<[u8; 16]> {
     match (text.len(), text) {
@@ -96,7 +95,7 @@ const fn decode_hex32(hex: &[u8; 32]) -> Option<[u8; 16]> {
 
 // The owned formatter compiles only when it is the selected writer (neither `uuid-simd` nor
 // `uuid-interop`); the module itself is already excluded under `uuid-interop`.
-#[cfg(not(feature = "uuid-simd"))]
+simd_text_cfg!(unless
 #[inline]
 #[allow(unsafe_code)]
 pub(crate) fn write_hyphenated(
@@ -112,16 +111,16 @@ pub(crate) fn write_hyphenated(
     // Kani's uuid_text::hyphenated_format proves ASCII, payload and case for every input;
     // refresh it with `bun scripts/check-rust-proofs.ts uuid_text::hyphenated_format`.
     f.write_str(unsafe { core::str::from_utf8_unchecked(&text) })
-}
+});
 
-#[cfg(not(feature = "uuid-simd"))]
+simd_text_cfg!(unless
 // Upstream's arithmetic avoids a retained lookup table; each input is one masked nibble.
 #[inline]
 const fn nibble_to_hex(nibble: u8, alpha_offset: u8) -> u8 {
     nibble + b'0' + if nibble > 9 { alpha_offset } else { 0 }
-}
+});
 
-#[cfg(not(feature = "uuid-simd"))]
+simd_text_cfg!(unless
 #[inline]
 const fn format_simple(src: &[u8; 16], upper: bool) -> [u8; 32] {
     let alpha_offset = if upper { 0x07 } else { 0x27 };
@@ -134,9 +133,9 @@ const fn format_simple(src: &[u8; 16], upper: bool) -> [u8; 32] {
         i += 1;
     }
     dst
-}
+});
 
-#[cfg(not(feature = "uuid-simd"))]
+simd_text_cfg!(unless
 #[inline]
 const fn format_hyphenated(src: &[u8; 16], upper: bool) -> [u8; 36] {
     let simple = format_simple(src, upper);
@@ -167,4 +166,4 @@ const fn format_hyphenated(src: &[u8; 16], upper: bool) -> [u8; 36] {
         i += 1;
     }
     dst
-}
+});

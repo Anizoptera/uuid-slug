@@ -27,6 +27,8 @@ const option = (name: string, fallback: string) => {
 };
 const feature = option("--feature", "uuid-simd");
 const codegenUnits = option("--codegen-units", "1");
+// `--no-default` compares the reduced builds (no `std`), where a feature can select other kernels.
+const base = args.includes("--no-default") ? ["--no-default-features"] : [];
 const target = option("--target", "x86_64-unknown-linux-gnu");
 const repo = join(import.meta.dir, "..");
 
@@ -137,18 +139,19 @@ try {
     return map;
   };
 
-  const base = await functions([]);
-  const candidate = await functions(["--features", feature]);
+  const baseline = await functions(base);
+  const candidate = await functions([...base, "--features", feature]);
   let identical = 0;
-  for (const [name, body] of base) {
+  for (const [name, body] of baseline) {
     const other = candidate.get(name);
     if (other === undefined) console.log(`only default: ${name}`);
     else if (other !== body) console.log(`differs: ${name}`);
     else identical++;
   }
-  for (const name of candidate.keys()) if (!base.has(name)) console.log(`only ${feature}: ${name}`);
+  for (const name of candidate.keys())
+    if (!baseline.has(name)) console.log(`only ${feature}: ${name}`);
   console.log(
-    `${identical} identical uuid_slug functions (${base.size} default, ${candidate.size} ${feature}; codegen units ${codegenUnits}, ${target})`,
+    `${identical} identical uuid_slug functions (${baseline.size} base, ${candidate.size} ${feature}; codegen units ${codegenUnits}, ${target})`,
   );
 } finally {
   await rm(scratch, { recursive: true, force: true });
